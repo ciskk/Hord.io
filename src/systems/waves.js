@@ -1,4 +1,5 @@
 import { triggerBossEncounter, spawnMiniBoss } from '../entities/enemies.js';
+import { activeBoss, gameState } from '../main.js';
 
 export let bossesDefeated = { m1: false, m2: false, m3: false, final: false };
 export let firstBossKilled = false;

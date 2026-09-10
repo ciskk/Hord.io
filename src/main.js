@@ -1648,7 +1648,7 @@ function update(dt) {
           return;
         }
 
-        chests.push({ x: e.x, y: e.y, radius: 16 });
+        chests.push({ x: e.x, y: e.y, radius: 16, tier: 'BOSS' });
         activeBoss = null;
         bossTelegraphs.length = 0;
         bossProjectiles.length = 0;
@@ -1683,7 +1683,7 @@ function update(dt) {
         }
 
         if (Math.random() < 0.40) {
-          chests.push({ x: e.x, y: e.y, radius: 16 });
+          chests.push({ x: e.x, y: e.y, radius: 14, tier: 'MINI_BOSS' });
         }
       } else {
         const gCfg = getGemConfig(e.xp);
@@ -1751,8 +1751,9 @@ function update(dt) {
     const dy = player.y - ch.y;
     const sumR = player.radius + ch.radius;
     if (dx * dx + dy * dy < sumR * sumR) {
+      const tier = ch.tier || 'BOSS';
       chests.splice(i, 1);
-      openChestModal();
+      openChestModal(tier);
       break;
     }
   }

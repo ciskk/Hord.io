@@ -14,6 +14,7 @@ import {
   gameState, 
   triggerShake, 
   createHitParticles, 
+  activeBoss,
   setActiveBoss, 
   setCurrentArenaTheme, 
   setIsWavePaused 
@@ -120,6 +121,9 @@ export function spawnMobCluster(typeKey, count, eliteChance = 0) {
 
 // Fábrica de Mini Bosses com Raio Fixo Canônico
 export function spawnMiniBoss(typeKey) {
+  // Bloqueia a invocação caso já exista um chefe ativo na arena
+  if (activeBoss || gameState.isWavePaused) return null;
+
   const t = MINI_BOSS_TYPES[typeKey];
   if (!t) return null;
 

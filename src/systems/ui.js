@@ -19,7 +19,8 @@ import {
   setIsWavePaused, 
   resetSpawnTimer, 
   setLastTime, 
-  resetGame 
+  resetGame,
+  activeBoss 
 } from '../main.js';
 
 export function togglePause() {
@@ -85,7 +86,7 @@ export function levelUp() {
   if (upgradeModal) upgradeModal.style.display = 'flex';
 }
 
-export function openChestModal() {
+export function openChestModal(tier = 'BOSS') {
   playSfx('chest');
   gameState.isPaused = true;
   resetInput();
@@ -95,28 +96,51 @@ export function openChestModal() {
   if (!modal || !list) return;
   list.innerHTML = '';
 
-  const syns = checkSynergies();
-  if (syns.length > 0) {
-    playSfx('evolution');
-    triggerShake(14);
-    const evo = syns[0];
-    evo.apply();
-    const evoItem = document.createElement('div');
-    evoItem.className = 'chest-reward-item';
-    evoItem.style.borderColor = '#f1c40f';
-    evoItem.style.background = 'rgba(241, 196, 15, 0.25)';
-    evoItem.innerHTML = `<span style="color:#f1c40f; font-size:13px;">EVOLUÇÃO LENDÁRIA!</span><br><b>${evo.name}</b><br><span style="font-size:10px; color:#ddd;">${evo.desc}</span>`;
-    list.appendChild(evoItem);
+  const isMini = tier === 'MINI_BOSS';
+
+  const titleElem = modal.querySelector('h3');
+  if (titleElem) {
+    titleElem.innerText = isMini ? "TESOURO DE ELITE!" : "TESOURO DO CHEFE!";
+    titleElem.style.color = isMini ? "#3498db" : "#f1c40f";
   }
 
-  const rewards = getRandomUpgrades(2);
-  rewards.forEach(r => {
-    r.apply();
-    const item = document.createElement('div');
-    item.className = 'chest-reward-item';
-    item.innerHTML = `<b>${r.title}</b> • <span style="font-size:10px; color:#ddd;">${r.stat}</span>`;
-    list.appendChild(item);
-  });
+  if (isMini) {
+    // Miniboss concede apenas 1 aprimoramento padrão (sem fusões lendárias)
+    const rewards = getRandomUpgrades(1);
+    rewards.forEach(r => {
+      r.apply();
+      const item = document.createElement('div');
+      item.className = 'chest-reward-item';
+      item.style.borderColor = '#3498db';
+      item.style.background = 'rgba(52, 152, 219, 0.15)';
+      item.innerHTML = `<b style="color:#3498db;">${r.title}</b> • <span style="font-size:10px; color:#ddd;">${r.stat}</span>`;
+      list.appendChild(item);
+    });
+  } else {
+    // Boss concede Fusão Lendária (se os pré-requisitos existirem) + 2 aprimoramentos
+    const syns = checkSynergies();
+    if (syns.length > 0) {
+      playSfx('evolution');
+      triggerShake(14);
+      const evo = syns[0];
+      evo.apply();
+      const evoItem = document.createElement('div');
+      evoItem.className = 'chest-reward-item';
+      evoItem.style.borderColor = '#f1c40f';
+      evoItem.style.background = 'rgba(241, 196, 15, 0.25)';
+      evoItem.innerHTML = `<span style="color:#f1c40f; font-size:13px;">EVOLUÇÃO LENDÁRIA!</span><br><b>${evo.name}</b><br><span style="font-size:10px; color:#ddd;">${evo.desc}</span>`;
+      list.appendChild(evoItem);
+    }
+
+    const rewards = getRandomUpgrades(2);
+    rewards.forEach(r => {
+      r.apply();
+      const item = document.createElement('div');
+      item.className = 'chest-reward-item';
+      item.innerHTML = `<b>${r.title}</b> • <span style="font-size:10px; color:#ddd;">${r.stat}</span>`;
+      list.appendChild(item);
+    });
+  }
 
   const claimBtn = document.getElementById('chest-claim-btn');
   if (claimBtn) {
@@ -125,11 +149,14 @@ export function openChestModal() {
       gameState.isPaused = false;
       setLastTime(performance.now());
 
-      setCurrentArenaTheme('INDUSTRIAL');
-      setIsWavePaused(false);
-      resetSpawnTimer();
-      triggerShake(8);
-      playSfx('level');
+      // Só reabre o spawn das hordas se o chefe principal NÃO estiver na arena
+      if (!activeBoss) {
+        setCurrentArenaTheme('INDUSTRIAL');
+        setIsWavePaused(false);
+        resetSpawnTimer();
+        triggerShake(8);
+        playSfx('level');
+      }
     };
   }
   modal.style.display = 'flex';
