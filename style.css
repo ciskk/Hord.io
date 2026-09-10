@@ -4,6 +4,7 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
+
 html, body {
   margin: 0;
   padding: 0;
@@ -16,6 +17,7 @@ html, body {
   position: fixed;
   inset: 0;
 }
+
 #game-canvas {
   display: block;
   width: 100%;
@@ -33,22 +35,24 @@ html, body {
 
 #hud {
   position: fixed;
-  top: max(env(safe-area-inset-top, 10px), 14px);
+  top: max(env(safe-area-inset-top, 10px), 12px);
   left: max(env(safe-area-inset-left, 12px), 12px);
   right: max(env(safe-area-inset-right, 12px), 12px);
   pointer-events: none;
   color: #fff;
-  font-size: 13px;
+  font-size: clamp(11px, 1.8vw, 13px);
   font-weight: bold;
   text-shadow: 1px 1px 3px #000;
   z-index: 10;
 }
+
 .hud-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 4px;
 }
+
 .bar-bg {
   width: 100%;
   height: 8px;
@@ -58,20 +62,23 @@ html, body {
   overflow: hidden;
   margin-bottom: 6px;
 }
+
 #hp-fill { width: 100%; height: 100%; background: #e74c3c; transition: width 0.1s; }
 #xp-fill { width: 0%; height: 100%; background: #00d2d3; transition: width 0.1s; }
 #boss-hp-fill { width: 100%; height: 100%; background: #9b59b6; transition: width 0.05s; }
 
 #wave-banner {
   color: #f1c40f;
-  font-size: 12px;
+  font-size: clamp(10px, 1.6vw, 12px);
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
+
 #boss-hud {
   display: none;
   margin-top: 4px;
 }
+
 #freeze-overlay {
   position: fixed;
   inset: 0;
@@ -90,30 +97,32 @@ html, body {
   color: #f1c40f;
   height: 34px;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: clamp(10px, 1.6vw, 12px);
   font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-  padding: 0 10px;
+  padding: 0 12px;
+  transition: transform 0.1s ease, background 0.15s ease;
 }
+
 .hud-btn:active {
   transform: scale(0.94);
   background: #f1c40f;
   color: #000;
 }
 
-/* Botão de Poder Ergonômico com Animação Radial */
+/* Botão de Poder Ergonômico */
 #skill-btn-container {
   position: fixed;
-  bottom: max(env(safe-area-inset-bottom, 30px), 36px);
-  right: max(env(safe-area-inset-right, 24px), 32px);
-  width: 70px;
-  height: 70px;
+  bottom: max(env(safe-area-inset-bottom, 24px), 24px);
+  right: max(env(safe-area-inset-right, 20px), 20px);
+  width: clamp(56px, 12vw, 72px);
+  height: clamp(56px, 12vw, 72px);
   border-radius: 50%;
-  background: rgba(18, 22, 32, 0.78);
+  background: rgba(18, 22, 32, 0.82);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 2px solid rgba(241, 196, 15, 0.45);
@@ -143,7 +152,6 @@ html, body {
   50% { transform: scale(1.06); }
 }
 
-/* Camada de Cooldown Radial */
 #skill-cooldown-mask {
   position: absolute;
   inset: 0;
@@ -155,6 +163,8 @@ html, body {
 #skill-icon {
   position: relative;
   z-index: 2;
+  width: clamp(22px, 5vw, 32px);
+  height: clamp(22px, 5vw, 32px);
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
   pointer-events: none;
 }
@@ -162,44 +172,221 @@ html, body {
 #skill-timer-text {
   position: absolute;
   z-index: 3;
-  font-size: 13px;
+  font-size: clamp(10px, 2.2vw, 13px);
   font-weight: 800;
   color: #fff;
   text-shadow: 0 1px 4px #000;
   pointer-events: none;
 }
 
-/* Modais */
+/* ======================================================== */
+/* SISTEMA UNIVERSAL DE MODAIS (RETRACTO / PAISAGEM / PC)   */
+/* ======================================================== */
+
 .modal-overlay {
   display: none;
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.88);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   justify-content: center;
   align-items: center;
   z-index: 99;
   touch-action: auto;
-  padding: 16px;
-}
-.modal-box {
-  background: #121520;
-  border: 2px solid #f1c40f;
-  border-radius: 14px;
-  padding: 18px;
-  width: 100%;
-  max-width: 350px;
-  text-align: center;
-  color: #fff;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
+  padding: max(env(safe-area-inset-top, 10px), 10px) 
+           max(env(safe-area-inset-right, 10px), 10px) 
+           max(env(safe-area-inset-bottom, 10px), 10px) 
+           max(env(safe-area-inset-left, 10px), 10px);
 }
 
-/* Cards de Upgrades */
+#talents-modal {
+  z-index: 110;
+}
+
+.modal-box {
+  background: #121520;
+  border: 1.5px solid #2e344e;
+  border-radius: clamp(10px, 2vw, 16px);
+  padding: clamp(12px, 2.5vw, 20px);
+  width: 100%;
+  max-width: min(92vw, 860px);
+  max-height: min(94vh, 94dvh);
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
+  box-sizing: border-box;
+}
+
+.modal-box-compact {
+  max-width: min(90vw, 420px);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #1e2438;
+  padding-bottom: clamp(6px, 1.5vh, 12px);
+  margin-bottom: clamp(8px, 1.5vh, 14px);
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.modal-header-title {
+  font-size: clamp(14px, 2vw, 18px);
+  font-weight: 800;
+  color: #f1c40f;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.modal-header-sub {
+  font-size: clamp(9px, 1.4vw, 11px);
+  color: #8890a6;
+  margin-top: 2px;
+}
+
+.currency-badge {
+  background: #1a1e2d;
+  border: 1px solid #3e445e;
+  border-radius: 8px;
+  padding: clamp(4px, 1vh, 6px) clamp(8px, 1.5vw, 12px);
+  font-size: clamp(11px, 1.6vw, 13px);
+  font-weight: bold;
+  color: #f1c40f;
+  white-space: nowrap;
+}
+
+/* Grid de Heróis Auto-Ajustável */
+#char-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: clamp(8px, 1.4vw, 14px);
+  max-height: clamp(260px, 60vh, 580px);
+  overflow-y: auto;
+  padding: 4px 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.char-card {
+  background: #181d2e;
+  border: 1.5px solid #2c334d;
+  border-radius: 12px;
+  padding: clamp(10px, 1.8vw, 14px);
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.char-card:hover {
+  transform: translateY(-2px);
+  border-color: #f1c40f;
+  box-shadow: 0 6px 16px rgba(241, 196, 15, 0.15);
+  background: #1e243b;
+}
+
+.char-card:active {
+  transform: scale(0.98);
+}
+
+.char-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #f1c40f;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.char-name {
+  font-size: clamp(13px, 1.8vw, 15px);
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.char-desc {
+  font-size: clamp(10px, 1.4vw, 11px);
+  color: #9aa0b4;
+  line-height: 1.35;
+  flex-grow: 1;
+}
+
+/* Grid da Skill Tree (Talentos) Auto-Ajustável */
+#talents-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  gap: clamp(8px, 1.4vw, 12px);
+  max-height: clamp(230px, 52vh, 520px);
+  overflow-y: auto;
+  padding: 4px 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.talent-card {
+  background: #171c2c;
+  border: 1.5px solid #28304a;
+  border-radius: 12px;
+  padding: clamp(10px, 1.6vw, 13px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: left;
+  gap: 8px;
+}
+
+.talent-info {
+  flex-grow: 1;
+}
+
+.talent-buy-btn {
+  cursor: pointer;
+  border-radius: 6px;
+  font-weight: bold;
+}
+
+.talent-buy-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Botões Genéricos de Ação */
+.card-btn {
+  width: 100%;
+  padding: clamp(9px, 1.8vh, 12px);
+  margin: 4px 0;
+  border-radius: 8px;
+  background: #232738;
+  color: #fff;
+  border: 1px solid #3e445e;
+  font-size: clamp(11px, 1.6vw, 13px);
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.card-btn:active {
+  background: #3e445e;
+  border-color: #f1c40f;
+  transform: scale(0.98);
+}
+
+/* Cards de Upgrades / Baú */
 .upgrade-card {
   width: 100%;
-  padding: 11px 13px;
-  margin: 8px 0;
+  padding: clamp(9px, 1.6vh, 12px);
+  margin: 6px 0;
   border-radius: 10px;
   background: #1a1e2d;
   color: #fff;
@@ -207,11 +394,12 @@ html, body {
   text-align: left;
   cursor: pointer;
   transition: transform 0.1s, border-color 0.15s;
-  position: relative;
 }
+
 .upgrade-card:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
+
 .rarity-badge {
   display: inline-block;
   font-size: 9px;
@@ -222,76 +410,61 @@ html, body {
   text-transform: uppercase;
   margin-bottom: 4px;
 }
+
 .card-title {
-  font-size: 13px;
+  font-size: clamp(12px, 1.8vw, 14px);
   font-weight: bold;
   color: #fff;
   margin-bottom: 2px;
 }
+
 .card-stat {
-  font-size: 11px;
+  font-size: clamp(10px, 1.4vw, 11px);
   color: #aaa;
   line-height: 1.3;
 }
 
 .card-common { border-color: #576574; }
 .card-common .rarity-badge { background: #2f3640; color: #dcdde1; }
-
 .card-rare { border-color: #0984e3; box-shadow: 0 0 10px rgba(9, 132, 227, 0.25); }
 .card-rare .rarity-badge { background: #0984e3; color: #fff; }
-
 .card-legendary { border-color: #f1c40f; box-shadow: 0 0 14px rgba(241, 196, 15, 0.35); }
 .card-legendary .rarity-badge { background: #f1c40f; color: #000; }
 
-.card-btn {
-  width: 100%;
-  padding: 13px;
-  margin: 6px 0;
-  border-radius: 8px;
-  background: #232738;
-  color: #fff;
-  border: 1px solid #3e445e;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.card-btn:active {
-  background: #3e445e;
-  border-color: #f1c40f;
-  transform: scale(0.98);
-}
-.char-card {
-  background: #1c2033;
-  border: 1px solid #3d4463;
-  border-radius: 10px;
-  padding: 12px;
-  margin: 8px 0;
-  text-align: left;
-  cursor: pointer;
-}
-.char-card:active {
-  border-color: #f1c40f;
-  background: #262c47;
-}
-.char-name {
-  font-size: 14px;
-  font-weight: bold;
-  color: #f1c40f;
-  margin-bottom: 3px;
-}
-.char-desc {
-  font-size: 11px;
-  color: #bbb;
-  line-height: 1.35;
-}
 .chest-reward-item {
   background: rgba(241, 196, 15, 0.12);
   border: 1px solid #f1c40f;
-  padding: 10px;
+  padding: 8px 10px;
   border-radius: 8px;
   margin: 6px 0;
-  font-size: 13px;
+  font-size: clamp(11px, 1.6vw, 13px);
   font-weight: bold;
   color: #f1c40f;
   text-align: left;
+}
+
+/* Otimização especial para celular na horizontal (Landscape curto) */
+@media (max-height: 480px) and (orientation: landscape) {
+  .modal-box {
+    padding: 10px 14px;
+    max-height: 96dvh;
+  }
+  .modal-header {
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+  }
+  #char-list, #talents-list {
+    max-height: 52vh;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 6px;
+  }
+  .char-card, .talent-card {
+    padding: 8px;
+  }
+  .char-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 }

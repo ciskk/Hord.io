@@ -2,7 +2,16 @@ import { CHARACTERS } from '../config/characters.js';
 import { getRandomUpgrades, checkSynergies } from '../config/upgrades.js';
 import { playSfx, triggerHaptic, setGameVolume, initAudio, audioCtx } from '../core/audio.js';
 import { resetInput } from '../core/input.js';
-import { player, setSelectedHeroKey } from '../entities/player.js';
+import { 
+  player, 
+  setSelectedHeroKey, 
+  getPersistentGold, 
+  getMetaLevels, 
+  META_TALENTS, 
+  getMetaUpgradeCost, 
+  buyMetaUpgrade, 
+  resetMetaTree 
+} from '../entities/player.js';
 import { 
   gameState, 
   triggerShake, 
@@ -17,19 +26,19 @@ export function togglePause() {
   if (gameState.isDead || gameState.isWon) return;
   initAudio();
   gameState.isPaused = !gameState.isPaused;
-  document.getElementById('pause-modal').style.display = gameState.isPaused ? 'flex' : 'none';
+  const pauseModal = document.getElementById('pause-modal');
+  if (pauseModal) {
+    pauseModal.style.display = gameState.isPaused ? 'flex' : 'none';
+  }
   if (!gameState.isPaused) {
     setLastTime(performance.now());
   }
 }
 
-export function levelUp() {
-  playSfx('level');
-  gameState.isPaused = true;
-  resetInput();
-
+function renderUpgradeCards() {
   const modal = document.getElementById('upgrade-modal');
   const container = document.getElementById('upgrade-list');
+  if (!container || !modal) return;
   container.innerHTML = '';
 
   const options = getRandomUpgrades(3);
@@ -49,7 +58,31 @@ export function levelUp() {
     };
     container.appendChild(card);
   });
-  modal.style.display = 'flex';
+
+  const rerollBtn = document.getElementById('reroll-btn');
+  const rerollCount = document.getElementById('reroll-count');
+  if (rerollBtn && rerollCount) {
+    if (player.rerolls > 0) {
+      rerollCount.innerText = player.rerolls;
+      rerollBtn.style.display = 'block';
+      rerollBtn.onclick = () => {
+        player.rerolls--;
+        playSfx('level');
+        renderUpgradeCards();
+      };
+    } else {
+      rerollBtn.style.display = 'none';
+    }
+  }
+}
+
+export function levelUp() {
+  playSfx('level');
+  gameState.isPaused = true;
+  resetInput();
+  renderUpgradeCards();
+  const upgradeModal = document.getElementById('upgrade-modal');
+  if (upgradeModal) upgradeModal.style.display = 'flex';
 }
 
 export function openChestModal() {
@@ -59,6 +92,7 @@ export function openChestModal() {
 
   const modal = document.getElementById('chest-modal');
   const list = document.getElementById('chest-rewards-list');
+  if (!modal || !list) return;
   list.innerHTML = '';
 
   const syns = checkSynergies();
@@ -71,7 +105,7 @@ export function openChestModal() {
     evoItem.className = 'chest-reward-item';
     evoItem.style.borderColor = '#f1c40f';
     evoItem.style.background = 'rgba(241, 196, 15, 0.25)';
-    evoItem.innerHTML = `<span style="color:#f1c40f; font-size:14px;">EVOLUÇÃO LENDÁRIA!</span><br><b>${evo.name}</b><br><span style="font-size:11px; color:#ddd;">${evo.desc}</span>`;
+    evoItem.innerHTML = `<span style="color:#f1c40f; font-size:13px;">EVOLUÇÃO LENDÁRIA!</span><br><b>${evo.name}</b><br><span style="font-size:10px; color:#ddd;">${evo.desc}</span>`;
     list.appendChild(evoItem);
   }
 
@@ -80,22 +114,24 @@ export function openChestModal() {
     r.apply();
     const item = document.createElement('div');
     item.className = 'chest-reward-item';
-    item.innerHTML = `<b>${r.title}</b> • <span style="font-size:11px; color:#ddd;">${r.stat}</span>`;
+    item.innerHTML = `<b>${r.title}</b> • <span style="font-size:10px; color:#ddd;">${r.stat}</span>`;
     list.appendChild(item);
   });
 
   const claimBtn = document.getElementById('chest-claim-btn');
-  claimBtn.onclick = () => {
-    modal.style.display = 'none';
-    gameState.isPaused = false;
-    setLastTime(performance.now());
+  if (claimBtn) {
+    claimBtn.onclick = () => {
+      modal.style.display = 'none';
+      gameState.isPaused = false;
+      setLastTime(performance.now());
 
-    setCurrentArenaTheme('INDUSTRIAL');
-    setIsWavePaused(false);
-    resetSpawnTimer();
-    triggerShake(8);
-    playSfx('level');
-  };
+      setCurrentArenaTheme('INDUSTRIAL');
+      setIsWavePaused(false);
+      resetSpawnTimer();
+      triggerShake(8);
+      playSfx('level');
+    };
+  }
   modal.style.display = 'flex';
 }
 
@@ -103,10 +139,15 @@ export function triggerDeath() {
   gameState.isDead = true;
   resetInput();
   triggerHaptic('heavy');
-  const time = document.getElementById('timer-val').innerText;
-  document.getElementById('death-summary').innerHTML = 
-    `Tempo Sobrevivido: <b>${time}</b><br>Inimigos Abatidos: <b>${gameState.kills}</b><br>Nível de Poder: <b>${player.level}</b>`;
-  document.getElementById('death-modal').style.display = 'flex';
+  const timerElem = document.getElementById('timer-val');
+  const time = timerElem ? timerElem.innerText : '00:00';
+  const summary = document.getElementById('death-summary');
+  if (summary) {
+    summary.innerHTML = 
+      `Tempo Sobrevivido: <b>${time}</b><br>Inimigos Abatidos: <b>${gameState.kills}</b><br>Nível de Poder: <b>${player.level}</b><br>Ouro Acumulado: <b>${getPersistentGold()}</b>`;
+  }
+  const modal = document.getElementById('death-modal');
+  if (modal) modal.style.display = 'flex';
 }
 
 export function triggerVictory() {
@@ -116,18 +157,86 @@ export function triggerVictory() {
   playSfx('victory');
   triggerShake(20);
   triggerHaptic('heavy');
-  const time = document.getElementById('timer-val').innerText;
-  document.getElementById('victory-summary').innerHTML = 
-    `Tempo de Combate: <b>${time}</b><br>Monstros Expurgados: <b>${gameState.kills}</b><br>Nível Alcançado: <b>${player.level}</b><br>Status: <b>Soberano do Abismo Exterminado!</b>`;
-  document.getElementById('victory-modal').style.display = 'flex';
+  const timerElem = document.getElementById('timer-val');
+  const time = timerElem ? timerElem.innerText : '00:00';
+  const summary = document.getElementById('victory-summary');
+  if (summary) {
+    summary.innerHTML = 
+      `Tempo de Combate: <b>${time}</b><br>Monstros Expurgados: <b>${gameState.kills}</b><br>Nível Alcançado: <b>${player.level}</b><br>Status: <b>Soberano do Abismo Exterminado!</b><br>Ouro Total: <b>${getPersistentGold()}</b>`;
+  }
+  const modal = document.getElementById('victory-modal');
+  if (modal) modal.style.display = 'flex';
+}
+
+export function openTalentsModal() {
+  const charModal = document.getElementById('char-modal');
+  if (charModal) charModal.style.display = 'none';
+
+  const modal = document.getElementById('talents-modal');
+  const list = document.getElementById('talents-list');
+  const goldVal = document.getElementById('talents-gold-val');
+  if (!modal || !list) return;
+
+  function renderTree() {
+    if (goldVal) goldVal.innerText = getPersistentGold();
+    list.innerHTML = '';
+    const levels = getMetaLevels();
+
+    META_TALENTS.forEach(t => {
+      const curLvl = levels[t.id] || 0;
+      const isMax = curLvl >= t.maxLvl;
+      const cost = getMetaUpgradeCost(t.id, curLvl);
+      const canAfford = getPersistentGold() >= cost && !isMax;
+
+      const card = document.createElement('div');
+      card.className = 'talent-card';
+      card.innerHTML = `
+        <div class="talent-info">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+            <b style="color: #fff; font-size: 13px;">${t.name}</b>
+            <span style="font-size: 10px; color: #f1c40f; font-weight: bold;">Nv ${curLvl}/${t.maxLvl}</span>
+          </div>
+          <div style="font-size: 10px; color: #8c93a8; line-height: 1.35;">${t.desc}</div>
+        </div>
+        <button class="card-btn talent-buy-btn" ${!canAfford ? 'disabled' : ''} style="margin: 0; padding: 7px; font-size: 11px; background: ${canAfford ? '#f39c12' : '#22283a'}; color: ${canAfford ? '#000' : '#666'}; border-color: ${canAfford ? '#f1c40f' : '#2c334d'};">
+          ${isMax ? 'MÁXIMO' : `Comprar • 🪙 ${cost}`}
+        </button>
+      `;
+
+      const buyBtn = card.querySelector('.talent-buy-btn');
+      if (buyBtn && canAfford) {
+        buyBtn.onclick = () => {
+          if (buyMetaUpgrade(t.id)) {
+            playSfx('level');
+            renderTree();
+          }
+        };
+      }
+      list.appendChild(card);
+    });
+  }
+
+  renderTree();
+  modal.style.display = 'flex';
 }
 
 export function openCharacterSelect() {
-  document.getElementById('death-modal').style.display = 'none';
-  document.getElementById('victory-modal').style.display = 'none';
-  document.getElementById('pause-modal').style.display = 'none';
+  const talentsModal = document.getElementById('talents-modal');
+  if (talentsModal) talentsModal.style.display = 'none';
+
+  const deathModal = document.getElementById('death-modal');
+  if (deathModal) deathModal.style.display = 'none';
+
+  const victoryModal = document.getElementById('victory-modal');
+  if (victoryModal) victoryModal.style.display = 'none';
+
+  const pauseModal = document.getElementById('pause-modal');
+  if (pauseModal) pauseModal.style.display = 'none';
+
   const charModal = document.getElementById('char-modal');
   const list = document.getElementById('char-list');
+  if (!charModal || !list) return;
+
   list.innerHTML = '';
 
   Object.keys(CHARACTERS).forEach(key => {
@@ -135,8 +244,14 @@ export function openCharacterSelect() {
     const card = document.createElement('div');
     card.className = 'char-card';
     card.innerHTML = `
-      <div class="char-name">${c.name} <span style="font-size:11px; color:#aaa;">(${c.title})</span></div>
-      <div class="char-desc">${c.desc}</div>
+      <div>
+        <span class="char-badge">${c.title}</span>
+        <div class="char-name">${c.name}</div>
+        <div class="char-desc">${c.desc}</div>
+      </div>
+      <button class="card-btn" style="margin-top: 8px; padding: 7px; font-size: 11px; pointer-events: none; background: #20273d; border-color: #384266;">
+        Selecionar
+      </button>
     `;
     card.onclick = () => {
       setSelectedHeroKey(key);
@@ -150,20 +265,45 @@ export function openCharacterSelect() {
 }
 
 export function initUI() {
-  document.getElementById('pause-btn').addEventListener('click', togglePause);
-  document.getElementById('resume-btn').addEventListener('click', togglePause);
-  document.getElementById('abandon-btn').addEventListener('click', openCharacterSelect);
-  document.getElementById('restart-death-btn').addEventListener('click', openCharacterSelect);
-  document.getElementById('restart-victory-btn').addEventListener('click', openCharacterSelect);
+  const bindClick = (id, handler) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        handler(e);
+      });
+    }
+  };
+
+  bindClick('pause-btn', togglePause);
+  bindClick('resume-btn', togglePause);
+  bindClick('abandon-btn', openCharacterSelect);
+  bindClick('restart-death-btn', openCharacterSelect);
+  bindClick('restart-victory-btn', openCharacterSelect);
+
+  bindClick('open-talents-btn', openTalentsModal);
+  bindClick('close-talents-btn', () => {
+    const talentsModal = document.getElementById('talents-modal');
+    if (talentsModal) talentsModal.style.display = 'none';
+    openCharacterSelect();
+  });
+  bindClick('reset-talents-btn', () => {
+    resetMetaTree();
+    playSfx('chest');
+    openTalentsModal();
+  });
 
   const volumeSlider = document.getElementById('volume-slider');
-  volumeSlider.addEventListener('input', e => setGameVolume(e.target.value));
+  if (volumeSlider) {
+    volumeSlider.addEventListener('input', e => setGameVolume(e.target.value));
+  }
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       if (!gameState.isPaused && !gameState.isDead && !gameState.isWon) {
         gameState.isPaused = true;
-        document.getElementById('pause-modal').style.display = 'flex';
+        const pauseModal = document.getElementById('pause-modal');
+        if (pauseModal) pauseModal.style.display = 'flex';
         if (audioCtx && audioCtx.state === 'running') {
           audioCtx.suspend();
         }

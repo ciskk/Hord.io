@@ -59,6 +59,7 @@ export function spawnMobCluster(typeKey, count, eliteChance = 0) {
       dashAngle: 0,
       summonTimer: 0,
       shootTimer: Math.random() * 60,
+      stunTimer: 0,
       facing: 1,
       hitFlash: 0,
       orbitalHitCd: 0
@@ -116,6 +117,7 @@ export function triggerBossEncounter(bossIndex) {
     orbitalHitCd: 0,
     stateTimer: 0,
     teleportTimer: 0,
+    stunTimer: 0,
     phase: 1,
     beamAngle: 0
   };

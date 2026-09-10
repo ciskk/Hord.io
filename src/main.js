@@ -4,8 +4,11 @@ import {
   updateSkillUI, 
   initSkillUI, 
   fireWeapons, 
+  updateSpinningAxes,
   addXP, 
-  selectedHeroKey 
+  selectedHeroKey,
+  addPersistentGold,
+  getPersistentGold 
 } from './entities/player.js';
 import { inputX, inputY } from './core/input.js';
 import { clearSpatialGrid, insertIntoGrid, getNeighborIndices } from './core/spatialGrid.js';
@@ -16,15 +19,22 @@ import { initUI, openCharacterSelect, triggerDeath, triggerVictory, openChestMod
 import { render } from './render/renderer.js';
 import { playSfx, triggerHaptic } from './core/audio.js';
 
-// Canvas e Contexto
-export const canvas = document.getElementById('game-canvas');
-export const ctx = canvas.getContext('2d');
+export let canvas = null;
+export let ctx = null;
 
 export let dpr = 1;
 export let viewW = window.innerWidth;
 export let viewH = window.innerHeight;
 
 export function resize() {
+  if (!canvas) {
+    canvas = document.getElementById('game-canvas');
+  }
+  if (canvas && !ctx) {
+    ctx = canvas.getContext('2d');
+  }
+  if (!canvas) return;
+
   dpr = window.devicePixelRatio || 1;
   viewW = window.innerWidth;
   viewH = window.innerHeight;
@@ -33,11 +43,10 @@ export function resize() {
   canvas.style.width = viewW + 'px';
   canvas.style.height = viewH + 'px';
 }
+
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', () => { setTimeout(resize, 100); });
-resize();
 
-// Estado Global de Jogo
 export const gameState = {
   isPaused: true,
   isDead: false,
@@ -59,7 +68,6 @@ export function setCurrentArenaTheme(theme) { currentArenaTheme = theme; }
 export function setIsWavePaused(val) { gameState.isWavePaused = val; }
 export function triggerShake(intensity) { screenShake = Math.max(screenShake, intensity); }
 
-// Câmera e Coleções de Entidades
 export const camera = { x: 0, y: 0 };
 export let enemies = [];
 export let bullets = [];
@@ -77,6 +85,18 @@ export let bossProjectiles = [];
 export let activeBoss = null;
 
 export function setActiveBoss(boss) { activeBoss = boss; }
+
+export function getGemConfig(xp) {
+  if (xp >= 50) {
+    return { radius: 10.5, color: '#e056fd', isSuper: true };
+  } else if (xp >= 6) {
+    return { radius: 6.5, color: '#f1c40f', isSuper: false };
+  } else if (xp >= 3) {
+    return { radius: 5.0, color: '#2ecc71', isSuper: false };
+  } else {
+    return { radius: 3.5, color: '#00d2d3', isSuper: false };
+  }
+}
 
 export function addDamageText(x, y, text, isCrit = false, color = '#fff') {
   damageTexts.push({
@@ -134,7 +154,16 @@ function compressGems() {
     offscreen.forEach(idx => { accumulatedXp += gems[idx].value; });
     offscreen.sort((a, b) => b - a).forEach(idx => gems.splice(idx, 1));
 
-    gems.push({ x: targetX, y: targetY, radius: 7, value: accumulatedXp, isSuper: true });
+    const cfg = getGemConfig(accumulatedXp);
+    gems.push({ 
+      x: targetX, 
+      y: targetY, 
+      radius: cfg.radius, 
+      color: cfg.color, 
+      value: accumulatedXp, 
+      isSuper: cfg.isSuper,
+      pulseOffset: Math.random() * Math.PI * 2
+    });
   }
 }
 
@@ -172,13 +201,19 @@ export function resetGame() {
 
   updateSkillUI();
 
-  document.getElementById('boss-hud').style.display = 'none';
-  document.getElementById('freeze-overlay').style.display = 'none';
-  document.getElementById('death-modal').style.display = 'none';
-  document.getElementById('victory-modal').style.display = 'none';
-  document.getElementById('chest-modal').style.display = 'none';
-  document.getElementById('upgrade-modal').style.display = 'none';
-  document.getElementById('char-modal').style.display = 'none';
+  const hideEl = id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  };
+
+  hideEl('boss-hud');
+  hideEl('freeze-overlay');
+  hideEl('death-modal');
+  hideEl('victory-modal');
+  hideEl('chest-modal');
+  hideEl('upgrade-modal');
+  hideEl('talents-modal');
+  hideEl('char-modal');
 }
 
 function update(dt) {
@@ -188,16 +223,25 @@ function update(dt) {
 
   if (screenShake > 0) screenShake = Math.max(0, screenShake - 0.7 * dt);
 
+  const freezeOverlay = document.getElementById('freeze-overlay');
   if (freezeTimer > 0) {
     freezeTimer -= dt;
-    document.getElementById('freeze-overlay').style.display = 'block';
+    if (freezeOverlay) freezeOverlay.style.display = 'block';
   } else {
-    document.getElementById('freeze-overlay').style.display = 'none';
+    if (freezeOverlay) freezeOverlay.style.display = 'none';
   }
 
   if (player.iFrames > 0) player.iFrames = Math.max(0, player.iFrames - dt);
   if (player.skillCd > 0) player.skillCd = Math.max(0, player.skillCd - dt);
   if (player.invisTimer > 0) player.invisTimer = Math.max(0, player.invisTimer - dt);
+
+  // Timer de Frenesi do Bárbaro
+  if (player.berserkTimer > 0) {
+    player.berserkTimer = Math.max(0, player.berserkTimer - dt);
+    if (Math.floor(frameCount) % 5 === 0) {
+      createHitParticles(player.x + (Math.random() - 0.5) * 24, player.y + (Math.random() - 0.5) * 24, '#e74c3c', 2);
+    }
+  }
 
   let isSlowed = false;
   for (let e of enemies) {
@@ -212,6 +256,7 @@ function update(dt) {
   }
   player.speed = isSlowed ? player.baseSpeed * 0.65 : player.baseSpeed;
 
+  // Dash do Sir Roland
   if (player.dashDuration > 0) {
     player.dashDuration -= dt;
     player.x += player.dashVx * dt;
@@ -228,6 +273,12 @@ function update(dt) {
         addDamageText(e.x, e.y, Math.round(impactDmg), true, '#f1c40f');
         createHitParticles(e.x, e.y, '#f1c40f', 5);
 
+        if (player.slowChance > 0 && Math.random() < player.slowChance) {
+          e.slowTimer = 150;
+          e.slowFactor = 0.55;
+          createHitParticles(e.x, e.y, '#74b9ff', 3);
+        }
+
         if (e.isBoss && (e.hp / e.maxHp) < 0.45 && !e.isEnraged) {
           e.isEnraged = true;
           e.speed *= 1.35;
@@ -235,6 +286,36 @@ function update(dt) {
           playSfx('boss');
           addDamageText(e.x, e.y, "EM FÚRIA!", true, '#e74c3c');
         }
+      }
+    }
+  } 
+  // Dash da Ignis (Passo Ígneo Suave e Fluido)
+  else if (player.ignisDashDuration > 0) {
+    player.ignisDashDuration -= dt;
+    player.x += player.ignisDashVx * dt;
+    player.y += player.ignisDashVy * dt;
+    player.iFrames = Math.max(player.iFrames, 6);
+    createHitParticles(player.x, player.y, '#e67e22', 4);
+
+    if (Math.floor(frameCount) % 3 === 0) {
+      acidPuddles.push({
+        x: player.x,
+        y: player.y,
+        radius: 36,
+        life: 280,
+        maxLife: 280,
+        isFire: true
+      });
+    }
+
+    for (let e of enemies) {
+      const dSq = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
+      if (dSq < (player.radius + e.radius + 16) ** 2) {
+        let impactDmg = player.damage * 1.5;
+        if (e.isBoss) impactDmg *= 0.70;
+        e.hp -= impactDmg;
+        e.hitFlash = 3;
+        addDamageText(e.x, e.y, Math.round(impactDmg), true, '#e67e22');
       }
     }
   } else {
@@ -253,11 +334,9 @@ function update(dt) {
   camera.x = player.x - viewW / 2;
   camera.y = player.y - viewH / 2;
 
-  player.attackTimer += dt;
-  if (player.attackTimer >= player.attackCooldown) {
-    fireWeapons();
-    player.attackTimer = 0;
-  }
+  player.weapons.forEach(w => { w.timer += dt; });
+  fireWeapons();
+  updateSpinningAxes(dt);
 
   if (player.auraLvl > 0 || player.evolvedAura) {
     player.auraTimer += dt;
@@ -286,6 +365,12 @@ function update(dt) {
           if (isCrit) playSfx('crit');
           addDamageText(e.x, e.y, finalDmg, isCrit, '#f1c40f');
           createHitParticles(e.x, e.y, '#f1c40f', 2);
+
+          if (player.slowChance > 0 && Math.random() < player.slowChance) {
+            e.slowTimer = 150;
+            e.slowFactor = 0.55;
+            createHitParticles(e.x, e.y, '#74b9ff', 2);
+          }
 
           if (e.isBoss && (e.hp / e.maxHp) < 0.45 && !e.isEnraged) {
             e.isEnraged = true;
@@ -324,6 +409,12 @@ function update(dt) {
           if (isCrit) playSfx('crit');
           addDamageText(e.x, e.y, finalDmg, isCrit, '#3498db');
           createHitParticles(ox, oy, '#00d2d3', 3);
+
+          if (player.slowChance > 0 && Math.random() < player.slowChance) {
+            e.slowTimer = 150;
+            e.slowFactor = 0.55;
+            createHitParticles(e.x, e.y, '#74b9ff', 2);
+          }
 
           if (e.isBoss && (e.hp / e.maxHp) < 0.45 && !e.isEnraged) {
             e.isEnraged = true;
@@ -384,73 +475,185 @@ function update(dt) {
     }
   }
 
+  // Atualização dos Projéteis e Impactos
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
-    b.trail.unshift({ x: b.x, y: b.y });
-    if (b.trail.length > 5) b.trail.pop();
 
-    b.x += b.vx * dt;
-    b.y += b.vy * dt;
-    b.life -= dt;
+    if (b.type === 'HAMMER_SLAM') {
+      b.life -= dt;
 
-    const nearbyIndices = getNeighborIndices(b.x, b.y, b.radius + 20);
-    for (let k = 0; k < nearbyIndices.length; k++) {
-      const e = enemies[nearbyIndices[k]];
-      if (!e) continue;
-      const dx = e.x - b.x;
-      const dy = e.y - b.y;
-      const rSum = e.radius + b.radius;
-
-      if (dx * dx + dy * dy < rSum * rSum) {
-        let dmg = b.damage;
-        if (e.isBoss) dmg *= 0.70;
-
-        if (selectedHeroKey === 'ROGUE' && (e.hp / e.maxHp) < 0.35) {
-          dmg *= 2.5;
-        }
-
-        if (e.baseType === 'SHIELDED') {
-          const hitAngle = Math.atan2(b.y - e.y, b.x - e.x);
-          const faceAngle = e.facing > 0 ? 0 : Math.PI;
-          let diff = Math.abs(hitAngle - faceAngle);
-          if (diff > Math.PI) diff = Math.PI * 2 - diff;
-          if (diff < 1.1) {
-            dmg *= 0.25;
-            createHitParticles(b.x, b.y, '#b2bec3', 4);
-          }
-        }
-
-        const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
-        const finalDmg = isCrit ? dmg * player.critMult : dmg;
-
-        if (selectedHeroKey === 'MAGE' && isCrit) {
-          acidPuddles.push({ x: e.x, y: e.y, radius: 22, life: 140, maxLife: 140, isFire: true });
-        }
-
-        e.hp -= finalDmg;
-        e.hitFlash = 4;
-        playSfx('hit');
-        if (isCrit) playSfx('crit');
-        addDamageText(b.x, b.y, finalDmg, isCrit, '#ffffff');
-        createHitParticles(b.x, b.y, isCrit ? '#f1c40f' : '#00d2d3');
-
-        if (e.isBoss && (e.hp / e.maxHp) < 0.45 && !e.isEnraged) {
-          e.isEnraged = true;
-          e.speed *= 1.35;
-          triggerShake(15);
-          playSfx('boss');
-          addDamageText(e.x, e.y, "EM FÚRIA!", true, '#e74c3c');
-        }
-
-        b.piercing--;
-        if (b.piercing <= 0) {
-          b.life = 0;
-          break;
+      // SIR ROLAND: Destrói projéteis inimigos no raio do impacto sísmico
+      for (let bIdx = enemyBullets.length - 1; bIdx >= 0; bIdx--) {
+        const eb = enemyBullets[bIdx];
+        const edx = eb.x - b.x;
+        const edy = eb.y - b.y;
+        if (edx * edx + edy * edy < (b.radius + eb.radius) ** 2) {
+          createHitParticles(eb.x, eb.y, '#f1c40f', 5);
+          enemyBullets.splice(bIdx, 1);
         }
       }
-    }
 
-    if (b.life <= 0) bullets.splice(i, 1);
+      const nearbyIndices = getNeighborIndices(b.x, b.y, b.radius + 20);
+      for (let k = 0; k < nearbyIndices.length; k++) {
+        const e = enemies[nearbyIndices[k]];
+        if (!e || b.hitSet.has(e)) continue;
+
+        const dx = e.x - b.x;
+        const dy = e.y - b.y;
+        const distSq = dx * dx + dy * dy;
+
+        if (distSq < (e.radius + b.radius) ** 2) {
+          b.hitSet.add(e);
+          
+          const hitAngle = Math.atan2(dy, dx);
+          let diff = Math.abs(hitAngle - b.angle);
+          if (diff > Math.PI) diff = Math.PI * 2 - diff;
+
+          let angleMultiplier = 1.0;
+          if (diff > Math.PI * 0.6) {
+            angleMultiplier = 0.35;
+          } else if (diff > Math.PI * 0.25) {
+            angleMultiplier = 0.65;
+          }
+
+          let dmg = b.damage * angleMultiplier;
+          if (e.isBoss) dmg *= 0.70;
+
+          const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
+          const finalDmg = isCrit ? dmg * player.critMult : dmg;
+
+          e.hp -= finalDmg;
+          e.hitFlash = 5;
+          playSfx('hit');
+          if (isCrit) playSfx('crit');
+          addDamageText(e.x, e.y, Math.round(finalDmg), isCrit, '#f1c40f');
+          createHitParticles(e.x, e.y, '#f1c40f', Math.ceil(6 * angleMultiplier));
+
+          const pushDist = Math.sqrt(distSq) || 1;
+          const force = (b.isEvolved ? 52 : 36) * angleMultiplier;
+          e.x += (dx / pushDist) * force;
+          e.y += (dy / pushDist) * force;
+          triggerShake(5 * angleMultiplier);
+
+          if (player.slowChance > 0 && Math.random() < player.slowChance) {
+            e.slowTimer = 150;
+            e.slowFactor = 0.55;
+            createHitParticles(e.x, e.y, '#74b9ff', 3);
+          }
+
+          if (e.isBoss && (e.hp / e.maxHp) < 0.45 && !e.isEnraged) {
+            e.isEnraged = true;
+            e.speed *= 1.35;
+            triggerShake(15);
+            playSfx('boss');
+            addDamageText(e.x, e.y, "EM FÚRIA!", true, '#e74c3c');
+          }
+        }
+      }
+
+      if (b.life <= 0) {
+        bullets.splice(i, 1);
+        continue;
+      }
+    } else if (b.type === 'POTION') {
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.vy += 0.22 * dt;
+      b.angle = (b.angle || 0) + 0.22 * dt;
+      b.life -= dt;
+
+      if (b.life <= 0) {
+        playSfx('acid');
+        const landX = b.targetX !== undefined ? b.targetX : b.x;
+        const landY = b.targetY !== undefined ? b.targetY : b.y;
+        createHitParticles(landX, landY, '#2ecc71', 18);
+
+        acidPuddles.push({
+          x: landX,
+          y: landY,
+          radius: b.isEvolved ? 70 : 50,
+          life: 280,
+          maxLife: 280,
+          isFire: false,
+          isAlchemist: true,
+          damage: b.damage
+        });
+        bullets.splice(i, 1);
+        continue;
+      }
+    } else {
+      b.trail.unshift({ x: b.x, y: b.y });
+      if (b.trail.length > 5) b.trail.pop();
+
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.life -= dt;
+
+      const nearbyIndices = getNeighborIndices(b.x, b.y, b.radius + 20);
+      for (let k = 0; k < nearbyIndices.length; k++) {
+        const e = enemies[nearbyIndices[k]];
+        if (!e) continue;
+        const dx = e.x - b.x;
+        const dy = e.y - b.y;
+        const rSum = e.radius + b.radius;
+
+        if (dx * dx + dy * dy < rSum * rSum) {
+          let dmg = b.damage;
+          if (e.isBoss) dmg *= 0.70;
+
+          if (selectedHeroKey === 'ROGUE' && (e.hp / e.maxHp) < 0.35) {
+            dmg *= 2.5;
+          }
+
+          if (e.baseType === 'SHIELDED') {
+            const hitAngle = Math.atan2(b.y - e.y, b.x - e.x);
+            const faceAngle = e.facing > 0 ? 0 : Math.PI;
+            let diff = Math.abs(hitAngle - faceAngle);
+            if (diff > Math.PI) diff = Math.PI * 2 - diff;
+            if (diff < 1.1) {
+              dmg *= 0.25;
+              createHitParticles(b.x, b.y, '#b2bec3', 4);
+            }
+          }
+
+          const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
+          const finalDmg = isCrit ? dmg * player.critMult : dmg;
+
+          if (b.type === 'STAFF' && (isCrit || b.isEvolved)) {
+            acidPuddles.push({ x: e.x, y: e.y, radius: b.isEvolved ? 32 : 22, life: 140, maxLife: 140, isFire: true });
+          }
+
+          if (player.slowChance > 0 && Math.random() < player.slowChance) {
+            e.slowTimer = 150;
+            e.slowFactor = 0.55;
+            createHitParticles(e.x, e.y, '#74b9ff', 3);
+          }
+
+          e.hp -= finalDmg;
+          e.hitFlash = 4;
+          playSfx('hit');
+          if (isCrit) playSfx('crit');
+          addDamageText(b.x, b.y, finalDmg, isCrit, b.type === 'STAFF' ? '#e67e22' : '#ffffff');
+          createHitParticles(b.x, b.y, isCrit ? '#f1c40f' : (b.type === 'STAFF' ? '#e67e22' : '#00d2d3'));
+
+          if (e.isBoss && (e.hp / e.maxHp) < 0.45 && !e.isEnraged) {
+            e.isEnraged = true;
+            e.speed *= 1.35;
+            triggerShake(15);
+            playSfx('boss');
+            addDamageText(e.x, e.y, "EM FÚRIA!", true, '#e74c3c');
+          }
+
+          b.piercing--;
+          if (b.piercing <= 0) {
+            b.life = 0;
+            break;
+          }
+        }
+      }
+
+      if (b.life <= 0) bullets.splice(i, 1);
+    }
   }
 
   for (let i = bossTelegraphs.length - 1; i >= 0; i--) {
@@ -536,14 +739,19 @@ function update(dt) {
     const p = acidPuddles[i];
     p.life -= dt;
 
-    if (p.isFire) {
+    if (p.isFire || p.isAlchemist) {
       for (let e of enemies) {
         const dSq = (e.x - p.x) ** 2 + (e.y - p.y) ** 2;
         if (dSq < p.radius * p.radius) {
-          let puddleDmg = 0.65 * dt;
+          let puddleDmg = (p.isAlchemist ? 1.05 : 0.65) * dt;
           if (e.isBoss) puddleDmg *= 0.70;
           e.hp -= puddleDmg;
           e.hitFlash = 1;
+
+          if (p.isAlchemist) {
+            e.slowTimer = 40;
+            e.slowFactor = 0.50;
+          }
         }
       }
     } else {
@@ -571,13 +779,24 @@ function update(dt) {
     if (e.hitFlash > 0) e.hitFlash -= dt;
     if (e.orbitalHitCd > 0) e.orbitalHitCd -= dt;
 
+    // Atordoamento (Stun) do Rugido de Kragdor
+    if (e.stunTimer > 0) {
+      e.stunTimer -= dt;
+      continue;
+    }
+
     if (freezeTimer <= 0) {
       const targetX = player.invisTimer > 0 ? (e.x + Math.sin(frameCount * 0.05 + i) * 120) : player.x;
       const targetY = player.invisTimer > 0 ? (e.y + Math.cos(frameCount * 0.05 + i) * 120) : player.y;
 
       const angle = Math.atan2(targetY - e.y, targetX - e.x);
       e.facing = (targetX - e.x) > 0 ? 1 : -1;
+      
       let curSpeed = e.speed;
+      if (e.slowTimer > 0) {
+        e.slowTimer -= dt;
+        curSpeed *= (1 - (e.slowFactor || 0.5));
+      }
 
       if (e.isBoss) {
         e.stateTimer = (e.stateTimer || 0) + dt;
@@ -724,22 +943,30 @@ function update(dt) {
         e.x += Math.cos(angle + Math.sin(frameCount * 0.1) * 0.4) * curSpeed * dt;
         e.y += Math.sin(angle + Math.sin(frameCount * 0.1) * 0.4) * curSpeed * dt;
       } else if (e.behavior === 'shooter') {
-        const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
-        if (distToPlayerSq < 170 * 170) {
-          e.x -= Math.cos(angle) * curSpeed * dt;
-          e.y -= Math.sin(angle) * curSpeed * dt;
-        } else if (distToPlayerSq > 240 * 240) {
-          e.x += Math.cos(angle) * curSpeed * dt;
-          e.y += Math.sin(angle) * curSpeed * dt;
-        }
-        e.shootTimer += dt;
-        if (e.shootTimer >= 110) {
-          e.shootTimer = 0;
-          enemyBullets.push({
-            x: e.x, y: e.y,
-            vx: Math.cos(angle) * 4.2, vy: Math.sin(angle) * 4.2,
-            radius: 5, damage: 13, life: 95
-          });
+        // KAEL: Atiradores param completamente de disparar se o jogador estiver invisível
+        const isPlayerVisible = player.invisTimer <= 0;
+        
+        if (isPlayerVisible) {
+          const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
+          if (distToPlayerSq < 170 * 170) {
+            e.x -= Math.cos(angle) * curSpeed * dt;
+            e.y -= Math.sin(angle) * curSpeed * dt;
+          } else if (distToPlayerSq > 240 * 240) {
+            e.x += Math.cos(angle) * curSpeed * dt;
+            e.y += Math.sin(angle) * curSpeed * dt;
+          }
+          e.shootTimer += dt;
+          if (e.shootTimer >= 110) {
+            e.shootTimer = 0;
+            enemyBullets.push({
+              x: e.x, y: e.y,
+              vx: Math.cos(angle) * 4.2, vy: Math.sin(angle) * 4.2,
+              radius: 5, damage: 13, life: 95
+            });
+          }
+        } else {
+          e.x += Math.cos(angle) * curSpeed * 0.3 * dt;
+          e.y += Math.sin(angle) * curSpeed * 0.3 * dt;
         }
       } else if (e.behavior === 'dash') {
         e.dashTimer = (e.dashTimer || 0) + dt;
@@ -868,25 +1095,75 @@ function update(dt) {
             xp: subT.xp,
             facing: 1,
             hitFlash: 0,
-            orbitalHitCd: 0
+            orbitalHitCd: 0,
+            slowTimer: 0,
+            slowFactor: 0,
+            stunTimer: 0
           });
         }
       }
 
+      if (Math.random() < 0.28 || e.isElite) {
+        const goldVal = e.isElite ? 5 : 1;
+        addPersistentGold(goldVal);
+      }
+
       if (e.isBoss) {
-        triggerShake(18);
+        triggerShake(20);
         triggerHaptic('heavy');
+        
+        const bossXp = e.xp || 400;
+        gems.push({
+          x: e.x,
+          y: e.y,
+          radius: 12,
+          color: '#e056fd',
+          value: Math.floor(bossXp * 0.65),
+          isSuper: true,
+          forcedPull: true,
+          pulseOffset: 0
+        });
+
+        for (let k = 0; k < 4; k++) {
+          const bAngle = (k * Math.PI * 2) / 4;
+          gems.push({
+            x: e.x + Math.cos(bAngle) * 36,
+            y: e.y + Math.sin(bAngle) * 36,
+            radius: 9,
+            color: '#e056fd',
+            value: Math.floor(bossXp * 0.09),
+            isSuper: true,
+            forcedPull: true,
+            pulseOffset: k
+          });
+        }
+
+        const bossGold = 120 * (e.bossId || 1);
+        addPersistentGold(bossGold);
+        addDamageText(e.x, e.y - 18, `+${bossGold} OURO!`, true, '#f1c40f');
+
         if (e.isFinalBoss) {
           triggerVictory();
           return;
         }
+
         chests.push({ x: e.x, y: e.y, radius: 16 });
         activeBoss = null;
         bossTelegraphs.length = 0;
         bossProjectiles.length = 0;
-        document.getElementById('boss-hud').style.display = 'none';
+        const bossHud = document.getElementById('boss-hud');
+        if (bossHud) bossHud.style.display = 'none';
       } else {
-        gems.push({ x: e.x, y: e.y, radius: 4, value: e.xp, isSuper: false });
+        const gCfg = getGemConfig(e.xp);
+        gems.push({
+          x: e.x,
+          y: e.y,
+          radius: gCfg.radius,
+          color: gCfg.color,
+          value: e.xp,
+          isSuper: gCfg.isSuper,
+          pulseOffset: Math.random() * Math.PI * 2
+        });
       }
 
       enemies.splice(i, 1);
@@ -996,29 +1273,47 @@ function update(dt) {
     return (dx * dx + dy * dy) < despawnDistSq;
   });
 
-  document.getElementById('hp-val').innerText = Math.max(0, Math.ceil(player.hp));
-  document.getElementById('hp-fill').style.width = `${Math.max(0, (player.hp / player.maxHp) * 100)}%`;
-  document.getElementById('lvl-val').innerText = player.level;
-  document.getElementById('kills-val').innerText = gameState.kills;
-  document.getElementById('xp-fill').style.width = `${Math.min(100, (player.xp / player.nextXp) * 100)}%`;
+  const hpVal = document.getElementById('hp-val');
+  if (hpVal) hpVal.innerText = Math.max(0, Math.ceil(player.hp));
+
+  const hpFill = document.getElementById('hp-fill');
+  if (hpFill) hpFill.style.width = `${Math.max(0, (player.hp / player.maxHp) * 100)}%`;
+
+  const lvlVal = document.getElementById('lvl-val');
+  if (lvlVal) lvlVal.innerText = player.level;
+
+  const killsVal = document.getElementById('kills-val');
+  if (killsVal) killsVal.innerText = gameState.kills;
+
+  const xpFill = document.getElementById('xp-fill');
+  if (xpFill) xpFill.style.width = `${Math.min(100, (player.xp / player.nextXp) * 100)}%`;
+
+  const goldVal = document.getElementById('gold-val');
+  if (goldVal) goldVal.innerText = getPersistentGold();
   
-  if (gameState.isWavePaused && !activeBoss) {
-    document.getElementById('wave-banner').innerText = "ABRA O BAÚ PARA CONTINUAR!";
-  } else {
-    document.getElementById('wave-banner').innerText = currentWave.name;
+  const waveBanner = document.getElementById('wave-banner');
+  if (waveBanner) {
+    if (gameState.isWavePaused && !activeBoss) {
+      waveBanner.innerText = "ABRA O BAÚ PARA CONTINUAR!";
+    } else {
+      waveBanner.innerText = currentWave.name;
+    }
   }
 
   updateSkillUI();
 
   if (activeBoss) {
     const bossHpPct = Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100);
-    document.getElementById('boss-hp-fill').style.width = `${bossHpPct}%`;
-    document.getElementById('boss-hp-val').innerText = `${Math.ceil(bossHpPct)}%`;
+    const bossHpFill = document.getElementById('boss-hp-fill');
+    if (bossHpFill) bossHpFill.style.width = `${bossHpPct}%`;
+    const bossHpVal = document.getElementById('boss-hp-val');
+    if (bossHpVal) bossHpVal.innerText = `${Math.ceil(bossHpPct)}%`;
   }
 
   const m = String(Math.floor(seconds / 60)).padStart(2, '0');
   const s = String(seconds % 60).padStart(2, '0');
-  document.getElementById('timer-val').innerText = `${m}:${s}`;
+  const timerVal = document.getElementById('timer-val');
+  if (timerVal) timerVal.innerText = `${m}:${s}`;
 }
 
 function loop(now) {
@@ -1034,8 +1329,36 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
-// Inicialização de UI, Habilidades e Loop
-initSkillUI();
-initUI();
-openCharacterSelect();
-requestAnimationFrame(loop);
+function startApplication() {
+  try {
+    resize();
+  } catch (err) {
+    console.warn('Aviso: Falha ao redimensionar Canvas:', err);
+  }
+
+  try {
+    initSkillUI();
+  } catch (err) {
+    console.warn('Aviso: Falha ao inicializar Skill UI:', err);
+  }
+
+  try {
+    initUI();
+  } catch (err) {
+    console.error('Erro crítico ao inicializar UI base:', err);
+  }
+
+  try {
+    openCharacterSelect();
+  } catch (err) {
+    console.error('Erro crítico ao abrir seletor de personagens:', err);
+  }
+
+  requestAnimationFrame(loop);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startApplication);
+} else {
+  startApplication();
+}
