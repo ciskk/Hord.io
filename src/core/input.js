@@ -160,6 +160,31 @@ window.addEventListener('keyup', e => {
   updateKeyboardVector();
 });
 
+// Bloqueia zoom via Mouse Wheel e Touchpad Pinch (Ctrl + Scroll / Pinça)
+window.addEventListener('wheel', e => {
+  if (e.ctrlKey) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
+// Bloqueia atalhos de teclado de zoom (Ctrl +, Ctrl -, Ctrl 0 no teclado normal e numérico)
+window.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey) {
+    const zoomKeys = [
+      'Equal',          // Tecla + / =
+      'Minus',          // Tecla -
+      'NumpadAdd',      // + no numpad
+      'NumpadSubtract', // - no numpad
+      'Digit0',         // 0
+      'Numpad0'         // 0 no numpad
+    ];
+
+    if (zoomKeys.includes(e.code) || e.key === '+' || e.key === '-' || e.key === '=') {
+      e.preventDefault();
+    }
+  }
+}, { passive: false });
+
 // Habilidade ativada com Botão Direito do Mouse (sem abrir menu de contexto nativo)
 window.addEventListener('contextmenu', e => {
   e.preventDefault();

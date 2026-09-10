@@ -10,8 +10,6 @@ import {
   bossProjectiles, 
   gems, 
   props, 
-  viewW, 
-  viewH, 
   frameCount, 
   gameState, 
   triggerShake, 
@@ -21,10 +19,61 @@ import {
   setIsWavePaused 
 } from '../main.js';
 
-// Spawns de Criaturas Normais
+// Constantes canônicas do motor (independente de zoom de tela ou DPI)
+export const MAX_ACTIVE_ENEMIES = 110;
+export const CANONICAL_SPAWN_DIST = 680;
+
+// Compressão de massa invisível: absorve atributos do spawn excedente em monstros fora da tela
+function stackOffscreenMob(typeKey, count) {
+  const t = ENEMY_TYPES[typeKey];
+  if (!t) return;
+  let bestEnemy = null;
+  let maxDistSq = 0;
+  const thresholdSq = 580 * 580;
+
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    if (e.isBoss || e.isMiniBoss) continue;
+    const dx = e.x - player.x;
+    const dy = e.y - player.y;
+    const dSq = dx * dx + dy * dy;
+    if (dSq > thresholdSq && dSq > maxDistSq) {
+      maxDistSq = dSq;
+      bestEnemy = e;
+    }
+  }
+
+  if (bestEnemy) {
+    const seconds = Math.floor(frameCount / 60);
+    const scaling = 1 + Math.pow(seconds / 60, 1.35) * 0.45;
+    const addHp = t.hp * scaling * count * 0.85;
+    bestEnemy.hp += addHp;
+    bestEnemy.maxHp += addHp;
+    bestEnemy.xp += t.xp * count;
+    bestEnemy.damage = Math.min(bestEnemy.damage * 1.25, bestEnemy.damage + Math.round(count * 1.5));
+    bestEnemy.radius = Math.min(bestEnemy.radius * 1.15, t.radius * 1.4);
+  }
+}
+
+// Spawns de Criaturas Normais com Hard Cap e Distância Fixa
 export function spawnMobCluster(typeKey, count, eliteChance = 0) {
+  if (gameState.isWavePaused) return;
+
+  if (enemies.length >= MAX_ACTIVE_ENEMIES) {
+    stackOffscreenMob(typeKey, count);
+    return;
+  }
+
+  let toSpawn = count;
+  if (enemies.length + toSpawn > MAX_ACTIVE_ENEMIES) {
+    const overflow = (enemies.length + toSpawn) - MAX_ACTIVE_ENEMIES;
+    stackOffscreenMob(typeKey, overflow);
+    toSpawn -= overflow;
+  }
+  if (toSpawn <= 0) return;
+
   const angle = Math.random() * Math.PI * 2;
-  const spawnDistance = Math.max(viewW, viewH) * 0.65 + 70;
+  const spawnDistance = CANONICAL_SPAWN_DIST + (Math.random() - 0.5) * 50;
   const cx = player.x + Math.cos(angle) * spawnDistance;
   const cy = player.y + Math.sin(angle) * spawnDistance;
   const t = ENEMY_TYPES[typeKey];
@@ -32,15 +81,15 @@ export function spawnMobCluster(typeKey, count, eliteChance = 0) {
   const scaling = 1 + Math.pow(seconds / 60, 1.35) * 0.45;
   const boss1Mult = firstBossKilled ? 1.25 : 1.0;
 
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < toSpawn; i++) {
     const isElite = Math.random() < eliteChance;
     const eliteMods = ['FROST', 'HASTE', 'TOXIC'];
     const mod = isElite ? eliteMods[Math.floor(Math.random() * eliteMods.length)] : null;
     const hpMult = isElite ? 2.6 : 1.0;
     const radMult = isElite ? 1.35 : 1.0;
 
-    const offsetX = (Math.random() - 0.5) * 90;
-    const offsetY = (Math.random() - 0.5) * 90;
+    const offsetX = (Math.random() - 0.5) * 80;
+    const offsetY = (Math.random() - 0.5) * 80;
 
     enemies.push({
       x: cx + offsetX,
@@ -69,13 +118,13 @@ export function spawnMobCluster(typeKey, count, eliteChance = 0) {
   }
 }
 
-// Fábrica de Mini Bosses Independentes
+// Fábrica de Mini Bosses com Raio Fixo Canônico
 export function spawnMiniBoss(typeKey) {
   const t = MINI_BOSS_TYPES[typeKey];
   if (!t) return null;
 
   const angle = Math.random() * Math.PI * 2;
-  const spawnDistance = Math.max(viewW, viewH) * 0.7 + 60;
+  const spawnDistance = CANONICAL_SPAWN_DIST + 40;
   const seconds = Math.floor(frameCount / 60);
   const scaling = 1 + Math.pow(seconds / 60, 1.35) * 0.38;
   const scaledHp = Math.round(t.hp * scaling);
@@ -190,7 +239,7 @@ export function triggerBossEncounter(bossIndex) {
 export function spawnProp() {
   if (props.length >= 10 || gameState.isWavePaused) return;
   const angle = Math.random() * Math.PI * 2;
-  const dist = Math.random() * 450 + 260;
+  const dist = Math.random() * 320 + 380;
   props.push({
     x: player.x + Math.cos(angle) * dist,
     y: player.y + Math.sin(angle) * dist,
