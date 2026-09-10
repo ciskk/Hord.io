@@ -1,9 +1,60 @@
-import { triggerBossEncounter } from '../entities/enemies.js';
+import { triggerBossEncounter, spawnMiniBoss } from '../entities/enemies.js';
 
 export let bossesDefeated = { m1: false, m2: false, m3: false, final: false };
+export let firstBossKilled = false;
+
+export function setFirstBossKilled(val) {
+  firstBossKilled = val;
+}
 
 export function resetBossesDefeated() {
   bossesDefeated = { m1: false, m2: false, m3: false, final: false };
+  firstBossKilled = false;
+}
+
+export const miniBossSchedule = [
+  // Onda 2 (25s–55s): 30% = 34s, 70% = 46s
+  { time: 34, type: 'BLOOD_GARGOYLE', spawned: false },
+  { time: 46, type: 'ZOMBIE_ALPHA', spawned: false },
+  // Onda 3 (55s–90s): 30% = 65s, 70% = 79s
+  { time: 65, type: 'PHALANX_LEADER', spawned: false },
+  { time: 79, type: 'SEISMIC_SMASHER', spawned: false },
+  // Onda 4 (90s–130s): 30% = 102s, 70% = 118s
+  { time: 102, type: 'ARTILLERY_MECH', spawned: false },
+  { time: 118, type: 'FIRE_INCINERATOR', spawned: false },
+  // Onda 5 (130s–170s): 30% = 142s, 70% = 158s
+  { time: 142, type: 'BROOD_MATRIARCH', spawned: false },
+  { time: 158, type: 'SPECTRAL_STALKER', spawned: false },
+  // Onda 6 (170s–210s): 30% = 182s, 70% = 198s
+  { time: 182, type: 'HIGH_OCCULTIST', spawned: false },
+  { time: 198, type: 'RUNIC_WARDEN', spawned: false },
+  // Onda 7 (210s–250s): 30% = 222s, 70% = 238s
+  { time: 222, type: 'RUST_COLOSSUS', spawned: false },
+  { time: 238, type: 'SIEGE_CAPTAIN', spawned: false },
+  // Onda 8 (250s–290s): 30% = 262s, 70% = 278s
+  { time: 262, type: 'MOBILE_HIVE', spawned: false },
+  { time: 278, type: 'QUANTUM_SLICER', spawned: false },
+  // Ondas 9 e 10 (290s+): Clímax e Repetições
+  { time: 302, type: 'VOID_PRECURSOR', spawned: false },
+  { time: 322, type: 'CHAOS_HERALD', spawned: false },
+  { time: 360, type: 'VOID_PRECURSOR', spawned: false },
+  { time: 380, type: 'CHAOS_HERALD', spawned: false }
+];
+
+export function resetMiniBossSchedule() {
+  for (let i = 0; i < miniBossSchedule.length; i++) {
+    miniBossSchedule[i].spawned = false;
+  }
+}
+
+export function checkMiniBossSchedule(seconds) {
+  for (let i = 0; i < miniBossSchedule.length; i++) {
+    const entry = miniBossSchedule[i];
+    if (seconds >= entry.time && !entry.spawned) {
+      entry.spawned = true;
+      spawnMiniBoss(entry.type);
+    }
+  }
 }
 
 export function checkBossSchedule(seconds) {

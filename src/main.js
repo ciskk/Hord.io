@@ -14,7 +14,14 @@ import { inputX, inputY } from './core/input.js';
 import { clearSpatialGrid, insertIntoGrid, getNeighborIndices } from './core/spatialGrid.js';
 import { spawnMobCluster, spawnProp } from './entities/enemies.js';
 import { ENEMY_TYPES } from './config/enemies.js';
-import { getCurrentWave, checkBossSchedule, resetBossesDefeated } from './systems/waves.js';
+import { 
+  getCurrentWave, 
+  checkBossSchedule, 
+  resetBossesDefeated, 
+  checkMiniBossSchedule, 
+  resetMiniBossSchedule,
+  setFirstBossKilled 
+} from './systems/waves.js';
 import { initUI, openCharacterSelect, triggerDeath, triggerVictory, openChestModal } from './systems/ui.js';
 import { render } from './render/renderer.js';
 import { playSfx, triggerHaptic } from './core/audio.js';
@@ -191,6 +198,7 @@ export function resetGame() {
   activeBoss = null;
 
   resetBossesDefeated();
+  resetMiniBossSchedule();
   currentArenaTheme = 'INDUSTRIAL';
   gameState.isWavePaused = false;
   gameState.kills = 0;
@@ -321,7 +329,7 @@ function update(dt) {
       if (dSq < (player.radius + e.radius + 18) ** 2) {
         let impactDmg = player.damage * 1.8;
         if (e.isBoss) {
-          impactDmg *= 0.70;
+          impactDmg *= 0.60;
           if (e.isVulnerable) impactDmg *= 1.25; // Janela de vulnerabilidade do Monólito
         }
         e.hp -= impactDmg;
@@ -371,7 +379,7 @@ function update(dt) {
       if (dSq < (player.radius + e.radius + 16) ** 2) {
         let impactDmg = player.damage * 1.5;
         if (e.isBoss) {
-          impactDmg *= 0.70;
+          impactDmg *= 0.60;
           if (e.isVulnerable) impactDmg *= 1.25;
         }
         e.hp -= impactDmg;
@@ -421,7 +429,7 @@ function update(dt) {
         if (dx * dx + dy * dy < aRadiusSq) {
           let currentAuraDmg = auraDmg;
           if (e.isBoss) {
-            currentAuraDmg *= 0.70;
+            currentAuraDmg *= 0.60;
             if (e.isVulnerable) currentAuraDmg *= 1.25;
           }
           const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
@@ -466,7 +474,7 @@ function update(dt) {
         if (dx * dx + dy * dy < rSum * rSum) {
           let dmg = player.damage * (player.evolvedOrbitals ? 1.2 : 0.75);
           if (e.isBoss) {
-            dmg *= 0.70;
+            dmg *= 0.60;
             if (e.isVulnerable) dmg *= 1.25;
           }
           const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
@@ -498,6 +506,7 @@ function update(dt) {
   }
 
   checkBossSchedule(seconds);
+  checkMiniBossSchedule(seconds);
 
   if (!gameState.isWavePaused) {
     spawnTimer += dt;
@@ -586,7 +595,7 @@ function update(dt) {
 
           let dmg = b.damage * angleMultiplier;
           if (e.isBoss) {
-            dmg *= 0.70;
+            dmg *= 0.60;
             if (e.isVulnerable) dmg *= 1.25;
           }
 
@@ -673,7 +682,7 @@ function update(dt) {
 
           let dmg = b.damage;
           if (e.isBoss) {
-            dmg *= 0.70;
+            dmg *= 0.60;
             if (e.isVulnerable) dmg *= 1.25;
           }
 
@@ -681,7 +690,7 @@ function update(dt) {
             dmg *= e.isBoss ? 1.4 : 2.5;
           }
 
-          if (e.baseType === 'SHIELDED') {
+          if (e.baseType === 'SHIELDED' || e.behavior === 'shielded') {
             const hitAngle = Math.atan2(b.y - e.y, b.x - e.x);
             const faceAngle = e.facing > 0 ? 0 : Math.PI;
             let diff = Math.abs(hitAngle - faceAngle);
@@ -689,6 +698,20 @@ function update(dt) {
             if (diff < 1.1) {
               dmg *= 0.25;
               createHitParticles(b.x, b.y, '#b2bec3', 4);
+
+              // Mini Bosses com escudo refletem parte dos projéteis
+              if (e.isMiniBoss) {
+                enemyBullets.push({
+                  x: b.x,
+                  y: b.y,
+                  vx: -b.vx * 0.5,
+                  vy: -b.vy * 0.5,
+                  radius: 5,
+                  damage: Math.round(e.damage * 0.5),
+                  life: 60
+                });
+                playSfx('hit');
+              }
             }
           }
 
@@ -821,7 +844,7 @@ function update(dt) {
         radius: 12,
         maxRadius: (tel.radius || 75) * 1.85,
         speed: 3.4,
-        damage: 22,
+        damage: Math.round(tel.damage * 0.5),
         hitPlayer: false
       });
 
@@ -929,7 +952,7 @@ function update(dt) {
           let baseRate = p.isAlchemist ? ((p.damage || 32) * 0.033) : 0.65;
           let puddleDmg = baseRate * dt;
           if (e.isBoss) {
-            puddleDmg *= 0.70;
+            puddleDmg *= 0.60;
             if (e.isVulnerable) puddleDmg *= 1.25;
           }
           e.hp -= puddleDmg;
@@ -1027,15 +1050,16 @@ function update(dt) {
             createHitParticles(e.x, e.y, '#8e44ad', 3);
             e.mistDuration -= dt;
 
-            // Dano de passagem da névoa
+            // Dano de passagem da névoa baseado no dano base do chefe
             const mdx = player.x - e.x;
             const mdy = player.y - e.y;
             if (mdx * mdx + mdy * mdy < (player.radius + e.radius * 0.8) ** 2 && player.iFrames <= 0) {
-              player.hp -= 20;
+              const mistDmg = Math.round(e.damage * 0.65);
+              player.hp -= mistDmg;
               player.iFrames = 25;
               triggerShake(8);
               playSfx('hit');
-              addDamageText(player.x, player.y, "-20", false, '#8e44ad');
+              addDamageText(player.x, player.y, `-${mistDmg}`, false, '#8e44ad');
             }
 
             if (e.mistDuration <= 0) {
@@ -1050,7 +1074,7 @@ function update(dt) {
                 enemyBullets.push({
                   x: e.x, y: e.y,
                   vx: Math.cos(fAng) * 4.8, vy: Math.sin(fAng) * 4.8,
-                  radius: 6, damage: 9, life: 110
+                  radius: 6, damage: Math.round(e.damage * 0.28), life: 110
                 });
               }
             }
@@ -1087,7 +1111,7 @@ function update(dt) {
                     enemyBullets.push({
                       x: e.x, y: e.y,
                       vx: Math.cos(fAng) * spd, vy: Math.sin(fAng) * spd,
-                      radius: 6, damage: 10, life: 110
+                      radius: 6, damage: Math.round(e.damage * 0.30), life: 110
                     });
                   }
                 }
@@ -1099,7 +1123,7 @@ function update(dt) {
                   enemyBullets.push({
                     x: e.x, y: e.y,
                     vx: Math.cos(fAng) * 4.8, vy: Math.sin(fAng) * 4.8,
-                    radius: 6, damage: 8, life: 110
+                    radius: 6, damage: Math.round(e.damage * 0.25), life: 110
                   });
                 }
                 playSfx('shoot');
@@ -1121,7 +1145,7 @@ function update(dt) {
               radius: 52,
               timer: 36,
               maxTimer: 36,
-              damage: 22,
+              damage: Math.round(e.damage * 0.70),
               type: 'VAMPIRE_TELEPORT',
               boss: e
             });
@@ -1147,7 +1171,7 @@ function update(dt) {
                 vx: Math.cos(orbAng) * 4.6,
                 vy: Math.sin(orbAng) * 4.6,
                 radius: 14,
-                damage: 34,
+                damage: Math.round(e.damage * 0.55),
                 life: 180,
                 maxLife: 180
               });
@@ -1186,7 +1210,7 @@ function update(dt) {
                   radius: e.isEnraged ? 85 : 75,
                   timer: 65,
                   maxTimer: 65,
-                  damage: 42
+                  damage: Math.round(e.damage * 0.60)
                 });
               }
               if (e.isEnraged) {
@@ -1196,7 +1220,7 @@ function update(dt) {
                   radius: 135,
                   timer: 50,
                   maxTimer: 50,
-                  damage: 50
+                  damage: Math.round(e.damage * 0.70)
                 });
                 triggerShake(8);
               }
@@ -1223,7 +1247,7 @@ function update(dt) {
                 hp: 140,
                 maxHp: 140,
                 color: '#00cec9',
-                damage: 16,
+                damage: Math.round(e.damage * 0.20),
                 behavior: 'chase',
                 xp: 2,
                 facing: 1,
@@ -1254,7 +1278,7 @@ function update(dt) {
                 angle: cleaveAngle,
                 timer: 24,
                 maxTimer: 24,
-                damage: 54,
+                damage: Math.round(e.damage * 0.80),
                 boss: e
               });
             };
@@ -1271,14 +1295,14 @@ function update(dt) {
               bossProjectiles.push({
                 x: e.x, y: e.y,
                 vx: Math.cos(sAng) * 6.5, vy: Math.sin(sAng) * 6.5,
-                radius: 20, damage: 45, life: 160, maxLife: 160
+                radius: 20, damage: Math.round(e.damage * 0.60), life: 160, maxLife: 160
               });
               if (e.isEnraged) {
                 const oppAng = sAng + Math.PI;
                 bossProjectiles.push({
                   x: e.x, y: e.y,
                   vx: Math.cos(oppAng) * 6.5, vy: Math.sin(oppAng) * 6.5,
-                  radius: 20, damage: 45, life: 160, maxLife: 160
+                  radius: 20, damage: Math.round(e.damage * 0.60), life: 160, maxLife: 160
                 });
               }
               playSfx('shoot');
@@ -1305,7 +1329,7 @@ function update(dt) {
                   radius: 48,
                   life: 340,
                   maxLife: 340,
-                  damage: 13,
+                  damage: Math.round(e.damage * 0.15),
                   tickTimer: 0
                 });
               }
@@ -1341,11 +1365,12 @@ function update(dt) {
                 const perpX = px - proj * bx;
                 const perpY = py - proj * by;
                 if (perpX * perpX + perpY * perpY < 18 * 18 && player.iFrames <= 0) {
-                  player.hp -= 24;
+                  const laserDmg = Math.round(e.damage * 0.35);
+                  player.hp -= laserDmg;
                   player.iFrames = 22;
                   triggerShake(9);
                   playSfx('hit');
-                  addDamageText(player.x, player.y, "-24", false, '#9b59b6');
+                  addDamageText(player.x, player.y, `-${laserDmg}`, false, '#9b59b6');
                 }
               }
             }
@@ -1371,7 +1396,7 @@ function update(dt) {
             enemyBullets.push({
               x: e.x, y: e.y,
               vx: Math.cos(spAng) * 4.2, vy: Math.sin(spAng) * 4.2,
-              radius: 5, damage: 18, life: 130
+              radius: 5, damage: Math.round(e.damage * 0.20), life: 130
             });
           }
         }
@@ -1462,6 +1487,75 @@ function update(dt) {
           spawnMobCluster('ZOMBIE', 2);
           addDamageText(e.x, e.y, 'INVOCAR!', false, '#9b59b6');
         }
+      } else if (e.behavior === 'ground_slam') {
+        e.x += Math.cos(angle) * curSpeed * dt;
+        e.y += Math.sin(angle) * curSpeed * dt;
+        e.slamTimer = (e.slamTimer || 0) + dt;
+        if (e.slamTimer >= 130) {
+          e.slamTimer = 0;
+          triggerShake(8);
+          playSfx('boss');
+          createHitParticles(e.x, e.y, e.color, 16);
+          bossShockwaves.push({
+            x: e.x,
+            y: e.y,
+            radius: 12,
+            maxRadius: 90,
+            speed: 3.5,
+            damage: e.damage,
+            hitPlayer: false
+          });
+          addDamageText(e.x, e.y, "IMPACTO SÍSMICO!", false, '#95a5a6');
+        }
+      } else if (e.behavior === 'mortar_barrage') {
+        const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
+        if (distToPlayerSq < 170 * 170) {
+          e.x -= Math.cos(angle) * curSpeed * dt;
+          e.y -= Math.sin(angle) * curSpeed * dt;
+        } else if (distToPlayerSq > 260 * 260) {
+          e.x += Math.cos(angle) * curSpeed * dt;
+          e.y += Math.sin(angle) * curSpeed * dt;
+        }
+        e.mortarTimer = (e.mortarTimer || 0) + dt;
+        if (e.mortarTimer >= 140) {
+          e.mortarTimer = 0;
+          playSfx('shoot');
+          bossTelegraphs.push({
+            x: player.x,
+            y: player.y,
+            radius: 65,
+            timer: 72, // 1.2s de aviso prévio
+            maxTimer: 72,
+            damage: e.damage
+          });
+        }
+      } else if (e.behavior === 'gravity_ritual') {
+        e.x += Math.cos(angle) * curSpeed * 0.75 * dt;
+        e.y += Math.sin(angle) * curSpeed * 0.75 * dt;
+        const gdx = e.x - player.x;
+        const gdy = e.y - player.y;
+        const gdist = Math.sqrt(gdx * gdx + gdy * gdy);
+        if (gdist < 280 && gdist > 20) {
+          player.x += (gdx / gdist) * 0.85 * dt;
+          player.y += (gdy / gdist) * 0.85 * dt;
+        }
+        e.ritualTimer = (e.ritualTimer || 0) + dt;
+        if (e.ritualTimer >= 170) {
+          e.ritualTimer = 0;
+          triggerShake(7);
+          playSfx('boss');
+          createHitParticles(e.x, e.y, '#341f97', 16);
+          if (gdist < 110 && player.iFrames <= 0) {
+            player.hp -= e.damage;
+            player.iFrames = 25;
+            triggerShake(8);
+            playSfx('hit');
+            addDamageText(player.x, player.y, `-${Math.round(e.damage)}`, false, '#341f97');
+          }
+        }
+      } else if (e.behavior === 'shielded') {
+        e.x += Math.cos(angle) * curSpeed * dt;
+        e.y += Math.sin(angle) * curSpeed * dt;
       } else {
         e.x += Math.cos(angle) * curSpeed * dt;
         e.y += Math.sin(angle) * curSpeed * dt;
@@ -1483,7 +1577,7 @@ function update(dt) {
 
       if (selectedHeroKey === 'KNIGHT') {
         let reflectDmg = e.damage * 0.5;
-        if (e.isBoss) reflectDmg *= 0.70;
+        if (e.isBoss) reflectDmg *= 0.60;
         e.hp -= reflectDmg;
         e.hitFlash = 4;
         addDamageText(e.x, e.y, Math.round(reflectDmg), false, '#f1c40f');
@@ -1542,7 +1636,7 @@ function update(dt) {
         }
       }
 
-      if (Math.random() < 0.28 || e.isElite) {
+      if (!e.isMiniBoss && (Math.random() < 0.28 || e.isElite)) {
         const goldVal = e.isElite ? 5 : 1;
         addPersistentGold(goldVal);
       }
@@ -1550,6 +1644,10 @@ function update(dt) {
       if (e.isBoss) {
         triggerShake(20);
         triggerHaptic('heavy');
+
+        if (e.bossId === 1) {
+          setFirstBossKilled(true);
+        }
         
         const bossXp = e.xp || 400;
         gems.push({
@@ -1594,6 +1692,39 @@ function update(dt) {
         voidVortices.length = 0;
         const bossHud = document.getElementById('boss-hud');
         if (bossHud) bossHud.style.display = 'none';
+      } else if (e.isMiniBoss) {
+        triggerShake(10);
+        triggerHaptic('medium');
+        playSfx('crit');
+
+        // 1. Ouro garantido para a Árvore de Talentos
+        const goldEarned = e.goldReward || 25;
+        addPersistentGold(goldEarned);
+        addDamageText(e.x, e.y - 18, `+${goldEarned} OURO!`, true, '#f1c40f');
+
+        // 2. Super Gema de XP com atração prioritária
+        gems.push({
+          x: e.x,
+          y: e.y,
+          radius: 11,
+          color: '#f1c40f',
+          value: e.xp || 60,
+          isSuper: true,
+          forcedPull: true,
+          pulseOffset: 0
+        });
+
+        // 3. Divisão celular especial da Matriarca
+        if (e.behavior === 'splitter_queen') {
+          for (let k = 0; k < 3; k++) {
+            spawnMobCluster('SPLITTER', 1);
+          }
+        }
+
+        // 4. Chance alta de Baú tático imediato
+        if (Math.random() < 0.40) {
+          chests.push({ x: e.x, y: e.y, radius: 16 });
+        }
       } else {
         const gCfg = getGemConfig(e.xp);
         gems.push({
@@ -1708,7 +1839,7 @@ function update(dt) {
 
   const despawnDistSq = (Math.max(viewW, viewH) * 1.6) ** 2;
   enemies = enemies.filter(e => {
-    if (e.isBoss) return true;
+    if (e.isBoss || e.isMiniBoss) return true;
     const dx = e.x - player.x;
     const dy = e.y - player.y;
     return (dx * dx + dy * dy) < despawnDistSq;

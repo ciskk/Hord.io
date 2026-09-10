@@ -1,6 +1,7 @@
-import { ENEMY_TYPES, BOSS_TYPES } from '../config/enemies.js';
+import { ENEMY_TYPES, BOSS_TYPES, MINI_BOSS_TYPES } from '../config/enemies.js';
 import { player } from './player.js';
 import { playSfx, triggerHaptic } from '../core/audio.js';
+import { firstBossKilled } from '../systems/waves.js';
 import { 
   enemies, 
   enemyBullets, 
@@ -28,7 +29,8 @@ export function spawnMobCluster(typeKey, count, eliteChance = 0) {
   const cy = player.y + Math.sin(angle) * spawnDistance;
   const t = ENEMY_TYPES[typeKey];
   const seconds = Math.floor(frameCount / 60);
-  const scaling = 1 + (seconds / 70);
+  const scaling = 1 + Math.pow(seconds / 60, 1.35) * 0.45;
+  const boss1Mult = firstBossKilled ? 1.25 : 1.0;
 
   for (let i = 0; i < count; i++) {
     const isElite = Math.random() < eliteChance;
@@ -49,7 +51,7 @@ export function spawnMobCluster(typeKey, count, eliteChance = 0) {
       hp: t.hp * scaling * hpMult,
       maxHp: t.hp * scaling * hpMult,
       color: t.color,
-      damage: t.damage * (isElite ? 1.4 : 1),
+      damage: Math.round(t.damage * (isElite ? 1.4 : 1) * boss1Mult),
       behavior: t.behavior,
       xp: t.xp * (isElite ? 4 : 1),
       isElite: isElite,
@@ -65,6 +67,61 @@ export function spawnMobCluster(typeKey, count, eliteChance = 0) {
       orbitalHitCd: 0
     });
   }
+}
+
+// Fábrica de Mini Bosses Independentes
+export function spawnMiniBoss(typeKey) {
+  const t = MINI_BOSS_TYPES[typeKey];
+  if (!t) return null;
+
+  const angle = Math.random() * Math.PI * 2;
+  const spawnDistance = Math.max(viewW, viewH) * 0.7 + 60;
+  const seconds = Math.floor(frameCount / 60);
+  const scaling = 1 + Math.pow(seconds / 60, 1.35) * 0.38;
+  const scaledHp = Math.round(t.hp * scaling);
+  const boss1Mult = firstBossKilled ? 1.25 : 1.0;
+
+  const miniBoss = {
+    x: player.x + Math.cos(angle) * spawnDistance,
+    y: player.y + Math.sin(angle) * spawnDistance,
+    name: t.name,
+    baseType: typeKey,
+    radius: t.radius,
+    speed: t.speed,
+    hp: scaledHp,
+    maxHp: scaledHp,
+    color: t.color,
+    damage: Math.round(t.damage * boss1Mult),
+    behavior: t.behavior,
+    xp: t.xp,
+    goldReward: t.gold,
+    isMiniBoss: true,
+    isBoss: false,
+    facing: 1,
+    hitFlash: 0,
+    orbitalHitCd: 0,
+    slowTimer: 0,
+    slowFactor: 0,
+    stunTimer: 0,
+    stateTimer: 0,
+    telegraphTimer: 0,
+    telegraphMax: 0,
+    dashTimer: 0,
+    dashState: 'chase',
+    dashAngle: 0,
+    shootTimer: 0,
+    slamTimer: 0,
+    mortarTimer: 0,
+    ritualTimer: 0,
+    shieldAngle: 0
+  };
+
+  enemies.push(miniBoss);
+  triggerShake(7);
+  playSfx('boss');
+  triggerHaptic('medium');
+
+  return miniBoss;
 }
 
 // Invocação de Chefe, Expurgo de Mobs e Troca de Arena

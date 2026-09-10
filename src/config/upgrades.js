@@ -28,7 +28,6 @@ export const upgradesPool = [
       const w = player.weapons.find(wp => wp.type === 'AXE');
       if (w) {
         w.count = player.axeCount;
-        w.damageMult += 0.25;
       }
     },
     isAvailable: () => player.weapons.some(w => w.type === 'AXE') && (player.axeCount || 1) < 4
@@ -60,7 +59,6 @@ export const upgradesPool = [
       const w = player.weapons.find(wp => wp.type === 'POTION');
       if (w) {
         w.count += 1;
-        w.damageMult += 0.20;
       }
       player.projectiles = (w ? w.count : 1);
     },
@@ -92,7 +90,6 @@ export const upgradesPool = [
       const w = player.weapons.find(wp => wp.type === 'STAFF');
       if (w) {
         w.count += 1;
-        w.damageMult += 0.25;
       }
     },
     isAvailable: () => player.weapons.some(w => w.type === 'STAFF') && (player.weapons.find(wp => wp.type === 'STAFF')?.count || 1) < 5
@@ -124,7 +121,6 @@ export const upgradesPool = [
       const w = player.weapons.find(wp => wp.type === 'SWORD');
       if (w) {
         w.count += 1;
-        w.damageMult += 0.20;
       }
       player.projectiles = (w ? w.count : 1);
     },
@@ -193,9 +189,12 @@ export const upgradesPool = [
     title: "Poder Bruto",
     rarity: "card-common",
     badge: "Passiva",
-    desc: "Aumenta o dano básico em +15 pontos",
-    stat: "+15 Dano Global",
-    apply: () => { player.damage += 15; player.hasPowerPassive = true; },
+    desc: "Aumenta o dano global do herói em +15%",
+    stat: "+15% Dano Global",
+    apply: () => { 
+      player.damage = Math.round(player.damage * 1.15); 
+      player.hasPowerPassive = true; 
+    },
     isAvailable: () => true
   },
   {

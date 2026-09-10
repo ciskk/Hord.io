@@ -349,7 +349,7 @@ export function updateSpinningAxes(dt) {
       if (dx * dx + dy * dy < rSum * rSum) {
         let dmg = player.damage * player.axeDamageMult * (player.evolvedAxe ? 1.6 : 1.2);
         if (player.berserkTimer > 0) dmg *= 1.35;
-        if (e.isBoss) dmg *= 0.70;
+        if (e.isBoss) dmg *= 0.60;
 
         const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
         const finalDmg = isCrit ? dmg * player.critMult : dmg;
