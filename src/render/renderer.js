@@ -2,26 +2,26 @@ import { CHARACTERS } from '../config/characters.js';
 import { player, selectedHeroKey } from '../entities/player.js';
 import { stick } from '../core/input.js';
 import { renderEnvironment } from './environment.js';
-import { 
-  ctx, 
-  dpr, 
-  viewW, 
-  viewH, 
-  camera, 
-  screenShake, 
-  props, 
-  drops, 
-  chests, 
-  gems, 
-  bossTelegraphs, 
-  bossProjectiles, 
-  activeBoss, 
-  bullets, 
-  enemyBullets, 
-  enemies, 
-  particles, 
-  damageTexts, 
-  frameCount 
+import {
+  ctx,
+  dpr,
+  viewW,
+  viewH,
+  camera,
+  screenShake,
+  props,
+  drops,
+  chests,
+  gems,
+  bossTelegraphs,
+  bossProjectiles,
+  activeBoss,
+  bullets,
+  enemyBullets,
+  enemies,
+  particles,
+  damageTexts,
+  frameCount
 } from '../main.js';
 
 export function drawEnemyShape(e) {
@@ -43,6 +43,7 @@ export function drawEnemyShape(e) {
     }
   }
 
+  // Efeito de Lentidão (Slow / Criogênico)
   if (e.slowTimer > 0) {
     const pulseSlow = Math.sin(frameCount * 0.25) * 2;
     ctx.strokeStyle = '#74b9ff';
@@ -50,7 +51,6 @@ export function drawEnemyShape(e) {
     ctx.beginPath();
     ctx.arc(0, 0, e.radius + 4 + pulseSlow, 0, Math.PI * 2);
     ctx.stroke();
-
     ctx.fillStyle = 'rgba(116, 185, 255, 0.65)';
     for (let sp = 0; sp < 4; sp++) {
       const spAng = sp * (Math.PI / 2) + frameCount * 0.05;
@@ -59,6 +59,7 @@ export function drawEnemyShape(e) {
     }
   }
 
+  // Aura de Inimigo Elite
   if (e.isElite) {
     const auraPulse = Math.sin(frameCount * 0.2) * 3;
     let aColor = '#00d2d3';
@@ -71,6 +72,7 @@ export function drawEnemyShape(e) {
     ctx.stroke();
   }
 
+  // Desenho dos Chefes
   if (e.isBoss) {
     if (e.bossId === 1) {
       const wingFlap = Math.sin(frameCount * 0.18) * 16;
@@ -83,7 +85,6 @@ export function drawEnemyShape(e) {
       ctx.lineTo(0, 20);
       ctx.closePath();
       ctx.fill();
-
       ctx.beginPath();
       ctx.moveTo(10, -15);
       ctx.lineTo(65, -45 + wingFlap);
@@ -92,7 +93,6 @@ export function drawEnemyShape(e) {
       ctx.lineTo(0, 20);
       ctx.closePath();
       ctx.fill();
-
       ctx.fillStyle = '#68081d';
       ctx.beginPath();
       ctx.moveTo(-28, -20);
@@ -100,13 +100,11 @@ export function drawEnemyShape(e) {
       ctx.lineTo(28, -20);
       ctx.closePath();
       ctx.fill();
-
       ctx.fillStyle = '#2c0c16';
       ctx.fillRect(-22, -26, 44, 40);
       ctx.strokeStyle = '#f1c40f';
       ctx.lineWidth = 2.5;
       ctx.strokeRect(-22, -26, 44, 40);
-
       ctx.fillStyle = '#0d0205';
       ctx.beginPath();
       ctx.arc(0, -32, 16, 0, Math.PI * 2);
@@ -130,7 +128,6 @@ export function drawEnemyShape(e) {
         ctx.fill();
         ctx.stroke();
       }
-
       ctx.fillStyle = '#140c06';
       ctx.beginPath();
       for (let s = 0; s < 6; s++) {
@@ -145,12 +142,11 @@ export function drawEnemyShape(e) {
       ctx.strokeStyle = e.isEnraged ? '#e74c3c' : '#d35400';
       ctx.lineWidth = 5;
       ctx.stroke();
-
       const corePulse = Math.sin(frameCount * 0.12) * 6;
       ctx.fillStyle = '#e74c3c';
       ctx.shadowColor = '#e67e22';
       ctx.shadowBlur = 16;
-      ctx.fillRect(-20 - corePulse/2, -20 - corePulse/2, 40 + corePulse, 40 + corePulse);
+      ctx.fillRect(-20 - corePulse / 2, -20 - corePulse / 2, 40 + corePulse, 40 + corePulse);
       ctx.shadowBlur = 0;
     } else if (e.bossId === 3) {
       const drape = Math.sin(frameCount * 0.1) * 8;
@@ -165,12 +161,10 @@ export function drawEnemyShape(e) {
       ctx.strokeStyle = '#00cec9';
       ctx.lineWidth = 2;
       ctx.stroke();
-
       ctx.fillStyle = '#020406';
       ctx.beginPath();
       ctx.arc(0, -42, 22, 0, Math.PI * 2);
       ctx.fill();
-
       ctx.fillStyle = '#81ecec';
       ctx.shadowColor = '#00cec9';
       ctx.shadowBlur = 10;
@@ -179,7 +173,6 @@ export function drawEnemyShape(e) {
       ctx.arc(8, -44, 3.5, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
-
       ctx.save();
       ctx.translate(55, -20 + Math.sin(frameCount * 0.12) * 10);
       ctx.rotate(0.4);
@@ -202,24 +195,21 @@ export function drawEnemyShape(e) {
         ctx.moveTo(currX, currY);
         for (let seg = 1; seg <= 4; seg++) {
           const wave = Math.sin(frameCount * 0.15 + t + seg) * 16;
-          currX += Math.cos(baseAngle) * 22 + Math.cos(baseAngle + Math.PI/2) * wave * 0.3;
-          currY += Math.sin(baseAngle) * 22 + Math.sin(baseAngle + Math.PI/2) * wave * 0.3;
+          currX += Math.cos(baseAngle) * 22 + Math.cos(baseAngle + Math.PI / 2) * wave * 0.3;
+          currY += Math.sin(baseAngle) * 22 + Math.sin(baseAngle + Math.PI / 2) * wave * 0.3;
           ctx.lineTo(currX, currY);
         }
         ctx.stroke();
       }
-
       ctx.strokeStyle = 'rgba(155, 89, 182, 0.55)';
       ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.ellipse(0, 0, 115, 45, frameCount * 0.02, 0, Math.PI * 2);
       ctx.stroke();
-
       ctx.strokeStyle = 'rgba(232, 67, 147, 0.45)';
       ctx.beginPath();
       ctx.ellipse(0, 0, 115, 45, -frameCount * 0.025, 0, Math.PI * 2);
       ctx.stroke();
-
       ctx.fillStyle = '#08010f';
       ctx.beginPath();
       ctx.arc(0, 0, e.radius, 0, Math.PI * 2);
@@ -227,7 +217,6 @@ export function drawEnemyShape(e) {
       ctx.strokeStyle = '#a29bfe';
       ctx.lineWidth = 5;
       ctx.stroke();
-
       ctx.fillStyle = '#e84393';
       ctx.shadowColor = '#e84393';
       ctx.shadowBlur = 18;
@@ -237,7 +226,9 @@ export function drawEnemyShape(e) {
       ctx.shadowBlur = 0;
     }
   } else {
+    // Monstros Comuns e Hordas
     ctx.fillStyle = e.hitFlash > 0 ? '#fff' : (e.slowTimer > 0 ? '#74b9ff' : e.color);
+
     if (e.baseType === 'ZOMBIE') {
       ctx.beginPath();
       ctx.arc(0, -6, 5, 0, Math.PI * 2);
@@ -295,40 +286,195 @@ export function drawEnemyShape(e) {
       ctx.fillStyle = '#d63031';
       ctx.fillRect(9, -2, 4, 4);
     } else if (e.baseType === 'SHOOTER') {
+      // 5. AUTÔMATO ARTILHEIRO: Drone com chassi chanfrado, visor telemétrico e recuo de disparo
+      const isShootingKick = (e.shootTimer > 95) ? -3 : 0;
+
+      ctx.fillStyle = e.hitFlash > 0 ? '#fff' : '#2c3e50';
       ctx.beginPath();
-      ctx.moveTo(0, -13);
-      ctx.lineTo(12, 0);
-      ctx.lineTo(0, 13);
-      ctx.lineTo(-12, 0);
+      ctx.moveTo(-10, -14);
+      ctx.lineTo(8, -14);
+      ctx.lineTo(14, -6);
+      ctx.lineTo(14, 6);
+      ctx.lineTo(8, 14);
+      ctx.lineTo(-10, 14);
+      ctx.lineTo(-14, 6);
+      ctx.lineTo(-14, -6);
       ctx.closePath();
       ctx.fill();
+      ctx.strokeStyle = '#0984e3';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Armamento Duplo Paralelo
+      ctx.fillStyle = '#1e272e';
+      ctx.fillRect(8 + isShootingKick, -10, 8, 4);
+      ctx.fillRect(8 + isShootingKick, 6, 8, 4);
+      ctx.fillStyle = '#74b9ff';
+      ctx.fillRect(14 + isShootingKick, -9, 2, 2);
+      ctx.fillRect(14 + isShootingKick, 7, 2, 2);
+
+      // Visor Telemétrico Horizontal
       ctx.fillStyle = '#ff7675';
+      ctx.fillRect(-2, -3, 8, 6);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(2, -2, 3, 4);
+    } else if (e.baseType === 'STALKER') {
+      // 1. ASSASSINO ESPECTRAL: Silhueta de cauda cometa, capuz e lâminas reativas ao dash
+      const tailWave = Math.sin(frameCount * 0.22) * 5;
+      const isAiming = e.dashState === 'aim';
+      const isDashing = e.dashState === 'dashing';
+      const bladeSpread = isAiming ? 14 : (isDashing ? 3 : 8);
+
+      // Manto e Cauda Fluida
+      ctx.fillStyle = e.hitFlash > 0 ? '#fff' : '#4834d4';
       ctx.beginPath();
-      ctx.arc(2, 0, 4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#2d3436';
-      ctx.fillRect(8, -3, 9, 6);
-    } else if (e.baseType === 'SPLITTER' || e.baseType === 'SPLITTER_MINI') {
-      const blob = Math.sin(frameCount * 0.25) * 2;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, e.radius + blob, e.radius - blob, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#0abde3';
-      ctx.beginPath();
-      ctx.arc(-3, 0, 3, 0, Math.PI * 2);
-      ctx.arc(3, 0, 3, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (e.baseType === 'NECRO') {
-      ctx.beginPath();
-      ctx.moveTo(0, -14);
-      ctx.lineTo(9, 13);
-      ctx.lineTo(-9, 13);
+      ctx.moveTo(6, 0);
+      ctx.quadraticCurveTo(-4, -10, -14, -6);
+      ctx.lineTo(-24 + (isDashing ? -8 : 0), tailWave);
+      ctx.lineTo(-14, 6);
+      ctx.quadraticCurveTo(-4, 10, 6, 0);
       ctx.closePath();
       ctx.fill();
-      ctx.fillStyle = '#9b59b6';
+
+      // Capuz Sombrio Pontiagudo
+      ctx.fillStyle = '#130f40';
       ctx.beginPath();
-      ctx.arc(0, -7, 4, 0, Math.PI * 2);
+      ctx.moveTo(8, 0);
+      ctx.lineTo(-6, -9);
+      ctx.lineTo(-2, 0);
+      ctx.lineTo(-6, 9);
+      ctx.closePath();
       ctx.fill();
+
+      // Fendas Oculares Luminosas
+      ctx.fillStyle = '#f9ca24';
+      ctx.fillRect(1, -4, 4, 2);
+      ctx.fillRect(1, 2, 4, 2);
+
+      // Lâminas Curvas Frontais (Abertas na mira, fechadas na investida)
+      ctx.strokeStyle = isAiming ? '#e74c3c' : '#dff9fb';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(-2, -6);
+      ctx.quadraticCurveTo(6, -bladeSpread - 4, 16, -bladeSpread + 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-2, 6);
+      ctx.quadraticCurveTo(6, bladeSpread + 4, 16, bladeSpread - 2);
+      ctx.stroke();
+    } else if (e.baseType === 'EXPLODER') {
+      // 2. CARNIÇAL ÍGNEO: Núcleo volátil com pulsação por estresse térmico e crosta de rochas
+      const distToPlayer = Math.hypot(e.x - player.x, e.y - player.y);
+      const stressRate = Math.min(0.6, 0.15 + (180 / Math.max(distToPlayer, 30)) * 0.15);
+      const stressPulse = Math.sin(frameCount * stressRate) * 4;
+
+      // Núcleo Incandescente em Gradiente
+      ctx.fillStyle = '#f39c12';
+      ctx.beginPath();
+      ctx.arc(0, 0, e.radius + stressPulse * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#f1c40f';
+      ctx.beginPath();
+      ctx.arc(0, 0, (e.radius * 0.6) + stressPulse * 0.7, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Placas Denteadas de Rocha Vulcânica
+      ctx.fillStyle = e.hitFlash > 0 ? '#fff' : '#2d3436';
+      for (let s = 0; s < 5; s++) {
+        const segAngle = (s * Math.PI * 2 / 5) + (frameCount * 0.04);
+        const px = Math.cos(segAngle) * (e.radius - 1);
+        const py = Math.sin(segAngle) * (e.radius - 1);
+        ctx.beginPath();
+        ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Rastro Térmico Posterior
+      if (Math.floor(frameCount) % 4 === 0) {
+        ctx.fillStyle = '#e17055';
+        ctx.fillRect(-e.radius - 6, (Math.random() - 0.5) * 8, 3, 3);
+      }
+    } else if (e.baseType === 'NECRO') {
+      // 3. CULTISTA DAS SOMBRAS: Hierofante levitante, manto largo e catalisador arcano oscilante
+      const hover = Math.sin(frameCount * 0.08) * 3;
+      const robeWave = Math.sin(frameCount * 0.15) * 2;
+
+      // Túnica Sacerdotal Ampla
+      ctx.fillStyle = e.hitFlash > 0 ? '#fff' : '#2c2c54';
+      ctx.beginPath();
+      ctx.moveTo(4, -14 + hover);
+      ctx.lineTo(-12, 12 + hover);
+      ctx.lineTo(-4 + robeWave, 14 + hover);
+      ctx.lineTo(10, 12 + hover);
+      ctx.lineTo(8, -14 + hover);
+      ctx.closePath();
+      ctx.fill();
+
+      // Capuz Profundo
+      ctx.fillStyle = '#13141f';
+      ctx.beginPath();
+      ctx.arc(4, -8 + hover, 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Glifos Arcanos Púrpuras
+      ctx.fillStyle = '#a29bfe';
+      ctx.fillRect(5, -10 + hover, 2.5, 2.5);
+      ctx.fillRect(5, -6 + hover, 2.5, 2.5);
+
+      // Orbe/Catalisador Flutuante
+      const isSummoningSoon = (e.summonTimer > 180);
+      const orbePulse = isSummoningSoon ? Math.sin(frameCount * 0.3) * 3 : 0;
+      ctx.fillStyle = isSummoningSoon ? '#e056fd' : '#8c7ae6';
+      ctx.beginPath();
+      ctx.arc(-10, -4 + hover * 1.4, 4.5 + orbePulse, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    } else if (e.baseType === 'SPLITTER' || e.baseType === 'SPLITTER_MINI') {
+      // 4. PARASITA DIVISOR: Insetóide com segmentação quitinosa e patas procedurais articuladas
+      const isMini = e.baseType === 'SPLITTER_MINI';
+      const legPairs = isMini ? 2 : 3;
+      const legSpread = isMini ? 7 : 11;
+
+      // Patas Laterais Móveis
+      ctx.strokeStyle = e.hitFlash > 0 ? '#fff' : '#0097e6';
+      ctx.lineWidth = 2;
+      for (let p = 0; p < legPairs; p++) {
+        const legPhase = Math.sin(frameCount * 0.28 + p * 1.5) * 4;
+        const baseOffsetX = -6 + p * 6;
+        ctx.beginPath();
+        ctx.moveTo(baseOffsetX, -4);
+        ctx.lineTo(baseOffsetX - 2, -legSpread + legPhase);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(baseOffsetX, 4);
+        ctx.lineTo(baseOffsetX - 2, legSpread + legPhase);
+        ctx.stroke();
+      }
+
+      // Abdômen Bulboso Traseiro
+      ctx.fillStyle = e.hitFlash > 0 ? '#fff' : '#00a8ff';
+      ctx.beginPath();
+      ctx.ellipse(-4, 0, e.radius * 0.75, e.radius * 0.62, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Fenda Divisória Central
+      ctx.strokeStyle = '#004466';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-10, 0);
+      ctx.lineTo(2, 0);
+      ctx.stroke();
+
+      // Cefalotórax Frontal e Mandíbulas
+      ctx.fillStyle = '#10ac84';
+      ctx.beginPath();
+      ctx.arc(6, 0, e.radius * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#dff9fb';
+      ctx.fillRect(8, -3, 3, 2);
+      ctx.fillRect(8, 1, 3, 2);
     } else {
       ctx.beginPath();
       ctx.arc(0, 0, e.radius, 0, Math.PI * 2);
@@ -356,7 +502,6 @@ export function drawPlayerCharacter() {
     ctx.beginPath();
     ctx.arc(0, 2, player.radius + 10 + bPulse, 0, Math.PI * 2);
     ctx.stroke();
-
     ctx.fillStyle = 'rgba(230, 126, 34, 0.22)';
     ctx.fill();
   }
@@ -369,6 +514,7 @@ export function drawPlayerCharacter() {
     ctx.fillRect(-32, -14, 12, 28);
   }
 
+  // Efeito de Camuflagem (Kael Invisibilidade)
   if (player.invisTimer > 0) {
     ctx.globalAlpha = 0.45;
   }
@@ -377,6 +523,7 @@ export function drawPlayerCharacter() {
   const legSwing = player.isMoving ? Math.sin(player.walkCycle) * 5.5 : 0;
   const capeWave = player.isMoving ? Math.sin(player.walkCycle) * 4 : Math.sin(frameCount * 0.08) * 1.5;
 
+  // Sombra Projetada
   ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
   ctx.beginPath();
   ctx.ellipse(0, 15, 14, 6, 0, 0, Math.PI * 2);
@@ -408,7 +555,6 @@ export function drawPlayerCharacter() {
 
     ctx.fillStyle = '#7f8c8d';
     ctx.fillRect(-6, -15 + bob, 12, 6);
-
     ctx.fillStyle = '#ecf0f1';
     ctx.beginPath();
     ctx.moveTo(-6, -13 + bob);
@@ -440,7 +586,6 @@ export function drawPlayerCharacter() {
     ctx.fillRect(-8, -4 + bob, 16, 12);
     ctx.fillStyle = '#1abc9c';
     ctx.fillRect(-8, 5 + bob, 16, 3);
-    ctx.fillStyle = '#9b59b6';
     ctx.fillRect(-5, 5 + bob, 3, 3);
     ctx.fillRect(2, 5 + bob, 3, 3);
 
@@ -505,6 +650,7 @@ export function render() {
 
   renderEnvironment(ctx);
 
+  // Destrutíveis da Arena
   props.forEach(p => {
     ctx.save();
     ctx.translate(p.x, p.y);
@@ -516,6 +662,7 @@ export function render() {
     ctx.restore();
   });
 
+  // Itens Coletáveis
   drops.forEach(d => {
     ctx.save();
     ctx.translate(d.x, d.y);
@@ -550,6 +697,7 @@ export function render() {
     ctx.restore();
   });
 
+  // Baús de Chefe
   chests.forEach(ch => {
     ctx.save();
     ctx.translate(ch.x, ch.y);
@@ -564,6 +712,7 @@ export function render() {
     ctx.restore();
   });
 
+  // Gemas de Experiência
   gems.forEach(g => {
     ctx.save();
     let pulse = 0;
@@ -579,7 +728,6 @@ export function render() {
     ctx.beginPath();
     ctx.arc(g.x, g.y, Math.max(2, g.radius + pulse), 0, Math.PI * 2);
     ctx.fill();
-
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(g.x - g.radius * 0.3, g.y - g.radius * 0.3, Math.max(1, g.radius * 0.28), 0, Math.PI * 2);
@@ -587,13 +735,13 @@ export function render() {
     ctx.restore();
   });
 
+  // Telegrafias de Ataque dos Chefes
   bossTelegraphs.forEach(t => {
     const progress = 1 - (t.timer / t.maxTimer);
     ctx.fillStyle = 'rgba(231, 76, 60, 0.28)';
     ctx.beginPath();
     ctx.arc(t.x, t.y, t.radius * progress, 0, Math.PI * 2);
     ctx.fill();
-
     ctx.strokeStyle = '#e74c3c';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
@@ -601,6 +749,7 @@ export function render() {
     ctx.stroke();
   });
 
+  // Projéteis dos Chefes
   bossProjectiles.forEach(bp => {
     ctx.save();
     ctx.translate(bp.x, bp.y);
@@ -613,6 +762,7 @@ export function render() {
     ctx.restore();
   });
 
+  // Feixes de Laser do Soberano do Abismo
   if (activeBoss && activeBoss.bossId === 4) {
     const laserCount = activeBoss.isEnraged ? 6 : 4;
     ctx.strokeStyle = activeBoss.isEnraged ? 'rgba(232, 67, 147, 0.85)' : 'rgba(155, 89, 182, 0.85)';
@@ -626,6 +776,7 @@ export function render() {
     }
   }
 
+  // Aura Protetora Sagrada
   if (player.auraLvl > 0 || player.evolvedAura) {
     const auraRadius = (player.evolvedAura ? 150 : 65) + player.auraLvl * 18;
     const pulse = Math.sin(frameCount * 0.15) * 3;
@@ -638,13 +789,13 @@ export function render() {
     ctx.fill();
   }
 
+  // Bíblias Protetoras / Orbitais
   if (player.orbitals > 0) {
     const orbDist = player.evolvedOrbitals ? 88 : 72;
     for (let oIdx = 0; oIdx < player.orbitals; oIdx++) {
       const angle = player.orbitalAngle + (oIdx * (Math.PI * 2 / player.orbitals));
       const ox = player.x + Math.cos(angle) * orbDist;
       const oy = player.y + Math.sin(angle) * orbDist;
-
       ctx.save();
       ctx.translate(ox, oy);
       ctx.rotate(angle + Math.PI / 2);
@@ -656,11 +807,10 @@ export function render() {
     }
   }
 
-  // Renderização do Machado de Kragdor (Orientação Radial com o cabo voltado ao herói)
+  // Machado Giratório de Kragdor
   if (player.axeCount > 0) {
     const count = player.evolvedAxe ? Math.max(player.axeCount, 6) : player.axeCount;
     const r = player.axeRadius || 56;
-
     ctx.strokeStyle = player.evolvedAxe ? 'rgba(230, 126, 34, 0.35)' : 'rgba(241, 196, 15, 0.18)';
     ctx.lineWidth = player.evolvedAxe ? 3.5 : 2;
     ctx.beginPath();
@@ -672,7 +822,6 @@ export function render() {
       const ax = player.x + Math.cos(angle) * r;
       const ay = player.y + Math.sin(angle) * r;
 
-      // Rastro curvo centrífugo de corte
       ctx.strokeStyle = player.evolvedAxe ? 'rgba(243, 156, 18, 0.48)' : 'rgba(241, 196, 15, 0.32)';
       ctx.lineWidth = player.evolvedAxe ? 8 : 5;
       ctx.beginPath();
@@ -681,14 +830,11 @@ export function render() {
 
       ctx.save();
       ctx.translate(ax, ay);
-      // Rotação radial: o cabo aponta rigorosamente para o herói e as lâminas cortam para fora
       ctx.rotate(angle + Math.PI / 2);
 
-      // Cabo de madeira estendido para dentro
       ctx.fillStyle = '#5d4037';
       ctx.fillRect(-2.5, -6, 5, 28);
 
-      // Lâminas duplas cortando para fora
       ctx.fillStyle = player.evolvedAxe ? '#f39c12' : '#bdc3c7';
       ctx.beginPath();
       ctx.arc(-9, -12, 11, -Math.PI / 2, Math.PI / 2, true);
@@ -705,12 +851,11 @@ export function render() {
       ctx.strokeStyle = player.evolvedAxe ? '#e74c3c' : '#f1c40f';
       ctx.lineWidth = 1.5;
       ctx.stroke();
-
       ctx.restore();
     }
   }
 
-  // Renderização das Armas e Impactos
+  // Armas e Projéteis dos Heróis
   bullets.forEach(b => {
     if (b.type === 'HAMMER_SLAM') {
       const progress = 1 - (b.life / b.maxLife);
@@ -720,14 +865,12 @@ export function render() {
       ctx.save();
       ctx.translate(b.x, b.y);
 
-      // 1. Onda de tremor secundária suave nas laterais e costas (360°)
       ctx.strokeStyle = `rgba(180, 185, 200, ${alpha * 0.35})`;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(0, 0, shockR * 0.65, 0, Math.PI * 2);
       ctx.stroke();
 
-      // 2. Cone de choque frontal telegrafado na direção prioritária
       ctx.fillStyle = b.isEvolved ? `rgba(243, 156, 18, ${alpha * 0.32})` : `rgba(241, 196, 15, ${alpha * 0.25})`;
       ctx.beginPath();
       ctx.moveTo(0, 0);
@@ -741,7 +884,6 @@ export function render() {
       ctx.arc(0, 0, shockR * 1.15, b.angle - Math.PI * 0.28, b.angle + Math.PI * 0.28);
       ctx.stroke();
 
-      // 3. Fissura Sísmica Principal: Fenda dourada brilhante na direção do alvo
       ctx.shadowColor = b.isEvolved ? '#e74c3c' : '#f1c40f';
       ctx.shadowBlur = 12 * alpha;
       ctx.strokeStyle = b.isEvolved ? `rgba(255, 234, 167, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
@@ -774,21 +916,17 @@ export function render() {
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // 4. Animação do Martelo de Guerra esmagando o chão à frente do Paladino
       if (progress < 0.48) {
         const slamPhase = progress / 0.48;
         const swingAng = b.angle + (1 - slamPhase) * -0.95;
         const forwardReach = 28 + slamPhase * 8;
         const hammerX = Math.cos(b.angle) * forwardReach;
         const hammerY = Math.sin(b.angle) * forwardReach;
-
         ctx.save();
         ctx.translate(hammerX, hammerY);
         ctx.rotate(swingAng + Math.PI / 2);
-
         ctx.fillStyle = '#4a235a';
         ctx.fillRect(-3, -4, 6, 36);
-
         ctx.fillStyle = b.isEvolved ? '#e67e22' : '#f1c40f';
         ctx.shadowColor = '#f39c12';
         ctx.shadowBlur = 12;
@@ -797,10 +935,8 @@ export function render() {
         ctx.lineWidth = 2;
         ctx.strokeRect(-17, -22, 34, 18);
         ctx.shadowBlur = 0;
-
         ctx.restore();
       }
-
       ctx.restore();
       return;
     }
@@ -816,29 +952,23 @@ export function render() {
           ctx.fill();
         }
       }
-
       ctx.save();
       ctx.translate(b.x, b.y);
-
       ctx.shadowColor = b.isEvolved ? '#e74c3c' : '#e67e22';
       ctx.shadowBlur = 14;
-
       ctx.fillStyle = b.isEvolved ? '#ff4757' : '#e67e22';
       ctx.beginPath();
       ctx.arc(0, 0, b.radius, 0, Math.PI * 2);
       ctx.fill();
-
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.arc(0, 0, b.radius * 0.45, 0, Math.PI * 2);
       ctx.fill();
-
       ctx.strokeStyle = b.isEvolved ? '#f1c40f' : '#ffa502';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.ellipse(0, 0, b.radius * 1.35, b.radius * 0.6, frameCount * 0.2, 0, Math.PI * 2);
       ctx.stroke();
-
       ctx.shadowBlur = 0;
       ctx.restore();
       return;
@@ -848,26 +978,21 @@ export function render() {
       ctx.save();
       ctx.translate(b.x, b.y);
       ctx.rotate(b.angle || 0);
-
       ctx.fillStyle = '#d35400';
       ctx.fillRect(-2.5, -9, 5, 3);
-
       ctx.fillStyle = b.isEvolved ? '#00cec9' : '#2ecc71';
       ctx.shadowColor = b.isEvolved ? '#00cec9' : '#2ecc71';
       ctx.shadowBlur = 8;
       ctx.beginPath();
       ctx.arc(0, 0, b.radius, 0, Math.PI * 2);
       ctx.fill();
-
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 1.5;
       ctx.stroke();
-
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.arc(-2, -2, 2, 0, Math.PI * 2);
       ctx.fill();
-
       ctx.shadowBlur = 0;
       ctx.restore();
       return;
@@ -884,15 +1009,12 @@ export function render() {
           ctx.fill();
         }
       }
-
       ctx.save();
       ctx.translate(b.x, b.y);
       ctx.rotate(b.angle || 0);
-
       ctx.fillStyle = b.isEvolved ? '#f1c40f' : '#2ecc71';
       ctx.shadowColor = b.isEvolved ? '#f39c12' : '#27ae60';
       ctx.shadowBlur = 8;
-
       ctx.beginPath();
       if (b.isEvolved) {
         ctx.moveTo(16, 0);
@@ -907,16 +1029,15 @@ export function render() {
       }
       ctx.closePath();
       ctx.fill();
-
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(-2, -1, 6, 2);
-
       ctx.shadowBlur = 0;
       ctx.restore();
       return;
     }
   });
 
+  // Balas Inimigas
   enemyBullets.forEach(eb => {
     ctx.fillStyle = '#ff7675';
     ctx.beginPath();
@@ -927,14 +1048,17 @@ export function render() {
     ctx.stroke();
   });
 
+  // Desenho dos Mobs e Jogador
   enemies.forEach(e => drawEnemyShape(e));
   drawPlayerCharacter();
 
+  // Partículas
   particles.forEach(p => {
     ctx.fillStyle = p.color;
     ctx.fillRect(p.x, p.y, 3, 3);
   });
 
+  // Textos Flutuantes de Dano
   damageTexts.forEach(dtItem => {
     const alpha = Math.max(0, dtItem.life / dtItem.maxLife);
     ctx.save();
@@ -952,13 +1076,13 @@ export function render() {
 
   ctx.restore();
 
+  // Joystick Virtual Mobile
   if (stick.active) {
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(stick.startX, stick.startY, stick.radius, 0, Math.PI * 2);
     ctx.stroke();
-
     ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
     ctx.beginPath();
     ctx.arc(stick.curX, stick.curY, 20, 0, Math.PI * 2);
