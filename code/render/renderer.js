@@ -2,7 +2,6 @@ import { CHARACTERS } from '../config/characters.js';
 import { player, selectedHeroKey } from '../entities/player.js';
 import { stick } from '../core/input.js';
 import { renderEnvironment } from './environment.js';
-import { drawBoss } from '../entities/bosses/bossRegistry.js';
 import {
   ctx,
   dpr,
@@ -37,6 +36,7 @@ function drawThreatGlyph(R, color, isHit) {
   ctx.ellipse(0, R * 0.78, R * 1.25 + glyphPulse, R * 0.46 + glyphPulse * 0.35, 0, 0, Math.PI * 2);
   ctx.stroke();
 
+  // Dentes e marcas rúnicas chanfradas em rotação lenta
   const count = 6;
   const rot = frameCount * 0.03;
   ctx.lineWidth = 2;
@@ -58,15 +58,20 @@ function drawMiniBossShape(e) {
   const isHit = e.hitFlash > 0;
   const eliteColor = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : (e.color || '#f39c12'));
 
+  // 1. Glifo de Ameaça sob os pés
   drawThreatGlyph(R, eliteColor, isHit);
 
   switch (e.baseType) {
+    // ==========================================
+    // ARQUÉTIPO 1: COLOSSOS / BRUTOS
+    // ==========================================
     case 'ZOMBIE_ALPHA': {
       const stepBob = Math.sin(frameCount * 0.14) * 3;
       const armSwing = Math.sin(frameCount * 0.14) * 5;
       const skinColor = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#1e392a');
       const veinColor = isHit ? '#ffffff' : '#2ecc71';
 
+      // Torso largo e curvado
       ctx.fillStyle = skinColor;
       ctx.beginPath();
       ctx.moveTo(-R * 0.85, -R * 0.35 + stepBob);
@@ -79,6 +84,7 @@ function drawMiniBossShape(e) {
       ctx.lineWidth = 2.5;
       ctx.stroke();
 
+      // Veias radioativas verdes no peito
       ctx.strokeStyle = veinColor;
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -88,18 +94,22 @@ function drawMiniBossShape(e) {
       ctx.lineTo(R * 0.45, R * 0.35 + stepBob);
       ctx.stroke();
 
+      // Cabeça atarracada e queixo protuberante
       ctx.fillStyle = isHit ? '#ffffff' : '#14291c';
       ctx.beginPath();
       ctx.arc(R * 0.2, -R * 0.55 + stepBob, R * 0.35, 0, Math.PI * 2);
       ctx.fill();
 
+      // Olhos vermelhos colossais
       ctx.fillStyle = '#ff3838';
       ctx.fillRect(R * 0.3, -R * 0.65 + stepBob, 4.5, 3.5);
 
+      // Punhos gigantes com correntes arrebentadas
       ctx.fillStyle = skinColor;
       ctx.strokeStyle = '#0d1f14';
       ctx.lineWidth = 2;
 
+      // Punho dianteiro
       const f1X = R * 0.8;
       const f1Y = R * 0.2 + armSwing + stepBob;
       ctx.beginPath();
@@ -107,6 +117,7 @@ function drawMiniBossShape(e) {
       ctx.fill();
       ctx.stroke();
 
+      // Punho traseiro
       const f2X = -R * 0.8;
       const f2Y = R * 0.2 - armSwing + stepBob;
       ctx.beginPath();
@@ -114,6 +125,7 @@ function drawMiniBossShape(e) {
       ctx.fill();
       ctx.stroke();
 
+      // Correntes arrebentadas penduradas
       ctx.strokeStyle = isHit ? '#ffffff' : '#bdc3c7';
       ctx.lineWidth = 2.5;
       const sway = Math.sin(frameCount * 0.15) * 4;
@@ -133,6 +145,7 @@ function drawMiniBossShape(e) {
       const steelCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#57606f');
       const goldTrim = isHit ? '#ffffff' : '#f1c40f';
 
+      // Lança curta projetada por trás do escudo
       ctx.strokeStyle = isHit ? '#ffffff' : '#dfe4ea';
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -148,12 +161,14 @@ function drawMiniBossShape(e) {
       ctx.closePath();
       ctx.fill();
 
+      // Corpo com armadura de placas
       ctx.fillStyle = steelCol;
       ctx.fillRect(-R * 0.6, -R * 0.45 + step, R * 0.9, R * 0.95);
       ctx.strokeStyle = '#2f3542';
       ctx.lineWidth = 2;
       ctx.strokeRect(-R * 0.6, -R * 0.45 + step, R * 0.9, R * 0.95);
 
+      // Elmo de centurião com crista carmesim
       ctx.fillStyle = isHit ? '#ffffff' : '#2f3542';
       ctx.beginPath();
       ctx.arc(-R * 0.15, -R * 0.6 + step, R * 0.32, 0, Math.PI * 2);
@@ -161,6 +176,7 @@ function drawMiniBossShape(e) {
       ctx.fillStyle = '#c0392b';
       ctx.fillRect(-R * 0.3, -R * 1.05 + step, R * 0.5, 5);
 
+      // Escudo torre imponente na dianteira com brasão e reforços dourados
       const shX = R * 0.35;
       const shY = -R * 0.85 + step;
       const shW = R * 0.55;
@@ -172,6 +188,7 @@ function drawMiniBossShape(e) {
       ctx.lineWidth = 2.5;
       ctx.strokeRect(shX, shY, shW, shH);
 
+      // Brasão dourado em cruz no escudo
       ctx.fillStyle = goldTrim;
       ctx.fillRect(shX + shW * 0.4, shY + shH * 0.2, 4, shH * 0.6);
       ctx.fillRect(shX + shW * 0.15, shY + shH * 0.45, shW * 0.7, 4);
@@ -184,6 +201,7 @@ function drawMiniBossShape(e) {
       const vibrate = isChargingSlam ? (Math.random() - 0.5) * 4 : 0;
       const mechCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#4b6584');
 
+      // Chassi pesado angular
       ctx.fillStyle = mechCol;
       ctx.beginPath();
       ctx.moveTo(-R * 0.75, -R * 0.5 + step);
@@ -196,17 +214,20 @@ function drawMiniBossShape(e) {
       ctx.lineWidth = 2.5;
       ctx.stroke();
 
+      // Elmo blindado com visor
       ctx.fillStyle = '#2d3436';
       ctx.fillRect(-R * 0.25, -R * 0.8 + step, R * 0.5, R * 0.35);
       ctx.fillStyle = isChargingSlam ? '#f1c40f' : '#e67e22';
       ctx.fillRect(-R * 0.2, -R * 0.7 + step, R * 0.4, 3.5);
 
+      // Braços mecânicos acoplados a grandes marretas pneumáticas de pedra
       const hammerLift = isChargingSlam ? -R * 0.6 : R * 0.1;
       const h1X = R * 0.85 + vibrate;
       const h1Y = hammerLift + step + vibrate;
       const h2X = -R * 0.85 + vibrate;
       const h2Y = hammerLift + step - vibrate;
 
+      // Pistões de acoplamento
       ctx.strokeStyle = '#95a5a6';
       ctx.lineWidth = 4;
       ctx.beginPath();
@@ -216,6 +237,7 @@ function drawMiniBossShape(e) {
       ctx.lineTo(h2X, h2Y);
       ctx.stroke();
 
+      // Blocos de marreta pneumática
       ctx.fillStyle = isHit ? '#ffffff' : '#34495e';
       ctx.fillRect(h1X - 8, h1Y - 14, 16, 28);
       ctx.fillRect(h2X - 8, h2Y - 14, 16, 28);
@@ -224,6 +246,7 @@ function drawMiniBossShape(e) {
       ctx.strokeRect(h1X - 8, h1Y - 14, 16, 28);
       ctx.strokeRect(h2X - 8, h2Y - 14, 16, 28);
 
+      // Faíscas acumulando na preparação do impacto sísmico
       if (isChargingSlam && Math.floor(frameCount) % 2 === 0) {
         ctx.fillStyle = '#f1c40f';
         ctx.fillRect(h1X + (Math.random() - 0.5) * 20, h1Y + (Math.random() - 0.5) * 20, 3, 3);
@@ -237,6 +260,7 @@ function drawMiniBossShape(e) {
       const rustBase = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#b33927');
       const rustDark = isHit ? '#ffffff' : '#533422';
 
+      // Chaminé de sucata no ombro traseiro soltando fuligem
       ctx.fillStyle = '#2d3436';
       ctx.fillRect(-R * 0.65, -R * 0.95 + step, 8, 16);
       if (Math.floor(frameCount) % 4 === 0) {
@@ -244,6 +268,7 @@ function drawMiniBossShape(e) {
         ctx.fillRect(-R * 0.65 + (Math.random() - 0.5) * 4, -R * 1.1 + step, 4, 4);
       }
 
+      // Carcaça de sucata com placas de ferro rebitadas
       ctx.fillStyle = rustBase;
       ctx.beginPath();
       ctx.moveTo(-R * 0.85, -R * 0.45 + step);
@@ -256,16 +281,19 @@ function drawMiniBossShape(e) {
       ctx.lineWidth = 3;
       ctx.stroke();
 
+      // Rebites industriais nas bordas
       ctx.fillStyle = '#f7d794';
       for (let rv = -3; rv <= 3; rv++) {
         ctx.fillRect(rv * (R * 0.22) - 1.5, -R * 0.4 + step, 3, 3);
       }
 
+      // Cabeça de monólito achatado
       ctx.fillStyle = rustDark;
       ctx.fillRect(-R * 0.25, -R * 0.75 + step, R * 0.5, R * 0.3);
       ctx.fillStyle = '#ff7675';
       ctx.fillRect(-R * 0.18, -R * 0.68 + step, R * 0.36, 3);
 
+      // Fornalha incandescente central no peito
       const furnacePulse = (Math.sin(frameCount * 0.16) + 1) * 0.5;
       ctx.fillStyle = '#2d3436';
       ctx.fillRect(-R * 0.35, -R * 0.15 + step, R * 0.7, R * 0.5);
@@ -273,6 +301,7 @@ function drawMiniBossShape(e) {
       ctx.fillStyle = furnacePulse > 0.4 ? '#f1c40f' : '#e67e22';
       ctx.fillRect(-R * 0.28, -R * 0.1 + step, R * 0.56, R * 0.4);
 
+      // Grelha de ferro da fornalha
       ctx.strokeStyle = '#1e272e';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -284,15 +313,20 @@ function drawMiniBossShape(e) {
       break;
     }
 
+    // ==========================================
+    // ARQUÉTIPO 2: PREDADORES ÁGEIS / FERAS ALADAS
+    // ==========================================
     case 'BLOOD_GARGOYLE': {
       const wingFlap = Math.sin(frameCount * 0.28) * 16;
       const bodyCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#4b6584');
       const wingMembrane = isHit ? '#ffffff' : '#8b0000';
 
+      // Asas de gárgula que se abrem ritmicamente
       ctx.fillStyle = wingMembrane;
       ctx.strokeStyle = '#2d3436';
       ctx.lineWidth = 2;
 
+      // Asa esquerda (traseira)
       ctx.beginPath();
       ctx.moveTo(-R * 0.2, -R * 0.2);
       ctx.lineTo(-R * 1.5, -R * 1.2 + wingFlap);
@@ -303,6 +337,7 @@ function drawMiniBossShape(e) {
       ctx.fill();
       ctx.stroke();
 
+      // Asa direita (frontal)
       ctx.beginPath();
       ctx.moveTo(R * 0.2, -R * 0.2);
       ctx.lineTo(R * 1.5, -R * 1.2 + wingFlap);
@@ -313,6 +348,7 @@ function drawMiniBossShape(e) {
       ctx.fill();
       ctx.stroke();
 
+      // Corpo pétreo aerodinâmico
       ctx.fillStyle = bodyCol;
       ctx.beginPath();
       ctx.moveTo(0, -R * 0.7);
@@ -322,11 +358,13 @@ function drawMiniBossShape(e) {
       ctx.closePath();
       ctx.fill();
 
+      // Cabeça gótica com chifres pontiagudos
       ctx.fillStyle = isHit ? '#ffffff' : '#2f3542';
       ctx.beginPath();
       ctx.arc(0, -R * 0.65, R * 0.32, 0, Math.PI * 2);
       ctx.fill();
 
+      // Chifres
       ctx.strokeStyle = '#1e272e';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
@@ -336,6 +374,7 @@ function drawMiniBossShape(e) {
       ctx.lineTo(R * 0.45, -R * 1.25);
       ctx.stroke();
 
+      // Olhos de sangue ardente
       ctx.fillStyle = '#ff1744';
       ctx.fillRect(-R * 0.18, -R * 0.72, 3.5, 3.5);
       ctx.fillRect(R * 0.05, -R * 0.72, 3.5, 3.5);
@@ -349,6 +388,7 @@ function drawMiniBossShape(e) {
       const shadowCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#341f97');
       const daggerCol = isHit ? '#ffffff' : (isAiming ? '#e74c3c' : '#00cec9');
 
+      // Torso etéreo sombrio alongado dissipando na cintura
       ctx.fillStyle = shadowCol;
       ctx.beginPath();
       ctx.moveTo(R * 0.35, -R * 0.6);
@@ -359,6 +399,7 @@ function drawMiniBossShape(e) {
       ctx.closePath();
       ctx.fill();
 
+      // Máscara escura com olhos violetas
       ctx.fillStyle = isHit ? '#ffffff' : '#090810';
       ctx.beginPath();
       ctx.moveTo(R * 0.55, 0);
@@ -372,10 +413,12 @@ function drawMiniBossShape(e) {
       ctx.fillRect(R * 0.22, -R * 0.22, 3.5, 2.5);
       ctx.fillRect(R * 0.22, R * 0.08, 3.5, 2.5);
 
+      // 4 adagas espectrais flutuantes
       ctx.strokeStyle = daggerCol;
       ctx.lineWidth = 2.5;
 
       if (isAiming) {
+        // As 4 adagas convergem para a frente em formação de ataque
         for (let d = 0; d < 4; d++) {
           const dy = (d - 1.5) * 9;
           ctx.beginPath();
@@ -384,6 +427,7 @@ function drawMiniBossShape(e) {
           ctx.stroke();
         }
       } else if (isDashing) {
+        // Adagas estendidas para trás em formato de flecha
         for (let d = 0; d < 4; d++) {
           const dy = (d < 2 ? -1 : 1) * (d % 2 === 0 ? 8 : 16);
           ctx.beginPath();
@@ -392,6 +436,7 @@ function drawMiniBossShape(e) {
           ctx.stroke();
         }
       } else {
+        // Orbitando o corpo fluidamente
         for (let d = 0; d < 4; d++) {
           const dAng = frameCount * 0.08 + (d * Math.PI / 2);
           const dx = Math.cos(dAng) * (R * 1.2);
@@ -415,6 +460,7 @@ function drawMiniBossShape(e) {
       const slicerCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#6c5ce7');
       const bladeCol = isHit ? '#ffffff' : '#e056fd';
 
+      // Cópias fantasma translúcidas (afterimages)
       ctx.save();
       ctx.globalAlpha = 0.25;
       ctx.fillStyle = slicerCol;
@@ -424,6 +470,7 @@ function drawMiniBossShape(e) {
       ctx.fill();
       ctx.restore();
 
+      // Chassi cibernético angular
       ctx.fillStyle = slicerCol;
       ctx.beginPath();
       ctx.moveTo(R * 0.6, 0);
@@ -438,9 +485,11 @@ function drawMiniBossShape(e) {
       ctx.lineWidth = 2;
       ctx.stroke();
 
+      // Visor holográfico
       ctx.fillStyle = '#00d2d3';
       ctx.fillRect(R * 0.2, -3, 8, 6);
 
+      // Braços com lâminas duplas de plasma cintilante
       const bladePulse = Math.sin(frameCount * 0.3) * 3;
       ctx.strokeStyle = bladeCol;
       ctx.lineWidth = 3.5;
@@ -453,10 +502,14 @@ function drawMiniBossShape(e) {
       break;
     }
 
+    // ==========================================
+    // ARQUÉTIPO 3: MAQUINÁRIO E ARTILHARIA DE CERCO
+    // ==========================================
     case 'ARTILLERY_MECH': {
       const isShootingRecoil = (e.shootTimer && e.shootTimer > 95) ? -6 : 0;
       const mechDark = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#1e3799');
 
+      // 4 sapatas mecânicas de sustentação
       ctx.strokeStyle = '#7f8c8d';
       ctx.lineWidth = 3.5;
       const legP = [[-R * 0.8, -R * 0.8], [R * 0.7, -R * 0.8], [-R * 0.8, R * 0.8], [R * 0.7, R * 0.8]];
@@ -469,6 +522,7 @@ function drawMiniBossShape(e) {
         ctx.fillRect(legP[lp][0] - 4, legP[lp][1] - 4, 8, 8);
       }
 
+      // Torreta blindada cilíndrica
       ctx.fillStyle = mechDark;
       ctx.beginPath();
       ctx.arc(0, 0, R * 0.65, 0, Math.PI * 2);
@@ -477,10 +531,12 @@ function drawMiniBossShape(e) {
       ctx.lineWidth = 2.5;
       ctx.stroke();
 
+      // Cano duplo longo de artilharia com recuo físico
       ctx.fillStyle = '#2d3436';
       ctx.fillRect(R * 0.2 + isShootingRecoil, -R * 0.25, R * 1.1, 5);
       ctx.fillRect(R * 0.2 + isShootingRecoil, R * 0.1, R * 1.1, 5);
 
+      // Mira a laser vermelha frontal
       ctx.strokeStyle = 'rgba(255, 56, 56, 0.65)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
@@ -488,6 +544,7 @@ function drawMiniBossShape(e) {
       ctx.lineTo(R * 3.2, -R * 0.25);
       ctx.stroke();
 
+      // Cúpula central da torreta
       ctx.fillStyle = '#00d2d3';
       ctx.beginPath();
       ctx.arc(0, 0, 4, 0, Math.PI * 2);
@@ -499,6 +556,7 @@ function drawMiniBossShape(e) {
       const boilPulse = Math.sin(frameCount * 0.25) * 2;
       const boilerCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#d35400');
 
+      // Chaminés de escape traseiras emitindo brasas
       ctx.fillStyle = '#2d3436';
       ctx.fillRect(-R * 0.9, -R * 0.7, 7, 14);
       ctx.fillRect(-R * 0.9, R * 0.3, 7, 14);
@@ -509,6 +567,7 @@ function drawMiniBossShape(e) {
         ctx.fillRect(-R * 1.2 - Math.random() * 4, R * 0.35 + (Math.random() - 0.5) * 6, 3, 3);
       }
 
+      // Caldeira esférica pressurizada
       ctx.fillStyle = boilerCol;
       ctx.beginPath();
       ctx.arc(0, 0, R * 0.8 + boilPulse * 0.3, 0, Math.PI * 2);
@@ -517,12 +576,14 @@ function drawMiniBossShape(e) {
       ctx.lineWidth = 2.5;
       ctx.stroke();
 
+      // Cinta de reforço de bronze rebitada
       ctx.strokeStyle = '#f39c12';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.arc(0, 0, R * 0.8, -Math.PI * 0.5, Math.PI * 0.5);
       ctx.stroke();
 
+      // Visor de grelha emitindo chamas internas
       ctx.fillStyle = '#1e272e';
       ctx.fillRect(R * 0.15, -R * 0.35, R * 0.45, R * 0.7);
 
@@ -530,6 +591,7 @@ function drawMiniBossShape(e) {
       ctx.fillStyle = fireShift > 0 ? '#f1c40f' : '#e74c3c';
       ctx.fillRect(R * 0.22, -R * 0.25, R * 0.32, R * 0.5);
 
+      // Barras da grelha
       ctx.strokeStyle = '#2d3436';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -545,10 +607,12 @@ function drawMiniBossShape(e) {
       const isMortarRecoil = (e.mortarTimer && e.mortarTimer > 120) ? -5 : 0;
       const hullCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#b71540');
 
+      // Chassi esteirado militar pesado
       ctx.fillStyle = '#2d3436';
       ctx.fillRect(-R * 0.8, -R * 0.85, R * 1.6, 12);
       ctx.fillRect(-R * 0.8, R * 0.55, R * 1.6, 12);
 
+      // Casco angular
       ctx.fillStyle = hullCol;
       ctx.beginPath();
       ctx.moveTo(-R * 0.65, -R * 0.6);
@@ -562,6 +626,7 @@ function drawMiniBossShape(e) {
       ctx.lineWidth = 2;
       ctx.stroke();
 
+      // Canhão de morteiro montado no dorso (inclinado a 40 graus)
       ctx.save();
       ctx.translate(isMortarRecoil * 0.7, 0);
       ctx.rotate(-0.65);
@@ -571,6 +636,7 @@ function drawMiniBossShape(e) {
       ctx.lineWidth = 2;
       ctx.strokeRect(0, -8, R * 1.2, 16);
 
+      // Anel de fumaça telegrafada durante recuo
       if (isMortarRecoil < 0) {
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
         ctx.lineWidth = 2;
@@ -580,6 +646,7 @@ function drawMiniBossShape(e) {
       }
       ctx.restore();
 
+      // Sinalizador luminoso na cabine
       ctx.fillStyle = Math.floor(frameCount / 8) % 2 === 0 ? '#ff3838' : '#7f1d1d';
       ctx.beginPath();
       ctx.arc(-R * 0.25, 0, 4, 0, Math.PI * 2);
@@ -587,10 +654,14 @@ function drawMiniBossShape(e) {
       break;
     }
 
+    // ==========================================
+    // ARQUÉTIPO 4: OCULTISTAS, INSETÓIDES E ENTIDADES ABISSAIS
+    // ==========================================
     case 'BROOD_MATRIARCH': {
       const pinch = Math.sin(frameCount * 0.18) * 3.5;
       const chitinCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#006266');
 
+      // 6 patas quitinosas articuladas com espinhos
       ctx.strokeStyle = isHit ? '#ffffff' : '#004d40';
       ctx.lineWidth = 2.5;
       for (let p = 0; p < 3; p++) {
@@ -606,6 +677,7 @@ function drawMiniBossShape(e) {
         ctx.stroke();
       }
 
+      // Abdômen sacular enorme translúcido na traseira
       ctx.fillStyle = isHit ? '#ffffff' : 'rgba(0, 206, 201, 0.45)';
       ctx.beginPath();
       ctx.ellipse(-R * 0.75, 0, R * 0.85, R * 0.7, 0, 0, Math.PI * 2);
@@ -614,20 +686,23 @@ function drawMiniBossShape(e) {
       ctx.lineWidth = 2;
       ctx.stroke();
 
+      // Ovos verde-esmeralda pulsantes no interior
       const eggPulse = Math.sin(frameCount * 0.12) * 1.5;
       ctx.fillStyle = '#2ecc71';
       const eggPos = [[-R * 0.95, -R * 0.2], [-R * 0.75, R * 0.2], [-R * 0.55, -R * 0.15], [-R * 0.85, R * 0.15]];
       for (let eg = 0; eg < 4; eg++) {
         ctx.beginPath();
-        ctx.arc(eggPos[eg][0], eggPos[eg][1], 4 + (eg % 2 === 0 ? eggPulse : -eggPulse)), 0, Math.PI * 2;
+        ctx.arc(eggPos[eg][0], eggPos[eg][1], 4 + (eg % 2 === 0 ? eggPulse : -eggPulse), 0, Math.PI * 2);
         ctx.fill();
       }
 
+      // Cabeça e carcaça quitinosa dianteira
       ctx.fillStyle = chitinCol;
       ctx.beginPath();
       ctx.ellipse(R * 0.25, 0, R * 0.55, R * 0.48, 0, 0, Math.PI * 2);
       ctx.fill();
 
+      // Mandíbulas enormes afiadas na frente
       ctx.fillStyle = '#1e272e';
       ctx.beginPath();
       ctx.moveTo(R * 0.6, -R * 0.25);
@@ -649,6 +724,7 @@ function drawMiniBossShape(e) {
       const bioPulse = Math.sin(frameCount * 0.08) * 2.5;
       const hiveCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#16a085');
 
+      // Ninho biomórfico bulboso irregular
       ctx.fillStyle = hiveCol;
       ctx.beginPath();
       ctx.moveTo(0, -R * 0.95 - bioPulse);
@@ -661,6 +737,7 @@ function drawMiniBossShape(e) {
       ctx.lineWidth = 2.5;
       ctx.stroke();
 
+      // Fendas alveolares
       ctx.fillStyle = '#0b3b32';
       const hives = [[-R * 0.35, -R * 0.3], [R * 0.35, -R * 0.2], [-R * 0.1, R * 0.35], [R * 0.4, R * 0.3]];
       for (let h = 0; h < 4; h++) {
@@ -669,6 +746,7 @@ function drawMiniBossShape(e) {
         ctx.fill();
       }
 
+      // Micro-morcegos orbitando ao redor do ninho
       ctx.fillStyle = '#ff4757';
       for (let b = 0; b < 3; b++) {
         const bAng = frameCount * 0.09 + (b * Math.PI * 2 / 3);
@@ -690,6 +768,7 @@ function drawMiniBossShape(e) {
       const drape = Math.sin(frameCount * 0.15) * 3;
       const robeCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#2c003e');
 
+      // Manto longo rasgado cerimonial
       ctx.fillStyle = robeCol;
       ctx.beginPath();
       ctx.moveTo(-R * 0.45, -R * 0.65 + hover);
@@ -702,15 +781,18 @@ function drawMiniBossShape(e) {
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
+      // Máscara de crânio dourado
       ctx.fillStyle = isHit ? '#ffffff' : '#f1c40f';
       ctx.beginPath();
       ctx.arc(0, -R * 0.55 + hover, R * 0.32, 0, Math.PI * 2);
       ctx.fill();
 
+      // Cavidades oculares vazias violetas
       ctx.fillStyle = '#1e082b';
       ctx.fillRect(-R * 0.18, -R * 0.6 + hover, 4, 4);
       ctx.fillRect(R * 0.06, -R * 0.6 + hover, 4, 4);
 
+      // Cajado com símbolo do vazio
       const isRitual = (e.ritualTimer && e.ritualTimer > 100);
       const stX = R * 0.85;
       ctx.strokeStyle = '#95a5a6';
@@ -720,11 +802,13 @@ function drawMiniBossShape(e) {
       ctx.lineTo(stX, -R * 1.05 + hover);
       ctx.stroke();
 
+      // Orbe cósmico do cajado
       ctx.fillStyle = isRitual ? '#ff4757' : '#a29bfe';
       ctx.beginPath();
       ctx.arc(stX, -R * 1.15 + hover, isRitual ? 8 : 5, 0, Math.PI * 2);
       ctx.fill();
 
+      // Símbolos de gravidade orbitando seus pés
       for (let s = 0; s < 4; s++) {
         const sAng = frameCount * 0.04 + (s * Math.PI / 2);
         const sx = Math.cos(sAng) * (R * 0.85);
@@ -738,6 +822,7 @@ function drawMiniBossShape(e) {
     case 'RUNIC_WARDEN': {
       const stoneCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#2c3e50');
 
+      // Construto monolítico central
       ctx.fillStyle = stoneCol;
       ctx.beginPath();
       ctx.moveTo(0, -R * 0.85);
@@ -751,6 +836,7 @@ function drawMiniBossShape(e) {
       ctx.lineWidth = 2.5;
       ctx.stroke();
 
+      // Núcleo losango de energia mágica pura no peito
       const manaPulse = (Math.sin(frameCount * 0.15) + 1) * 2;
       ctx.fillStyle = isHit ? '#ffffff' : '#00d2d3';
       ctx.beginPath();
@@ -761,6 +847,7 @@ function drawMiniBossShape(e) {
       ctx.closePath();
       ctx.fill();
 
+      // 3 runas hexagonais que giram continuamente em torno do corpo
       for (let r = 0; r < 3; r++) {
         const rAng = frameCount * 0.035 + (r * Math.PI * 2 / 3);
         const rx = Math.cos(rAng) * (R * 1.35);
@@ -789,6 +876,7 @@ function drawMiniBossShape(e) {
     }
 
     case 'VOID_PRECURSOR': {
+      // Núcleo abissal escuro
       ctx.fillStyle = isHit ? '#ffffff' : '#08010f';
       ctx.beginPath();
       ctx.arc(0, 0, R * 0.72, 0, Math.PI * 2);
@@ -797,6 +885,7 @@ function drawMiniBossShape(e) {
       ctx.lineWidth = 3;
       ctx.stroke();
 
+      // 3 espirais / anéis gravitacionais púrpuras em rotação contínua
       ctx.strokeStyle = isHit ? '#ffffff' : 'rgba(142, 68, 173, 0.65)';
       ctx.lineWidth = 3.5;
       ctx.beginPath();
@@ -815,6 +904,7 @@ function drawMiniBossShape(e) {
       ctx.ellipse(0, 0, R * 1.05, R * 0.42, frameCount * 0.06, 0, Math.PI * 2);
       ctx.stroke();
 
+      // Fragmentos cósmicos orbitantes
       ctx.fillStyle = '#a29bfe';
       for (let f = 0; f < 3; f++) {
         const fa = frameCount * 0.05 + f * 2.1;
@@ -827,6 +917,7 @@ function drawMiniBossShape(e) {
       const chaosWave = Math.sin(frameCount * 0.16) * 5;
       const demonCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#961b1b');
 
+      // 4 tentáculos na base ondulando proceduralmente
       ctx.strokeStyle = demonCol;
       ctx.lineWidth = 3.5;
       for (let t = 0; t < 4; t++) {
@@ -838,6 +929,7 @@ function drawMiniBossShape(e) {
         ctx.stroke();
       }
 
+      // Torso colossal do arauto
       ctx.fillStyle = demonCol;
       ctx.beginPath();
       ctx.arc(0, 0, R * 0.72, 0, Math.PI * 2);
@@ -846,25 +938,30 @@ function drawMiniBossShape(e) {
       ctx.lineWidth = 2.5;
       ctx.stroke();
 
+      // Dois pares de chifres entrelaçados
       ctx.strokeStyle = '#1e080d';
       ctx.lineWidth = 4;
       ctx.beginPath();
+      // Par primário
       ctx.moveTo(-R * 0.4, -R * 0.4);
       ctx.quadraticCurveTo(-R * 0.9, -R * 1.1 + chaosWave, -R * 1.35, -R * 0.8);
       ctx.moveTo(R * 0.4, -R * 0.4);
       ctx.quadraticCurveTo(R * 0.9, -R * 1.1 + chaosWave, R * 1.35, -R * 0.8);
+      // Par secundário
       ctx.moveTo(-R * 0.25, -R * 0.6);
       ctx.quadraticCurveTo(-R * 0.6, -R * 1.4, -R * 0.75, -R * 1.6);
       ctx.moveTo(R * 0.25, -R * 0.6);
       ctx.quadraticCurveTo(R * 0.6, -R * 1.4, R * 0.75, -R * 1.6);
       ctx.stroke();
 
+      // Olho central gigante que dilata a pupila com a fúria
       const eyeR = R * 0.32 + Math.sin(frameCount * 0.12) * 2;
       ctx.fillStyle = '#ff4757';
       ctx.beginPath();
       ctx.arc(0, -R * 0.05, eyeR, 0, Math.PI * 2);
       ctx.fill();
 
+      // Pupila demoníaca vertical
       ctx.fillStyle = '#0a0104';
       ctx.beginPath();
       ctx.ellipse(0, -R * 0.05, 3, eyeR * 0.8, 0, 0, Math.PI * 2);
@@ -872,6 +969,7 @@ function drawMiniBossShape(e) {
       break;
     }
 
+    // Fallback de segurança para minibosses não mapeados
     default: {
       ctx.fillStyle = eliteColor;
       ctx.beginPath();
@@ -952,7 +1050,147 @@ export function drawEnemyShape(e) {
   }
 
   if (e.isBoss) {
-    drawBoss(ctx, e, frameCount);
+    if (e.bossId === 1) {
+      const wingFlap = Math.sin(frameCount * 0.18) * 16;
+      ctx.fillStyle = '#180309';
+      ctx.beginPath();
+      ctx.moveTo(-10, -15);
+      ctx.lineTo(-65, -45 + wingFlap);
+      ctx.lineTo(-45, 10 + wingFlap * 0.5);
+      ctx.lineTo(-60, 45 + wingFlap);
+      ctx.lineTo(0, 20);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(10, -15);
+      ctx.lineTo(65, -45 + wingFlap);
+      ctx.lineTo(45, 10 + wingFlap * 0.5);
+      ctx.lineTo(60, 45 + wingFlap);
+      ctx.lineTo(0, 20);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#68081d';
+      ctx.beginPath();
+      ctx.moveTo(-28, -20);
+      ctx.lineTo(0, 52);
+      ctx.lineTo(28, -20);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#2c0c16';
+      ctx.fillRect(-22, -26, 44, 40);
+      ctx.strokeStyle = '#f1c40f';
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(-22, -26, 44, 40);
+      ctx.fillStyle = '#0d0205';
+      ctx.beginPath();
+      ctx.arc(0, -32, 16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ff1744';
+      ctx.fillRect(-7, -35, 4, 4);
+      ctx.fillRect(3, -35, 4, 4);
+    } else if (e.bossId === 2) {
+      for (let r = 0; r < 4; r++) {
+        const orbAng = frameCount * 0.04 + (r * Math.PI / 2);
+        const rx = Math.cos(orbAng) * 98;
+        const ry = Math.sin(orbAng) * 98;
+        ctx.fillStyle = '#1c1008';
+        ctx.strokeStyle = '#e67e22';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(rx, ry, 15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#140c06';
+      ctx.beginPath();
+      for (let s = 0; s < 6; s++) {
+        const a = (s * Math.PI * 2) / 6 + (frameCount * 0.005);
+        const hx = Math.cos(a) * e.radius;
+        const hy = Math.sin(a) * e.radius;
+        if (s === 0) ctx.moveTo(hx, hy);
+        else ctx.lineTo(hx, hy);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = e.isEnraged ? '#e74c3c' : '#d35400';
+      ctx.lineWidth = 5;
+      ctx.stroke();
+      const corePulse = Math.sin(frameCount * 0.12) * 6;
+      ctx.fillStyle = 'rgba(230, 126, 34, 0.35)';
+      ctx.fillRect(-26 - corePulse / 2, -26 - corePulse / 2, 52 + corePulse, 52 + corePulse);
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillRect(-20 - corePulse / 2, -20 - corePulse / 2, 40 + corePulse, 40 + corePulse);
+    } else if (e.bossId === 3) {
+      const drape = Math.sin(frameCount * 0.1) * 8;
+      ctx.fillStyle = '#060c12';
+      ctx.beginPath();
+      ctx.moveTo(-35, -45);
+      ctx.quadraticCurveTo(-50 + drape, 15, -30, 65);
+      ctx.lineTo(30, 65);
+      ctx.quadraticCurveTo(50 - drape, 15, 35, -45);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#00cec9';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#020406';
+      ctx.beginPath();
+      ctx.arc(0, -42, 22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#81ecec';
+      ctx.beginPath();
+      ctx.arc(-8, -44, 3.5, 0, Math.PI * 2);
+      ctx.arc(8, -44, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.save();
+      ctx.translate(55, -20 + Math.sin(frameCount * 0.12) * 10);
+      ctx.rotate(0.4);
+      ctx.fillStyle = '#636e72';
+      ctx.fillRect(-3, -60, 6, 120);
+      ctx.strokeStyle = '#00cec9';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.arc(0, -60, 40, 0, Math.PI * 0.8, true);
+      ctx.stroke();
+      ctx.restore();
+    } else if (e.bossId === 4) {
+      for (let t = 0; t < 8; t++) {
+        const baseAngle = (t * Math.PI * 2) / 8;
+        ctx.strokeStyle = '#341f97';
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        let currX = Math.cos(baseAngle) * 55;
+        let currY = Math.sin(baseAngle) * 55;
+        ctx.moveTo(currX, currY);
+        for (let seg = 1; seg <= 4; seg++) {
+          const wave = Math.sin(frameCount * 0.15 + t + seg) * 16;
+          currX += Math.cos(baseAngle) * 22 + Math.cos(baseAngle + Math.PI / 2) * wave * 0.3;
+          currY += Math.sin(baseAngle) * 22 + Math.sin(baseAngle + Math.PI / 2) * wave * 0.3;
+          ctx.lineTo(currX, currY);
+        }
+        ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(155, 89, 182, 0.55)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 115, 45, frameCount * 0.02, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(232, 67, 147, 0.45)';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 115, 45, -frameCount * 0.025, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = '#08010f';
+      ctx.beginPath();
+      ctx.arc(0, 0, e.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#a29bfe';
+      ctx.lineWidth = 5;
+      ctx.stroke();
+      ctx.fillStyle = '#e84393';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 30, 10, frameCount * 0.04, 0, Math.PI * 2);
+      ctx.fill();
+    }
   } else if (e.isMiniBoss) {
     drawMiniBossShape(e);
   } else {
@@ -1399,7 +1637,7 @@ export function drawEnemyShape(e) {
         ctx.stroke();
         ctx.beginPath();
         ctx.moveTo(0, R_m * 0.4);
-        ctx.quadraticCurveTo(R_m * 0.5, R_m * 0.7, R_m * 0.95, -R_m * 0.25);
+        ctx.quadraticCurveTo(R_m * 0.5, R_m * 0.7, R_m * 0.95, R_m * 0.25);
         ctx.stroke();
       }
     } else if (e.baseType === 'SPLITTER' || e.baseType === 'SPLITTER_MINI') {
@@ -1663,6 +1901,7 @@ export function render() {
   const viewTop = camera.y - pad;
   const viewBottom = camera.y + viewH + pad;
 
+  // Destrutíveis da Arena (Frustum Culled)
   for (let i = 0; i < props.length; i++) {
     const p = props[i];
     if (p.x < viewLeft || p.x > viewRight || p.y < viewTop || p.y > viewBottom) continue;
@@ -1676,6 +1915,7 @@ export function render() {
     ctx.restore();
   }
 
+  // Itens Coletáveis (Frustum Culled)
   for (let i = 0; i < drops.length; i++) {
     const d = drops[i];
     if (d.x < viewLeft || d.x > viewRight || d.y < viewTop || d.y > viewBottom) continue;
@@ -1712,6 +1952,7 @@ export function render() {
     ctx.restore();
   }
 
+  // Baús de Chefe
   for (let i = 0; i < chests.length; i++) {
     const ch = chests[i];
     if (ch.x < viewLeft || ch.x > viewRight || ch.y < viewTop || ch.y > viewBottom) continue;
@@ -1728,6 +1969,7 @@ export function render() {
     ctx.restore();
   }
 
+  // Gemas de Experiência (Frustum Culled + Glow sem shadowBlur)
   for (let i = 0; i < gems.length; i++) {
     const g = gems[i];
     if (g.x < viewLeft || g.x > viewRight || g.y < viewTop || g.y > viewBottom) continue;
@@ -1751,6 +1993,7 @@ export function render() {
     ctx.restore();
   }
 
+  // Telegrafias de Ataque dos Chefes
   for (let i = 0; i < bossTelegraphs.length; i++) {
     const t = bossTelegraphs[i];
     const progress = 1 - (t.timer / t.maxTimer);
@@ -1765,6 +2008,7 @@ export function render() {
     ctx.stroke();
   }
 
+  // Projéteis dos Chefes
   for (let i = 0; i < bossProjectiles.length; i++) {
     const bp = bossProjectiles[i];
     ctx.save();
@@ -1778,6 +2022,7 @@ export function render() {
     ctx.restore();
   }
 
+  // Lasers do Chefe Final
   if (activeBoss && activeBoss.bossId === 4) {
     const laserCount = activeBoss.isEnraged ? 6 : 4;
     ctx.strokeStyle = activeBoss.isEnraged ? 'rgba(232, 67, 147, 0.85)' : 'rgba(155, 89, 182, 0.85)';
@@ -1791,6 +2036,7 @@ export function render() {
     }
   }
 
+  // Aura Protetora
   if (player.auraLvl > 0 || player.evolvedAura) {
     const auraRadius = (player.evolvedAura ? 150 : 65) + player.auraLvl * 18;
     const pulse = Math.sin(frameCount * 0.15) * 3;
@@ -1803,6 +2049,7 @@ export function render() {
     ctx.fill();
   }
 
+  // Bíblias Protetoras / Orbitais
   if (player.orbitals > 0) {
     const orbDist = player.evolvedOrbitals ? 88 : 72;
     for (let oIdx = 0; oIdx < player.orbitals; oIdx++) {
@@ -1820,6 +2067,7 @@ export function render() {
     }
   }
 
+  // Machado Giratório de Kragdor
   if (player.axeCount > 0) {
     const count = player.evolvedAxe ? Math.max(player.axeCount, 6) : player.axeCount;
     const r = player.axeRadius || 56;
@@ -1867,6 +2115,7 @@ export function render() {
     }
   }
 
+  // Armas e Projéteis dos Heróis
   for (let i = 0; i < bullets.length; i++) {
     const b = bullets[i];
 
@@ -2037,6 +2286,7 @@ export function render() {
     }
   }
 
+  // Balas Inimigas (Frustum Culled)
   for (let i = 0; i < enemyBullets.length; i++) {
     const eb = enemyBullets[i];
     if (eb.x < viewLeft || eb.x > viewRight || eb.y < viewTop || eb.y > viewBottom) continue;
@@ -2049,6 +2299,7 @@ export function render() {
     ctx.stroke();
   }
 
+  // Desenho dos Inimigos (Frustum Culled estrito)
   for (let i = 0; i < enemies.length; i++) {
     const e = enemies[i];
     if (e.isBoss || (e.x >= viewLeft && e.x <= viewRight && e.y >= viewTop && e.y <= viewBottom)) {
@@ -2058,6 +2309,7 @@ export function render() {
 
   drawPlayerCharacter();
 
+  // Partículas (Frustum Culled)
   for (let i = 0; i < particles.length; i++) {
     const p = particles[i];
     if (p.x >= viewLeft && p.x <= viewRight && p.y >= viewTop && p.y <= viewBottom) {
@@ -2066,6 +2318,7 @@ export function render() {
     }
   }
 
+  // Textos Flutuantes de Dano (Frustum Culled + Stroke sem shadowBlur)
   for (let i = 0; i < damageTexts.length; i++) {
     const dtItem = damageTexts[i];
     if (dtItem.x < viewLeft || dtItem.x > viewRight || dtItem.y < viewTop || dtItem.y > viewBottom) continue;
@@ -2086,6 +2339,7 @@ export function render() {
 
   ctx.restore();
 
+  // Joystick Virtual Mobile
   if (stick.active) {
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
     ctx.lineWidth = 3;

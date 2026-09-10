@@ -42,7 +42,7 @@ export const upgradesPool = [
     apply: () => {
       player.axeRadius = (player.axeRadius || 56) + 16;
       const w = player.weapons.find(wp => wp.type === 'AXE');
-      if (w) w.damageMult += 0.30;
+      if (w) w.damageMult += 0.15;
     },
     isAvailable: () => player.weapons.some(w => w.type === 'AXE') && (player.axeRadius || 56) < 110
   },
@@ -69,13 +69,19 @@ export const upgradesPool = [
     title: "Superposição Cáustica",
     rarity: "card-rare",
     badge: "Poção",
-    desc: "Aumenta em +35% o dano corrosivo e a área de contaminação das poças ácidas",
-    stat: "+35% Dano & Área",
+    desc: "Aumenta em +15% o dano corrosivo e a área de contaminação das poças ácidas",
+    stat: "+15% Dano & Área",
     apply: () => {
       const w = player.weapons.find(wp => wp.type === 'POTION');
-      if (w) w.damageMult += 0.35;
+      if (w) {
+        w.damageMult += 0.15;
+        w.potencyCount = (w.potencyCount || 0) + 1;
+      }
     },
-    isAvailable: () => player.weapons.some(w => w.type === 'POTION')
+    isAvailable: () => {
+      const w = player.weapons.find(wp => wp.type === 'POTION');
+      return !!w && (w.potencyCount || 0) < 3;
+    }
   },
 
   // --- Aprimoramentos do Cajado (Ignis) ---
@@ -99,12 +105,12 @@ export const upgradesPool = [
     title: "Poder da Fênix",
     rarity: "card-rare",
     badge: "Cajado",
-    desc: "As esferas do cajado perfuram +2 inimigos e ampliam o rastro de queimadura",
-    stat: "+2 Perfuração Arcana",
+    desc: "As esferas do cajado perfuram +1 inimigo e ampliam o rastro de queimadura",
+    stat: "+1 Perfuração Arcana",
     apply: () => {
-      player.staffPierceBonus = (player.staffPierceBonus || 0) + 2;
+      player.staffPierceBonus = (player.staffPierceBonus || 0) + 1;
       const w = player.weapons.find(wp => wp.type === 'STAFF');
-      if (w) w.damageMult += 0.20;
+      if (w) w.damageMult += 0.08;
     },
     isAvailable: () => player.weapons.some(w => w.type === 'STAFF') && (player.staffPierceBonus || 0) < 4
   },
@@ -131,13 +137,19 @@ export const upgradesPool = [
     title: "Gume Astral",
     rarity: "card-rare",
     badge: "Lâminas",
-    desc: "+30% de velocidade de voo e dano letal para as espadas teleguiadas",
-    stat: "+30% Voo e Dano",
+    desc: "+12% de velocidade de voo e dano letal para as espadas teleguiadas",
+    stat: "+12% Voo e Dano",
     apply: () => {
       const w = player.weapons.find(wp => wp.type === 'SWORD');
-      if (w) w.damageMult += 0.30;
+      if (w) {
+        w.damageMult += 0.12;
+        w.swordSpeedCount = (w.swordSpeedCount || 0) + 1;
+      }
     },
-    isAvailable: () => player.weapons.some(w => w.type === 'SWORD')
+    isAvailable: () => {
+      const w = player.weapons.find(wp => wp.type === 'SWORD');
+      return !!w && (w.swordSpeedCount || 0) < 3;
+    }
   },
 
   // --- Aprimoramentos do Martelo (Sir Roland) ---
@@ -162,11 +174,11 @@ export const upgradesPool = [
     title: "Golpe Demolidor",
     rarity: "card-rare",
     badge: "Martelo",
-    desc: "O martelo golpeia com +45% de dano de esmagamento no epicentro e fissuras frontais",
-    stat: "+45% Dano Esmagador",
+    desc: "O martelo golpeia com +20% de dano de esmagamento no epicentro e fissuras frontais",
+    stat: "+20% Dano Esmagador",
     apply: () => {
       const w = player.weapons.find(wp => wp.type === 'HAMMER');
-      if (w) w.damageMult += 0.45;
+      if (w) w.damageMult += 0.20;
     },
     isAvailable: () => player.weapons.some(w => w.type === 'HAMMER')
   },
@@ -189,13 +201,14 @@ export const upgradesPool = [
     title: "Poder Bruto",
     rarity: "card-common",
     badge: "Passiva",
-    desc: "Aumenta o dano global do herói em +15%",
-    stat: "+15% Dano Global",
+    desc: "Aumenta o dano global do herói em +7%",
+    stat: "+7% Dano Global",
     apply: () => { 
-      player.damage = Math.round(player.damage * 1.15); 
+      player.damagePercentBonus = (player.damagePercentBonus || 0) + 0.07;
+      player.damageCardCount = (player.damageCardCount || 0) + 1;
       player.hasPowerPassive = true; 
     },
-    isAvailable: () => true
+    isAvailable: () => (player.damageCardCount || 0) < 4
   },
   {
     id: 'haste',
@@ -228,9 +241,12 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Passiva",
     desc: "Aumenta as chances e o multiplicador de crítico",
-    stat: "+10% Chance Crítica",
-    apply: () => { player.critChance += 0.10; player.critMult += 0.25; },
-    isAvailable: () => player.critChance < 0.65
+    stat: "+8% Chance / +0.08 Mult",
+    apply: () => { 
+      player.critChance += 0.08; 
+      player.critMult += 0.08; 
+    },
+    isAvailable: () => player.critChance < 0.40
   },
   {
     id: 'magnet',

@@ -27,7 +27,6 @@ import {
 import { initUI, openCharacterSelect, triggerDeath, triggerVictory, openChestModal } from './systems/ui.js';
 import { render } from './render/renderer.js';
 import { playSfx, triggerHaptic } from './core/audio.js';
-import { updateBoss } from './entities/bosses/bossRegistry.js';
 
 export let canvas = null;
 export let ctx = null;
@@ -1064,19 +1063,356 @@ function update(dt) {
       }
 
       if (e.isBoss) {
-        updateBoss(e, dt, {
-          player,
-          frameCount,
-          enemies,
-          enemyBullets,
-          bossTelegraphs,
-          bossProjectiles,
-          bossShockwaves,
-          voidVortices,
-          triggerShake,
-          createHitParticles,
-          addDamageText
-        });
+        e.stateTimer = (e.stateTimer || 0) + dt;
+
+        if (e.bossId === 1) {
+          e.mistTimer = (e.mistTimer || 0) + dt;
+          const mistInterval = e.isEnraged ? 210 : 310;
+
+          if (e.mistState === 'DASHING') {
+            curSpeed = e.speed * 3.8;
+            e.x += Math.cos(e.mistAngle) * curSpeed * dt;
+            e.y += Math.sin(e.mistAngle) * curSpeed * dt;
+            createHitParticles(e.x, e.y, '#8e44ad', 2);
+            e.mistDuration -= dt;
+
+            const mdx = player.x - e.x;
+            const mdy = player.y - e.y;
+            if (mdx * mdx + mdy * mdy < (player.radius + e.radius * 0.8) ** 2 && player.iFrames <= 0) {
+              const mistDmg = Math.round(e.damage * 0.65);
+              player.hp -= mistDmg;
+              player.iFrames = 25;
+              triggerShake(8);
+              playSfx('hit');
+              addDamageText(player.x, player.y, `-${mistDmg}`, false, '#8e44ad');
+            }
+
+            if (e.mistDuration <= 0) {
+              e.mistState = 'IDLE';
+              triggerShake(10);
+              playSfx('shoot');
+              const bAng = Math.atan2(player.y - e.y, player.x - e.x);
+              const count = e.isEnraged ? 9 : 5;
+              for (let k = -Math.floor(count / 2); k <= Math.floor(count / 2); k++) {
+                const fAng = bAng + (k * 0.22);
+                enemyBullets.push({
+                  x: e.x, y: e.y,
+                  vx: Math.cos(fAng) * 4.8, vy: Math.sin(fAng) * 4.8,
+                  radius: 6, damage: Math.round(e.damage * 0.28), life: 110
+                });
+              }
+            }
+            continue;
+          }
+
+          if (e.mistTimer > mistInterval && e.mistState === 'IDLE') {
+            e.mistTimer = 0;
+            e.windupTimer = 22;
+            e.windupMax = 22;
+            e.windupAction = () => {
+              e.mistState = 'DASHING';
+              e.mistDuration = 36;
+              e.mistAngle = Math.atan2(player.y - e.y, player.x - e.x);
+              playSfx('boss');
+              triggerShake(8);
+            };
+            continue;
+          }
+
+          const attackInterval = e.isEnraged ? 45 : 75;
+          if (e.stateTimer > attackInterval) {
+            e.stateTimer = 0;
+            e.windupTimer = 18;
+            e.windupMax = 18;
+            e.windupAction = () => {
+              if (e.isEnraged) {
+                for (let wave = 0; wave < 4; wave++) {
+                  const waveOffset = wave * (Math.PI / 8);
+                  for (let k = 0; k < 12; k++) {
+                    const fAng = (k * Math.PI * 2 / 12) + waveOffset;
+                    const spd = 3.6 + wave * 0.7;
+                    enemyBullets.push({
+                      x: e.x, y: e.y,
+                      vx: Math.cos(fAng) * spd, vy: Math.sin(fAng) * spd,
+                      radius: 6, damage: Math.round(e.damage * 0.30), life: 110
+                    });
+                  }
+                }
+                playSfx('shoot');
+              } else {
+                const bAng = Math.atan2(player.y - e.y, player.x - e.x);
+                for (let k = -3; k <= 3; k++) {
+                  const fAng = bAng + (k * 0.22);
+                  enemyBullets.push({
+                    x: e.x, y: e.y,
+                    vx: Math.cos(fAng) * 4.8, vy: Math.sin(fAng) * 4.8,
+                    radius: 6, damage: Math.round(e.damage * 0.25), life: 110
+                  });
+                }
+                playSfx('shoot');
+              }
+            };
+          }
+          
+          e.teleportTimer = (e.teleportTimer || 0) + dt;
+          const teleInterval = e.isEnraged ? 240 : 360;
+          if (e.teleportTimer > teleInterval && !e.isTeleporting && e.mistState === 'IDLE') {
+            e.teleportTimer = 0;
+            e.isTeleporting = true;
+            const targetX = player.x + (Math.random() - 0.5) * 260;
+            const targetY = player.y + (Math.random() - 0.5) * 260;
+            createHitParticles(e.x, e.y, '#8e44ad', 10);
+            bossTelegraphs.push({
+              x: targetX,
+              y: targetY,
+              radius: 52,
+              timer: 36,
+              maxTimer: 36,
+              damage: Math.round(e.damage * 0.70),
+              type: 'VAMPIRE_TELEPORT',
+              boss: e
+            });
+          }
+        } else if (e.bossId === 2) {
+          e.orbAttackTimer = (e.orbAttackTimer || 0) + dt;
+          const orbInterval = e.isEnraged ? 85 : 125;
+
+          if (e.orbCount > 0 && e.orbAttackTimer > orbInterval) {
+            e.orbAttackTimer = 0;
+            e.windupTimer = 16;
+            e.windupMax = 16;
+            e.windupAction = () => {
+              e.orbCount--;
+              const orbAng = Math.atan2(player.y - e.y, player.x - e.x);
+              bossProjectiles.push({
+                type: 'MONOLITH_ORB',
+                x: e.x,
+                y: e.y,
+                vx: Math.cos(orbAng) * 4.6,
+                vy: Math.sin(orbAng) * 4.6,
+                radius: 14,
+                damage: Math.round(e.damage * 0.55),
+                life: 180,
+                maxLife: 180
+              });
+              playSfx('shoot');
+              triggerShake(5);
+            };
+          }
+
+          if (e.orbCount === 0) {
+            e.isVulnerable = true;
+            e.orbRegenTimer = (e.orbRegenTimer || 0) + dt;
+            if (e.orbRegenTimer > 210) {
+              e.orbCount = 4;
+              e.isVulnerable = false;
+              e.orbRegenTimer = 0;
+              triggerShake(14);
+              createHitParticles(e.x, e.y, '#e67e22', 16);
+              playSfx('boss');
+              addDamageText(e.x, e.y, "ORBES RESTAURADOS!", true, '#e67e22');
+            }
+          }
+
+          const attackInterval = e.isEnraged ? 55 : 90;
+          if (e.stateTimer > attackInterval) {
+            e.stateTimer = 0;
+            e.windupTimer = 24;
+            e.windupMax = 24;
+            e.windupAction = () => {
+              const meteorCount = e.isEnraged ? 6 : 3;
+              for (let m = 0; m < meteorCount; m++) {
+                bossTelegraphs.push({
+                  x: player.x + (Math.random() - 0.5) * 160,
+                  y: player.y + (Math.random() - 0.5) * 160,
+                  radius: e.isEnraged ? 85 : 75,
+                  timer: 65,
+                  maxTimer: 65,
+                  damage: Math.round(e.damage * 0.60)
+                });
+              }
+              if (e.isEnraged) {
+                bossTelegraphs.push({
+                  x: e.x,
+                  y: e.y,
+                  radius: 135,
+                  timer: 50,
+                  maxTimer: 50,
+                  damage: Math.round(e.damage * 0.70)
+                });
+                triggerShake(8);
+              }
+            };
+          }
+        } else if (e.bossId === 3) {
+          const distSqToPlayer = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
+
+          e.soulSummonTimer = (e.soulSummonTimer || 0) + dt;
+          if (e.soulSummonTimer > 260) {
+            e.soulSummonTimer = 0;
+            const soulCount = e.isEnraged ? 5 : 3;
+            for (let s = 0; s < soulCount; s++) {
+              const sAngle = (s * Math.PI * 2) / soulCount;
+              enemies.push({
+                x: e.x + Math.cos(sAngle) * 45,
+                y: e.y + Math.sin(sAngle) * 45,
+                baseType: 'VENGEFUL_SOUL',
+                radius: 10,
+                speed: 2.25,
+                hp: 140,
+                maxHp: 140,
+                color: '#00cec9',
+                damage: Math.round(e.damage * 0.20),
+                behavior: 'chase',
+                xp: 2,
+                facing: 1,
+                hitFlash: 0,
+                orbitalHitCd: 0,
+                slowTimer: 0,
+                slowFactor: 0,
+                stunTimer: 0
+              });
+            }
+            playSfx('boss');
+            addDamageText(e.x, e.y, "ALMAS VINGATIVAS!", false, '#00cec9');
+          }
+
+          e.cleaveCooldown = (e.cleaveCooldown || 0) + dt;
+          if (distSqToPlayer < 145 * 145 && e.cleaveCooldown > 150) {
+            e.cleaveCooldown = 0;
+            e.windupTimer = 22;
+            e.windupMax = 22;
+            e.windupAction = () => {
+              const cleaveAngle = Math.atan2(player.y - e.y, player.x - e.x);
+              bossTelegraphs.push({
+                type: 'SCYTHE_CLEAVE',
+                x: e.x,
+                y: e.y,
+                radius: 140,
+                angle: cleaveAngle,
+                timer: 24,
+                maxTimer: 24,
+                damage: Math.round(e.damage * 0.80),
+                boss: e
+              });
+            };
+          }
+
+          const attackInterval = e.isEnraged ? 60 : 100;
+          if (e.stateTimer > attackInterval) {
+            e.stateTimer = 0;
+            e.windupTimer = 20;
+            e.windupMax = 20;
+            e.windupAction = () => {
+              const sAng = Math.atan2(player.y - e.y, player.x - e.x);
+              bossProjectiles.push({
+                x: e.x, y: e.y,
+                vx: Math.cos(sAng) * 6.5, vy: Math.sin(sAng) * 6.5,
+                radius: 20, damage: Math.round(e.damage * 0.60), life: 160, maxLife: 160
+              });
+              if (e.isEnraged) {
+                const oppAng = sAng + Math.PI;
+                bossProjectiles.push({
+                  x: e.x, y: e.y,
+                  vx: Math.cos(oppAng) * 6.5, vy: Math.sin(oppAng) * 6.5,
+                  radius: 20, damage: Math.round(e.damage * 0.60), life: 160, maxLife: 160
+                });
+              }
+              playSfx('shoot');
+            };
+          }
+        } else if (e.bossId === 4) {
+          e.vortexTimer = (e.vortexTimer || 0) + dt;
+          const vortexInterval = e.isEnraged ? 140 : 200;
+          if (e.vortexTimer > vortexInterval) {
+            e.vortexTimer = 0;
+            e.windupTimer = 18;
+            e.windupMax = 18;
+            e.windupAction = () => {
+              const vCount = e.isEnraged ? 3 : 2;
+              for (let v = 0; v < vCount; v++) {
+                const vAngle = Math.random() * Math.PI * 2;
+                const vDist = Math.random() * 180 + 70;
+                voidVortices.push({
+                  x: player.x + Math.cos(vAngle) * vDist,
+                  y: player.y + Math.sin(vAngle) * vDist,
+                  radius: 48,
+                  life: 340,
+                  maxLife: 340,
+                  damage: Math.round(e.damage * 0.15),
+                  tickTimer: 0
+                });
+              }
+              playSfx('boss');
+              triggerShake(7);
+            };
+          }
+
+          const laserCount = e.isEnraged ? 6 : 4;
+          const cycleTotal = e.isEnraged ? 300 : 340;
+          const chargeTime = e.isEnraged ? 54 : 72;
+          const fireTime = e.isEnraged ? 190 : 180;
+
+          e.laserCycleTimer = ((e.laserCycleTimer || 0) + dt) % cycleTotal;
+
+          if (e.laserCycleTimer < chargeTime) {
+            e.laserState = 'CHARGING';
+            e.laserChargeProgress = e.laserCycleTimer / chargeTime;
+            e.beamAngle += (e.isEnraged ? 0.012 : 0.006) * dt;
+          } else if (e.laserCycleTimer < chargeTime + fireTime) {
+            e.laserState = 'FIRING';
+            e.laserChargeProgress = 1;
+            e.beamAngle += (e.isEnraged ? 0.035 : 0.016) * dt;
+
+            for (let arm = 0; arm < laserCount; arm++) {
+              const bAng = e.beamAngle + (arm * (Math.PI * 2 / laserCount));
+              const bx = Math.cos(bAng);
+              const by = Math.sin(bAng);
+              const px = player.x - e.x;
+              const py = player.y - e.y;
+              const proj = px * bx + py * by;
+              if (proj > 0 && proj < 650) {
+                const perpX = px - proj * bx;
+                const perpY = py - proj * by;
+                if (perpX * perpX + perpY * perpY < 18 * 18 && player.iFrames <= 0) {
+                  const laserDmg = Math.round(e.damage * 0.35);
+                  player.hp -= laserDmg;
+                  player.iFrames = 22;
+                  triggerShake(9);
+                  playSfx('hit');
+                  addDamageText(player.x, player.y, `-${laserDmg}`, false, '#9b59b6');
+                }
+              }
+            }
+          } else {
+            e.laserState = 'IDLE';
+            e.laserChargeProgress = 0;
+            e.beamAngle += (e.isEnraged ? 0.015 : 0.008) * dt;
+          }
+
+          if (e.isEnraged) {
+            const gdx = e.x - player.x;
+            const gdy = e.y - player.y;
+            const gdist = Math.sqrt(gdx * gdx + gdy * gdy);
+            if (gdist > 20) {
+              player.x += (gdx / gdist) * 1.1 * dt;
+              player.y += (gdy / gdist) * 1.1 * dt;
+            }
+          }
+
+          const spiralInterval = e.isEnraged ? 12 : 20;
+          if (Math.floor(e.stateTimer) % spiralInterval === 0) {
+            const spAng = frameCount * 0.15;
+            enemyBullets.push({
+              x: e.x, y: e.y,
+              vx: Math.cos(spAng) * 4.2, vy: Math.sin(spAng) * 4.2,
+              radius: 5, damage: Math.round(e.damage * 0.20), life: 130
+            });
+          }
+        }
+
+        e.x += Math.cos(angle) * curSpeed * dt;
+        e.y += Math.sin(angle) * curSpeed * dt;
       } else if (e.behavior === 'swarm') {
         e.x += Math.cos(angle + Math.sin(frameCount * 0.1) * 0.4) * curSpeed * dt;
         e.y += Math.sin(angle + Math.sin(frameCount * 0.1) * 0.4) * curSpeed * dt;
@@ -1524,6 +1860,7 @@ function update(dt) {
   }
   particles.length = pWrite;
 
+  // Descarte por distância dinâmica com folga segura para evitar spawn/despawn acidental
   const despawnDist = Math.hypot(viewW / 2, viewH / 2) + 500;
   const despawnDistSq = despawnDist * despawnDist;
   let writeIdx = 0;

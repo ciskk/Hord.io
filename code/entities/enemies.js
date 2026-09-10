@@ -2,7 +2,6 @@ import { ENEMY_TYPES, BOSS_TYPES, MINI_BOSS_TYPES } from '../config/enemies.js';
 import { player } from './player.js';
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { firstBossKilled } from '../systems/waves.js';
-import { initBoss } from './bosses/bossRegistry.js';
 import { 
   enemies, 
   enemyBullets, 
@@ -241,9 +240,6 @@ export function triggerBossEncounter(bossIndex) {
     phase: 1,
     beamAngle: 0
   };
-
-  // Inicializa propriedades e estados específicos no módulo dedicado do chefe
-  initBoss(newBoss);
 
   setActiveBoss(newBoss);
   enemies.push(newBoss);
