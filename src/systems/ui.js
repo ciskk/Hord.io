@@ -1,5 +1,7 @@
 import { CHARACTERS } from '../config/characters.js';
+import { BOSS_TYPES } from '../config/enemies.js';
 import { getRandomUpgrades, checkSynergies } from '../config/upgrades.js';
+import { triggerBossEncounter } from '../entities/enemies.js';
 import { playSfx, triggerHaptic, setGameVolume, initAudio, audioCtx } from '../core/audio.js';
 import { resetInput } from '../core/input.js';
 import { 
@@ -20,8 +22,95 @@ import {
   resetSpawnTimer, 
   setLastTime, 
   resetGame,
-  activeBoss 
+  activeBoss,
+  setActiveBoss,
+  bossShockwaves,
+  voidVortices 
 } from '../main.js';
+
+export function isBossSelectAllowed() {
+  if (gameState.isDead || gameState.isWon) return false;
+
+  const charModal = document.getElementById('char-modal');
+  const pauseModal = document.getElementById('pause-modal');
+
+  const isCharOpen = charModal && charModal.style.display === 'flex';
+  const isPauseOpen = pauseModal && pauseModal.style.display === 'flex';
+
+  return !!(isCharOpen || isPauseOpen);
+}
+
+export function openBossSelectModal() {
+  const modal = document.getElementById('boss-select-modal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  playSfx('level');
+}
+
+export function closeBossSelectModal() {
+  const modal = document.getElementById('boss-select-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+export function launchBossTest(bossId) {
+  closeBossSelectModal();
+
+  const charModal = document.getElementById('char-modal');
+  const isCharOpen = charModal && charModal.style.display === 'flex';
+
+  if (isCharOpen) {
+    if (charModal) charModal.style.display = 'none';
+    resetGame();
+  } else {
+    const pauseModal = document.getElementById('pause-modal');
+    if (pauseModal) pauseModal.style.display = 'none';
+    gameState.isPaused = false;
+    setLastTime(performance.now());
+  }
+
+  setActiveBoss(null);
+  bossShockwaves.length = 0;
+  voidVortices.length = 0;
+
+  triggerBossEncounter(bossId);
+}
+
+export function renderBossSelectModal() {
+  const container = document.getElementById('boss-select-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  Object.keys(BOSS_TYPES).forEach(id => {
+    const boss = BOSS_TYPES[id];
+    const btn = document.createElement('button');
+    btn.className = 'card-btn';
+    btn.style.margin = '3px 0';
+    btn.style.padding = '8px 12px';
+    btn.style.display = 'flex';
+    btn.style.justifyContent = 'space-between';
+    btn.style.alignItems = 'center';
+    btn.style.borderLeft = `4px solid ${boss.color || '#e056fd'}`;
+    btn.style.background = '#1a1e2d';
+    btn.style.textAlign = 'left';
+
+    btn.innerHTML = `
+      <div>
+        <div style="font-weight: bold; color: #fff; font-size: 12px;">${boss.name}</div>
+        <div style="font-size: 10px; color: #8890a6;">
+          Boss #${id} • HP: ${boss.hp.toLocaleString('pt-BR')} • Dano: ${boss.damage}${boss.isFinalBoss ? ' • <b style="color:#e74c3c">FINAL</b>' : ''}
+        </div>
+      </div>
+      <span style="color: #e056fd; font-size: 11px; font-weight: bold;">TESTAR ➔</span>
+    `;
+
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      launchBossTest(Number(id));
+    };
+
+    container.appendChild(btn);
+  });
+}
 
 export function togglePause() {
   if (gameState.isDead || gameState.isWon) return;
@@ -260,6 +349,9 @@ export function openCharacterSelect() {
   const pauseModal = document.getElementById('pause-modal');
   if (pauseModal) pauseModal.style.display = 'none';
 
+  const bossModal = document.getElementById('boss-select-modal');
+  if (bossModal) bossModal.style.display = 'none';
+
   const charModal = document.getElementById('char-modal');
   const list = document.getElementById('char-list');
   if (!charModal || !list) return;
@@ -319,6 +411,9 @@ export function initUI() {
     playSfx('chest');
     openTalentsModal();
   });
+
+  bindClick('close-boss-select-btn', closeBossSelectModal);
+  renderBossSelectModal();
 
   const volumeSlider = document.getElementById('volume-slider');
   if (volumeSlider) {

@@ -1,3 +1,6 @@
+/**
+ * src/main.js
+ */
 import { 
   player, 
   resetPlayer, 
@@ -229,6 +232,7 @@ export function resetGame() {
   hideEl('upgrade-modal');
   hideEl('talents-modal');
   hideEl('char-modal');
+  hideEl('boss-select-modal');
 
   const bossHpFill = document.getElementById('boss-hp-fill');
   if (bossHpFill) {
@@ -587,8 +591,17 @@ function update(dt) {
       }
 
       const nearbyIndices = getNeighborIndices(b.x, b.y, b.radius + 20);
+      const targets = [];
       for (let k = 0; k < nearbyIndices.length; k++) {
-        const e = enemies[nearbyIndices[k]];
+        const candidate = enemies[nearbyIndices[k]];
+        if (candidate) targets.push(candidate);
+      }
+      if (activeBoss && !targets.includes(activeBoss)) {
+        targets.push(activeBoss);
+      }
+
+      for (let k = 0; k < targets.length; k++) {
+        const e = targets[k];
         if (!e || b.hitSet.has(e) || (e.isBoss && e.mistState === 'DASHING')) continue;
 
         const dx = e.x - b.x;
@@ -691,8 +704,17 @@ function update(dt) {
       b.life -= dt;
 
       const nearbyIndices = getNeighborIndices(b.x, b.y, b.radius + 20);
+      const targets = [];
       for (let k = 0; k < nearbyIndices.length; k++) {
-        const e = enemies[nearbyIndices[k]];
+        const candidate = enemies[nearbyIndices[k]];
+        if (candidate) targets.push(candidate);
+      }
+      if (activeBoss && !targets.includes(activeBoss)) {
+        targets.push(activeBoss);
+      }
+
+      for (let k = 0; k < targets.length; k++) {
+        const e = targets[k];
         if (!e || (b.hitSet && b.hitSet.has(e)) || (e.isBoss && e.mistState === 'DASHING')) continue;
         const dx = e.x - b.x;
         const dy = e.y - b.y;
@@ -821,6 +843,12 @@ function update(dt) {
       playSfx('hit');
       addDamageText(player.x, player.y, `-${sw.damage}`, false, '#e67e22');
       createHitParticles(player.x, player.y, '#d35400', 5);
+
+      if (player.hp <= 0) {
+        player.hp = 0;
+        triggerDeath();
+        return;
+      }
     }
 
     if (sw.radius >= sw.maxRadius) bossShockwaves.splice(i, 1);
@@ -848,6 +876,12 @@ function update(dt) {
           triggerShake(10);
           playSfx('hit');
           addDamageText(player.x, player.y, `-${tel.damage}`, false, '#8e44ad');
+
+          if (player.hp <= 0) {
+            player.hp = 0;
+            triggerDeath();
+            return;
+          }
         }
         bossTelegraphs.splice(i, 1);
         continue;
@@ -874,6 +908,12 @@ function update(dt) {
           addDamageText(player.x, player.y, `-${tel.damage}`, true, '#00cec9');
           player.x += Math.cos(playerAng) * 28;
           player.y += Math.sin(playerAng) * 28;
+
+          if (player.hp <= 0) {
+            player.hp = 0;
+            triggerDeath();
+            return;
+          }
         }
         bossTelegraphs.splice(i, 1);
         continue;
@@ -900,6 +940,12 @@ function update(dt) {
         triggerShake(10);
         playSfx('hit');
         addDamageText(player.x, player.y, `-${tel.damage}`, false, '#e74c3c');
+
+        if (player.hp <= 0) {
+          player.hp = 0;
+          triggerDeath();
+          return;
+        }
       }
       bossTelegraphs.splice(i, 1);
     }
@@ -934,6 +980,12 @@ function update(dt) {
       triggerShake(8);
       playSfx('hit');
       addDamageText(player.x, player.y, `-${bp.damage}`, false, '#e74c3c');
+
+      if (player.hp <= 0) {
+        player.hp = 0;
+        triggerDeath();
+        return;
+      }
     }
 
     if (bp.life <= 0) bossProjectiles.splice(i, 1);
@@ -1224,6 +1276,12 @@ function update(dt) {
             triggerShake(8);
             playSfx('hit');
             addDamageText(player.x, player.y, `-${Math.round(e.damage)}`, false, '#341f97');
+
+            if (player.hp <= 0) {
+              player.hp = 0;
+              triggerDeath();
+              return;
+            }
           }
         }
       } else if (e.behavior === 'shielded') {
@@ -1288,6 +1346,12 @@ function update(dt) {
           player.hp -= e.damage;
           player.iFrames = 20;
           addDamageText(player.x, player.y, `-${Math.round(e.damage)}`, false, '#e67e22');
+
+          if (player.hp <= 0) {
+            player.hp = 0;
+            triggerDeath();
+            return;
+          }
         }
       }
 
@@ -1418,6 +1482,13 @@ function update(dt) {
 
       enemies.splice(i, 1);
     }
+  }
+
+  // Verificação de segurança global de integridade do jogador
+  if (player.hp <= 0 && !gameState.isDead) {
+    player.hp = 0;
+    triggerDeath();
+    return;
   }
 
   for (let i = props.length - 1; i >= 0; i--) {

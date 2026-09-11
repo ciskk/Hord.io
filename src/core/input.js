@@ -1,7 +1,15 @@
 import { initAudio } from './audio.js';
 import { triggerHeroSkill } from '../entities/player.js';
-import { togglePause } from '../systems/ui.js';
+import { 
+  togglePause, 
+  isBossSelectAllowed, 
+  openBossSelectModal, 
+  closeBossSelectModal 
+} from '../systems/ui.js';
 import { gameState } from '../main.js';
+
+// Rastreamento de teclas simultâneas ativas
+const activeKeyCodes = new Set();
 
 // Trava contra gestos do Safari iOS (Pinch-to-zoom / Double-tap zoom / Pull-to-refresh)[cite: 1]
 document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
@@ -59,7 +67,13 @@ export function resetInput() {
   keys.down = false;
   keys.left = false;
   keys.right = false;
+  activeKeyCodes.clear();
 }
+
+window.addEventListener('blur', () => {
+  activeKeyCodes.clear();
+  resetInput();
+});
 
 const canvas = document.getElementById('game-canvas');
 
@@ -127,15 +141,33 @@ window.addEventListener('touchcancel', endTouch);
 // Suporte ao Teclado (WASD, Setas, Espaço, E, Esc e P)
 window.addEventListener('keydown', e => {
   initAudio();
+  activeKeyCodes.add(e.code);
 
-  // Pausa com Esc ou P[cite: 1]
+  // Pausa com Esc ou P (ou fechar menu de bosses se estiver aberto)
   if (e.code === 'Escape' || e.code === 'KeyP') {
     e.preventDefault();
+    const bossModal = document.getElementById('boss-select-modal');
+    if (bossModal && bossModal.style.display === 'flex') {
+      closeBossSelectModal();
+      return;
+    }
     togglePause();
     return;
   }
 
-  // Habilidade com Espaço ou E[cite: 1]
+  // Atalho Secreto de Desenvolvedor: W + 5
+  const isWPressed = activeKeyCodes.has('KeyW') || e.code === 'KeyW';
+  const is5Pressed = activeKeyCodes.has('Digit5') || activeKeyCodes.has('Numpad5') || e.code === 'Digit5' || e.code === 'Numpad5' || e.key === '5';
+
+  if (isWPressed && is5Pressed) {
+    if (isBossSelectAllowed()) {
+      e.preventDefault();
+      openBossSelectModal();
+      return;
+    }
+  }
+
+  // Habilidade com Espaço ou E
   if (e.code === 'Space' || e.code === 'KeyE') {
     e.preventDefault();
     triggerHeroSkill();
@@ -152,6 +184,8 @@ window.addEventListener('keydown', e => {
 });
 
 window.addEventListener('keyup', e => {
+  activeKeyCodes.delete(e.code);
+
   if (e.code === 'KeyW' || e.code === 'ArrowUp') keys.up = false;
   if (e.code === 'KeyS' || e.code === 'ArrowDown') keys.down = false;
   if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = false;

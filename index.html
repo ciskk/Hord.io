@@ -127,6 +127,24 @@
   </div>
 </div>
 
+<!-- Modal Secreto de Seleção de Bosses (Atalho Dev: W + 5) -->
+<div id="boss-select-modal" class="modal-overlay" style="z-index: 120;">
+  <div class="modal-box modal-box-compact" style="border-color: #e056fd; box-shadow: 0 0 25px rgba(224, 86, 253, 0.35);">
+    <div class="modal-header">
+      <div style="text-align: left;">
+        <h2 class="modal-header-title" style="color: #e056fd;">TESTE DE BOSS (DEV)</h2>
+        <div class="modal-header-sub">Atalho Secreto: W + 5</div>
+      </div>
+      <span class="currency-badge" style="color: #e056fd; border-color: #e056fd;">DEV TOOL</span>
+    </div>
+    <p style="font-size: 11px; color: #aaa; margin-bottom: 8px; text-align: left;">
+      Selecione um chefe para testar imediatamente na arena:
+    </p>
+    <div id="boss-select-list" style="display: flex; flex-direction: column; gap: 6px;"></div>
+    <button class="card-btn" id="close-boss-select-btn" style="background: #2c334d; border: none; margin-top: 8px;">Cancelar</button>
+  </div>
+</div>
+
 <!-- Modal de Morte -->
 <div id="death-modal" class="modal-overlay">
   <div class="modal-box modal-box-compact" style="border-color:#e74c3c;">
