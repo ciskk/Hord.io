@@ -1197,6 +1197,253 @@ function update(dt) {
         if ((player.x - e.x) ** 2 + (player.y - e.y) ** 2 < 36 * 36) {
           e.hp = 0;
         }
+      } else if (e.behavior === 'kamikaze_spread') {
+        e.x += Math.cos(angle) * curSpeed * 1.25 * dt;
+        e.y += Math.sin(angle) * curSpeed * 1.25 * dt;
+        if ((player.x - e.x) ** 2 + (player.y - e.y) ** 2 < 45 * 45) {
+          e.hp = 0;
+        }
+      } else if (e.behavior === 'backstab_dash') {
+        e.dashState = e.dashState || 'chase';
+        e.dashTimer = (e.dashTimer || 0) + dt;
+        if (e.dashState === 'chase') {
+          e.x += Math.cos(angle) * curSpeed * dt;
+          e.y += Math.sin(angle) * curSpeed * dt;
+          if (e.dashTimer > 90) {
+            e.dashState = 'aim';
+            e.dashTimer = 0;
+            const playerAng = player.facing === 1 ? 0 : Math.PI;
+            const backX = player.x - Math.cos(playerAng) * 80;
+            const backY = player.y - Math.sin(playerAng) * 80;
+            e.dashAngle = Math.atan2(backY - e.y, backX - e.x);
+          }
+        } else if (e.dashState === 'aim') {
+          e.hitFlash = 1;
+          curSpeed = e.speed * 0.25;
+          e.x += Math.cos(e.dashAngle) * curSpeed * dt;
+          e.y += Math.sin(e.dashAngle) * curSpeed * dt;
+          if (e.dashTimer > 20) {
+            e.dashState = 'dashing';
+            e.dashTimer = 0;
+            playSfx('crit');
+          }
+        } else if (e.dashState === 'dashing') {
+          curSpeed = e.speed * 4.5;
+          e.x += Math.cos(e.dashAngle) * curSpeed * dt;
+          e.y += Math.sin(e.dashAngle) * curSpeed * dt;
+          createHitParticles(e.x, e.y, '#6c5ce7', 2);
+          if (e.dashTimer > 18) {
+            e.dashState = 'cooldown';
+            e.dashTimer = 0;
+          }
+        } else if (e.dashState === 'cooldown') {
+          curSpeed = e.speed * 0.35;
+          e.x += Math.cos(angle) * curSpeed * dt;
+          e.y += Math.sin(angle) * curSpeed * dt;
+          if (e.dashTimer > 35) {
+            e.dashState = 'chase';
+            e.dashTimer = 0;
+          }
+        }
+      } else if (e.behavior === 'protect_aura') {
+        const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
+        if (distToPlayerSq < 150 * 150) {
+          e.x -= Math.cos(angle) * curSpeed * dt;
+          e.y -= Math.sin(angle) * curSpeed * dt;
+        } else if (distToPlayerSq > 230 * 230) {
+          e.x += Math.cos(angle) * curSpeed * dt;
+          e.y += Math.sin(angle) * curSpeed * dt;
+        }
+        e.auraTimer = (e.auraTimer || 0) + dt;
+        if (e.auraTimer >= 120) {
+          e.auraTimer = 0;
+          playSfx('freeze');
+          triggerShake(4);
+          createHitParticles(e.x, e.y, '#0984e3', 14);
+          addDamageText(e.x, e.y, "AURA PROTETORA!", false, '#74b9ff');
+          bossShockwaves.push({
+            x: e.x,
+            y: e.y,
+            radius: 12,
+            maxRadius: 160,
+            speed: 4.5,
+            damage: 0,
+            hitPlayer: false
+          });
+          const neighbors = getNeighborIndices(e.x, e.y, 160);
+          for (let k = 0; k < neighbors.length; k++) {
+            const ally = enemies[neighbors[k]];
+            if (ally && ally !== e) {
+              ally.hp = Math.min(ally.maxHp, ally.hp + Math.round(ally.maxHp * 0.15));
+              ally.hitFlash = 3;
+              createHitParticles(ally.x, ally.y, '#00d2d3', 3);
+            }
+          }
+        }
+      } else if (e.behavior === 'boulder_throw') {
+        e.throwTimer = (e.throwTimer || 0) + dt;
+        if (e.throwTimer < 120) {
+          e.x += Math.cos(angle) * curSpeed * dt;
+          e.y += Math.sin(angle) * curSpeed * dt;
+        } else if (e.throwTimer >= 150) {
+          e.throwTimer = 0;
+          playSfx('shoot');
+          triggerShake(5);
+          const leadX = player.x + (inputX || 0) * 40;
+          const leadY = player.y + (inputY || 0) * 40;
+          bossTelegraphs.push({
+            x: leadX,
+            y: leadY,
+            radius: 55,
+            timer: 40,
+            maxTimer: 40,
+            damage: Math.round(e.damage * 1.3)
+          });
+          createHitParticles(e.x, e.y, '#d35400', 8);
+          addDamageText(e.x, e.y, "ARREMESSO DE ROCHA!", false, '#e67e22');
+        }
+      } else if (e.behavior === 'bat_spawner') {
+        e.x += Math.cos(angle) * curSpeed * dt;
+        e.y += Math.sin(angle) * curSpeed * dt;
+        e.hiveTimer = (e.hiveTimer || 0) + dt;
+        if (e.hiveTimer >= 180 && !gameState.isWavePaused) {
+          e.hiveTimer = 0;
+          playSfx('boss');
+          addDamageText(e.x, e.y, "INVOQUE ENXAME!", false, '#16a085');
+          createHitParticles(e.x, e.y, '#16a085', 10);
+          const batCount = Math.floor(Math.random() * 2) + 2;
+          for (let k = 0; k < batCount; k++) {
+            const batDef = ENEMY_TYPES.BAT;
+            enemies.push({
+              x: e.x + (k - 0.5) * 24,
+              y: e.y + (Math.random() - 0.5) * 18,
+              baseType: 'BAT',
+              radius: batDef.radius,
+              speed: batDef.speed,
+              hp: batDef.hp,
+              maxHp: batDef.hp,
+              color: batDef.color,
+              damage: batDef.damage,
+              behavior: batDef.behavior,
+              xp: batDef.xp,
+              facing: e.facing,
+              hitFlash: 0,
+              orbitalHitCd: 0,
+              slowTimer: 0,
+              slowFactor: 0,
+              stunTimer: 0
+            });
+          }
+        }
+      } else if (e.behavior === 'blink_slash') {
+        e.blinkTimer = (e.blinkTimer || 0) + dt;
+        if (e.blinkTimer < 100) {
+          e.x += Math.cos(angle) * curSpeed * dt;
+          e.y += Math.sin(angle) * curSpeed * dt;
+        } else if (e.blinkTimer < 130) {
+          e.hitFlash = 1;
+          if (Math.floor(frameCount) % 4 === 0) {
+            createHitParticles(e.x, e.y, '#a29bfe', 2);
+          }
+        } else {
+          e.blinkTimer = 0;
+          createHitParticles(e.x, e.y, '#6c5ce7', 12);
+          const flankSide = Math.random() < 0.5 ? Math.PI * 0.5 : -Math.PI * 0.5;
+          const flankAng = Math.atan2(e.y - player.y, e.x - player.x) + flankSide;
+          e.x = player.x + Math.cos(flankAng) * 70;
+          e.y = player.y + Math.sin(flankAng) * 70;
+          createHitParticles(e.x, e.y, '#e056fd', 14);
+          playSfx('crit');
+          const cleaveAng = Math.atan2(player.y - e.y, player.x - e.x);
+          bossTelegraphs.push({
+            type: 'SCYTHE_CLEAVE',
+            x: e.x,
+            y: e.y,
+            radius: 95,
+            angle: cleaveAng,
+            timer: 20,
+            maxTimer: 20,
+            damage: Math.round(e.damage * 1.1)
+          });
+          addDamageText(e.x, e.y, "CORTE QUÂNTICO!", true, '#a29bfe');
+        }
+      } else if (e.behavior === 'vortex_carrier') {
+        e.x += Math.cos(angle) * curSpeed * 0.8 * dt;
+        e.y += Math.sin(angle) * curSpeed * 0.8 * dt;
+        const vdx = e.x - player.x;
+        const vdy = e.y - player.y;
+        const vDist = Math.hypot(vdx, vdy);
+        if (vDist < 280 && vDist > 20) {
+          player.x += (vdx / vDist) * 0.75 * dt;
+          player.y += (vdy / vDist) * 0.75 * dt;
+        }
+        e.vortexTimer = (e.vortexTimer || 0) + dt;
+        if (e.vortexTimer >= 200) {
+          e.vortexTimer = 0;
+          playSfx('boss');
+          voidVortices.push({
+            x: e.x,
+            y: e.y,
+            radius: 65,
+            life: 300,
+            damage: Math.round(e.damage * 0.4)
+          });
+          createHitParticles(e.x, e.y, '#8e44ad', 14);
+          addDamageText(e.x, e.y, "VÓRTICE DO VAZIO!", true, '#8e44ad');
+        }
+      } else if (e.behavior === 'chaos_cycle') {
+        e.cycleTimer = (e.cycleTimer || 0) + dt;
+        e.cycleState = e.cycleState || 0;
+        if (e.cycleState === 0) {
+          e.x += Math.cos(angle) * curSpeed * 0.85 * dt;
+          e.y += Math.sin(angle) * curSpeed * 0.85 * dt;
+          if (Math.floor(frameCount) % 15 === 0) {
+            const spinAng = frameCount * 0.15;
+            playSfx('shoot');
+            for (let s = 0; s < 2; s++) {
+              const sOffset = spinAng + s * Math.PI;
+              enemyBullets.push({
+                x: e.x,
+                y: e.y,
+                vx: Math.cos(sOffset) * 3.6,
+                vy: Math.sin(sOffset) * 3.6,
+                radius: 5,
+                damage: Math.round(e.damage * 0.35),
+                life: 85
+              });
+            }
+          }
+        } else if (e.cycleState === 1) {
+          if (!e.chargeAngle) e.chargeAngle = angle;
+          e.x += Math.cos(e.chargeAngle) * curSpeed * 2.8 * dt;
+          e.y += Math.sin(e.chargeAngle) * curSpeed * 2.8 * dt;
+          createHitParticles(e.x, e.y, '#c0392b', 1);
+        } else if (e.cycleState === 2) {
+          e.x += Math.cos(angle) * curSpeed * 0.5 * dt;
+          e.y += Math.sin(angle) * curSpeed * 0.5 * dt;
+          if (e.cycleTimer >= 85 && !e.hasSlammed) {
+            e.hasSlammed = true;
+            triggerShake(10);
+            playSfx('boss');
+            bossShockwaves.push({
+              x: e.x,
+              y: e.y,
+              radius: 14,
+              maxRadius: 130,
+              speed: 4.5,
+              damage: Math.round(e.damage * 0.8),
+              hitPlayer: false
+            });
+            createHitParticles(e.x, e.y, '#e74c3c', 16);
+            addDamageText(e.x, e.y, "COLAPSO DO CAOS!", true, '#c0392b');
+          }
+        }
+        if (e.cycleTimer >= 90) {
+          e.cycleTimer = 0;
+          e.cycleState = (e.cycleState + 1) % 3;
+          e.chargeAngle = null;
+          e.hasSlammed = false;
+        }
       } else if (e.behavior === 'summoner') {
         const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
         if (distToPlayerSq < 160 * 160) {
@@ -1352,6 +1599,39 @@ function update(dt) {
             triggerDeath();
             return;
           }
+        }
+      }
+
+      if (e.behavior === 'kamikaze_spread') {
+        playSfx('hit');
+        triggerShake(12);
+        triggerHaptic('heavy');
+        createHitParticles(e.x, e.y, '#e67e22', 16);
+        const pDistSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
+        if (pDistSq < 75 * 75 && player.iFrames <= 0) {
+          player.hp -= e.damage;
+          player.iFrames = 25;
+          triggerShake(9);
+          playSfx('hit');
+          addDamageText(player.x, player.y, `-${Math.round(e.damage)}`, false, '#e67e22');
+          if (player.hp <= 0) {
+            player.hp = 0;
+            triggerDeath();
+            return;
+          }
+        }
+        const spreadCount = 8;
+        for (let bIdx = 0; bIdx < spreadCount; bIdx++) {
+          const bAng = (bIdx * Math.PI * 2) / spreadCount;
+          enemyBullets.push({
+            x: e.x,
+            y: e.y,
+            vx: Math.cos(bAng) * 4.0,
+            vy: Math.sin(bAng) * 4.0,
+            radius: 5,
+            damage: Math.round(e.damage * 0.45),
+            life: 80
+          });
         }
       }
 

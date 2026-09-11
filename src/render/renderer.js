@@ -619,7 +619,7 @@ function drawMiniBossShape(e) {
       const eggPos = [[-R * 0.95, -R * 0.2], [-R * 0.75, R * 0.2], [-R * 0.55, -R * 0.15], [-R * 0.85, R * 0.15]];
       for (let eg = 0; eg < 4; eg++) {
         ctx.beginPath();
-        ctx.arc(eggPos[eg][0], eggPos[eg][1], 4 + (eg % 2 === 0 ? eggPulse : -eggPulse)), 0, Math.PI * 2;
+        ctx.arc(eggPos[eg][0], eggPos[eg][1], 4 + (eg % 2 === 0 ? eggPulse : -eggPulse), 0, Math.PI * 2);
         ctx.fill();
       }
 

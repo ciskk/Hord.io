@@ -74,8 +74,10 @@ export function checkMiniBossSchedule(seconds) {
   for (let i = 0; i < miniBossSchedule.length; i++) {
     const entry = miniBossSchedule[i];
     if (seconds >= entry.time && !entry.spawned) {
-      entry.spawned = true;
-      spawnMiniBoss(entry.type);
+      const spawnedMiniBoss = spawnMiniBoss(entry.type);
+      if (spawnedMiniBoss) {
+        entry.spawned = true;
+      }
     }
   }
 }

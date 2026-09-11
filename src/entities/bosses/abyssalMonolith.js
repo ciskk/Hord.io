@@ -19,6 +19,9 @@ export function initAbyssalMonolith(boss) {
   boss.currentSkill = null; // 'FISSURE', 'SEISMIC_PULSE', 'SINGULARITY', 'BASALT_BARRAGE'
   boss.skillCooldown = 85;
 
+  // Fila de ações diferidas sincronizadas com o delta time (dt)
+  boss.delayedActions = [];
+
   // 2. Janelas de Vulnerabilidade e Colapso
   boss.recoveryTimer = 0;
   boss.isVulnerable = false;
@@ -72,6 +75,18 @@ export function updateAbyssalMonolith(e, dt, context) {
     createHitParticles,
     addDamageText
   } = context;
+
+  // Processa ações agendadas orientadas a delta time
+  if (e.delayedActions && e.delayedActions.length > 0) {
+    for (let i = e.delayedActions.length - 1; i >= 0; i--) {
+      const action = e.delayedActions[i];
+      action.timer -= dt;
+      if (action.timer <= 0) {
+        action.callback();
+        e.delayedActions.splice(i, 1);
+      }
+    }
+  }
 
   // 1. Pulso magnético e respiração geológica
   e.floatBob = Math.sin(frameCount * 0.045) * 5;
@@ -509,16 +524,19 @@ function executePreparedSkill(e, context) {
 
           // Deixa pequenas poças incandescentes nas junções
           if (n === nodeCount && e.isEnraged) {
-            setTimeout(() => {
-              acidPuddles.push({
-                x: nodeX,
-                y: nodeY,
-                radius: 30,
-                life: 180,
-                maxLife: 180,
-                isFire: true
-              });
-            }, (14 + n * 6) * 16.6);
+            e.delayedActions.push({
+              timer: 14 + n * 6,
+              callback: () => {
+                acidPuddles.push({
+                  x: nodeX,
+                  y: nodeY,
+                  radius: 30,
+                  life: 180,
+                  maxLife: 180,
+                  isFire: true
+                });
+              }
+            });
           }
         }
       }
@@ -546,17 +564,20 @@ function executePreparedSkill(e, context) {
       });
 
       // Segunda onda defasada
-      setTimeout(() => {
-        bossShockwaves.push({
-          x: e.x,
-          y: e.y,
-          radius: 14,
-          maxRadius: 240,
-          speed: 4.2,
-          damage: Math.round(e.damage * 0.35),
-          hitPlayer: false
-        });
-      }, 160);
+      e.delayedActions.push({
+        timer: 10,
+        callback: () => {
+          bossShockwaves.push({
+            x: e.x,
+            y: e.y,
+            radius: 14,
+            maxRadius: 240,
+            speed: 4.2,
+            damage: Math.round(e.damage * 0.35),
+            hitPlayer: false
+          });
+        }
+      });
 
       // Disparo de estilhaços basálticos radiais com rotas seguras
       const shardCount = e.isEnraged ? 12 : 8;
