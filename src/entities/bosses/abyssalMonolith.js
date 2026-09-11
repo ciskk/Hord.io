@@ -18,6 +18,7 @@ export function initAbyssalMonolith(boss) {
   boss.actionTimer = 0;
   boss.currentSkill = null; // 'FISSURE', 'SEISMIC_PULSE', 'SINGULARITY', 'BASALT_BARRAGE'
   boss.skillCooldown = 85;
+  boss.aimAngle = 0;
 
   // Fila de ações diferidas sincronizadas com o delta time (dt)
   boss.delayedActions = [];
@@ -28,7 +29,6 @@ export function initAbyssalMonolith(boss) {
   boss.prevHp = boss.hp;
 
   // 3. Litocistos Tectônicos (Orbes de Blindagem Destrutíveis)
-  // Enquanto ao menos um estiver ativo, o monólito mitiga a maior parte do dano recebido.
   boss.orbitals = [
     { angle: 0, dist: 105, radius: 15, hp: 1100, maxHp: 1100, active: true, hitFlash: 0, orbitalHitCd: 0 },
     { angle: (Math.PI * 2) / 3, dist: 105, radius: 15, hp: 1100, maxHp: 1100, active: true, hitFlash: 0, orbitalHitCd: 0 },
@@ -94,13 +94,12 @@ export function updateAbyssalMonolith(e, dt, context) {
   e.facing = (player.x - e.x) > 0 ? 1 : -1;
 
   // 2. Interceptação de Dano & Blindagem Litoclástica
-  // Caso haja Litocistos ativos, a carcaça de pedra refrata 65% do dano bruto sofrido
   const activeOrbitals = e.orbitals.filter(o => o.active);
   if (activeOrbitals.length > 0 && e.actionState !== 'RECOVERY') {
     if (e.hp < e.prevHp) {
       const damageTaken = e.prevHp - e.hp;
       const absorbed = damageTaken * 0.65;
-      e.hp += absorbed; // Restaura a porção mitigada pela blindagem
+      e.hp += absorbed;
       if (Math.floor(frameCount) % 4 === 0) {
         createHitParticles(e.x, e.y, '#7f8c8d', 2);
       }
@@ -127,7 +126,6 @@ export function updateAbyssalMonolith(e, dt, context) {
     playSfx('boss');
     addDamageText(e.x, e.y, "DESPERTAR DO CATACLISMA!", true, '#e74c3c');
 
-    // Onda cataclísmica de repulsão
     bossShockwaves.push({
       x: e.x,
       y: e.y,
@@ -138,7 +136,6 @@ export function updateAbyssalMonolith(e, dt, context) {
       hitPlayer: false
     });
 
-    // Reformulação com 4 Litocistos Magmáticos Incandescentes
     e.orbitals = [
       { angle: 0, dist: 110, radius: 16, hp: 1400, maxHp: 1400, active: true, hitFlash: 0, orbitalHitCd: 0 },
       { angle: Math.PI * 0.5, dist: 110, radius: 16, hp: 1400, maxHp: 1400, active: true, hitFlash: 0, orbitalHitCd: 0 },
@@ -176,12 +173,10 @@ export function updateAbyssalMonolith(e, dt, context) {
       return;
     }
 
-    // Janela de Exaustão Sísmica (Sobrecarga após quebra dos Litocistos)
     case 'RECOVERY': {
       e.recoveryTimer -= dt;
       e.isVulnerable = true;
 
-      // Partículas de colapso de pedra
       if (Math.floor(frameCount) % 6 === 0) {
         createHitParticles(
           e.x + (Math.random() - 0.5) * e.radius,
@@ -192,7 +187,6 @@ export function updateAbyssalMonolith(e, dt, context) {
       }
 
       if (e.recoveryTimer <= 0) {
-        // Fim da exaustão: reconstitui os orbes com uma onda de choque defensiva
         e.isVulnerable = false;
         e.actionState = 'CHASE';
         e.skillCooldown = e.isEnraged ? 45 : 70;
@@ -230,38 +224,38 @@ export function updateAbyssalMonolith(e, dt, context) {
       return;
     }
 
-    // Singularidade Abissal: Sucção gravitacional + detonação radial
     case 'CHANNELING_PULL': {
       e.pullTimer -= dt;
 
-      // Vetor de atração gravitacional suave sobre o jogador
       const pdx = e.x - player.x;
       const pdy = e.y - player.y;
       const pDist = Math.hypot(pdx, pdy);
 
       if (pDist > 40 && pDist < 420) {
-        const pullForce = (e.isEnraged ? 1.05 : 0.85) * dt;
+        const pullForce = (e.isEnraged ? 1.10 : 0.90) * dt;
         player.x += (pdx / pDist) * pullForce;
         player.y += (pdy / pDist) * pullForce;
       }
 
-      if (Math.floor(frameCount) % 3 === 0) {
-        triggerShake(1.6);
+      // Partículas convergindo do perímetro externo diretamente para o núcleo
+      if (Math.floor(frameCount) % 2 === 0) {
+        triggerShake(1.2);
+        const pAngle = Math.random() * Math.PI * 2;
+        const spawnDist = 120 + Math.random() * 260;
         createHitParticles(
-          player.x + (Math.random() - 0.5) * 60,
-          player.y + (Math.random() - 0.5) * 60,
-          '#c0392b',
+          e.x + Math.cos(pAngle) * spawnDist,
+          e.y + Math.sin(pAngle) * spawnDist,
+          '#8e44ad',
           1
         );
       }
 
-      // Detonação no término da canalização
+      // Detonação final ao expirar a canalização
       if (e.pullTimer <= 0) {
         triggerShake(15);
         triggerHaptic('heavy');
         playSfx('boss');
 
-        // Onda anelar de compressão
         bossShockwaves.push({
           x: e.x,
           y: e.y,
@@ -272,7 +266,6 @@ export function updateAbyssalMonolith(e, dt, context) {
           hitPlayer: false
         });
 
-        // Salva circular de fragmentos basálticos com aberturas de esquiva
         const shardCount = e.isEnraged ? 16 : 12;
         for (let s = 0; s < shardCount; s++) {
           const sAng = (s * Math.PI * 2) / shardCount;
@@ -296,14 +289,49 @@ export function updateAbyssalMonolith(e, dt, context) {
     case 'WINDUP': {
       e.actionTimer -= dt;
 
-      // Partículas convergindo para o núcleo durante o preparo
-      if (Math.floor(frameCount) % 3 === 0) {
-        createHitParticles(
-          e.x + (Math.random() - 0.5) * e.radius * 1.1,
-          e.y + (Math.random() - 0.5) * e.radius * 1.1,
-          '#e67e22',
-          1
-        );
+      // Trava a mira suavemente antes da execução para permitir esquiva tática
+      if (e.actionTimer > (e.isEnraged ? 10 : 16)) {
+        e.aimAngle = Math.atan2(player.y - e.y, player.x - e.x);
+      }
+
+      // Partículas contextuais específicas do ataque durante o Windup
+      if (e.currentSkill === 'FISSURE') {
+        if (Math.floor(frameCount) % 3 === 0) {
+          const stepDist = 40 + Math.random() * 160;
+          createHitParticles(
+            e.x + Math.cos(e.aimAngle) * stepDist,
+            e.y + Math.sin(e.aimAngle) * stepDist,
+            '#e67e22',
+            1
+          );
+        }
+      } else if (e.currentSkill === 'SEISMIC_PULSE') {
+        if (Math.floor(frameCount) % 2 === 0) {
+          createHitParticles(
+            e.x + (Math.random() - 0.5) * 60,
+            e.y + (Math.random() - 0.5) * 60,
+            '#f1c40f',
+            1
+          );
+        }
+      } else if (e.currentSkill === 'SINGULARITY') {
+        if (Math.floor(frameCount) % 2 === 0) {
+          createHitParticles(
+            e.x + (Math.random() - 0.5) * 80,
+            e.y + (Math.random() - 0.5) * 80,
+            '#a29bfe',
+            1
+          );
+        }
+      } else if (e.currentSkill === 'BASALT_BARRAGE') {
+        if (Math.floor(frameCount) % 3 === 0) {
+          createHitParticles(
+            e.x + (Math.random() - 0.5) * 40,
+            e.y - 20 - Math.random() * 30,
+            '#ff7675',
+            1
+          );
+        }
       }
 
       if (e.actionTimer <= 0) {
@@ -324,7 +352,6 @@ export function updateAbyssalMonolith(e, dt, context) {
         curSpeed *= (1 - 0.18);
       }
 
-      // Flutuação tectônica em perseguição cadenciada
       if (dist > 85) {
         const angle = Math.atan2(dy, dx);
         e.x += Math.cos(angle) * curSpeed * dt;
@@ -341,23 +368,21 @@ export function updateAbyssalMonolith(e, dt, context) {
 }
 
 /**
- * Atualiza o movimento orbital dos Litocistos e calcula colisões contra armas do jogador.
+ * Atualiza o movimento orbital dos Litocistos e calcula colisões perfeitamente sincronizadas com a renderização.
  */
 function updateLitocistos(e, dt, context) {
-  // triggerHaptic removido da desestruturação para usar a função importada
   const { player, triggerShake, createHitParticles, addDamageText } = context;
+  const bob = e.isVulnerable ? 24 : (e.floatBob || 0);
 
-  let activeCount = 0;
   for (let o of e.orbitals) {
     if (o.hitFlash > 0) o.hitFlash -= dt;
     if (o.orbitalHitCd > 0) o.orbitalHitCd -= dt;
 
     if (!o.active) continue;
-    activeCount++;
 
     o.angle += e.orbitalAngularVelocity * dt;
     const ox = e.x + Math.cos(o.angle) * o.dist;
-    const oy = e.y + Math.sin(o.angle) * o.dist;
+    const oy = e.y + Math.sin(o.angle) * o.dist + bob;
 
     // Colisão com Projéteis do Jogador
     for (let i = bullets.length - 1; i >= 0; i--) {
@@ -432,11 +457,11 @@ function checkLitocistoCollapse(boss, context) {
   const activeRemaining = boss.orbitals.filter(o => o.active).length;
   if (activeRemaining === 0 && boss.actionState !== 'RECOVERY' && boss.actionState !== 'ENRAGE_TRANSITION') {
     boss.actionState = 'RECOVERY';
-    boss.recoveryTimer = boss.isEnraged ? 210 : 270; // 3.5s a 4.5s
+    boss.recoveryTimer = boss.isEnraged ? 210 : 270;
     boss.isVulnerable = true;
 
     context.triggerShake(14);
-    triggerHaptic('heavy'); // Usando a função importada diretamente
+    triggerHaptic('heavy');
     playSfx('boss');
     context.addDamageText(boss.x, boss.y, "SOBRECARGA SÍSMICA!", true, '#f1c40f');
 
@@ -454,25 +479,21 @@ function selectNextSkill(e, dist) {
   const rand = Math.random();
 
   if (dist < 180) {
-    // Impacto sísmico concêntrico se o jogador estiver muito próximo
     e.currentSkill = 'SEISMIC_PULSE';
     e.actionState = 'WINDUP';
-    e.actionTimer = isEnraged ? 24 : 34;
+    e.actionTimer = isEnraged ? 28 : 40;
   } else if (dist > 300 && rand < 0.40) {
-    // Singularidade gravitacional se o jogador tentar manter distância excessiva
     e.currentSkill = 'SINGULARITY';
     e.actionState = 'WINDUP';
-    e.actionTimer = isEnraged ? 28 : 38;
+    e.actionTimer = isEnraged ? 30 : 42;
   } else if (rand < 0.50) {
-    // Fissura tectônica em leque
     e.currentSkill = 'FISSURE';
     e.actionState = 'WINDUP';
-    e.actionTimer = isEnraged ? 26 : 36;
+    e.actionTimer = isEnraged ? 32 : 44;
   } else {
-    // Bombardeio basáltico preditivo
     e.currentSkill = 'BASALT_BARRAGE';
     e.actionState = 'WINDUP';
-    e.actionTimer = isEnraged ? 24 : 32;
+    e.actionTimer = isEnraged ? 28 : 38;
   }
 }
 
@@ -480,7 +501,6 @@ function selectNextSkill(e, dist) {
  * Executa o ataque preparado após a conclusão da telegrafia.
  */
 function executePreparedSkill(e, context) {
-  // triggerHaptic removido da desestruturação para usar a função importada
   const {
     player,
     enemyBullets,
@@ -489,15 +509,12 @@ function executePreparedSkill(e, context) {
     triggerShake
   } = context;
 
-  const dx = player.x - e.x;
-  const dy = player.y - e.y;
-  const angleToPlayer = Math.atan2(dy, dx);
+  const angleToPlayer = e.aimAngle !== undefined ? e.aimAngle : Math.atan2(player.y - e.y, player.x - e.x);
 
   switch (e.currentSkill) {
-    // 1. FISSURA TECTÔNICA: Linhas de fratura que detonam em estacas e magma residual
     case 'FISSURE': {
       playSfx('boss');
-      triggerShake(9);
+      triggerShake(10);
       triggerHaptic('medium');
 
       const lineCount = e.isEnraged ? 5 : 3;
@@ -514,23 +531,28 @@ function executePreparedSkill(e, context) {
           const nodeY = e.y + Math.sin(lineAng) * distNode;
 
           bossTelegraphs.push({
+            type: 'FISSURE_NODE',
             x: nodeX,
             y: nodeY,
-            radius: 28,
-            timer: 14 + n * 6,
-            maxTimer: 14 + n * 6,
+            originX: e.x,
+            originY: e.y,
+            lineIndex: l,
+            nodeIndex: n,
+            angle: lineAng,
+            radius: 30,
+            timer: 36 + n * 9,
+            maxTimer: 36 + n * 9,
             damage: Math.round(e.damage * 0.40)
           });
 
-          // Deixa pequenas poças incandescentes nas junções
           if (n === nodeCount && e.isEnraged) {
             e.delayedActions.push({
-              timer: 14 + n * 6,
+              timer: 36 + n * 9,
               callback: () => {
                 acidPuddles.push({
                   x: nodeX,
                   y: nodeY,
-                  radius: 30,
+                  radius: 32,
                   life: 180,
                   maxLife: 180,
                   isFire: true
@@ -542,98 +564,85 @@ function executePreparedSkill(e, context) {
       }
 
       e.actionState = 'CHASE';
-      e.skillCooldown = e.isEnraged ? 45 : 70;
+      e.skillCooldown = e.isEnraged ? 48 : 72;
       break;
     }
 
-    // 2. ONDA SÍSMICA CONCÊNTRICA: Duplo pulso anelar + disparos fragmentados
     case 'SEISMIC_PULSE': {
       playSfx('boss');
-      triggerShake(13);
+      triggerShake(14);
       triggerHaptic('heavy');
 
-      // Onda principal
+      // Onda de choque rápida limpa e única
       bossShockwaves.push({
         x: e.x,
         y: e.y,
-        radius: 14,
-        maxRadius: 260,
-        speed: 4.8,
+        radius: 16,
+        maxRadius: 270,
+        speed: 5.2,
         damage: Math.round(e.damage * 0.48),
         hitPlayer: false
       });
 
-      // Segunda onda defasada
+      // Estilhaços de basalto disparados com atraso para não serem mascarados pela onda
+      const shardCount = e.isEnraged ? 12 : 8;
       e.delayedActions.push({
-        timer: 10,
+        timer: 14,
         callback: () => {
-          bossShockwaves.push({
-            x: e.x,
-            y: e.y,
-            radius: 14,
-            maxRadius: 240,
-            speed: 4.2,
-            damage: Math.round(e.damage * 0.35),
-            hitPlayer: false
-          });
+          playSfx('shoot');
+          for (let s = 0; s < shardCount; s++) {
+            const sAng = (s * Math.PI * 2) / shardCount;
+            enemyBullets.push({
+              x: e.x + Math.cos(sAng) * 22,
+              y: e.y + Math.sin(sAng) * 22,
+              vx: Math.cos(sAng) * 3.4,
+              vy: Math.sin(sAng) * 3.4,
+              radius: 6.5,
+              damage: Math.round(e.damage * 0.22),
+              life: 110
+            });
+          }
         }
       });
 
-      // Disparo de estilhaços basálticos radiais com rotas seguras
-      const shardCount = e.isEnraged ? 12 : 8;
-      for (let s = 0; s < shardCount; s++) {
-        const sAng = (s * Math.PI * 2) / shardCount;
-        enemyBullets.push({
-          x: e.x,
-          y: e.y,
-          vx: Math.cos(sAng) * 3.8,
-          vy: Math.sin(sAng) * 3.8,
-          radius: 6,
-          damage: Math.round(e.damage * 0.22),
-          life: 100
-        });
-      }
-
       e.actionState = 'CHASE';
-      e.skillCooldown = e.isEnraged ? 40 : 65;
+      e.skillCooldown = e.isEnraged ? 45 : 68;
       break;
     }
 
-    // 3. ENTRADA NA SINGULARIDADE ABISSAL
     case 'SINGULARITY': {
       playSfx('boss');
-      triggerShake(7);
+      triggerShake(8);
       e.actionState = 'CHANNELING_PULL';
-      e.pullTimer = e.isEnraged ? 75 : 95;
+      e.pullTimer = e.isEnraged ? 80 : 100;
       e.pullMaxTimer = e.pullTimer;
       break;
     }
 
-    // 4. BOMBARDEIO BASÁLTICO PREDITIVO
     case 'BASALT_BARRAGE': {
       playSfx('shoot');
       triggerShake(6);
 
       const impactCount = e.isEnraged ? 4 : 3;
       for (let m = 0; m < impactCount; m++) {
-        // Dispersão ao redor do curso estimado do jogador
         const offsetAng = (m * Math.PI * 2) / impactCount + Math.random() * 0.4;
-        const offsetDist = 40 + Math.random() * 70;
+        const offsetDist = 42 + Math.random() * 70;
         const targetX = player.x + Math.cos(offsetAng) * offsetDist;
         const targetY = player.y + Math.sin(offsetAng) * offsetDist;
 
         bossTelegraphs.push({
+          type: 'FALLING_ROCK',
           x: targetX,
           y: targetY,
-          radius: 46,
-          timer: 38 + m * 8,
-          maxTimer: 38 + m * 8,
+          radius: 44,
+          timer: 44 + m * 9,
+          maxTimer: 44 + m * 9,
           damage: Math.round(e.damage * 0.45)
         });
       }
 
       e.actionState = 'CHASE';
-      e.skillCooldown = e.isEnraged ? 42 : 60;
+      e.skillCooldown = e.isEnraged ? 44 : 64;
       break;
     }
 
@@ -644,10 +653,6 @@ function executePreparedSkill(e, context) {
     }
   }
 }
-
-// ============================================================================
-// SISTEMA DE RENDERIZAÇÃO PROCEDURAL VETORIAL (CANVAS 2D)
-// ============================================================================
 
 /**
  * Desenha a sombra dinâmica projetada sobre o chão.
@@ -683,7 +688,6 @@ function drawVulnerabilityGliph(ctx, e, frameCount) {
   ctx.fillStyle = 'rgba(241, 196, 15, 0.12)';
   ctx.fill();
 
-  // Runas quebradas em órbita do glifo
   const runeCount = 6;
   const rot = frameCount * 0.02;
   ctx.lineWidth = 1.8;
@@ -701,25 +705,68 @@ function drawVulnerabilityGliph(ctx, e, frameCount) {
 }
 
 /**
- * Desenha as placas tectônicas trapezoidais flutuantes que orbitam a carcaça.
+ * Desenha as placas tectônicas trapezoidais flutuantes reagindo à postura de cada habilidade.
  */
 function drawFloatingPlates(ctx, e, bob, frameCount, isVuln, isEnraged, isWindup) {
-  const plateColDark = isVuln ? '#1e272e' : (isEnraged ? '#3d0c11' : '#1e272e');
-  const plateColLight = isVuln ? '#2f3640' : (isEnraged ? '#6b1118' : '#2f3640');
-  const trimCol = isVuln ? '#57606f' : (isEnraged ? '#ff4757' : '#e67e22');
+  const skill = e.currentSkill;
+  let plateColDark = isVuln ? '#1e272e' : (isEnraged ? '#3d0c11' : '#1e272e');
+  let plateColLight = isVuln ? '#2f3640' : (isEnraged ? '#6b1118' : '#2f3640');
+  let trimCol = isVuln ? '#57606f' : (isEnraged ? '#ff4757' : '#e67e22');
 
-  for (let p of e.floatingPlates) {
-    const pAng = p.angleOffset + (frameCount * (isEnraged ? 0.025 : 0.015));
-    const wobble = Math.sin(frameCount * 0.08 + p.wobblePhase) * 4;
-    const currentDist = isVuln ? 52 : (isWindup ? 68 : p.baseDist + wobble);
-    const px = Math.cos(pAng) * currentDist;
-    const py = (Math.sin(pAng) * (currentDist * 0.45)) + bob + (isVuln ? 34 : 0);
+  if (isWindup) {
+    if (skill === 'SEISMIC_PULSE') trimCol = '#ffffff';
+    else if (skill === 'SINGULARITY') trimCol = '#a29bfe';
+    else if (skill === 'BASALT_BARRAGE') trimCol = '#ff7675';
+    else if (skill === 'FISSURE') trimCol = '#ff9f43';
+  }
+
+  for (let i = 0; i < e.floatingPlates.length; i++) {
+    const p = e.floatingPlates[i];
+    let px = 0;
+    let py = 0;
+    let rot = 0;
+
+    if (isWindup && skill === 'SEISMIC_PULSE') {
+      // Postura: Placas erguidas acima do monólito como marreta sísmica
+      const spread = (i - 1.5) * 24;
+      const tremble = (Math.random() - 0.5) * 4;
+      px = spread + tremble;
+      py = -82 + bob + Math.abs(spread) * 0.3 + tremble;
+      rot = (spread / 60);
+    } else if (isWindup && skill === 'SINGULARITY') {
+      // Postura: Vórtice cerrado girando em alta rotação ao redor do núcleo
+      const fastAng = p.angleOffset + frameCount * 0.16;
+      px = Math.cos(fastAng) * 42;
+      py = Math.sin(fastAng) * 28 + bob;
+      rot = fastAng + Math.PI / 2;
+    } else if (isWindup && skill === 'FISSURE') {
+      // Postura: Placas projetadas à frente formando uma cunha direcionada
+      const aim = e.aimAngle || 0;
+      const wedgeDist = 65 + (i % 2 === 0 ? 15 : 0);
+      const wedgeSpread = (i - 1.5) * 0.35;
+      px = Math.cos(aim + wedgeSpread) * wedgeDist;
+      py = Math.sin(aim + wedgeSpread) * (wedgeDist * 0.55) + bob;
+      rot = aim + Math.PI / 2;
+    } else if (isWindup && skill === 'BASALT_BARRAGE') {
+      // Postura: Placas inclinadas para o alto como canhões de morteiro
+      const pAng = p.angleOffset + frameCount * 0.02;
+      px = Math.cos(pAng) * 94;
+      py = Math.sin(pAng) * 55 + bob - 15;
+      rot = -0.4;
+    } else {
+      // Postura Padrão: Órbita cadenciada
+      const pAng = p.angleOffset + (frameCount * (isEnraged ? 0.025 : 0.015));
+      const wobble = Math.sin(frameCount * 0.08 + p.wobblePhase) * 4;
+      const currentDist = isVuln ? 52 : p.baseDist + wobble;
+      px = Math.cos(pAng) * currentDist;
+      py = (Math.sin(pAng) * (currentDist * 0.45)) + bob + (isVuln ? 34 : 0);
+      rot = pAng + Math.PI / 2;
+    }
 
     ctx.save();
     ctx.translate(px, py);
-    ctx.rotate(pAng + Math.PI / 2);
+    ctx.rotate(rot);
 
-    // Corpo trapezoidal da placa
     const sz = p.size;
     ctx.fillStyle = plateColDark;
     ctx.beginPath();
@@ -730,7 +777,6 @@ function drawFloatingPlates(ctx, e, bob, frameCount, isVuln, isEnraged, isWindup
     ctx.closePath();
     ctx.fill();
 
-    // Bisel superior iluminado
     ctx.fillStyle = plateColLight;
     ctx.beginPath();
     ctx.moveTo(-sz * 0.6, -sz * 0.5);
@@ -739,10 +785,9 @@ function drawFloatingPlates(ctx, e, bob, frameCount, isVuln, isEnraged, isWindup
     ctx.closePath();
     ctx.fill();
 
-    // Runa incandescente inscrita na placa
     if (!isVuln) {
       ctx.strokeStyle = trimCol;
-      ctx.lineWidth = 1.4;
+      ctx.lineWidth = 1.6;
       ctx.beginPath();
       ctx.moveTo(-sz * 0.2, 0);
       ctx.lineTo(sz * 0.2, 0);
@@ -768,7 +813,6 @@ function drawMegalithBody(ctx, e, bob, frameCount, isVuln, isEnraged) {
   const waistY = -6 + bob;
   const botY = 48 + bob;
 
-  // 1. Faceta Esquerda (Sombreada)
   ctx.fillStyle = basaltShadow;
   ctx.beginPath();
   ctx.moveTo(0, topY);
@@ -779,7 +823,6 @@ function drawMegalithBody(ctx, e, bob, frameCount, isVuln, isEnraged) {
   ctx.closePath();
   ctx.fill();
 
-  // 2. Faceta Direita (Iluminada)
   ctx.fillStyle = basaltLight;
   ctx.beginPath();
   ctx.moveTo(0, topY);
@@ -790,7 +833,6 @@ function drawMegalithBody(ctx, e, bob, frameCount, isVuln, isEnraged) {
   ctx.closePath();
   ctx.fill();
 
-  // 3. Quilha Central (Transição Média)
   ctx.fillStyle = basaltMid;
   ctx.beginPath();
   ctx.moveTo(0, topY);
@@ -800,7 +842,6 @@ function drawMegalithBody(ctx, e, bob, frameCount, isVuln, isEnraged) {
   ctx.closePath();
   ctx.fill();
 
-  // 4. Arestas e Contornos Rígidos
   ctx.strokeStyle = edgeTrim;
   ctx.lineWidth = 2.0;
   ctx.beginPath();
@@ -813,13 +854,11 @@ function drawMegalithBody(ctx, e, bob, frameCount, isVuln, isEnraged) {
   ctx.closePath();
   ctx.stroke();
 
-  // Linha da crista vertical
   ctx.beginPath();
   ctx.moveTo(0, topY);
   ctx.lineTo(0, botY + 6);
   ctx.stroke();
 
-  // 5. Fissuras Rúnicas Magmáticas
   drawMagmaVeins(ctx, bob, frameCount, isVuln, isEnraged);
 }
 
@@ -828,7 +867,6 @@ function drawMegalithBody(ctx, e, bob, frameCount, isVuln, isEnraged) {
  */
 function drawMagmaVeins(ctx, bob, frameCount, isVuln, isEnraged) {
   if (isVuln) {
-    // Fissuras apagadas (cinza carvão) durante a vulnerabilidade
     ctx.strokeStyle = '#2c3e50';
     ctx.lineWidth = 1.4;
     ctx.beginPath();
@@ -850,50 +888,60 @@ function drawMagmaVeins(ctx, bob, frameCount, isVuln, isEnraged) {
   ctx.lineWidth = 2.2 + pulse * 0.6;
   ctx.beginPath();
 
-  // Fenda lateral esquerda
   ctx.moveTo(-6, -42 + bob);
   ctx.lineTo(-26, -14 + bob);
   ctx.lineTo(-14, 22 + bob);
 
-  // Fenda lateral direita
   ctx.moveTo(6, -42 + bob);
   ctx.lineTo(26, -14 + bob);
   ctx.lineTo(14, 22 + bob);
 
-  // Fenda de raiz basal
   ctx.moveTo(-10, 32 + bob);
   ctx.lineTo(0, 42 + bob);
   ctx.lineTo(10, 32 + bob);
   ctx.stroke();
 
-  // Miolo incandescente de maior calor
   ctx.strokeStyle = veinColGlow;
   ctx.lineWidth = 1.2;
   ctx.stroke();
 }
 
 /**
- * Núcleo Abissal: Câmara de magma e energia no centro do monólito.
+ * Núcleo Abissal: Câmara de energia com reatividade aos estados de Windup e Singularidade.
  */
-function drawAbyssalCore(ctx, bob, frameCount, isVuln, isEnraged, isChanneling) {
+function drawAbyssalCore(ctx, e, bob, frameCount, isVuln, isEnraged, isChanneling, isWindup) {
   const coreY = -4 + bob;
-  const coreBaseRadius = isVuln ? 10 : (isChanneling ? 24 : 16);
+  const isSingularityWindup = isWindup && e.currentSkill === 'SINGULARITY';
+  const isSeismicWindup = isWindup && e.currentSkill === 'SEISMIC_PULSE';
+
+  let coreBaseRadius = isVuln ? 10 : (isChanneling ? 26 : 16);
+  if (isSingularityWindup) coreBaseRadius = 22;
+  if (isSeismicWindup) coreBaseRadius = 24;
+
   const pulse = isVuln ? 0 : Math.sin(frameCount * (isEnraged ? 0.22 : 0.12)) * 2.5;
   const currentR = Math.max(6, coreBaseRadius + pulse);
 
-  // Anel de contenção rúnico ao redor do núcleo
-  ctx.strokeStyle = isVuln ? '#34495e' : (isEnraged ? '#ff4757' : '#f39c12');
-  ctx.lineWidth = 2.0;
+  ctx.strokeStyle = isVuln ? '#34495e' : (isChanneling || isSingularityWindup ? '#a29bfe' : (isEnraged ? '#ff4757' : '#f39c12'));
+  ctx.lineWidth = 2.2;
   ctx.beginPath();
   ctx.arc(0, coreY, currentR + 4, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Gradiente radial do forno interno
   const grad = ctx.createRadialGradient(0, coreY, 2, 0, coreY, currentR);
   if (isVuln) {
     grad.addColorStop(0, '#7f8c8d');
     grad.addColorStop(0.7, '#2c3e50');
     grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  } else if (isChanneling || isSingularityWindup) {
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.35, '#e056fd');
+    grad.addColorStop(0.80, '#2c003e');
+    grad.addColorStop(1, 'rgba(44, 0, 62, 0)');
+  } else if (isSeismicWindup) {
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.40, '#f1c40f');
+    grad.addColorStop(0.85, '#d35400');
+    grad.addColorStop(1, 'rgba(211, 84, 0, 0)');
   } else if (isEnraged) {
     grad.addColorStop(0, '#ffffff');
     grad.addColorStop(0.35, '#ff4757');
@@ -911,7 +959,6 @@ function drawAbyssalCore(ctx, bob, frameCount, isVuln, isEnraged, isChanneling) 
   ctx.arc(0, coreY, currentR, 0, Math.PI * 2);
   ctx.fill();
 
-  // Pupila / Fenda de singularidade
   if (!isVuln) {
     ctx.fillStyle = '#1e0508';
     ctx.beginPath();
@@ -921,7 +968,7 @@ function drawAbyssalCore(ctx, bob, frameCount, isVuln, isEnraged, isChanneling) 
 }
 
 /**
- * Desenha os Litocistos Tectônicos orbitais e seus filamentos de energia conectados ao monólito.
+ * Desenha os Litocistos Tectônicos em órbita circular estrita idêntica às coordenadas físicas.
  */
 function drawLitocistos(ctx, e, bob, frameCount, isEnraged) {
   const coreY = -4 + bob;
@@ -930,20 +977,18 @@ function drawLitocistos(ctx, e, bob, frameCount, isEnraged) {
     if (!o.active) continue;
 
     const ox = Math.cos(o.angle) * o.dist;
-    const oy = (Math.sin(o.angle) * (o.dist * 0.46)) + bob;
+    const oy = Math.sin(o.angle) * o.dist + bob;
 
-    // 1. Filamento de plasma ligando o Litocisto ao núcleo
     ctx.save();
     ctx.strokeStyle = isEnraged ? 'rgba(255, 71, 87, 0.45)' : 'rgba(230, 126, 34, 0.4)';
     ctx.lineWidth = 1.6;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
     ctx.moveTo(0, coreY);
-    ctx.quadraticCurveTo(ox * 0.5, oy * 0.3 - 10, ox, oy);
+    ctx.lineTo(ox, oy);
     ctx.stroke();
     ctx.restore();
 
-    // 2. Corpo do Litocisto (Casca basáltica + plasma central)
     ctx.save();
     ctx.translate(ox, oy);
 
@@ -953,18 +998,15 @@ function drawLitocistos(ctx, e, bob, frameCount, isEnraged) {
       ctx.arc(0, 0, o.radius + 2, 0, Math.PI * 2);
       ctx.fill();
     } else {
-      // Casca rochosa externa
       ctx.fillStyle = isEnraged ? '#3d0c11' : '#2f3640';
       ctx.beginPath();
       ctx.arc(0, 0, o.radius, 0, Math.PI * 2);
       ctx.fill();
 
-      // Borda com cor de magma
       ctx.strokeStyle = isEnraged ? '#ff4757' : '#e67e22';
       ctx.lineWidth = 2.0;
       ctx.stroke();
 
-      // Núcleo do orbe
       const orbGrad = ctx.createRadialGradient(0, 0, 1, 0, 0, o.radius * 0.65);
       orbGrad.addColorStop(0, '#ffffff');
       orbGrad.addColorStop(0.5, isEnraged ? '#ff6b81' : '#f1c40f');
@@ -974,7 +1016,6 @@ function drawLitocistos(ctx, e, bob, frameCount, isEnraged) {
       ctx.arc(0, 0, o.radius * 0.65, 0, Math.PI * 2);
       ctx.fill();
 
-      // Arco medidor de integridade (HP do Litocisto)
       const hpPct = Math.max(0, o.hp / o.maxHp);
       ctx.strokeStyle = '#2ecc71';
       ctx.lineWidth = 2.4;
@@ -985,6 +1026,57 @@ function drawLitocistos(ctx, e, bob, frameCount, isEnraged) {
 
     ctx.restore();
   }
+}
+
+/**
+ * Desenha a área de sucção e a detonação da Singularidade Abissal.
+ */
+function drawSingularityField(ctx, e, frameCount) {
+  const R = 420;
+  const progress = e.pullMaxTimer > 0 ? (1 - e.pullTimer / e.pullMaxTimer) : 0;
+
+  // 1. Campo de gravidade no solo
+  ctx.save();
+  ctx.fillStyle = 'rgba(142, 68, 173, 0.05)';
+  ctx.beginPath();
+  ctx.arc(0, 0, R, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(155, 89, 182, 0.35)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 8]);
+  ctx.beginPath();
+  ctx.arc(0, 0, R, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 2. Braços espirais de sucção convergindo para o monólito
+  const arms = 4;
+  const spin = -frameCount * 0.04;
+  ctx.lineWidth = 2.2;
+  for (let a = 0; a < arms; a++) {
+    const baseAng = spin + (a * Math.PI * 2 / arms);
+    ctx.strokeStyle = `rgba(162, 155, 254, ${0.25 + (a % 2 === 0 ? 0.2 : 0)})`;
+    ctx.beginPath();
+    for (let step = 0; step < 18; step++) {
+      const stepR = R * (1 - step / 18);
+      const stepA = baseAng + step * 0.18;
+      const sx = Math.cos(stepA) * stepR;
+      const sy = Math.sin(stepA) * stepR;
+      if (step === 0) ctx.moveTo(sx, sy);
+      else ctx.lineTo(sx, sy);
+    }
+    ctx.stroke();
+  }
+
+  // 3. Anel de contagem regressiva para a detonação (retração intuitiva)
+  const warnR = R * (1 - progress);
+  ctx.strokeStyle = progress > 0.8 ? '#ff4757' : '#a29bfe';
+  ctx.lineWidth = progress > 0.8 ? 3.5 : 2.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, Math.max(30, warnR), 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 }
 
 /**
@@ -999,35 +1091,57 @@ export function drawAbyssalMonolith(ctx, e, frameCount) {
   const isWindup = e.actionState === 'WINDUP';
   const isChanneling = e.actionState === 'CHANNELING_PULL';
 
-  // O monólito afunda no solo durante a exaustão
-  const bob = isVuln ? 24 : (e.floatBob || 0);
-
-  ctx.save();
-  // REMOVIDO: ctx.translate(e.x, e.y); para evitar duplicação do deslocamento feito em renderer.js
-
-  // Tremor sísmico durante preparos e canalizações
-  if (isWindup || isChanneling) {
-    ctx.translate((Math.random() - 0.5) * 3.2, (Math.random() - 0.5) * 3.2);
+  let bob = isVuln ? 24 : (e.floatBob || 0);
+  if (isWindup && e.currentSkill === 'SEISMIC_PULSE') {
+    bob -= 18; // Monólito levita alto antes de esmagar o chão
   }
 
-  // 1. Sombra projetada
+  ctx.save();
+  // Anula a escala horizontal de facing do renderer para garantir que os cálculos
+  // trigonométricos de órbitas e telegrafias batam exatamente com o espaço de mundo físico
+  ctx.scale(e.facing, 1);
+
+  if (isWindup || isChanneling) {
+    ctx.translate((Math.random() - 0.5) * 2.8, (Math.random() - 0.5) * 2.8);
+  }
+
+  // 1. Campo de Singularidade Gravitacional
+  if (isChanneling) {
+    drawSingularityField(ctx, e, frameCount);
+  }
+
+  // 2. Prévia Direcional da Fissura no Solo durante o Windup
+  if (isWindup && e.currentSkill === 'FISSURE') {
+    const aim = e.aimAngle || 0;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(230, 126, 34, 0.4)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([10, 8]);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(aim) * 280, Math.sin(aim) * 280);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 3. Sombra projetada
   drawShadow(ctx, e, bob, isVuln);
 
-  // 2. Glifo de Vulnerabilidade quando exausto
+  // 4. Glifo de Vulnerabilidade quando exausto
   if (isVuln) {
     drawVulnerabilityGliph(ctx, e, frameCount);
   }
 
-  // 3. Placas Tectônicas Flutuantes
+  // 5. Placas Tectônicas Flutuantes
   drawFloatingPlates(ctx, e, bob, frameCount, isVuln, isEnraged, isWindup);
 
-  // 4. Corpo Primário de Basalto
+  // 6. Corpo Primário de Basalto
   drawMegalithBody(ctx, e, bob, frameCount, isVuln, isEnraged);
 
-  // 5. Núcleo Abissal / Fornalha Central
-  drawAbyssalCore(ctx, bob, frameCount, isVuln, isEnraged, isChanneling);
+  // 7. Núcleo Abissal / Fornalha Central
+  drawAbyssalCore(ctx, e, bob, frameCount, isVuln, isEnraged, isChanneling, isWindup);
 
-  // 6. Litocistos Tectônicos (Orbes de contenção)
+  // 8. Litocistos Tectônicos (Orbes de contenção física sincronizada)
   drawLitocistos(ctx, e, bob, frameCount, isEnraged);
 
   ctx.restore();

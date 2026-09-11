@@ -927,6 +927,66 @@ function update(dt) {
         continue;
       }
 
+      if (tel.type === 'FALLING_ROCK') {
+        triggerShake(10);
+        playSfx('hit');
+        createHitParticles(tel.x, tel.y, '#e67e22', 14);
+        createHitParticles(tel.x, tel.y, '#7f8c8d', 8);
+
+        bossShockwaves.push({
+          x: tel.x,
+          y: tel.y,
+          radius: 10,
+          maxRadius: tel.radius + 12,
+          speed: 4.2,
+          damage: Math.round(tel.damage * 0.3),
+          hitPlayer: false
+        });
+
+        const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
+        if (dSq < tel.radius * tel.radius && player.iFrames <= 0) {
+          player.hp -= tel.damage;
+          player.iFrames = 25;
+          triggerShake(10);
+          playSfx('hit');
+          addDamageText(player.x, player.y, `-${tel.damage}`, false, '#e67e22');
+
+          if (player.hp <= 0) {
+            player.hp = 0;
+            triggerDeath();
+            return;
+          }
+        }
+        bossTelegraphs.splice(i, 1);
+        continue;
+      }
+
+      if (tel.type === 'FISSURE_NODE') {
+        triggerShake(5);
+        if (tel.nodeIndex === 1 || tel.nodeIndex === 4) {
+          playSfx('hit');
+        }
+        createHitParticles(tel.x, tel.y, '#d35400', 8);
+        createHitParticles(tel.x, tel.y, '#f39c12', 5);
+
+        const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
+        if (dSq < tel.radius * tel.radius && player.iFrames <= 0) {
+          player.hp -= tel.damage;
+          player.iFrames = 25;
+          triggerShake(8);
+          playSfx('hit');
+          addDamageText(player.x, player.y, `-${tel.damage}`, false, '#e67e22');
+
+          if (player.hp <= 0) {
+            player.hp = 0;
+            triggerDeath();
+            return;
+          }
+        }
+        bossTelegraphs.splice(i, 1);
+        continue;
+      }
+
       triggerShake(12);
       playSfx('boss');
       createHitParticles(tel.x, tel.y, '#e74c3c', 14);

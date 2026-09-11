@@ -1752,7 +1752,7 @@ export function render() {
     ctx.restore();
   }
 
-  // Renderização precisa dos telégrafos de chefes (cones, faixas e círculos)
+  // Renderização precisa dos telégrafos de chefes (cones, faixas, crateras de queda e fissuras)
   for (let i = 0; i < bossTelegraphs.length; i++) {
     const t = bossTelegraphs[i];
     const maxT = (t.maxTimer && t.maxTimer > 0) ? t.maxTimer : (t.timer || 1);
@@ -1765,7 +1765,6 @@ export function render() {
       const startAng = t.angle - arcHalf;
       const endAng = t.angle + arcHalf;
 
-      // 1. Delimitação estática e visível de toda a área perigosa
       ctx.fillStyle = 'rgba(0, 206, 201, 0.12)';
       ctx.beginPath();
       ctx.moveTo(t.x, t.y);
@@ -1782,7 +1781,6 @@ export function render() {
       ctx.lineTo(t.x, t.y);
       ctx.stroke();
 
-      // 2. Preenchimento de carga expansiva indicando o momento do golpe
       ctx.fillStyle = `rgba(0, 206, 201, ${0.22 + progress * 0.45})`;
       ctx.beginPath();
       ctx.moveTo(t.x, t.y);
@@ -1790,7 +1788,6 @@ export function render() {
       ctx.closePath();
       ctx.fill();
 
-      // Linha frontal de choque
       ctx.strokeStyle = progress > 0.85 ? '#ffffff' : '#00cec9';
       ctx.lineWidth = 3.5;
       ctx.beginPath();
@@ -1804,22 +1801,18 @@ export function render() {
       ctx.translate(t.x, t.y);
       ctx.rotate(t.angle);
 
-      // Fundo completo do corredor da investida
       ctx.fillStyle = 'rgba(142, 68, 173, 0.15)';
       ctx.fillRect(0, -halfW, len, w);
 
-      // Bordas tracejadas delimitando o trajeto
       ctx.strokeStyle = 'rgba(155, 89, 182, 0.6)';
       ctx.lineWidth = 2;
       ctx.setLineDash([8, 6]);
       ctx.strokeRect(0, -halfW, len, w);
       ctx.setLineDash([]);
 
-      // Preenchimento de avanço da telegrafia
       ctx.fillStyle = `rgba(231, 76, 60, ${0.25 + progress * 0.4})`;
       ctx.fillRect(0, -halfW, len * progress, w);
 
-      // Setas direcionais indicando o sentido do impacto
       const arrowCount = 4;
       ctx.fillStyle = progress > 0.8 ? '#ffffff' : '#ff7675';
       for (let a = 1; a <= arrowCount; a++) {
@@ -1834,18 +1827,91 @@ export function render() {
         }
       }
 
-      // Linha de cabeceira do vetor
       ctx.strokeStyle = '#ff4757';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(len * progress, -halfW);
       ctx.lineTo(len * progress, halfW);
       ctx.stroke();
+    } else if (t.type === 'FALLING_ROCK') {
+      // Telegrafia Intuitiva de Queda: Sombra que cresce + Anel de aviso que encolhe de fora para dentro
+      const shadowR = t.radius * (0.25 + progress * 0.75);
+      ctx.fillStyle = 'rgba(15, 10, 8, 0.45)';
+      ctx.beginPath();
+      ctx.ellipse(t.x, t.y, shadowR, shadowR * 0.65, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Anel de impacto fixo
+      ctx.strokeStyle = 'rgba(230, 126, 34, 0.4)';
+      ctx.lineWidth = 1.8;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Anel cadente em retração
+      const fallingRingR = t.radius + (t.radius * 1.5) * (1 - progress);
+      ctx.strokeStyle = progress > 0.85 ? '#ffffff' : `rgba(243, 156, 18, ${0.35 + progress * 0.65})`;
+      ctx.lineWidth = progress > 0.85 ? 3.5 : 2.2;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, fallingRingR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Renderização do monólito de basalto caindo do céu nos últimos 35% do tempo
+      if (progress > 0.65) {
+        const rockDropPhase = (progress - 0.65) / 0.35;
+        const altitude = (1 - rockDropPhase) * 110;
+        const rockY = t.y - altitude;
+        ctx.fillStyle = '#2d3436';
+        ctx.strokeStyle = '#e67e22';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(t.x, rockY - 14);
+        ctx.lineTo(t.x + 12, rockY);
+        ctx.lineTo(t.x + 8, rockY + 14);
+        ctx.lineTo(t.x - 8, rockY + 14);
+        ctx.lineTo(t.x - 12, rockY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+    } else if (t.type === 'FISSURE_NODE') {
+      // Linha de fratura conectada à origem e nós precedentes
+      if (t.originX !== undefined && t.originY !== undefined) {
+        ctx.strokeStyle = `rgba(230, 126, 34, ${0.25 + progress * 0.45})`;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(t.originX, t.originY);
+        ctx.lineTo(t.x, t.y);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = `rgba(230, 126, 34, ${0.15 + progress * 0.35})`;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Estacas de pedra saindo do chão gradualmente
+      const spikeR = t.radius * progress;
+      ctx.strokeStyle = progress > 0.85 ? '#ffffff' : '#e67e22';
+      ctx.lineWidth = progress > 0.85 ? 3.0 : 2.0;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, spikeR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Racha tectônica no centro do nó
+      ctx.strokeStyle = '#d35400';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(t.x - 8, t.y - 4);
+      ctx.lineTo(t.x, t.y + 4);
+      ctx.lineTo(t.x + 8, t.y - 2);
+      ctx.stroke();
     } else {
       const isTeleport = t.type === 'VAMPIRE_TELEPORT';
       const baseCol = isTeleport ? '#8e44ad' : '#e74c3c';
 
-      // 1. Silhueta estática completa da área de impacto
       ctx.fillStyle = isTeleport ? 'rgba(142, 68, 173, 0.12)' : 'rgba(231, 76, 60, 0.12)';
       ctx.beginPath();
       ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
@@ -1855,20 +1921,17 @@ export function render() {
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      // 2. Preenchimento de carga interior
       ctx.fillStyle = isTeleport ? `rgba(142, 68, 173, ${0.2 + progress * 0.45})` : `rgba(231, 76, 60, ${0.2 + progress * 0.45})`;
       ctx.beginPath();
       ctx.arc(t.x, t.y, t.radius * progress, 0, Math.PI * 2);
       ctx.fill();
 
-      // Borda frontal com pulso
       ctx.strokeStyle = progress > 0.85 ? '#ffffff' : baseCol;
       ctx.lineWidth = progress > 0.85 ? 3.5 : 2.5;
       ctx.beginPath();
       ctx.arc(t.x, t.y, t.radius * progress, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Runa rotativa para rituais de teletransporte
       if (isTeleport) {
         const rot = frameCount * 0.05;
         ctx.strokeStyle = 'rgba(241, 196, 15, 0.75)';
