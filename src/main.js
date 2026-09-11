@@ -927,9 +927,9 @@ function update(dt) {
         x: tel.x,
         y: tel.y,
         radius: 12,
-        maxRadius: (tel.radius || 75) * 1.85,
-        speed: 3.4,
-        damage: Math.round(tel.damage * 0.5),
+        maxRadius: tel.radius || 75,
+        speed: 4.5,
+        damage: Math.round(tel.damage * 0.35),
         hitPlayer: false
       });
 

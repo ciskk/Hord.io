@@ -491,7 +491,7 @@ function executePreparedSkill(e, context) {
       bossTelegraphs.push({
         x: targetX,
         y: targetY,
-        radius: 64,
+        radius: 72,
         timer: 50,
         maxTimer: 50,
         damage: Math.round(e.damage * 0.70),

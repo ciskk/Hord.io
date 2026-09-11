@@ -12,10 +12,10 @@ export const ENEMY_TYPES ={
 };
 
 export const BOSS_TYPES ={
-  1: { name: 'Lorde Vampírico', hp: 8500, radius: 56, speed: 1.85, color: '#8e44ad', damage: 36, xp: 120, bossId: 1 },
-  2: { name: 'Monólito Abissal', hp: 42000, radius: 76, speed: 0.95, color: '#c0392b', damage: 72, xp: 250, bossId: 2 },
-  3: { name: 'Ceifador Supremo', hp: 62000, radius: 68, speed: 2.1, color: '#d35400', damage: 90, xp: 450, bossId: 3 },
-  4: { name: 'Soberano do Abismo', hp: 135000, radius: 88, speed: 1.3, color: '#e74c3c', damage: 110, xp: 1200, bossId: 4, isFinalBoss: true }
+  1: { name: 'Lorde Vampírico', hp: 8500, radius: 38, speed: 1.85, color: '#8e44ad', damage: 36, xp: 120, bossId: 1 },
+  2: { name: 'Monólito Abissal', hp: 42000, radius: 48, speed: 0.95, color: '#c0392b', damage: 72, xp: 250, bossId: 2 },
+  3: { name: 'Ceifador Supremo', hp: 62000, radius: 44, speed: 2.1, color: '#d35400', damage: 90, xp: 450, bossId: 3 },
+  4: { name: 'Soberano do Abismo', hp: 135000, radius: 54, speed: 1.3, color: '#e74c3c', damage: 110, xp: 1200, bossId: 4, isFinalBoss: true }
 };
 
 export const MINI_BOSS_TYPES ={

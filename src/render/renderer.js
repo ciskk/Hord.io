@@ -16,6 +16,7 @@ import {
   gems,
   bossTelegraphs,
   bossProjectiles,
+  bossShockwaves,
   activeBoss,
   bullets,
   enemyBullets,
@@ -1751,18 +1752,58 @@ export function render() {
     ctx.restore();
   }
 
+  // Renderização precisa dos telégrafos de chefes (círculos e cones)
   for (let i = 0; i < bossTelegraphs.length; i++) {
     const t = bossTelegraphs[i];
-    const progress = 1 - (t.timer / t.maxTimer);
-    ctx.fillStyle = 'rgba(231, 76, 60, 0.28)';
+    const progress = Math.max(0, Math.min(1, 1 - (t.timer / t.maxTimer)));
+    ctx.save();
+
+    if (t.type === 'SCYTHE_CLEAVE') {
+      const arcHalf = Math.PI * 0.52;
+      const startAng = t.angle - arcHalf;
+      const endAng = t.angle + arcHalf;
+
+      ctx.fillStyle = 'rgba(0, 206, 201, 0.25)';
+      ctx.beginPath();
+      ctx.moveTo(t.x, t.y);
+      ctx.arc(t.x, t.y, t.radius * progress, startAng, endAng);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = '#00cec9';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(t.x, t.y);
+      ctx.arc(t.x, t.y, t.radius, startAng, endAng);
+      ctx.closePath();
+      ctx.stroke();
+    } else {
+      const isTeleport = t.type === 'VAMPIRE_TELEPORT';
+      ctx.fillStyle = isTeleport ? 'rgba(142, 68, 173, 0.32)' : 'rgba(231, 76, 60, 0.28)';
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, t.radius * progress, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = isTeleport ? '#8e44ad' : '#e74c3c';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Renderização visual das ondas de choque em expansão
+  for (let i = 0; i < bossShockwaves.length; i++) {
+    const sw = bossShockwaves[i];
+    const alpha = Math.max(0, 1 - sw.radius / sw.maxRadius);
+    ctx.save();
+    ctx.strokeStyle = `rgba(230, 126, 34, ${alpha * 0.85})`;
+    ctx.lineWidth = 3.5;
     ctx.beginPath();
-    ctx.arc(t.x, t.y, t.radius * progress, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#e74c3c';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+    ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.restore();
   }
 
   for (let i = 0; i < bossProjectiles.length; i++) {
