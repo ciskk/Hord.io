@@ -1752,10 +1752,12 @@ export function render() {
     ctx.restore();
   }
 
-  // Renderização precisa dos telégrafos de chefes (círculos e cones)
+  // Renderização precisa dos telégrafos de chefes (cones, faixas e círculos)
   for (let i = 0; i < bossTelegraphs.length; i++) {
     const t = bossTelegraphs[i];
-    const progress = Math.max(0, Math.min(1, 1 - (t.timer / t.maxTimer)));
+    const maxT = (t.maxTimer && t.maxTimer > 0) ? t.maxTimer : (t.timer || 1);
+    const rawProgress = 1 - (t.timer / maxT);
+    const progress = isNaN(rawProgress) ? 1 : Math.max(0, Math.min(1, rawProgress));
     ctx.save();
 
     if (t.type === 'SCYTHE_CLEAVE') {
@@ -1763,32 +1765,125 @@ export function render() {
       const startAng = t.angle - arcHalf;
       const endAng = t.angle + arcHalf;
 
-      ctx.fillStyle = 'rgba(0, 206, 201, 0.25)';
+      // 1. Delimitação estática e visível de toda a área perigosa
+      ctx.fillStyle = 'rgba(0, 206, 201, 0.12)';
+      ctx.beginPath();
+      ctx.moveTo(t.x, t.y);
+      ctx.arc(t.x, t.y, t.radius, startAng, endAng);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(0, 206, 201, 0.55)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(t.x, t.y);
+      ctx.lineTo(t.x + Math.cos(startAng) * t.radius, t.y + Math.sin(startAng) * t.radius);
+      ctx.arc(t.x, t.y, t.radius, startAng, endAng);
+      ctx.lineTo(t.x, t.y);
+      ctx.stroke();
+
+      // 2. Preenchimento de carga expansiva indicando o momento do golpe
+      ctx.fillStyle = `rgba(0, 206, 201, ${0.22 + progress * 0.45})`;
       ctx.beginPath();
       ctx.moveTo(t.x, t.y);
       ctx.arc(t.x, t.y, t.radius * progress, startAng, endAng);
       ctx.closePath();
       ctx.fill();
 
-      ctx.strokeStyle = '#00cec9';
-      ctx.lineWidth = 2.5;
+      // Linha frontal de choque
+      ctx.strokeStyle = progress > 0.85 ? '#ffffff' : '#00cec9';
+      ctx.lineWidth = 3.5;
       ctx.beginPath();
-      ctx.moveTo(t.x, t.y);
-      ctx.arc(t.x, t.y, t.radius, startAng, endAng);
-      ctx.closePath();
+      ctx.arc(t.x, t.y, t.radius * progress, startAng, endAng);
+      ctx.stroke();
+    } else if (t.type === 'MIST_DASH_LANE') {
+      const len = t.length || 320;
+      const w = t.width || 70;
+      const halfW = w / 2;
+
+      ctx.translate(t.x, t.y);
+      ctx.rotate(t.angle);
+
+      // Fundo completo do corredor da investida
+      ctx.fillStyle = 'rgba(142, 68, 173, 0.15)';
+      ctx.fillRect(0, -halfW, len, w);
+
+      // Bordas tracejadas delimitando o trajeto
+      ctx.strokeStyle = 'rgba(155, 89, 182, 0.6)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]);
+      ctx.strokeRect(0, -halfW, len, w);
+      ctx.setLineDash([]);
+
+      // Preenchimento de avanço da telegrafia
+      ctx.fillStyle = `rgba(231, 76, 60, ${0.25 + progress * 0.4})`;
+      ctx.fillRect(0, -halfW, len * progress, w);
+
+      // Setas direcionais indicando o sentido do impacto
+      const arrowCount = 4;
+      ctx.fillStyle = progress > 0.8 ? '#ffffff' : '#ff7675';
+      for (let a = 1; a <= arrowCount; a++) {
+        const ax = (len / (arrowCount + 1)) * a;
+        if (ax <= len * (progress + 0.2)) {
+          ctx.beginPath();
+          ctx.moveTo(ax - 8, -10);
+          ctx.lineTo(ax + 8, 0);
+          ctx.lineTo(ax - 8, 10);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+
+      // Linha de cabeceira do vetor
+      ctx.strokeStyle = '#ff4757';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(len * progress, -halfW);
+      ctx.lineTo(len * progress, halfW);
       ctx.stroke();
     } else {
       const isTeleport = t.type === 'VAMPIRE_TELEPORT';
-      ctx.fillStyle = isTeleport ? 'rgba(142, 68, 173, 0.32)' : 'rgba(231, 76, 60, 0.28)';
+      const baseCol = isTeleport ? '#8e44ad' : '#e74c3c';
+
+      // 1. Silhueta estática completa da área de impacto
+      ctx.fillStyle = isTeleport ? 'rgba(142, 68, 173, 0.12)' : 'rgba(231, 76, 60, 0.12)';
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = isTeleport ? 'rgba(142, 68, 173, 0.65)' : 'rgba(231, 76, 60, 0.65)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 2. Preenchimento de carga interior
+      ctx.fillStyle = isTeleport ? `rgba(142, 68, 173, ${0.2 + progress * 0.45})` : `rgba(231, 76, 60, ${0.2 + progress * 0.45})`;
       ctx.beginPath();
       ctx.arc(t.x, t.y, t.radius * progress, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.strokeStyle = isTeleport ? '#8e44ad' : '#e74c3c';
-      ctx.lineWidth = 2.5;
+      // Borda frontal com pulso
+      ctx.strokeStyle = progress > 0.85 ? '#ffffff' : baseCol;
+      ctx.lineWidth = progress > 0.85 ? 3.5 : 2.5;
       ctx.beginPath();
-      ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+      ctx.arc(t.x, t.y, t.radius * progress, 0, Math.PI * 2);
       ctx.stroke();
+
+      // Runa rotativa para rituais de teletransporte
+      if (isTeleport) {
+        const rot = frameCount * 0.05;
+        ctx.strokeStyle = 'rgba(241, 196, 15, 0.75)';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        for (let k = 0; k < 3; k++) {
+          const a = rot + (k * Math.PI * 2 / 3);
+          const px = t.x + Math.cos(a) * (t.radius * 0.65);
+          const py = t.y + Math.sin(a) * (t.radius * 0.65);
+          if (k === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.stroke();
+      }
     }
     ctx.restore();
   }

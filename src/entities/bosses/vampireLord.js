@@ -7,11 +7,13 @@ import { acidPuddles } from '../../main.js';
  */
 export function initVampireLord(boss) {
   // Máquina de estados principal:
-  // 'CHASE', 'WINDUP', 'ATTACKING', 'RECOVERY', 'ENRAGE_TRANSITION', 'CHANNELING_SPIRAL'
+  // 'CHASE', 'WINDUP', 'RECOVERY', 'ENRAGE_TRANSITION', 'CHANNELING_SPIRAL', 'MIST_DASH', 'MIST_DASH_PAUSE', 'MIST_BRAKE', 'TELEPORTING'
   boss.actionState = 'CHASE';
   boss.actionTimer = 0;
   boss.currentSkill = null; // 'CLEAVE', 'SWARM', 'MIST_DASH', 'TELEPORT', 'BLOOD_BURST', 'SPIRAL_BARRAGE', 'PINCER_SHOT'
   boss.skillCooldown = 70;
+  boss.aimAngle = 0;
+  boss.isWingPrepping = false;
 
   // Janelas de vulnerabilidade e recuperação
   boss.recoveryTimer = 0;
@@ -61,8 +63,15 @@ export function updateVampireLord(e, dt, context) {
     addDamageText
   } = context;
 
-  // 1. Orientação horizontal e flutuação orgânica
-  if (e.actionState !== 'WINDUP' && e.actionState !== 'RECOVERY') {
+  // 1. Orientação horizontal e postura com mira travada
+  if (e.actionState === 'WINDUP') {
+    e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
+  } else if (
+    e.actionState !== 'RECOVERY' && 
+    e.actionState !== 'MIST_BRAKE' && 
+    e.actionState !== 'MIST_DASH_PAUSE' && 
+    e.actionState !== 'TELEPORTING'
+  ) {
     e.facing = (player.x - e.x) > 0 ? 1 : -1;
   }
   e.floatBob = Math.sin(frameCount * 0.08) * 4;
@@ -76,6 +85,8 @@ export function updateVampireLord(e, dt, context) {
     e.actionState = 'ENRAGE_TRANSITION';
     e.actionTimer = 55;
     e.mistState = 'IDLE';
+    e.isTeleporting = false;
+    e.isWingPrepping = false;
     e.isVulnerable = false;
 
     triggerShake(16);
@@ -170,38 +181,82 @@ export function updateVampireLord(e, dt, context) {
         e.mistDashesLeft--;
 
         if (e.mistDashesLeft > 0) {
-          e.actionTimer = 26;
-          e.mistAngle = Math.atan2(player.y - e.y, player.x - e.x);
-          playSfx('boss');
-          triggerShake(6);
+          // Pausa tática intermediária com nova mira telegrafada
+          e.actionState = 'MIST_DASH_PAUSE';
+          e.actionTimer = 16;
+          e.aimAngle = Math.atan2(player.y - e.y, player.x - e.x);
+          e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
+          triggerShake(4);
+
+          bossTelegraphs.push({
+            type: 'MIST_DASH_LANE',
+            x: e.x,
+            y: e.y,
+            angle: e.aimAngle,
+            length: e.speed * (e.isEnraged ? 4.2 : 3.6) * 26,
+            width: e.radius * 1.8,
+            timer: 16,
+            maxTimer: 16,
+            boss: e
+          });
         } else {
+          // Frenagem antes da detonação da salva radial de projéteis
           e.mistState = 'IDLE';
-          triggerShake(9);
-          playSfx('shoot');
-
-          // Anel expansivo aumentado de esferas na saída da névoa
-          const ringCount = e.isEnraged ? 16 : 12;
-          for (let k = 0; k < ringCount; k++) {
-            const fAng = (k * Math.PI * 2) / ringCount;
-            enemyBullets.push({
-              x: e.x, y: e.y,
-              vx: Math.cos(fAng) * 4.0, vy: Math.sin(fAng) * 4.0,
-              radius: 6.5, damage: Math.round(e.damage * 0.24), life: 110
-            });
-          }
-
-          e.actionState = 'RECOVERY';
-          e.recoveryTimer = e.isEnraged ? 70 : 90;
-          e.isVulnerable = true;
-          addDamageText(e.x, e.y, "EXAUSTO!", true, '#f1c40f');
+          e.actionState = 'MIST_BRAKE';
+          e.actionTimer = 20;
+          triggerShake(5);
+          addDamageText(e.x, e.y, "CONDENSANDO...", false, '#e74c3c');
         }
       }
       return;
     }
 
-    // ==========================================
-    // NOVO PADRÃO: CANALIZAÇÃO DA ESPIRAL DE ESFERAS
-    // ==========================================
+    case 'MIST_DASH_PAUSE': {
+      e.actionTimer -= dt;
+      if (Math.floor(frameCount) % 3 === 0) {
+        createHitParticles(e.x, e.y, '#8e44ad', 2);
+      }
+      if (e.actionTimer <= 0) {
+        e.actionState = 'MIST_DASH';
+        e.actionTimer = 26;
+        e.mistAngle = e.aimAngle;
+        playSfx('boss');
+        triggerShake(6);
+      }
+      return;
+    }
+
+    case 'MIST_BRAKE': {
+      e.actionTimer -= dt;
+      if (Math.floor(frameCount) % 2 === 0) {
+        const pAng = Math.random() * Math.PI * 2;
+        const pDist = e.radius * 1.4;
+        createHitParticles(e.x + Math.cos(pAng) * pDist, e.y + Math.sin(pAng) * pDist, '#ff1744', 1);
+      }
+
+      if (e.actionTimer <= 0) {
+        triggerShake(9);
+        playSfx('shoot');
+
+        // Anel expansivo previsível de esferas na saída da névoa
+        const ringCount = e.isEnraged ? 16 : 12;
+        for (let k = 0; k < ringCount; k++) {
+          const fAng = (k * Math.PI * 2) / ringCount;
+          enemyBullets.push({
+            x: e.x, y: e.y,
+            vx: Math.cos(fAng) * 4.0, vy: Math.sin(fAng) * 4.0,
+            radius: 6.5, damage: Math.round(e.damage * 0.24), life: 110
+          });
+        }
+
+        e.actionState = 'RECOVERY';
+        e.recoveryTimer = e.isEnraged ? 70 : 90;
+        e.isVulnerable = true;
+        addDamageText(e.x, e.y, "EXAUSTO!", true, '#f1c40f');
+      }
+      return;
+    }
+
     case 'CHANNELING_SPIRAL': {
       e.spiralTimer -= dt;
 
@@ -235,7 +290,13 @@ export function updateVampireLord(e, dt, context) {
 
     case 'TELEPORTING': {
       e.teleportResolveTimer -= dt;
+      e.mistState = 'DASHING'; // Torna invulnerável na posição de partida
+      if (Math.floor(frameCount) % 4 === 0) {
+        createHitParticles(e.x + (Math.random() - 0.5) * 20, e.y + (Math.random() - 0.5) * 20, '#8e44ad', 2);
+      }
       if (e.teleportResolveTimer <= 0) {
+        e.mistState = 'IDLE';
+        e.isTeleporting = false;
         e.actionState = 'CHASE';
         e.skillCooldown = e.isEnraged ? 55 : 85;
       }
@@ -245,13 +306,32 @@ export function updateVampireLord(e, dt, context) {
     case 'WINDUP': {
       e.actionTimer -= dt;
 
-      if (Math.floor(frameCount) % 3 === 0) {
-        createHitParticles(
-          e.x + (Math.random() - 0.5) * e.radius * 0.9,
-          e.y + (Math.random() - 0.5) * e.radius * 0.9,
-          '#ff1744',
-          1
-        );
+      // Partículas específicas de acordo com o ataque preparado
+      if (e.currentSkill === 'PINCER_SHOT') {
+        const flankDist = 65;
+        const leftX = e.x + Math.cos(e.aimAngle - Math.PI / 2) * flankDist;
+        const leftY = e.y + Math.sin(e.aimAngle - Math.PI / 2) * flankDist;
+        const rightX = e.x + Math.cos(e.aimAngle + Math.PI / 2) * flankDist;
+        const rightY = e.y + Math.sin(e.aimAngle + Math.PI / 2) * flankDist;
+
+        if (Math.floor(frameCount) % 2 === 0) {
+          createHitParticles(leftX, leftY, '#ff1744', 1);
+          createHitParticles(rightX, rightY, '#ff1744', 1);
+        }
+      } else if (e.currentSkill === 'SPIRAL_BARRAGE') {
+        if (Math.floor(frameCount) % 2 === 0) {
+          const vAng = frameCount * 0.25;
+          createHitParticles(e.x + Math.cos(vAng) * 24, e.y + Math.sin(vAng) * 24, '#e74c3c', 1);
+        }
+      } else {
+        if (Math.floor(frameCount) % 3 === 0) {
+          createHitParticles(
+            e.x + (Math.random() - 0.5) * e.radius * 0.9,
+            e.y + (Math.random() - 0.5) * e.radius * 0.9,
+            '#ff1744',
+            1
+          );
+        }
       }
 
       if (e.actionTimer <= 0) {
@@ -281,7 +361,7 @@ export function updateVampireLord(e, dt, context) {
       e.skillCooldown -= dt;
 
       if (e.skillCooldown <= 0) {
-        selectNextSkill(e, dist);
+        selectNextSkill(e, dist, player, bossTelegraphs);
       }
       break;
     }
@@ -289,43 +369,84 @@ export function updateVampireLord(e, dt, context) {
 }
 
 /**
- * Seleciona a próxima habilidade com base no alcance, fase e ritmo.
+ * Seleciona a próxima habilidade com base no alcance, fase e ritmo, gerando os telégrafos imediatamente no início da preparação.
  */
-function selectNextSkill(e, dist) {
+function selectNextSkill(e, dist, player, bossTelegraphs) {
   const isEnraged = e.isEnraged;
   const rand = Math.random();
+  const angleToPlayer = Math.atan2(player.y - e.y, player.x - e.x);
 
   if (dist < 155) {
+    const cleaveDuration = isEnraged ? 32 : 44;
     e.currentSkill = 'CLEAVE';
     e.actionState = 'WINDUP';
-    e.actionTimer = isEnraged ? 32 : 44;
+    e.actionTimer = cleaveDuration;
+    e.aimAngle = angleToPlayer;
+    e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
+
+    // Telégrafo gerado no frame 0 do windup para legibilidade completa
+    bossTelegraphs.push({
+      type: 'SCYTHE_CLEAVE',
+      x: e.x,
+      y: e.y,
+      radius: 155,
+      angle: e.aimAngle,
+      timer: cleaveDuration,
+      maxTimer: cleaveDuration,
+      damage: Math.round(e.damage * 0.75),
+      boss: e
+    });
   } else if (dist > 320 && rand < 0.35) {
     e.currentSkill = 'TELEPORT';
     e.actionState = 'WINDUP';
     e.actionTimer = isEnraged ? 20 : 30;
+    e.aimAngle = angleToPlayer;
+    e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
   } else if (rand < 0.22) {
+    const dashWindup = isEnraged ? 22 : 32;
     e.currentSkill = 'MIST_DASH';
     e.actionState = 'WINDUP';
-    e.actionTimer = isEnraged ? 22 : 32;
+    e.actionTimer = dashWindup;
+    e.aimAngle = angleToPlayer;
+    e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
+
+    // Faixa telegrafada do trajeto da investida
+    bossTelegraphs.push({
+      type: 'MIST_DASH_LANE',
+      x: e.x,
+      y: e.y,
+      angle: e.aimAngle,
+      length: e.speed * (isEnraged ? 4.2 : 3.6) * 28,
+      width: e.radius * 1.8,
+      timer: dashWindup,
+      maxTimer: dashWindup,
+      boss: e
+    });
   } else if (rand < 0.46) {
-    // Novo Padrão 1: Espirais de esferas
     e.currentSkill = 'SPIRAL_BARRAGE';
     e.actionState = 'WINDUP';
     e.actionTimer = isEnraged ? 24 : 34;
+    e.aimAngle = angleToPlayer;
+    e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
   } else if (rand < 0.68) {
-    // Novo Padrão 2: Pinça convergente de esferas
     e.currentSkill = 'PINCER_SHOT';
     e.actionState = 'WINDUP';
-    e.actionTimer = isEnraged ? 22 : 30;
+    e.actionTimer = isEnraged ? 22 : 32;
+    e.aimAngle = angleToPlayer;
+    e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
+    e.isWingPrepping = true;
   } else if (isEnraged && rand < 0.84) {
     e.currentSkill = 'BLOOD_BURST';
     e.actionState = 'WINDUP';
     e.actionTimer = 36;
+    e.aimAngle = angleToPlayer;
+    e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
   } else {
-    // Revoada Noturna em leque denso
     e.currentSkill = 'SWARM';
     e.actionState = 'WINDUP';
     e.actionTimer = isEnraged ? 20 : 28;
+    e.aimAngle = angleToPlayer;
+    e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
   }
 }
 
@@ -341,9 +462,7 @@ function executePreparedSkill(e, context) {
     createHitParticles
   } = context;
 
-  const dx = player.x - e.x;
-  const dy = player.y - e.y;
-  const angleToPlayer = Math.atan2(dy, dx);
+  const targetAngle = e.aimAngle;
 
   switch (e.currentSkill) {
     case 'CLEAVE': {
@@ -351,27 +470,15 @@ function executePreparedSkill(e, context) {
       triggerShake(10);
       triggerHaptic('medium');
 
-      bossTelegraphs.push({
-        type: 'SCYTHE_CLEAVE',
-        x: e.x,
-        y: e.y,
-        radius: 145,
-        angle: angleToPlayer,
-        timer: 16,
-        maxTimer: 16,
-        damage: Math.round(e.damage * 0.75),
-        boss: e
-      });
-
-      e.x += Math.cos(angleToPlayer) * 32;
-      e.y += Math.sin(angleToPlayer) * 32;
+      // Avanço físico sincronizado com a direção exata telegrafada
+      e.x += Math.cos(targetAngle) * 28;
+      e.y += Math.sin(targetAngle) * 28;
 
       e.actionState = 'CHASE';
       e.skillCooldown = e.isEnraged ? 45 : 70;
       break;
     }
 
-    // DISPARO EM LEQUE DENSO EXPANDIDO
     case 'SWARM': {
       playSfx('shoot');
       triggerShake(6);
@@ -379,7 +486,7 @@ function executePreparedSkill(e, context) {
       const count = e.isEnraged ? 12 : 8;
       const totalArc = Math.PI * (e.isEnraged ? 0.7 : 0.55);
       const step = totalArc / (count - 1);
-      const startAngle = angleToPlayer - totalArc / 2;
+      const startAngle = targetAngle - totalArc / 2;
 
       for (let k = 0; k < count; k++) {
         const bAng = startAngle + (k * step);
@@ -400,18 +507,16 @@ function executePreparedSkill(e, context) {
       break;
     }
 
-    // NOVO PADRÃO 1: EXECUÇÃO DA ESPIRAL GIRATÓRIA
     case 'SPIRAL_BARRAGE': {
       e.actionState = 'CHANNELING_SPIRAL';
       e.spiralWavesLeft = e.isEnraged ? 8 : 6;
       e.spiralTimer = 0;
-      e.spiralAngle = angleToPlayer;
+      e.spiralAngle = targetAngle;
       playSfx('boss');
       triggerShake(5);
       break;
     }
 
-    // NOVO PADRÃO 2: EXECUÇÃO DA PINÇA CONVERGENTE
     case 'PINCER_SHOT': {
       playSfx('shoot');
       triggerShake(6);
@@ -420,16 +525,14 @@ function executePreparedSkill(e, context) {
       const bulletsPerFlank = e.isEnraged ? 8 : 6;
       const flankOffsetDist = 65;
 
-      // Posição de origem da asa esquerda e asa direita
-      const leftFlankX = e.x + Math.cos(angleToPlayer - Math.PI / 2) * flankOffsetDist;
-      const leftFlankY = e.y + Math.sin(angleToPlayer - Math.PI / 2) * flankOffsetDist;
-      const rightFlankX = e.x + Math.cos(angleToPlayer + Math.PI / 2) * flankOffsetDist;
-      const rightFlankY = e.y + Math.sin(angleToPlayer + Math.PI / 2) * flankOffsetDist;
+      const leftFlankX = e.x + Math.cos(targetAngle - Math.PI / 2) * flankOffsetDist;
+      const leftFlankY = e.y + Math.sin(targetAngle - Math.PI / 2) * flankOffsetDist;
+      const rightFlankX = e.x + Math.cos(targetAngle + Math.PI / 2) * flankOffsetDist;
+      const rightFlankY = e.y + Math.sin(targetAngle + Math.PI / 2) * flankOffsetDist;
 
-      // Disparos do flanco esquerdo convergindo diagonalmente
       for (let k = 0; k < bulletsPerFlank; k++) {
         const progress = k / (bulletsPerFlank - 1);
-        const fireAng = (angleToPlayer + 0.55) - (progress * 0.4);
+        const fireAng = (targetAngle + 0.55) - (progress * 0.4);
         const spd = 4.4 + progress * 1.2;
         enemyBullets.push({
           x: leftFlankX,
@@ -442,10 +545,9 @@ function executePreparedSkill(e, context) {
         });
       }
 
-      // Disparos do flanco direito convergindo diagonalmente
       for (let k = 0; k < bulletsPerFlank; k++) {
         const progress = k / (bulletsPerFlank - 1);
-        const fireAng = (angleToPlayer - 0.55) + (progress * 0.4);
+        const fireAng = (targetAngle - 0.55) + (progress * 0.4);
         const spd = 4.4 + progress * 1.2;
         enemyBullets.push({
           x: rightFlankX,
@@ -461,6 +563,7 @@ function executePreparedSkill(e, context) {
       createHitParticles(leftFlankX, leftFlankY, '#ff1744', 6);
       createHitParticles(rightFlankX, rightFlankY, '#ff1744', 6);
 
+      e.isWingPrepping = false;
       e.actionState = 'CHASE';
       e.skillCooldown = e.isEnraged ? 45 : 70;
       break;
@@ -470,7 +573,7 @@ function executePreparedSkill(e, context) {
       e.actionState = 'MIST_DASH';
       e.mistDashesLeft = e.isEnraged ? 2 : 1;
       e.actionTimer = 28;
-      e.mistAngle = angleToPlayer;
+      e.mistAngle = targetAngle;
       playSfx('boss');
       triggerShake(7);
       break;
@@ -486,7 +589,9 @@ function executePreparedSkill(e, context) {
       createHitParticles(e.x, e.y, '#8e44ad', 14);
 
       e.actionState = 'TELEPORTING';
-      e.teleportResolveTimer = 52;
+      e.isTeleporting = true;
+      e.mistState = 'DASHING';
+      e.teleportResolveTimer = 50;
 
       bossTelegraphs.push({
         x: targetX,
@@ -550,6 +655,38 @@ function executePreparedSkill(e, context) {
 // ============================================================================
 // SISTEMA DE RENDERIZAÇÃO PROCEDURAL VETORIAL
 // ============================================================================
+
+function drawTeleportDeparture(ctx, e, frameCount) {
+  const progress = Math.max(0, Math.min(1, 1 - (e.teleportResolveTimer / 50)));
+  const alpha = Math.max(0, 1 - progress * 1.5);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  ctx.fillStyle = 'rgba(26, 2, 8, 0.7)';
+  ctx.beginPath();
+  ctx.ellipse(0, 20, e.radius * (1 - progress * 0.6), 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const batCount = 8;
+  ctx.fillStyle = '#0a0104';
+  for (let i = 0; i < batCount; i++) {
+    const angle = (i * Math.PI * 2 / batCount) + frameCount * 0.1;
+    const dist = progress * (e.radius * 2.2) + 6;
+    const bx = Math.cos(angle) * dist;
+    const by = Math.sin(angle) * dist * 0.6 - progress * 24;
+    const flap = Math.sin(frameCount * 0.5 + i) * 5;
+
+    ctx.beginPath();
+    ctx.moveTo(bx, by);
+    ctx.lineTo(bx - 6, by - 4 + flap);
+    ctx.lineTo(bx - 2, by + 3);
+    ctx.lineTo(bx + 2, by + 3);
+    ctx.lineTo(bx + 6, by - 4 + flap);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
 
 function drawMistVortex(ctx, e, frameCount) {
   const t = frameCount * 0.16;
@@ -885,6 +1022,11 @@ function drawClawsAndArms(ctx, bob, frameCount, isVuln, isEnraged, isWindup, isC
  * @param {number} frameCount 
  */
 export function drawVampireLord(ctx, e, frameCount) {
+  if (e.actionState === 'TELEPORTING') {
+    drawTeleportDeparture(ctx, e, frameCount);
+    return;
+  }
+
   if (e.mistState === 'DASHING') {
     drawMistVortex(ctx, e, frameCount);
     return;
@@ -906,7 +1048,7 @@ export function drawVampireLord(ctx, e, frameCount) {
   }
 
   const wingFlap = isVuln ? 0 : Math.sin(frameCount * (isEnraged ? 0.28 : 0.16)) * 14;
-  const wingSpan = isVuln ? 0.55 : (isEnraged ? 1.25 : 1.0);
+  const wingSpan = isVuln ? 0.55 : (isEnraged ? 1.25 : (isChanneling ? 1.38 : (e.isWingPrepping ? 1.3 : 1.0)));
 
   if (isWindup || isChanneling) {
     ctx.translate((Math.random() - 0.5) * 2.5, (Math.random() - 0.5) * 2.5);
@@ -914,6 +1056,50 @@ export function drawVampireLord(ctx, e, frameCount) {
 
   drawSingleWing(ctx, -1, wingFlap, wingSpan, isVuln, isEnraged);
   drawSingleWing(ctx, 1, wingFlap, wingSpan, isVuln, isEnraged);
+
+  // Orbes de carregamento nas asas para o disparo convergente
+  if (e.isWingPrepping || (isWindup && e.currentSkill === 'PINCER_SHOT')) {
+    const orbPulse = (Math.sin(frameCount * 0.3) + 1) * 2.2;
+    ctx.fillStyle = '#ff1744';
+    ctx.beginPath();
+    ctx.arc(-58, -45 + bob, 5 + orbPulse, 0, Math.PI * 2);
+    ctx.arc(58, -45 + bob, 5 + orbPulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  // Sigilo rúnico rotativo no peito durante a canalização da espiral
+  if (isChanneling) {
+    const rot = frameCount * 0.12;
+    ctx.save();
+    ctx.translate(0, -8 + bob);
+    ctx.rotate(rot);
+    ctx.strokeStyle = 'rgba(255, 23, 68, 0.75)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.arc(0, 0, 18, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    for (let k = 0; k < 4; k++) {
+      const a = k * Math.PI / 2;
+      ctx.moveTo(Math.cos(a) * 18, Math.sin(a) * 18);
+      ctx.lineTo(Math.cos(a + Math.PI) * 18, Math.sin(a + Math.PI) * 18);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Efeito de pulso concêntrico de aviso durante a frenagem da investida
+  if (e.actionState === 'MIST_BRAKE') {
+    const brakePulse = (e.actionTimer / 20) * 26;
+    ctx.strokeStyle = 'rgba(231, 76, 60, 0.85)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(0, bob, e.radius + brakePulse, 0, Math.PI * 2);
+    ctx.stroke();
+  }
 
   drawFluidCape(ctx, bob, frameCount, isVuln, isEnraged);
   drawGothicArmor(ctx, bob, frameCount, isVuln, isEnraged);

@@ -859,15 +859,23 @@ function update(dt) {
     tel.timer -= dt;
 
     if (tel.timer <= 0) {
+      if (tel.type === 'MIST_DASH_LANE') {
+        bossTelegraphs.splice(i, 1);
+        continue;
+      }
+
       if (tel.type === 'VAMPIRE_TELEPORT') {
         if (tel.boss) {
           tel.boss.x = tel.x;
           tel.boss.y = tel.y;
+          tel.boss.mistState = 'IDLE';
           tel.boss.isTeleporting = false;
+          tel.boss.actionState = 'CHASE';
+          tel.boss.skillCooldown = tel.boss.isEnraged ? 45 : 70;
         }
         triggerShake(10);
         playSfx('boss');
-        createHitParticles(tel.x, tel.y, '#8e44ad', 14);
+        createHitParticles(tel.x, tel.y, '#8e44ad', 18);
 
         const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
         if (dSq < tel.radius * tel.radius && player.iFrames <= 0) {
@@ -1126,6 +1134,7 @@ function update(dt) {
           bossShockwaves,
           voidVortices,
           triggerShake,
+          triggerHaptic,
           createHitParticles,
           addDamageText
         });
