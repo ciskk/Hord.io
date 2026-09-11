@@ -1764,15 +1764,17 @@ export function render() {
       const arcHalf = Math.PI * 0.52;
       const startAng = t.angle - arcHalf;
       const endAng = t.angle + arcHalf;
+      const rgbCol = t.colorRgb || '0, 206, 201';
+      const hexCol = t.color || '#00cec9';
 
-      ctx.fillStyle = 'rgba(0, 206, 201, 0.12)';
+      ctx.fillStyle = `rgba(${rgbCol}, 0.12)`;
       ctx.beginPath();
       ctx.moveTo(t.x, t.y);
       ctx.arc(t.x, t.y, t.radius, startAng, endAng);
       ctx.closePath();
       ctx.fill();
 
-      ctx.strokeStyle = 'rgba(0, 206, 201, 0.55)';
+      ctx.strokeStyle = `rgba(${rgbCol}, 0.55)`;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(t.x, t.y);
@@ -1781,14 +1783,14 @@ export function render() {
       ctx.lineTo(t.x, t.y);
       ctx.stroke();
 
-      ctx.fillStyle = `rgba(0, 206, 201, ${0.22 + progress * 0.45})`;
+      ctx.fillStyle = `rgba(${rgbCol}, ${0.22 + progress * 0.45})`;
       ctx.beginPath();
       ctx.moveTo(t.x, t.y);
       ctx.arc(t.x, t.y, t.radius * progress, startAng, endAng);
       ctx.closePath();
       ctx.fill();
 
-      ctx.strokeStyle = progress > 0.85 ? '#ffffff' : '#00cec9';
+      ctx.strokeStyle = progress > 0.85 ? '#ffffff' : hexCol;
       ctx.lineWidth = 3.5;
       ctx.beginPath();
       ctx.arc(t.x, t.y, t.radius * progress, startAng, endAng);
@@ -1956,7 +1958,8 @@ export function render() {
     const sw = bossShockwaves[i];
     const alpha = Math.max(0, 1 - sw.radius / sw.maxRadius);
     ctx.save();
-    ctx.strokeStyle = `rgba(230, 126, 34, ${alpha * 0.85})`;
+    const swColor = sw.colorRgb || (activeBoss && activeBoss.bossId === 3 ? '0, 206, 201' : '230, 126, 34');
+    ctx.strokeStyle = `rgba(${swColor}, ${alpha * 0.85})`;
     ctx.lineWidth = 3.5;
     ctx.beginPath();
     ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
@@ -1969,26 +1972,39 @@ export function render() {
     ctx.save();
     ctx.translate(bp.x, bp.y);
     ctx.rotate(bp.angle);
-    ctx.strokeStyle = '#e74c3c';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(0, 0, bp.radius, 0, Math.PI);
-    ctx.stroke();
+
+    if (bp.type === 'SOUL_SCYTHE') {
+      const scytheColor = bp.color || '#00cec9';
+      ctx.strokeStyle = scytheColor;
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, bp.radius, -Math.PI * 0.4, Math.PI * 0.75);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(0, 0, bp.radius * 0.85, -Math.PI * 0.2, Math.PI * 0.5);
+      ctx.stroke();
+
+      ctx.fillStyle = '#1e272e';
+      ctx.fillRect(-2, -bp.radius * 0.65, 4, bp.radius * 1.3);
+
+      ctx.fillStyle = scytheColor;
+      ctx.beginPath();
+      ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.strokeStyle = '#e74c3c';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(0, 0, bp.radius, 0, Math.PI);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
-  if (activeBoss && activeBoss.bossId === 4) {
-    const laserCount = activeBoss.isEnraged ? 6 : 4;
-    ctx.strokeStyle = activeBoss.isEnraged ? 'rgba(232, 67, 147, 0.85)' : 'rgba(155, 89, 182, 0.85)';
-    ctx.lineWidth = activeBoss.isEnraged ? 8 : 6;
-    for (let arm = 0; arm < laserCount; arm++) {
-      const rayAng = activeBoss.beamAngle + (arm * (Math.PI * 2 / laserCount));
-      ctx.beginPath();
-      ctx.moveTo(activeBoss.x, activeBoss.y);
-      ctx.lineTo(activeBoss.x + Math.cos(rayAng) * 650, activeBoss.y + Math.sin(rayAng) * 650);
-      ctx.stroke();
-    }
-  }
+  // Renderização do Boss 4 desacoplada: gerenciada exclusivamente pelo módulo modular abyssSovereign.js
 
   if (player.auraLvl > 0 || player.evolvedAura) {
     const auraRadius = (player.evolvedAura ? 150 : 65) + player.auraLvl * 18;

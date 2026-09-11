@@ -841,8 +841,9 @@ function update(dt) {
       sw.hitPlayer = true;
       triggerShake(9);
       playSfx('hit');
-      addDamageText(player.x, player.y, `-${sw.damage}`, false, '#e67e22');
-      createHitParticles(player.x, player.y, '#d35400', 5);
+      const swColor = sw.color || (activeBoss && activeBoss.bossId === 3 ? '#00cec9' : '#e67e22');
+      addDamageText(player.x, player.y, `-${sw.damage}`, false, swColor);
+      createHitParticles(player.x, player.y, swColor, 5);
 
       if (player.hp <= 0) {
         player.hp = 0;
@@ -913,7 +914,9 @@ function update(dt) {
           player.iFrames = 28;
           triggerShake(12);
           playSfx('hit');
-          addDamageText(player.x, player.y, `-${tel.damage}`, true, '#00cec9');
+          const cleaveHitColor = tel.color || '#00cec9';
+          addDamageText(player.x, player.y, `-${tel.damage}`, true, cleaveHitColor);
+          createHitParticles(tel.x, tel.y, cleaveHitColor, 16);
           player.x += Math.cos(playerAng) * 28;
           player.y += Math.sin(playerAng) * 28;
 
@@ -921,8 +924,8 @@ function update(dt) {
             player.hp = 0;
             triggerDeath();
             return;
-          }
         }
+      }
         bossTelegraphs.splice(i, 1);
         continue;
       }
@@ -1047,7 +1050,9 @@ function update(dt) {
       player.iFrames = 25;
       triggerShake(8);
       playSfx('hit');
-      addDamageText(player.x, player.y, `-${bp.damage}`, false, '#e74c3c');
+      const projHitColor = bp.color || '#e74c3c';
+      addDamageText(player.x, player.y, `-${bp.damage}`, false, projHitColor);
+      createHitParticles(player.x, player.y, projHitColor, 6);
 
       if (player.hp <= 0) {
         player.hp = 0;

@@ -1,16 +1,19 @@
+/**
+ * src/core/audio.js
+ * Motor de Áudio Procedural via Web Audio API e Feedback Háptico
+ */
 export let audioCtx = null;
 let masterGainNode = null;
-let currentVolume = 0.5;
+let currentVolume = 1.0;
 
-// Escala musical pentatônica para coleta de gemas (harmoniosa e sem fadiga auditiva)
+// Escala musical pentatônica para coleta de gemas
 let gemPitchStep = 0;
 let lastGemTime = 0;
 const gemScale = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.5];
 
-// Cooldowns para throttling (impede saturação/distorção em mortes simultâneas)
-const soundCooldowns = { hit: 0, shoot: 0, crit: 0 };
+// Cooldowns para throttling (impede saturação auditiva em eventos simultâneos)
+const soundCooldowns = { hit: 0, shoot: 0, crit: 0, charge: 0, warp: 0 };
 
-// Haptic Feedback API para iOS (quando suportado)
 export function triggerHaptic(type) {
   try {
     if (navigator.vibrate) {
@@ -18,7 +21,7 @@ export function triggerHaptic(type) {
       else if (type === 'medium') navigator.vibrate(20);
       else if (type === 'heavy') navigator.vibrate([25, 30, 25]);
     }
-  } catch(e) {}
+  } catch (e) {}
 }
 
 export function initAudio() {
@@ -47,10 +50,11 @@ export function playSfx(type) {
   const now = performance.now();
   const t = audioCtx.currentTime;
 
-  // Throttling para sons que se repetem com extrema frequência
   if (type === 'hit' && now - soundCooldowns.hit < 35) return;
   if (type === 'shoot' && now - soundCooldowns.shoot < 28) return;
   if (type === 'crit' && now - soundCooldowns.crit < 45) return;
+  if (type === 'charge' && now - soundCooldowns.charge < 120) return;
+  if (type === 'warp' && now - soundCooldowns.warp < 80) return;
   if (soundCooldowns[type] !== undefined) soundCooldowns[type] = now;
 
   try {
@@ -58,7 +62,6 @@ export function playSfx(type) {
     const gain = audioCtx.createGain();
     const filter = audioCtx.createBiquadFilter();
 
-    // Filtro Passa-Baixa elimina frequências pontudas/metálicas
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(2600, t);
 
@@ -66,7 +69,6 @@ export function playSfx(type) {
     gain.connect(filter);
     filter.connect(masterGainNode);
 
-    // Micro-variação orgânica de tom (elimina a sensação robótica)
     const pitchJitter = 0.93 + Math.random() * 0.14;
 
     if (type === 'shoot') {
@@ -212,6 +214,66 @@ export function playSfx(type) {
         o.start(t + idx * 0.06);
         o.stop(t + idx * 0.06 + 0.18);
       });
+    } else if (type === 'singularity') {
+      // Sub-grave expansivo da Singularidade Primordial
+      filter.frequency.setValueAtTime(220, t);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(80, t);
+      osc.frequency.exponentialRampToValueAtTime(24, t + 0.65);
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.24, t + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.65);
+      osc.start(t);
+      osc.stop(t + 0.65);
+      triggerHaptic('heavy');
+    } else if (type === 'charge') {
+      // Glissando harmônico ascendente para telegrafia de feixes
+      filter.frequency.setValueAtTime(3200, t);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(260 * pitchJitter, t);
+      osc.frequency.exponentialRampToValueAtTime(920 * pitchJitter, t + 0.32);
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.14, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+      osc.start(t);
+      osc.stop(t + 0.32);
+      triggerHaptic('medium');
+    } else if (type === 'shatter') {
+      // Ruptura de matéria e destruição de âncora
+      filter.frequency.setValueAtTime(1400, t);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(180, t);
+      osc.frequency.exponentialRampToValueAtTime(36, t + 0.38);
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.22, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+      osc.start(t);
+      osc.stop(t + 0.38);
+
+      const ringOsc = audioCtx.createOscillator();
+      const ringGain = audioCtx.createGain();
+      ringOsc.type = 'sine';
+      ringOsc.frequency.setValueAtTime(880, t);
+      ringOsc.frequency.exponentialRampToValueAtTime(440, t + 0.3);
+      ringGain.gain.setValueAtTime(0.08, t);
+      ringGain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      ringOsc.connect(ringGain);
+      ringGain.connect(masterGainNode);
+      ringOsc.start(t);
+      ringOsc.stop(t + 0.3);
+      triggerHaptic('heavy');
+    } else if (type === 'warp') {
+      // Varredura de deslocamento dimensional
+      filter.frequency.setValueAtTime(1800, t);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(580 * pitchJitter, t);
+      osc.frequency.exponentialRampToValueAtTime(85, t + 0.16);
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.15, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+      osc.start(t);
+      osc.stop(t + 0.16);
+      triggerHaptic('medium');
     }
   } catch (e) {}
 }

@@ -6,6 +6,7 @@
 
 import { playSfx, triggerHaptic } from '../../core/audio.js';
 import { bullets, acidPuddles } from '../../main.js';
+import { player } from '../player.js';
 
 // ============================================================================
 // 1. INICIALIZAÇÃO E SUBSISTEMAS DO CEIFADOR SUPREMO
@@ -18,6 +19,7 @@ export function initSupremeReaper(boss) {
   boss.actionTimer = 0;
   boss.currentSkill = null;
   boss.skillCooldown = 75;
+  boss.aimAngle = 0;
 
   // Fila de ações diferidas sincronizadas com o delta time (dt)
   boss.delayedActions = [];
@@ -44,15 +46,15 @@ export function initSupremeReaper(boss) {
   boss.tetherActive = false;
   boss.tetherTimer = 0;
   boss.tetherMaxDist = 310;
-  boss.blinkTarget = null; // { x, y, angle }
+  boss.blinkTarget = null; // { x, y, angle, cleaveAngle }
   boss.phantoms = [];
 
-  // 6. Micro-animações procedurais
+  // 6. Micro-animações procedurais e silhueta
   boss.floatY = 0;
   boss.floatBob = 0;
   boss.facing = 1;
-  boss.wingSpan = 0.45;
-  boss.wingTargetSpan = 0.45;
+  boss.wingSpan = 0.55;
+  boss.wingTargetSpan = 0.55;
   boss.scytheAngle = -0.3;
   boss.scytheTargetAngle = -0.3;
   boss.eyePulse = 0;
@@ -93,21 +95,21 @@ export function updateSupremeReaper(e, dt, context) {
   e.facing = (player.x - e.x) > 0 ? 1 : -1;
   e.eyePulse = (Math.sin(frameCount * (e.isEnraged ? 0.22 : 0.12)) + 1) * 0.5;
 
-  e.wingSpan += (e.wingTargetSpan - e.wingSpan) * 0.12 * dt;
-  e.scytheAngle += (e.scytheTargetAngle - e.scytheAngle) * 0.15 * dt;
+  e.wingSpan += (e.wingTargetSpan - e.wingSpan) * 0.14 * dt;
+  e.scytheAngle += (e.scytheTargetAngle - e.scytheAngle) * 0.18 * dt;
 
   // Rastro fantasmagórico
   if (Math.floor(frameCount) % 3 === 0) {
     e.ghostTrail.unshift({
       x: e.x,
       y: e.y + e.floatBob,
-      alpha: e.isPhase3 ? 0.6 : 0.38,
+      alpha: e.isPhase3 ? 0.65 : 0.40,
       enraged: e.isEnraged || e.isPhase3
     });
-    if (e.ghostTrail.length > 7) e.ghostTrail.pop();
+    if (e.ghostTrail.length > 8) e.ghostTrail.pop();
   }
   for (let i = e.ghostTrail.length - 1; i >= 0; i--) {
-    e.ghostTrail[i].alpha -= 0.016 * dt;
+    e.ghostTrail[i].alpha -= 0.018 * dt;
     if (e.ghostTrail[i].alpha <= 0) e.ghostTrail.splice(i, 1);
   }
 
@@ -132,7 +134,8 @@ export function updateSupremeReaper(e, dt, context) {
   switch (e.actionState) {
     case 'ENRAGE_TRANSITION': {
       e.actionTimer -= dt;
-      e.wingTargetSpan = 1.1;
+      e.wingTargetSpan = 1.35;
+      e.scytheTargetAngle = 1.2 * e.facing;
       if (Math.floor(frameCount) % 3 === 0) triggerShake(3.5);
       if (e.actionTimer <= 0) {
         e.actionState = 'CHASE';
@@ -144,8 +147,8 @@ export function updateSupremeReaper(e, dt, context) {
     case 'RECOVERY': {
       e.recoveryTimer -= dt;
       e.isVulnerable = true;
-      e.wingTargetSpan = 0.2;
-      e.scytheTargetAngle = 0.8;
+      e.wingTargetSpan = 0.18;
+      e.scytheTargetAngle = 0.9;
 
       if (Math.floor(frameCount) % 5 === 0) {
         createHitParticles(e.x + (Math.random() - 0.5) * e.radius, e.y + (Math.random() - 0.5) * e.radius, '#81ecec', 1);
@@ -192,13 +195,12 @@ export function updateSupremeReaper(e, dt, context) {
       return;
     }
 
-    // AVISO PRÉVIO E TELEMETRIA DO TELEPORTE
+    // TELEPORTE TÁTICO COM AVISO DE POUSO E CORTE ANTECIPADO
     case 'BLINK_AIM': {
       e.actionTimer -= dt;
-      e.wingTargetSpan = 0.15; // Encolhe as asas enquanto se desmaterializa
+      e.wingTargetSpan = 0.12; // Recolhe as asas em postura de desmaterialização
 
       if (Math.floor(frameCount) % 3 === 0 && e.blinkTarget) {
-        // Partículas fluindo do chefe até o destino
         createHitParticles(e.blinkTarget.x, e.blinkTarget.y, '#00cec9', 2);
         createHitParticles(e.x, e.y, '#00cec9', 1);
       }
@@ -209,7 +211,6 @@ export function updateSupremeReaper(e, dt, context) {
         triggerShake(10);
         triggerHaptic('heavy');
 
-        // Partículas no ponto de partida e no ponto de chegada
         createHitParticles(e.x, e.y, '#00cec9', 15);
         e.x = e.blinkTarget.x;
         e.y = e.blinkTarget.y;
@@ -222,47 +223,49 @@ export function updateSupremeReaper(e, dt, context) {
           { x: e.x - Math.cos(sideAng) * 60, y: e.y - Math.sin(sideAng) * 60, life: 25 }
         ];
 
-        // Dispara o corte frontal na direção do jogador, mas com telegrafia visível para esquiva
-        const finalAngle = Math.atan2(player.y - e.y, player.x - e.x);
+        // Dispara o corte exatamente no ângulo telegrafado no portal de chegada
         bossTelegraphs.push({
           type: 'SCYTHE_CLEAVE',
           x: e.x,
           y: e.y,
           radius: 165,
-          angle: finalAngle,
-          timer: e.isEnraged ? 22 : 28, // Janela de reação de quase 0.5s
-          maxTimer: e.isEnraged ? 22 : 28,
+          angle: e.blinkTarget.cleaveAngle,
+          timer: e.isEnraged ? 20 : 26,
+          maxTimer: e.isEnraged ? 20 : 26,
           damage: Math.round(e.damage * 0.85),
+          color: '#00cec9',
+          colorRgb: '0, 206, 201',
           boss: e
         });
 
         e.blinkTarget = null;
         e.actionState = 'CHASE';
-        e.skillCooldown = e.isEnraged ? 42 : 62;
+        e.skillCooldown = e.isEnraged ? 45 : 65;
       }
       return;
     }
 
     case 'VORTEX_HARVEST': {
       e.actionTimer -= dt;
-      e.wingTargetSpan = 0.95;
-      e.scytheTargetAngle = Math.PI * 0.5;
+      e.wingTargetSpan = 1.15; // Asas abertas como cornucópia de contenção
+      e.scytheTargetAngle = 0; // Foice fincada para baixo
 
       const pdx = e.x - player.x;
       const pdy = e.y - player.y;
       const pDist = Math.hypot(pdx, pdy);
 
-      if (pDist > 40 && pDist < 480) {
-        const pull = (e.isEnraged ? 1.2 : 0.9) * dt;
+      if (pDist > 40 && pDist < 360) {
+        const pull = (e.isEnraged ? 1.15 : 0.85) * dt;
         player.x += (pdx / pDist) * pull;
         player.y += (pdy / pDist) * pull;
       }
 
       if (Math.floor(frameCount) % 5 === 0) {
-        triggerShake(1.8);
+        triggerShake(1.6);
         createHitParticles(player.x, player.y, '#00cec9', 1);
       }
 
+      // Detonação final ao término da canalização
       if (e.actionTimer <= 0) {
         triggerShake(15);
         triggerHaptic('heavy');
@@ -300,14 +303,29 @@ export function updateSupremeReaper(e, dt, context) {
 
     case 'WINDUP': {
       e.actionTimer -= dt;
-      e.wingTargetSpan = 0.25;
-      e.scytheTargetAngle = -1.2 * e.facing;
+
+      // Trava a mira suavemente antes do disparo para permitir esquiva lateral limpa
+      if (e.actionTimer > (e.isEnraged ? 8 : 14)) {
+        e.aimAngle = Math.atan2(player.y - e.y, player.x - e.x);
+      }
+
+      // Posturas corporais contextuais de acordo com o ataque
+      if (e.currentSkill === 'DOUBLE_CLEAVE') {
+        e.wingTargetSpan = 1.30;
+        e.scytheTargetAngle = -1.5 * e.facing; // Prepara o corte para trás
+      } else if (e.currentSkill === 'SOUL_SCYTHES') {
+        e.wingTargetSpan = 0.85;
+        e.scytheTargetAngle = frameCount * 0.25; // Hélice giratória
+      } else if (e.currentSkill === 'VORTEX_HARVEST') {
+        e.wingTargetSpan = 0.20; // Encolhe em casulo antes de expandir
+        e.scytheTargetAngle = Math.PI * 0.5;
+      }
 
       if (Math.floor(frameCount) % 3 === 0) {
         createHitParticles(
           e.x + (Math.random() - 0.5) * e.radius * 1.3,
           e.y + (Math.random() - 0.5) * e.radius * 1.3,
-          e.isEnraged ? '#e74c3c' : '#00cec9',
+          e.isEnraged ? '#ff4757' : '#00cec9',
           1
         );
       }
@@ -333,7 +351,7 @@ export function updateSupremeReaper(e, dt, context) {
         curSpeed *= (1 - 0.18);
       }
 
-      if (dist > 80) {
+      if (dist > 85) {
         const angle = Math.atan2(dy, dx);
         e.x += Math.cos(angle) * curSpeed * dt;
         e.y += Math.sin(angle) * curSpeed * dt;
@@ -369,7 +387,7 @@ function updateReaperLanterns(e, dt, context) {
     l.swayVel *= 0.94;
     l.sway += l.swayVel * dt;
 
-    // Colisão com Projéteis
+    // Colisão com Projéteis do Jogador
     for (let i = bullets.length - 1; i >= 0; i--) {
       const b = bullets[i];
       const bdx = b.x - lx;
@@ -395,7 +413,7 @@ function updateReaperLanterns(e, dt, context) {
       }
     }
 
-    // Colisão com Machados Orbitais
+    // Colisão com Machados Orbitais do Jogador
     if (player.orbitals > 0 && l.active && l.hitCd <= 0) {
       const pOrbDist = player.evolvedOrbitals ? 88 : 72;
       for (let k = 0; k < player.orbitals; k++) {
@@ -421,7 +439,7 @@ function updateReaperLanterns(e, dt, context) {
       }
     }
 
-    // Colisão com Poças
+    // Colisão com Poças de Ácido/Fogo
     if (l.active) {
       for (let p of acidPuddles) {
         if (!p.isFire && !p.isAlchemist) continue;
@@ -529,6 +547,7 @@ function updateSoulTether(e, dt, context) {
     e.tetherActive = false;
     triggerShake(6);
     addDamageText(player.x, player.y, "VÍNCULO QUEBRADO!", true, '#2ecc71');
+    playSfx('crit');
     return;
   }
 
@@ -542,6 +561,7 @@ function updateSoulTether(e, dt, context) {
       player.iFrames = 15;
       playSfx('hit');
       addDamageText(player.x, player.y, "-4", false, '#00cec9');
+      createHitParticles(player.x, player.y, '#00cec9', 3);
     }
     e.hp = Math.min(e.maxHp, e.hp + 45);
     createHitParticles(e.x, e.y, '#2ecc71', 2);
@@ -563,32 +583,36 @@ function selectReaperSkill(e, dist, player) {
   if (dist < 160) {
     e.currentSkill = 'DOUBLE_CLEAVE';
     e.actionState = 'WINDUP';
-    e.actionTimer = isEnraged ? 20 : 28;
-  } else if (dist > 250 && rand < 0.42) {
-    // PREPARA O TELEPORTE COM AVISO DE MIRA E DISTÂNCIA SEGURA
+    e.actionTimer = isEnraged ? 22 : 30;
+  } else if (dist > 240 && rand < 0.42) {
+    // PREPARA O TELEPORTE COM AVISO DE MIRA E CONE DE CORTE ANTECIPADO
     const angleToPlayer = Math.atan2(player.y - e.y, player.x - e.x);
-    // Flanqueia o jogador com desvio angular a 170px de distância (não cai na cabeça)
-    const flankOffset = (Math.random() < 0.5 ? 1 : -1) * (Math.PI * 0.38);
+    const flankOffset = (Math.random() < 0.5 ? 1 : -1) * (Math.PI * 0.35);
     const blinkAngle = angleToPlayer + flankOffset;
-    const safeDistance = 170;
+    const safeDistance = 160;
+
+    const targetX = player.x + Math.cos(blinkAngle) * safeDistance;
+    const targetY = player.y + Math.sin(blinkAngle) * safeDistance;
+    const intendedCleaveAngle = Math.atan2(player.y - targetY, player.x - targetX);
 
     e.blinkTarget = {
-      x: player.x + Math.cos(blinkAngle) * safeDistance,
-      y: player.y + Math.sin(blinkAngle) * safeDistance,
-      angle: blinkAngle
+      x: targetX,
+      y: targetY,
+      angle: blinkAngle,
+      cleaveAngle: intendedCleaveAngle
     };
 
     e.currentSkill = 'PHANTOM_BLINK';
     e.actionState = 'BLINK_AIM';
-    e.actionTimer = isEnraged ? 36 : 46; // ~0.6s - 0.75s de aviso antes do salto
+    e.actionTimer = isEnraged ? 36 : 46;
   } else if (rand < 0.65) {
     e.currentSkill = 'SOUL_SCYTHES';
     e.actionState = 'WINDUP';
-    e.actionTimer = isEnraged ? 22 : 30;
+    e.actionTimer = isEnraged ? 26 : 34;
   } else if (!e.tetherActive && rand < 0.85) {
     e.currentSkill = 'SOUL_TETHER';
     e.actionState = 'WINDUP';
-    e.actionTimer = 22;
+    e.actionTimer = 24;
   } else {
     e.currentSkill = 'VORTEX_HARVEST';
     e.actionState = 'WINDUP';
@@ -601,21 +625,21 @@ function executeReaperSkill(e, context) {
     player,
     bossTelegraphs,
     bossProjectiles,
-    triggerShake
+    triggerShake,
+    addDamageText
   } = context;
 
-  const dx = player.x - e.x;
-  const dy = player.y - e.y;
-  const angleToPlayer = Math.atan2(dy, dx);
+  const angleToPlayer = e.aimAngle !== undefined ? e.aimAngle : Math.atan2(player.y - e.y, player.x - e.x);
 
   switch (e.currentSkill) {
     case 'DOUBLE_CLEAVE': {
       playSfx('boss');
       triggerShake(11);
       triggerHaptic('heavy');
-      e.wingTargetSpan = 1.0;
-      e.scytheTargetAngle = 1.3 * e.facing;
+      e.wingTargetSpan = 1.35;
+      e.scytheTargetAngle = 1.4 * e.facing;
 
+      // Primeiro corte: Ciano espectral padrão
       bossTelegraphs.push({
         type: 'SCYTHE_CLEAVE',
         x: e.x,
@@ -625,28 +649,34 @@ function executeReaperSkill(e, context) {
         timer: 18,
         maxTimer: 18,
         damage: Math.round(e.damage * 0.75),
+        color: '#00cec9',
+        colorRgb: '0, 206, 201',
         boss: e
       });
 
+      // Segundo corte: Carmesim vibrante com raio ampliado e aviso distinto
       e.delayedActions.push({
-        timer: 12,
+        timer: 14,
         callback: () => {
+          playSfx('crit');
           bossTelegraphs.push({
             type: 'SCYTHE_CLEAVE',
             x: e.x,
             y: e.y,
-            radius: 195,
-            angle: angleToPlayer + 0.35 * e.facing,
-            timer: 16,
-            maxTimer: 16,
-            damage: Math.round(e.damage * 0.85),
+            radius: 205,
+            angle: angleToPlayer + 0.38 * e.facing,
+            timer: 18,
+            maxTimer: 18,
+            damage: Math.round(e.damage * 0.90),
+            color: '#ff4757',
+            colorRgb: '255, 71, 87',
             boss: e
           });
         }
       });
 
       e.actionState = 'CHASE';
-      e.skillCooldown = e.isEnraged ? 35 : 55;
+      e.skillCooldown = e.isEnraged ? 38 : 58;
       break;
     }
 
@@ -660,19 +690,22 @@ function executeReaperSkill(e, context) {
       for (let i = 0; i < blades; i++) {
         const bAng = startAngle + i * step;
         bossProjectiles.push({
+          type: 'SOUL_SCYTHE',
           x: e.x,
           y: e.y,
-          vx: Math.cos(bAng) * 6.6,
-          vy: Math.sin(bAng) * 6.6,
+          vx: Math.cos(bAng) * 6.5,
+          vy: Math.sin(bAng) * 6.5,
           radius: 19,
           damage: Math.round(e.damage * 0.48),
           life: 140,
-          maxLife: 140
+          maxLife: 140,
+          color: e.isEnraged ? '#ff4757' : '#00cec9',
+          isReturning: false
         });
       }
 
       e.actionState = 'CHASE';
-      e.skillCooldown = e.isEnraged ? 36 : 52;
+      e.skillCooldown = e.isEnraged ? 38 : 54;
       break;
     }
 
@@ -682,6 +715,7 @@ function executeReaperSkill(e, context) {
       e.tetherTimer = 160;
       e.actionState = 'CHASE';
       e.skillCooldown = 80;
+      addDamageText(player.x, player.y, "VÍNCULO DE ALMAS!", true, '#00cec9');
       break;
     }
 
@@ -760,7 +794,7 @@ function drawRecoveryGliph(ctx, e, frameCount) {
 }
 
 function drawSpectralWings(ctx, e, bob, isVuln, isEnraged) {
-  const wingSpan = e.wingSpan || 0.5;
+  const wingSpan = e.wingSpan || 0.55;
   const wingCol = isVuln ? '#2d3436' : (isEnraged ? '#4a1017' : '#0a1d26');
   const boneCol = isVuln ? '#636e72' : (isEnraged ? '#ff4757' : '#81ecec');
 
@@ -776,16 +810,16 @@ function drawSpectralWings(ctx, e, bob, isVuln, isEnraged) {
     ctx.lineWidth = 3.5;
     ctx.beginPath();
     ctx.moveTo(10, 0);
-    ctx.quadraticCurveTo(35 * wingSpan, -35 * wingSpan, 75 * wingSpan, -25 * wingSpan);
-    ctx.quadraticCurveTo(55 * wingSpan, 5, 25 * wingSpan, 20);
+    ctx.quadraticCurveTo(35 * wingSpan, -35 * wingSpan, 78 * wingSpan, -25 * wingSpan);
+    ctx.quadraticCurveTo(58 * wingSpan, 5, 25 * wingSpan, 20);
     ctx.stroke();
 
     ctx.fillStyle = wingCol;
     ctx.beginPath();
     ctx.moveTo(15, 5);
-    ctx.quadraticCurveTo(45 * wingSpan, -15 * wingSpan, 72 * wingSpan, -22 * wingSpan);
-    ctx.lineTo(84 * wingSpan, -10 * wingSpan);
-    ctx.lineTo(60 * wingSpan, 25 * wingSpan);
+    ctx.quadraticCurveTo(45 * wingSpan, -15 * wingSpan, 75 * wingSpan, -22 * wingSpan);
+    ctx.lineTo(88 * wingSpan, -10 * wingSpan);
+    ctx.lineTo(62 * wingSpan, 25 * wingSpan);
     ctx.lineTo(35 * wingSpan, 35 * wingSpan);
     ctx.closePath();
     ctx.fill();
@@ -980,7 +1014,7 @@ function drawGothicLanterns(ctx, e, bob, frameCount, isEnraged) {
 }
 
 /**
- * Renderiza o feixe e o glifo do ponto de destino do teleporte.
+ * Renderiza o feixe e o glifo do ponto de destino do teleporte com o cone do corte antecipado.
  */
 function drawBlinkAimIndicator(ctx, e, frameCount) {
   if (e.actionState !== 'BLINK_AIM' || !e.blinkTarget) return;
@@ -991,14 +1025,15 @@ function drawBlinkAimIndicator(ctx, e, frameCount) {
   ctx.save();
 
   // 1. Linha espectral pontilhada ligando o chefe até o ponto de aterrissagem
-  ctx.strokeStyle = 'rgba(0, 206, 201, 0.55)';
+  ctx.strokeStyle = 'rgba(0, 206, 201, 0.6)';
   ctx.lineWidth = 2.2;
   ctx.setLineDash([8, 6]);
-  ctx.lineDashOffset = -frameCount * 1.5;
+  ctx.lineDashOffset = -frameCount * 1.6;
   ctx.beginPath();
   ctx.moveTo(0, 0);
   ctx.lineTo(targetDx, targetDy);
   ctx.stroke();
+  ctx.setLineDash([]);
 
   // 2. Portal rúnico de aterrissagem no solo
   const pulse = Math.sin(frameCount * 0.22) * 5;
@@ -1008,7 +1043,6 @@ function drawBlinkAimIndicator(ctx, e, frameCount) {
 
   ctx.strokeStyle = '#00cec9';
   ctx.lineWidth = 2.5;
-  ctx.setLineDash([]);
   ctx.beginPath();
   ctx.ellipse(0, 0, ringR, ringR * 0.5, 0, 0, Math.PI * 2);
   ctx.stroke();
@@ -1016,7 +1050,7 @@ function drawBlinkAimIndicator(ctx, e, frameCount) {
   ctx.fillStyle = 'rgba(0, 206, 201, 0.15)';
   ctx.fill();
 
-  // Glifo central de corte
+  // Glifo central
   ctx.strokeStyle = '#81ecec';
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -1026,19 +1060,155 @@ function drawBlinkAimIndicator(ctx, e, frameCount) {
   ctx.lineTo(0, 10);
   ctx.stroke();
 
+  // 3. Pré-visualização do cone de corte que ocorrerá na aterrissagem
+  if (e.blinkTarget.cleaveAngle !== undefined) {
+    const cleaveArc = Math.PI * 0.52;
+    const startAng = e.blinkTarget.cleaveAngle - cleaveArc;
+    const endAng = e.blinkTarget.cleaveAngle + cleaveArc;
+
+    ctx.fillStyle = 'rgba(0, 206, 201, 0.16)';
+    ctx.strokeStyle = 'rgba(0, 206, 201, 0.45)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, 165, startAng, endAng);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+
   ctx.restore();
 }
 
+/**
+ * Renderiza linhas de trajetória antecipada para as foices de alma no Windup.
+ */
+function drawSoulScytheAimLines(ctx, e, frameCount) {
+  if (e.actionState !== 'WINDUP' || e.currentSkill !== 'SOUL_SCYTHES') return;
+
+  const blades = e.isPhase3 ? 7 : (e.isEnraged ? 5 : 3);
+  const arc = Math.PI * (e.isEnraged ? 0.65 : 0.45);
+  const baseAngle = e.aimAngle || 0;
+  const startAngle = baseAngle - arc / 2;
+  const step = arc / (blades - 1);
+
+  ctx.save();
+  ctx.strokeStyle = e.isEnraged ? 'rgba(255, 71, 87, 0.45)' : 'rgba(0, 206, 201, 0.45)';
+  ctx.lineWidth = 1.8;
+  ctx.setLineDash([7, 6]);
+  ctx.lineDashOffset = -frameCount * 1.5;
+
+  for (let i = 0; i < blades; i++) {
+    const bAng = startAngle + i * step;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(bAng) * 320, Math.sin(bAng) * 320);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/**
+ * Renderiza o Campo de Colheita de Almas com braços gravitacionais e anel retrátil.
+ */
+function drawHarvestField(ctx, e, frameCount) {
+  const maxR = 320;
+  const maxTime = e.isEnraged ? 75 : 95;
+  const progress = Math.max(0, Math.min(1, 1 - (e.actionTimer / maxTime)));
+
+  ctx.save();
+
+  // 1. Perímetro máximo
+  ctx.fillStyle = 'rgba(0, 206, 201, 0.06)';
+  ctx.beginPath();
+  ctx.arc(0, 0, maxR, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(0, 206, 201, 0.35)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 8]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 2. Espirais gravitacionais convergindo
+  const arms = 3;
+  const spin = -frameCount * 0.05;
+  ctx.lineWidth = 2;
+  for (let a = 0; a < arms; a++) {
+    const baseAng = spin + (a * Math.PI * 2 / arms);
+    ctx.strokeStyle = `rgba(129, 236, 236, ${0.2 + (a % 2 === 0 ? 0.25 : 0.1)})`;
+    ctx.beginPath();
+    for (let step = 0; step < 16; step++) {
+      const stepR = maxR * (1 - step / 16);
+      const stepA = baseAng + step * 0.22;
+      const sx = Math.cos(stepA) * stepR;
+      const sy = Math.sin(stepA) * stepR;
+      if (step === 0) ctx.moveTo(sx, sy);
+      else ctx.lineTo(sx, sy);
+    }
+    ctx.stroke();
+  }
+
+  // 3. Anel retrátil de aviso (contagem regressiva para a explosão)
+  const shrinkR = Math.max(24, maxR * (1 - progress));
+  ctx.strokeStyle = progress > 0.82 ? '#ffffff' : '#00cec9';
+  ctx.lineWidth = progress > 0.82 ? 3.5 : 2.4;
+  ctx.beginPath();
+  ctx.arc(0, 0, shrinkR, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+/**
+ * Desenha a corrente espectral e o raio de quebra do Vínculo de Almas.
+ */
 function drawSoulTetherBeam(ctx, e, bob) {
   if (!e.tetherActive) return;
+
+  const targetX = player.x - e.x;
+  const targetY = player.y - e.y;
+  const originY = -12 + bob;
+
   ctx.save();
-  ctx.strokeStyle = 'rgba(0, 206, 201, 0.75)';
+
+  // 1. Feixe de drenagem espectral animado ligando o Ceifador ao Jogador
+  ctx.strokeStyle = 'rgba(0, 206, 201, 0.85)';
   ctx.lineWidth = 3.2;
-  ctx.setLineDash([6, 6]);
+  ctx.setLineDash([10, 6]);
+  ctx.lineDashOffset = -performance.now() * 0.04;
   ctx.beginPath();
-  ctx.moveTo(0, -12 + bob);
-  ctx.lineTo(0, 40);
+  ctx.moveTo(0, originY);
+  ctx.lineTo(targetX, targetY);
   ctx.stroke();
+
+  // 2. Linha interna de núcleo brilhante
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.4;
+  ctx.setLineDash([6, 10]);
+  ctx.lineDashOffset = performance.now() * 0.05;
+  ctx.beginPath();
+  ctx.moveTo(0, originY);
+  ctx.lineTo(targetX, targetY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 3. Elo espectral e círculo rúnico prendendo o Jogador
+  ctx.strokeStyle = '#00cec9';
+  ctx.lineWidth = 2.0;
+  ctx.beginPath();
+  ctx.arc(targetX, targetY, 20, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(0, 206, 201, 0.2)';
+  ctx.fill();
+
+  // Runa central de dreno no jogador
+  ctx.fillStyle = '#81ecec';
+  ctx.beginPath();
+  ctx.arc(targetX, targetY, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+
   ctx.restore();
 }
 
@@ -1057,6 +1227,10 @@ export function drawSupremeReaper(ctx, e, frameCount) {
 
   ctx.save();
 
+  // Anula a escala horizontal de facing do renderer para garantir que os cálculos
+  // trigonométricos de órbitas, miras e telegrafias batam exatamente com o espaço de mundo físico
+  ctx.scale(e.facing, 1);
+
   // Tremor e semitransparência durante preparo do teleporte
   if (isAimingBlink) {
     ctx.globalAlpha = 0.65 + Math.sin(frameCount * 0.3) * 0.25;
@@ -1066,29 +1240,37 @@ export function drawSupremeReaper(ctx, e, frameCount) {
     ctx.translate((Math.random() - 0.5) * 3.5, (Math.random() - 0.5) * 3.5);
   }
 
-  // 1. Indicador e Portal de Teleporte (desenhado sob tudo)
+  // 1. Campo de Colheita de Almas (Vórtice com Anel Retrátil)
+  if (isHarvest) {
+    drawHarvestField(ctx, e, frameCount);
+  }
+
+  // 2. Linhas de mira antecipada das foices de alma
+  drawSoulScytheAimLines(ctx, e, frameCount);
+
+  // 3. Indicador e Portal de Teleporte com cone antecipado
   drawBlinkAimIndicator(ctx, e, frameCount);
 
-  // 2. Sombra e Rastro
+  // 4. Sombra e Rastro Fantasma
   drawReaperShadow(ctx, e, bob, isVuln);
   drawGhostTrail(ctx, e);
 
-  // 3. Glifo de Vulnerabilidade
+  // 5. Glifo de Vulnerabilidade
   if (isVuln) drawRecoveryGliph(ctx, e, frameCount);
 
-  // 4. Asas e Manto
+  // 6. Asas e Manto Gótico
   drawSpectralWings(ctx, e, bob, isVuln, isEnraged);
   drawReaperRobe(ctx, e, bob, frameCount, isVuln, isEnraged);
 
-  // 5. Núcleo e Cabeça
+  // 7. Núcleo e Cabeça
   drawRibcageAndCore(ctx, bob, frameCount, isVuln, isEnraged);
   drawMaskAndEyes(ctx, e, bob, frameCount, isVuln, isEnraged);
 
-  // 6. Foice e Lanternas
+  // 8. Foice e Lanternas
   drawOrnateScythe(ctx, e, bob, isVuln, isEnraged);
   drawGothicLanterns(ctx, e, bob, frameCount, isEnraged);
 
-  // 7. Vínculo de Almas
+  // 9. Vínculo de Almas
   drawSoulTetherBeam(ctx, e, bob);
 
   ctx.restore();
