@@ -3,7 +3,23 @@ export const CHARACTERS = {
     name: "Sir Roland",
     title: "O Paladino",
     desc: "Passiva: Reduz 20% do dano corpo a corpo e reflete 50% de volta aos monstros.<br><b>Arma Inicial: Martelo Sagrado</b> (Esmaga o solo em 360°, anula projéteis inimigos no raio e abre fendas incandescentes frontais).<br><b>Poder: Investida Sagrada</b> (Avança rasgando inimigos com imunidade).",
-    color: { armor: "#7f8c8d", trim: "#f1c40f", hair: "#bdc3c7", cape: "#8e44ad" },
+    color: { 
+      armor: "#718093", 
+      armorLight: "#dcdde1", 
+      armorDark: "#2f3640", 
+      trim: "#fbc531", 
+      trimDark: "#c79810", 
+      hair: "#bdc3c7", 
+      cape: "#481b6d", 
+      capeInner: "#2c1045", 
+      plume: "#8e44ad", 
+      tabard: "#f5f6fa", 
+      tabardCross: "#c23616", 
+      eyeGlow: "#00d2d3",
+      hammerSteel: "#57606f",
+      hammerGold: "#f1c40f",
+      hammerWood: "#3d271d"
+    },
     startingWeapon: "HAMMER",
     stats: { hp: 252, maxHp: 252, speed: 3.2, damage: 46, auraLvl: 1, projectiles: 1, orbitals: 0, magnet: 85, attackCooldown: 36, critChance: 0.15, skillCooldownMax: 420 }
   },
@@ -26,8 +42,19 @@ export const CHARACTERS = {
   BARBARIAN: {
     name: "Kragdor",
     title: "O Bárbaro Furioso",
-    desc: "Passiva: Recupera 1 HP a cada 18 inimigos atingidos pelo machado orbital.<br><b>Arma Inicial: Machado Giratório</b> (Translada com o cabo voltado ao herói, triturando monstros e cortando projéteis inimigos).<br><b>Poder: Rugido Ancestral</b> (Atordoa inimigos por 1.8s, vaporiza projéteis em área e entra em frenesi dobrando a velocidade do turbilhão).",
-    color: { armor: "#d35400", trim: "#e67e22", hair: "#d35400", cape: "#7f1d1d" },
+    desc: "Passiva: Golpes da ponta da lâmina contra Chefes e Elites curam 0.5% do HP máximo (recarga de 0.6s). Contra hordas comuns, recupera 1 HP a cada 18 acertos.<br><b>Arma Inicial: Machado Giratório</b> (Translada em órbita; o cabo repele inimigos e a ponta desfere corte crítico integral).<br><b>Poder: Rugido Ancestral</b> (Atordoa inimigos em área por 0.6s, vaporiza projéteis e dobra a rotação do turbilhão em frenesi).",
+    color: { 
+      armor: "#2c1e18", 
+      trim: "#d35400", 
+      hair: "#d35400", 
+      cape: "#7f1d1d", 
+      skin: "#c67846", 
+      tattoo: "#f39c12", 
+      bone: "#e2d7c5", 
+      axeSteel: "#7f8c8d", 
+      axeEdge: "#f1c40f", 
+      axeWood: "#3d271d" 
+    },
     startingWeapon: "AXE",
     stats: { hp: 308, maxHp: 308, speed: 3.1, damage: 54, auraLvl: 0, projectiles: 1, orbitals: 0, magnet: 95, attackCooldown: 38, critChance: 0.18, skillCooldownMax: 480 }
   },
@@ -35,7 +62,7 @@ export const CHARACTERS = {
     name: "Valéria",
     title: "A Alquimista Cáustica",
     desc: "Passiva: Poças ácidas duram mais e causam lentidão.<br><b>Arma Inicial: Frascos Cáusticos</b> (Super alcance com predição de movimento; bombardeia com antecedência a rota do alvo com poças gigantes concentradas no mesmo local).<br><b>Poder: Reagente Volátil</b> (Explosão radial de 6 frascos corrosivos).",
-    color: { armor: "#16a085", trim: "#1abc9c", hair: "#8e44ad", cape: "#27ae60" },
+    color: { armor: "#22312b", trim: "#d4a373", hair: "#3a1f47", cape: "#2ecc71", leather: "#2c1e18", lens: "#00ffcc" },
     startingWeapon: "POTION",
     stats: { hp: 182, maxHp: 182, speed: 3.4, damage: 43, auraLvl: 0, projectiles: 1, orbitals: 0, magnet: 120, attackCooldown: 34, critChance: 0.20, skillCooldownMax: 400 }
   }

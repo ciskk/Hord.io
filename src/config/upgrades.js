@@ -1,4 +1,4 @@
-import { player } from '../entities/player.js';
+import { player, selectedHeroKey } from '../entities/player.js';
 
 export const upgradesPool = [
   // --- Aprimoramentos do Machado (Kragdor) ---
@@ -215,15 +215,32 @@ export const upgradesPool = [
     title: "Fúria Rápida",
     rarity: "card-rare",
     badge: "Passiva",
-    desc: "Cadência de ataque aumentada em +22%",
-    stat: "-5 Recarga de Armas",
+    desc: "Reduz o tempo de recarga de todas as armas em 12% de forma multiplicativa.",
+    stat: "-12% Recarga (Teto: 45%)",
     apply: () => {
-      player.attackCooldown = Math.max(8, player.attackCooldown - 5);
+      // Acumula a taxa teórica de redução de recarga respeitando o teto de 45%
+      player.cooldownReduction = Math.min(0.45, (player.cooldownReduction || 0) + 0.12);
+
+      // Reduz multiplicativamente o cooldown de ataque base do jogador (piso mínimo de 10 frames)
+      player.attackCooldown = Math.max(10, Math.floor(player.attackCooldown * 0.88));
+
+      // Aplica a redução percentual em cada arma ativa no inventário do jogador
       player.weapons.forEach(w => {
-        w.cooldown = Math.max(8, w.cooldown - 4);
+        w.cooldown = Math.max(10, Math.floor(w.cooldown * 0.88));
       });
     },
-    isAvailable: () => player.attackCooldown > 8
+    isAvailable: () => {
+      // Kragdor usa machado orbital (sem cooldown). 'haste' só entra no sorteio
+      // se o machado ainda puder receber velocidade de órbita ('axe_speed')
+      if (selectedHeroKey === 'BARBARIAN') {
+        const axeSpeedOpt = upgradesPool.find(u => u.id === 'axe_speed');
+        return !!(axeSpeedOpt && axeSpeedOpt.isAvailable());
+      }
+
+      const currentCDR = player.cooldownReduction || 0;
+      const hasReducibleWeapons = player.weapons.some(w => w.cooldown > 10);
+      return currentCDR < 0.45 && (player.attackCooldown > 10 || hasReducibleWeapons);
+    }
   },
   {
     id: 'wings',
@@ -301,12 +318,46 @@ export const upgradesPool = [
 ];
 
 export function getRandomUpgrades(count) {
-  const available = upgradesPool.filter(opt => opt.isAvailable());
+  const isBarbarian = (selectedHeroKey === 'BARBARIAN');
+  const axeSpeedOpt = upgradesPool.find(u => u.id === 'axe_speed');
+  const canGetAxeSpeed = isBarbarian && axeSpeedOpt && axeSpeedOpt.isAvailable();
+
+  const available = upgradesPool.filter(opt => {
+    // Se Kragdor já atingiu o teto da velocidade de órbita, descarta 'haste' do sorteio
+    if (isBarbarian && opt.id === 'haste' && !canGetAxeSpeed) {
+      return false;
+    }
+    return opt.isAvailable();
+  });
+
   for (let i = available.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [available[i], available[j]] = [available[j], available[i]];
   }
-  return available.slice(0, count);
+
+  const selected = available.slice(0, count);
+
+  // Verificação exclusiva para Kragdor: substitui 'haste' por 'axe_speed'
+  if (isBarbarian) {
+    const hasteIdx = selected.findIndex(opt => opt.id === 'haste');
+    if (hasteIdx !== -1) {
+      const alreadyHasAxeSpeed = selected.some(opt => opt.id === 'axe_speed');
+      if (canGetAxeSpeed && !alreadyHasAxeSpeed) {
+        // Converte a redução de recarga em velocidade orbital do machado
+        selected[hasteIdx] = axeSpeedOpt;
+      } else {
+        // Se 'axe_speed' já estiver entre as opções da tela ou no teto, puxa outra opção válida da fila
+        const unusedOption = available.slice(count).find(opt => opt.id !== 'haste' && !selected.includes(opt));
+        if (unusedOption) {
+          selected[hasteIdx] = unusedOption;
+        } else {
+          selected.splice(hasteIdx, 1);
+        }
+      }
+    }
+  }
+
+  return selected;
 }
 
 export function checkSynergies() {

@@ -1,18 +1,14 @@
+/**
+ * src/entities/player.js
+ */
 import { CHARACTERS } from '../config/characters.js';
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { inputX, inputY } from '../core/input.js';
-import { levelUp } from '../systems/ui.js';
-import { 
-  gameState, 
-  triggerShake, 
-  createHitParticles, 
-  acidPuddles, 
-  bullets, 
-  enemies, 
-  enemyBullets,
-  addDamageText 
-} from '../main.js';
+import { createHitParticles, addDamageText } from '../systems/combat.js';
+import { bullets, enemyBullets, acidPuddles } from '../systems/projectiles.js';
+import { gameState, triggerShake, enemies } from '../main.js';
 import { getNeighborIndices } from '../core/spatialGrid.js';
+import { distToSegment } from '../core/math.js';
 
 export let selectedHeroKey = 'KNIGHT';
 
@@ -20,7 +16,7 @@ export function setSelectedHeroKey(key) {
   selectedHeroKey = key;
 }
 
-// Meta-Progresso Permanente (Skill Tree RPG)
+// Meta-Progresso Permanente
 const META_KEY = 'hord_meta_tree_v1';
 const GOLD_KEY = 'hord_persistent_gold_v1';
 
@@ -113,17 +109,21 @@ export const player = {
   x: 0,
   y: 0,
   radius: 14,
+  mass: 2.5,
   speed: 3.4,
   baseSpeed: 3.4,
+  pushVx: 0,
+  pushVy: 0,
+
   hp: 120,
   maxHp: 120,
   level: 1,
   xp: 0,
-  nextXp: 5,
+  nextXp: 20,
   attackCooldown: 35,
   attackTimer: 0,
+  cooldownReduction: 0,
 
-  // Arquitetura de Dano Aditivo
   baseDamage: 28,
   damagePercentBonus: 0,
   damageCardCount: 0,
@@ -148,7 +148,7 @@ export const player = {
   orbitals: 0,
   orbitalAngle: 0,
 
-  // Propriedades do Machado com Translação e Orientação Radial (Kragdor)
+  // Propriedades do Machado (Kragdor)
   axeAngle: 0,
   axeSpinSpeed: 0.085,
   axeRadius: 56,
@@ -156,8 +156,9 @@ export const player = {
   axeDamageMult: 1.0,
   axeContactCds: new Map(),
   axeHitCount: 0,
+  axeBossHealCd: 0,
 
-  // Bônus, Habilidades e Estados Ativos
+  // Habilidades e Estados Ativos
   staffPierceBonus: 0,
   evolvedSword: false,
   evolvedAura: false,
@@ -181,7 +182,8 @@ export const player = {
   ignisDashVx: 0,
   ignisDashVy: 0,
   berserkTimer: 0,
-  invisTimer: 0
+  invisTimer: 0,
+  isPhasing: false
 };
 
 export function initSkillUI() {
@@ -225,10 +227,17 @@ export function triggerHeroSkill() {
 
   if (selectedHeroKey === 'KNIGHT') {
     player.iFrames = 50;
-    const moveAng = Math.atan2(inputY || 0.0001, inputX || player.facing);
+    const inputLen = Math.hypot(inputX, inputY);
+    const moveAng = inputLen > 0.05 
+      ? Math.atan2(inputY, inputX) 
+      : (player.facing === -1 ? Math.PI : 0);
+
     player.dashVx = Math.cos(moveAng) * 16;
     player.dashVy = Math.sin(moveAng) * 16;
     player.dashDuration = 22;
+    if (Math.abs(player.dashVx) > 0.1) {
+      player.facing = player.dashVx >= 0 ? 1 : -1;
+    }
     playSfx('boss');
     triggerShake(9);
     triggerHaptic('heavy');
@@ -243,6 +252,7 @@ export function triggerHeroSkill() {
     triggerHaptic('medium');
   } else if (selectedHeroKey === 'ROGUE') {
     player.invisTimer = 120;
+    player.isPhasing = true;
     createHitParticles(player.x, player.y, '#34495e', 24);
     playSfx('evolution');
     triggerHaptic('light');
@@ -262,7 +272,7 @@ export function triggerHeroSkill() {
         const ny = dist > 0.001 ? dy / dist : 0;
         e.x += nx * 55;
         e.y += ny * 55;
-        e.stunTimer = 110;
+        e.stunTimer = 35;
         e.slowTimer = 240;
         e.slowFactor = 0.65;
         e.hitFlash = 6;
@@ -289,21 +299,32 @@ export function triggerHeroSkill() {
     createHitParticles(player.x, player.y, '#2ecc71', 20);
 
     const flaskCount = 6;
+    const flightFrames = 26;
+    const gravity = 0.24;
     for (let k = 0; k < flaskCount; k++) {
       const fAng = (k * Math.PI * 2) / flaskCount;
       const targetDist = 110 + Math.random() * 40;
+      const targetX = player.x + Math.cos(fAng) * targetDist;
+      const targetY = player.y + Math.sin(fAng) * targetDist;
+      const dx = targetX - player.x;
+      const dy = targetY - player.y;
+
       bullets.push({
         type: 'POTION',
         x: player.x,
         y: player.y,
-        vx: Math.cos(fAng) * 4.8,
-        vy: Math.sin(fAng) * 4.8 - 2.5,
-        targetX: player.x + Math.cos(fAng) * targetDist,
-        targetY: player.y + Math.sin(fAng) * targetDist,
+        vx: dx / flightFrames,
+        vy: (dy / flightFrames) - (0.5 * gravity * flightFrames),
+        gravity: gravity,
+        targetX: targetX,
+        targetY: targetY,
         radius: 8,
-        damage: player.damage * 0.9,
-        life: 28,
+        damage: (player.damage * 0.9) * 0.60, // 1: Dano do ataque 40% menor
+        life: flightFrames,
         angle: 0,
+        puddleRadius: 48,
+        puddleDuration: Math.round(380 / 1.5), // 3: Some 1,5x mais rápido (~253 frames)
+        isEvolved: player.evolvedPotion,
         trail: []
       });
     }
@@ -318,6 +339,10 @@ export function updateSpinningAxes(dt) {
   const currentSpinSpeed = (player.axeSpinSpeed || 0.085) * (player.berserkTimer > 0 ? 2.0 : 1.0);
   player.axeAngle += currentSpinSpeed * dt;
 
+  if (player.axeBossHealCd > 0) {
+    player.axeBossHealCd = Math.max(0, player.axeBossHealCd - dt);
+  }
+
   for (let [enemyRef, cd] of player.axeContactCds.entries()) {
     const nextCd = cd - dt;
     if (nextCd <= 0 || !enemies.includes(enemyRef)) {
@@ -329,56 +354,84 @@ export function updateSpinningAxes(dt) {
 
   const effectiveRadius = player.axeRadius || 56;
   const count = player.evolvedAxe ? Math.max(player.axeCount, 6) : player.axeCount;
+  const hitRadius = player.evolvedAxe ? 28 : 22;
 
   for (let i = 0; i < count; i++) {
     const angle = player.axeAngle + (i * (Math.PI * 2 / count));
     const ax = player.x + Math.cos(angle) * effectiveRadius;
     const ay = player.y + Math.sin(angle) * effectiveRadius;
-    const hitRadius = player.evolvedAxe ? 28 : 22;
 
+    // Destruição de projéteis ao longo da cápsula
     for (let bIdx = enemyBullets.length - 1; bIdx >= 0; bIdx--) {
       const eb = enemyBullets[bIdx];
-      const bdx = eb.x - ax;
-      const bdy = eb.y - ay;
-      if (bdx * bdx + bdy * bdy < (hitRadius + eb.radius) ** 2) {
+      const bSeg = distToSegment(eb.x, eb.y, player.x, player.y, ax, ay);
+      if (bSeg.dist < (hitRadius + eb.radius)) {
         createHitParticles(eb.x, eb.y, '#f1c40f', 5);
         playSfx('hit');
         enemyBullets.splice(bIdx, 1);
       }
     }
 
-    const nearbyIndices = getNeighborIndices(ax, ay, hitRadius + 20);
+    const midX = (player.x + ax) * 0.5;
+    const midY = (player.y + ay) * 0.5;
+    const queryR = (effectiveRadius * 0.5) + hitRadius + 20;
+    const nearbyIndices = getNeighborIndices(midX, midY, queryR);
+
     for (let k = 0; k < nearbyIndices.length; k++) {
       const e = enemies[nearbyIndices[k]];
       if (!e || player.axeContactCds.has(e)) continue;
 
-      const dx = e.x - ax;
-      const dy = e.y - ay;
+      const seg = distToSegment(e.x, e.y, player.x, player.y, ax, ay);
       const rSum = e.radius + hitRadius;
 
-      if (dx * dx + dy * dy < rSum * rSum) {
-        let dmg = player.damage * player.axeDamageMult * (player.evolvedAxe ? 1.6 : 1.2);
+      if (seg.dist < rSum) {
+        const isOuterZone = seg.t > 0.65;
+        const baseDmgMult = isOuterZone ? 1.0 : 0.5;
+
+        let dmg = player.damage * player.axeDamageMult * (player.evolvedAxe ? 1.6 : 1.2) * baseDmgMult;
         if (player.berserkTimer > 0) dmg *= 1.35;
-        if (e.isBoss) dmg *= 0.40;
+
+        const isBossEntity = !!e.isBoss;
+        const isSubTarget = !!e.isBossSubTarget;
+        let isMeleeAdrenaline = false;
+
+        if (isBossEntity || isSubTarget) {
+          const bossRef = isBossEntity ? e : (e.parentBoss || e);
+          const distToBoss = Math.hypot(player.x - bossRef.x, player.y - bossRef.y);
+          if (distToBoss <= 130) {
+            dmg *= 1.25;
+            isMeleeAdrenaline = true;
+          }
+          if (e.isVulnerable) {
+            dmg *= 1.25;
+          }
+        }
 
         const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
         let finalDmg = isCrit ? dmg * player.critMult : dmg;
 
-        if (e.isBoss) {
-          const maxHitAllowed = e.maxHp * 0.035;
-          if (finalDmg > maxHitAllowed) finalDmg = maxHitAllowed;
-        }
-
         e.hp -= finalDmg;
         e.hitFlash = 4;
 
+        // Cura do Bárbaro Kragdor em Chefes e Hordas
         if (selectedHeroKey === 'BARBARIAN') {
-          player.axeHitCount = (player.axeHitCount || 0) + 1;
-          if (player.axeHitCount >= 18) {
-            player.axeHitCount = 0;
-            if (player.hp < player.maxHp) {
-              player.hp = Math.min(player.maxHp, player.hp + 1);
-              addDamageText(player.x, player.y, "+1 HP", false, '#2ecc71');
+          if (isOuterZone && (e.isBoss || e.isMiniBoss)) {
+            if ((player.axeBossHealCd || 0) <= 0) {
+              player.axeBossHealCd = 36; // 0.6s em 60 FPS
+              const healAmount = Math.max(1, Math.round(player.maxHp * 0.005));
+              if (player.hp < player.maxHp) {
+                player.hp = Math.min(player.maxHp, player.hp + healAmount);
+                addDamageText(player.x, player.y, `+${healAmount} HP`, false, '#2ecc71');
+              }
+            }
+          } else if (!e.isBoss && !e.isMiniBoss && !e.isBossSubTarget) {
+            player.axeHitCount = (player.axeHitCount || 0) + 1;
+            if (player.axeHitCount >= 18) {
+              player.axeHitCount = 0;
+              if (player.hp < player.maxHp) {
+                player.hp = Math.min(player.maxHp, player.hp + 1);
+                addDamageText(player.x, player.y, "+1 HP", false, '#2ecc71');
+              }
             }
           }
         }
@@ -387,14 +440,24 @@ export function updateSpinningAxes(dt) {
         player.axeContactCds.set(e, cdFrames);
 
         playSfx('hit');
-        if (isCrit) playSfx('crit');
-        addDamageText(ax, ay, Math.round(finalDmg), isCrit, '#e67e22');
-        createHitParticles(ax, ay, '#e67e22', 4);
+        if (isCrit || isMeleeAdrenaline) playSfx('crit');
+        
+        const dmgColor = isMeleeAdrenaline ? '#f1c40f' : (isOuterZone ? '#e67e22' : '#f39c12');
+        addDamageText(seg.closestX, seg.closestY, Math.round(finalDmg), isCrit || isMeleeAdrenaline, dmgColor);
+        createHitParticles(seg.closestX, seg.closestY, isOuterZone ? '#e67e22' : '#d35400', isOuterZone ? 4 : 2);
 
-        const pushAng = Math.atan2(e.y - player.y, e.x - player.x);
-        const pushForce = (player.evolvedAxe ? 12 : 7) * (player.berserkTimer > 0 ? 1.6 : 1.0);
-        e.x += Math.cos(pushAng) * pushForce;
-        e.y += Math.sin(pushAng) * pushForce;
+        // Repulsão tangencial e radial
+        if (isOuterZone) {
+          const tanAng = angle + Math.PI * 0.5;
+          const pushForce = (player.evolvedAxe ? 12 : 7) * (player.berserkTimer > 0 ? 1.6 : 1.0);
+          e.x += Math.cos(tanAng) * pushForce;
+          e.y += Math.sin(tanAng) * pushForce;
+        } else {
+          const radAng = Math.atan2(e.y - player.y, e.x - player.x);
+          const pushForce = (player.evolvedAxe ? 16 : 11) * (player.berserkTimer > 0 ? 1.5 : 1.0);
+          e.x += Math.cos(radAng) * pushForce;
+          e.y += Math.sin(radAng) * pushForce;
+        }
 
         if (player.slowChance > 0 && Math.random() < player.slowChance) {
           e.slowTimer = 150;
@@ -431,16 +494,23 @@ export function fireWeapons() {
     const inRange = [];
     for (let i = 0; i < enemies.length; i++) {
       const e = enemies[i];
+      if (e.hp <= 0) continue;
       const dx = e.x - player.x;
       const dy = e.y - player.y;
       const dSq = dx * dx + dy * dy;
-      if (dSq <= rangeSq) inRange.push({ enemy: e, distSq: dSq });
+      if (dSq <= rangeSq) inRange.push({ enemy: e, distSq: dSq, isSubTarget: !!e.isBossSubTarget });
     }
 
     if (inRange.length === 0) return;
 
     w.timer = 0;
-    inRange.sort((a, b) => a.distSq - b.distSq);
+    // Prioriza sub-alvos de chefes (Litocistos / Lanternas); se iguais, escolhe o mais próximo
+    inRange.sort((a, b) => {
+      if (a.isSubTarget !== b.isSubTarget) {
+        return a.isSubTarget ? -1 : 1;
+      }
+      return a.distSq - b.distSq;
+    });
     const closestEnemy = inRange[0].enemy;
 
     if (w.type === 'SWORD') {
@@ -512,22 +582,41 @@ export function fireWeapons() {
       const dx = targetX - player.x;
       const dy = targetY - player.y;
       const count = player.evolvedPotion ? Math.max(w.count, 5) : w.count;
+      const potencyMult = 1 + (w.potencyCount || 0) * 0.15;
+      const gravity = 0.24;
+
+      const basePotionDmg = (player.damage * w.damageMult * (player.evolvedPotion ? 1.6 : 1.0)) * 0.60;
 
       for (let i = 0; i < count; i++) {
-        const arcOffset = i * 0.45;
+        const arcOffset = i * 0.35;
+
+        // Redução progressiva para cada poção adicional adquirida:
+        // Poção 0: 100% de dano
+        // Poção 1: 50% a menos (0.50x da base)
+        // Poção 2: 25% a menos que a anterior (0.50 * 0.75 = 0.375x da base)
+        // Poção 3+: a taxa de redução continua caindo pela metade (12.5%, 6.25%...)
+        let volleyMult = 1.0;
+        let penaltyRate = 0.50;
+        for (let k = 1; k <= i; k++) {
+          volleyMult *= (1 - penaltyRate);
+          penaltyRate *= 0.50;
+        }
 
         bullets.push({
           type: 'POTION',
           x: player.x,
           y: player.y,
           vx: dx / flightFrames,
-          vy: (dy / flightFrames) - (3.8 + arcOffset),
+          vy: (dy / flightFrames) - (0.5 * gravity * flightFrames) - arcOffset,
+          gravity: gravity,
           targetX: targetX,
           targetY: targetY,
           radius: 8,
-          damage: player.damage * w.damageMult * (player.evolvedPotion ? 1.6 : 1.0),
+          damage: basePotionDmg * volleyMult,
           life: flightFrames,
           angle: i * 0.4,
+          puddleRadius: 42 * potencyMult,
+          puddleDuration: Math.round(340 / 1.5),
           isEvolved: player.evolvedPotion,
           trail: []
         });
@@ -544,6 +633,8 @@ export function fireWeapons() {
         type: 'HAMMER_SLAM',
         x: player.x,
         y: player.y,
+        vx: 0,
+        vy: 0,
         angle: targetAngle,
         radius: slamRadius,
         damage: player.damage * w.damageMult * (player.evolvedHammer ? 2.8 : 2.0),
@@ -559,11 +650,11 @@ export function fireWeapons() {
 export function addXP(amount) {
   playSfx('gem');
   player.xp += amount;
-  if (player.xp >= player.nextXp) {
+  while (player.xp >= player.nextXp) {
     player.xp -= player.nextXp;
     player.level++;
-    player.nextXp = Math.floor(player.nextXp * 1.42);
-    levelUp();
+    player.nextXp = 12 + (player.level * 7) + Math.floor(Math.pow(player.level, 1.28));
+    window.dispatchEvent(new CustomEvent('player:levelup'));
   }
 }
 
@@ -574,11 +665,17 @@ export function resetPlayer(heroKey) {
 
   player.x = 0;
   player.y = 0;
+  player.radius = 14;
+  player.mass = 2.5;
+  player.pushVx = 0;
+  player.pushVy = 0;
+
   player.maxHp = Math.round(c.stats.maxHp * meta.hpMult);
   player.hp = player.maxHp;
   player.level = 1;
   player.xp = 0;
-  player.nextXp = 5;
+  player.nextXp = 20;
+  player.cooldownReduction = 0;
 
   player.baseDamage = c.stats.damage;
   player.damagePercentBonus = 0;
@@ -603,6 +700,7 @@ export function resetPlayer(heroKey) {
   player.ignisDashVy = 0;
   player.berserkTimer = 0;
   player.invisTimer = 0;
+  player.isPhasing = false;
 
   player.evolvedSword = false;
   player.evolvedAura = false;
@@ -632,6 +730,7 @@ export function resetPlayer(heroKey) {
   player.axeDamageMult = 1.0;
   player.axeContactCds = new Map();
   player.axeHitCount = 0;
+  player.axeBossHealCd = 0;
 
   if (heroKey === 'ALCHEMIST') player.range = 480;
   else if (heroKey === 'KNIGHT') player.range = 110;

@@ -459,7 +459,8 @@ function executePreparedSkill(e, context) {
     enemyBullets,
     bossTelegraphs,
     triggerShake,
-    createHitParticles
+    createHitParticles,
+    addDamageText
   } = context;
 
   const targetAngle = e.aimAngle;
@@ -474,8 +475,11 @@ function executePreparedSkill(e, context) {
       e.x += Math.cos(targetAngle) * 28;
       e.y += Math.sin(targetAngle) * 28;
 
-      e.actionState = 'CHASE';
-      e.skillCooldown = e.isEnraged ? 45 : 70;
+      // FASE 5.4: Janela de Recuperação Pós-Golpe garantida
+      e.actionState = 'RECOVERY';
+      e.recoveryTimer = e.isEnraged ? 50 : 70; // 0.83s a 1.16s imóvel
+      e.isVulnerable = true;
+      addDamageText(e.x, e.y, "BRECHA!", false, '#f1c40f');
       break;
     }
 

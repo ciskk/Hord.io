@@ -1,10 +1,16 @@
 /**
  * src/entities/bosses/abyssSovereign.js
  * Soberano do Abismo (Boss 4 / Chefe Final)
- * Versão Final: FSM Master, Âncoras, Arsenal Telegrafado, Arena Viva e Paisagem Sonora
+ * Versão Final: FSM Master, Âncoras como Sub-Alvos Globais, Arsenal Telegrafado e Paridade Melee.
  */
 import { playSfx, triggerHaptic } from '../../core/audio.js';
-import { bullets, acidPuddles, enemyBullets, bossTelegraphs, bossShockwaves } from '../../main.js';
+import { 
+  bullets, 
+  enemyBullets, 
+  bossTelegraphs, 
+  bossShockwaves, 
+  enemies 
+} from '../../main.js';
 
 export const SOVEREIGN_STATES = Object.freeze({
   SPAWN_INTRO: 'SPAWN_INTRO',
@@ -38,26 +44,67 @@ function updateDelayedActions(boss, dt) {
   }
 }
 
+/**
+ * Remove qualquer âncora remanescente do array global de inimigos de forma segura.
+ * @param {Object} boss
+ */
+export function cleanupRiftAnchors(boss) {
+  if (!boss.anchors || boss.anchors.length === 0) return;
+  for (let i = 0; i < boss.anchors.length; i++) {
+    const a = boss.anchors[i];
+    a.active = false;
+    const idx = enemies.indexOf(a);
+    if (idx !== -1) {
+      enemies.splice(idx, 1);
+    }
+  }
+  boss.anchors = [];
+  boss.activeAnchorsCount = 0;
+}
+
+/**
+ * Instancia âncoras abissais e as registra no array global `enemies` com a flag `isBossSubTarget: true`,
+ * habilitando o sistema de mira automática e priorização de projéteis/armas.
+ * @param {Object} boss
+ * @param {number} count Quantidade de âncoras.
+ * @param {number} anchorHp HP de cada âncora.
+ */
 function spawnRiftAnchors(boss, count, anchorHp) {
+  cleanupRiftAnchors(boss);
+
   boss.anchors = [];
   const distance = 270;
 
   for (let i = 0; i < count; i++) {
     const baseAngle = (i * Math.PI * 2) / count + Math.PI / 4;
-    boss.anchors.push({
-      x: boss.arenaCenterX + Math.cos(baseAngle) * distance,
-      y: boss.arenaCenterY + Math.sin(baseAngle) * distance,
-      baseX: boss.arenaCenterX + Math.cos(baseAngle) * distance,
-      baseY: boss.arenaCenterY + Math.sin(baseAngle) * distance,
+    const ax = boss.arenaCenterX + Math.cos(baseAngle) * distance;
+    const ay = boss.arenaCenterY + Math.sin(baseAngle) * distance;
+
+    const anchor = {
+      x: ax,
+      y: ay,
+      baseX: ax,
+      baseY: ay,
       radius: 24,
+      speed: 0,
       hp: anchorHp,
       maxHp: anchorHp,
       active: true,
       floatTimer: i * 1.5,
       hitFlash: 0,
       orbitalHitCd: 0,
-      axeHitCd: 0
-    });
+      axeHitCd: 0,
+      isBossSubTarget: true,
+      parentBoss: boss,
+      color: '#00cec9',
+      damage: 0,
+      xp: 0,
+      behavior: 'anchor',
+      combatState: 'CHASE'
+    };
+
+    boss.anchors.push(anchor);
+    enemies.push(anchor);
   }
   boss.activeAnchorsCount = count;
 }
@@ -182,8 +229,7 @@ function triggerPhaseTransition(boss, nextPhase, context) {
     boss.speed *= 1.15;
     boss.targetArenaRadius = 380;
     addDamageText(boss.x, boss.y - boss.radius - 20, "SINGULARIDADE PRIMORDIAL!", true, '#00cec9');
-    boss.anchors.forEach(a => { a.active = false; });
-    boss.activeAnchorsCount = 0;
+    cleanupRiftAnchors(boss);
   }
 }
 
@@ -458,11 +504,18 @@ function updateSingularityPhysics(boss, dt, context) {
   }
 }
 
-function updateAnchorCollisions(boss, dt, context) {
+/**
+ * Atualiza a movimentação flutuante das âncoras e processa sua destruição,
+ * aplicando contragolpe de 5% ao chefe e gatilho de colapso caso todas sejam abatidas.
+ * As colisões de ataque foram delegadas à malha espacial e ao pipeline global de armas.
+ * @param {Object} boss
+ * @param {number} dt
+ * @param {Object} context
+ */
+function updateAnchors(boss, dt, context) {
   if (!boss.anchors || boss.anchors.length === 0 || boss.activeAnchorsCount <= 0) return;
 
   const {
-    player,
     bossShockwaves,
     triggerShake,
     createHitParticles,
@@ -481,104 +534,14 @@ function updateAnchorCollisions(boss, dt, context) {
     if (a.orbitalHitCd > 0) a.orbitalHitCd -= dt;
     if (a.axeHitCd > 0) a.axeHitCd -= dt;
 
-    for (let bIdx = bullets.length - 1; bIdx >= 0; bIdx--) {
-      const b = bullets[bIdx];
-      const dx = a.x - b.x;
-      const dy = a.y - b.y;
-      const rSum = a.radius + b.radius;
-
-      if (dx * dx + dy * dy < rSum * rSum) {
-        if (b.hitSet && b.hitSet.has(a)) continue;
-        if (b.hitSet) b.hitSet.add(a);
-
-        const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
-        let dmg = b.damage * (isCrit ? player.critMult : 1.0);
-
-        a.hp -= dmg;
-        a.hitFlash = 4;
-        playSfx('hit');
-        if (isCrit) playSfx('crit');
-        addDamageText(a.x, a.y, Math.round(dmg), isCrit, '#00cec9');
-        createHitParticles(a.x, a.y, isCrit ? '#f1c40f' : '#00cec9', 3);
-
-        if (b.type !== 'HAMMER_SLAM') {
-          b.piercing = (b.piercing || 1) - 1;
-          if (b.piercing <= 0) {
-            b.life = 0;
-            bullets.splice(bIdx, 1);
-          }
-        }
-      }
-    }
-
-    if (player.orbitals > 0 && a.orbitalHitCd <= 0) {
-      const orbDist = player.evolvedOrbitals ? 88 : 72;
-      for (let oIdx = 0; oIdx < player.orbitals; oIdx++) {
-        const oAng = player.orbitalAngle + (oIdx * (Math.PI * 2 / player.orbitals));
-        const ox = player.x + Math.cos(oAng) * orbDist;
-        const oy = player.y + Math.sin(oAng) * orbDist;
-        const odx = a.x - ox;
-        const ody = a.y - oy;
-
-        if (odx * odx + ody * ody < (a.radius + 14) ** 2) {
-          const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
-          let dmg = player.damage * (player.evolvedOrbitals ? 1.2 : 0.75) * (isCrit ? player.critMult : 1.0);
-
-          a.hp -= dmg;
-          a.hitFlash = 4;
-          a.orbitalHitCd = player.evolvedOrbitals ? 8 : 16;
-          playSfx('hit');
-          if (isCrit) playSfx('crit');
-          addDamageText(a.x, a.y, Math.round(dmg), isCrit, '#3498db');
-          createHitParticles(ox, oy, '#00d2d3', 3);
-          break;
-        }
-      }
-    }
-
-    if (player.axeCount > 0 && a.axeHitCd <= 0) {
-      const axeDist = player.axeRadius || 56;
-      const axeCount = player.evolvedAxe ? Math.max(player.axeCount, 6) : player.axeCount;
-
-      for (let i = 0; i < axeCount; i++) {
-        const axeAng = player.axeAngle + (i * (Math.PI * 2 / axeCount));
-        const ax = player.x + Math.cos(axeAng) * axeDist;
-        const ay = player.y + Math.sin(axeAng) * axeDist;
-        const adx = a.x - ax;
-        const ady = a.y - ay;
-
-        if (adx * adx + ady * ady < (a.radius + (player.evolvedAxe ? 28 : 22)) ** 2) {
-          const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
-          let dmg = player.damage * player.axeDamageMult * (player.evolvedAxe ? 1.6 : 1.2) * (isCrit ? player.critMult : 1.0);
-
-          a.hp -= dmg;
-          a.hitFlash = 4;
-          a.axeHitCd = 12;
-          playSfx('hit');
-          if (isCrit) playSfx('crit');
-          addDamageText(ax, ay, Math.round(dmg), isCrit, '#e67e22');
-          createHitParticles(ax, ay, '#e67e22', 4);
-          break;
-        }
-      }
-    }
-
-    for (let pIdx = 0; pIdx < acidPuddles.length; pIdx++) {
-      const p = acidPuddles[pIdx];
-      if (p.isFire || p.isAlchemist) {
-        const pdx = a.x - p.x;
-        const pdy = a.y - p.y;
-        if (pdx * pdx + pdy * pdy < p.radius * p.radius) {
-          const baseRate = p.isAlchemist ? ((p.damage || 32) * 0.033) : 0.65;
-          a.hp -= baseRate * dt;
-          a.hitFlash = 1;
-        }
-      }
-    }
-
     if (a.hp <= 0) {
       a.active = false;
       boss.activeAnchorsCount--;
+
+      const idx = enemies.indexOf(a);
+      if (idx !== -1) {
+        enemies.splice(idx, 1);
+      }
 
       bossShockwaves.push({
         x: a.x,
@@ -604,13 +567,18 @@ function updateAnchorCollisions(boss, dt, context) {
 
       if (boss.activeAnchorsCount <= 0) {
         triggerStabilityBreak(boss, context);
-        addDamageText(boss.x, boss.y - boss.radius - 20, "COLAPSO DO VÁZIO!", true, '#00cec9');
+        addDamageText(boss.x, boss.y - boss.radius - 20, "COLAPSO DO VAZIO!", true, '#00cec9');
       }
     }
   }
 }
 
 export function updateAbyssSovereign(e, dt, context) {
+  if (e.hp <= 0) {
+    cleanupRiftAnchors(e);
+    return;
+  }
+
   const {
     player,
     frameCount,
@@ -620,7 +588,7 @@ export function updateAbyssSovereign(e, dt, context) {
   } = context;
 
   updateDelayedActions(e, dt);
-  updateAnchorCollisions(e, dt, context);
+  updateAnchors(e, dt, context);
   updateEventHorizon(e, dt, context);
   updateSingularityPhysics(e, dt, context);
 
@@ -684,7 +652,7 @@ export function updateAbyssSovereign(e, dt, context) {
         e.attackCooldown = 55;
         triggerShake(10);
         playSfx('singularity');
-        addDamageText(e.x, e.y - e.radius - 12, "O VÁZIO DESPERTOU!", true, '#a29bfe');
+        addDamageText(e.x, e.y - e.radius - 12, "O VAZIO DESPERTOU!", true, '#a29bfe');
         spawnRiftAnchors(e, 2, 5000);
       }
       break;
@@ -881,9 +849,18 @@ export function updateAbyssSovereign(e, dt, context) {
       }
 
       if (e.castDuration <= 0) {
-        e.actionState = SOVEREIGN_STATES.HOVER_CHASE;
-        e.stateTimer = 0;
-        e.attackCooldown = e.phase === 3 ? 45 : (e.phase === 2 ? 60 : 70);
+        if (e.currentSkill === 'VOID_CRUCIFIX') {
+          e.actionState = SOVEREIGN_STATES.RECOVERY_STAGGER;
+          e.staggerTimer = e.phase === 3 ? 60 : 80;
+          e.isStaggered = true;
+          e.isVulnerable = true;
+          e.staggerGauge = 0;
+          addDamageText(e.x, e.y - e.radius - 14, "BRECHA SIDÉRICA!", true, '#f1c40f');
+        } else {
+          e.actionState = SOVEREIGN_STATES.HOVER_CHASE;
+          e.stateTimer = 0;
+          e.attackCooldown = e.phase === 3 ? 45 : (e.phase === 2 ? 60 : 70);
+        }
       }
       break;
     }
@@ -1166,7 +1143,7 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
     ctx.restore();
   }
 
-  // 8. Âncoras de Vácuo
+  // 8. Âncoras de Vácuo (Orbes de Singularidade Cósmica)
   if (e.anchors && e.anchors.length > 0) {
     for (let i = 0; i < e.anchors.length; i++) {
       const a = e.anchors[i];
@@ -1174,65 +1151,212 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
 
       const relX = (a.x - e.x) * e.facing;
       const relY = a.y - e.y;
+      const tetherDist = Math.hypot(relX, relY) || 1;
+      const tetherAng = Math.atan2(relY, relX);
 
+      // --- A. LIGAÇÃO ENERGÉTICA CÓSMICA (TETHER) ---
       ctx.save();
-      ctx.strokeStyle = 'rgba(0, 206, 201, 0.40)';
-      ctx.lineWidth = 2.5;
+
+      // Feixe volumétrico externo de dispersão
+      const pulseBeam = 0.25 + Math.sin(frameCount * 0.1 + i) * 0.1;
+      ctx.strokeStyle = `rgba(0, 206, 201, ${pulseBeam})`;
+      ctx.lineWidth = 10;
       ctx.beginPath();
       ctx.moveTo(0, 0);
       ctx.lineTo(relX, relY);
       ctx.stroke();
 
-      const pulseT = (frameCount * 0.05 + i * 0.33) % 1;
-      const pulseX = relX * (1 - pulseT);
-      const pulseY = relY * (1 - pulseT);
-      ctx.fillStyle = '#00d2d3';
+      // Feixe intermediário
+      ctx.strokeStyle = 'rgba(162, 155, 254, 0.65)';
+      ctx.lineWidth = 3.5;
       ctx.beginPath();
-      ctx.arc(pulseX, pulseY, 3.5, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(relX, relY);
+      ctx.stroke();
+
+      // Filamento central superaquecido
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(relX, relY);
+      ctx.stroke();
+
+      // Espiral de energia helicoidal ao redor do feixe
+      const waveSegs = 18;
+      ctx.strokeStyle = 'rgba(0, 206, 201, 0.85)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      const perpX = -Math.sin(tetherAng);
+      const perpY = Math.cos(tetherAng);
+      for (let s = 0; s <= waveSegs; s++) {
+        const t = s / waveSegs;
+        const bx = relX * t;
+        const by = relY * t;
+        const wave = Math.sin(t * Math.PI * 4 - frameCount * 0.14 + i * 2) * 9;
+        const wx = bx + perpX * wave;
+        const wy = by + perpY * wave;
+        if (s === 0) ctx.moveTo(wx, wy);
+        else ctx.lineTo(wx, wy);
+      }
+      ctx.stroke();
+
+      // Sifões de matéria cósmica fluindo em direção ao Soberano
+      for (let p = 0; p < 3; p++) {
+        const flowT = ((frameCount * 0.04 + i * 0.33 + p * 0.33) % 1);
+        const flowX = relX * (1 - flowT);
+        const flowY = relY * (1 - flowT);
+        const flowR = 2.5 + Math.sin(frameCount * 0.2 + p) * 1;
+        ctx.fillStyle = p === 0 ? '#ffffff' : (p === 1 ? '#00d2d3' : '#e84393');
+        ctx.beginPath();
+        ctx.arc(flowX, flowY, flowR, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.restore();
 
+      // --- B. CORPO DA ORBE DE SINGULARIDADE ---
       ctx.save();
       ctx.translate(relX, relY);
       ctx.scale(e.facing, 1);
 
       const isAnchorHit = a.hitFlash > 0;
       const anchorR = a.radius;
+      const hpRatio = Math.max(0, a.hp / a.maxHp);
 
-      ctx.strokeStyle = 'rgba(0, 206, 201, 0.6)';
-      ctx.lineWidth = 2;
+      // 1. Halo Radial de Distorção Gravitacional
+      const auraPulse = Math.sin(frameCount * 0.12 + i * 1.5) * 5;
+      const glowGrad = ctx.createRadialGradient(0, 0, anchorR * 0.2, 0, 0, anchorR * 2.0 + auraPulse);
+      glowGrad.addColorStop(0, isAnchorHit ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 206, 201, 0.5)');
+      glowGrad.addColorStop(0.5, 'rgba(142, 68, 173, 0.28)');
+      glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = glowGrad;
       ctx.beginPath();
-      ctx.ellipse(0, 0, anchorR * 1.5, anchorR * 0.65, frameCount * 0.04 + i, 0, Math.PI * 2);
-      ctx.stroke();
-
-      ctx.fillStyle = isAnchorHit ? '#ffffff' : '#08010f';
-      ctx.beginPath();
-      ctx.moveTo(0, -anchorR);
-      ctx.lineTo(anchorR * 0.8, 0);
-      ctx.lineTo(0, anchorR);
-      ctx.lineTo(-anchorR * 0.8, 0);
-      ctx.closePath();
+      ctx.arc(0, 0, anchorR * 2.0 + auraPulse, 0, Math.PI * 2);
       ctx.fill();
 
+      // 2. Anel Giroscópico Primário com Nodos Orbitais
+      const rot1 = frameCount * 0.045 + i;
+      ctx.save();
+      ctx.rotate(rot1);
+      ctx.strokeStyle = isAnchorHit ? '#ffffff' : 'rgba(0, 206, 201, 0.8)';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, anchorR * 1.55, anchorR * 0.65, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      for (let k = 0; k < 3; k++) {
+        const kAng = (k * Math.PI * 2 / 3) + frameCount * 0.06;
+        const kx = Math.cos(kAng) * (anchorR * 1.55);
+        const ky = Math.sin(kAng) * (anchorR * 0.65);
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(kx, ky, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // 3. Anel Giroscópico Secundário Contra-Rotativo
+      const rot2 = -frameCount * 0.055 + i * 1.3;
+      ctx.save();
+      ctx.rotate(rot2);
+      ctx.strokeStyle = isAnchorHit ? '#ffffff' : 'rgba(232, 67, 147, 0.7)';
+      ctx.lineWidth = 1.8;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, anchorR * 1.3, anchorR * 0.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      // 4. Carapaça de Fragmentos Criptográficos
+      const shardCount = 4;
+      const shardBreath = Math.sin(frameCount * 0.14 + i) * 3;
+      const shardDist = anchorR * 0.88 + shardBreath;
+      const shardRot = frameCount * 0.025 + i * 0.8;
+
+      for (let s = 0; s < shardCount; s++) {
+        const sAng = shardRot + (s * Math.PI * 2 / shardCount);
+        const sx = Math.cos(sAng) * shardDist;
+        const sy = Math.sin(sAng) * shardDist;
+
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.rotate(sAng + Math.PI / 2);
+
+        ctx.fillStyle = isAnchorHit ? '#ffffff' : '#08010f';
+        ctx.beginPath();
+        ctx.moveTo(0, -8);
+        ctx.lineTo(5.5, 0);
+        ctx.lineTo(0, 8);
+        ctx.lineTo(-5.5, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = isAnchorHit ? '#ffffff' : (s % 2 === 0 ? '#00cec9' : '#a29bfe');
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 5. Núcleo Cósmico de Singularidade
+      const coreR = anchorR * 0.68;
+      ctx.fillStyle = isAnchorHit ? '#ffffff' : '#040008';
+      ctx.beginPath();
+      ctx.arc(0, 0, coreR, 0, Math.PI * 2);
+      ctx.fill();
       ctx.strokeStyle = isAnchorHit ? '#ffffff' : '#00cec9';
       ctx.lineWidth = 2.5;
       ctx.stroke();
 
-      ctx.fillStyle = '#a29bfe';
+      const innerPulse = Math.sin(frameCount * 0.2 + i * 2) * 2.2;
+      const nebulaGrad = ctx.createRadialGradient(0, 0, 1, 0, 0, coreR * 0.85);
+      nebulaGrad.addColorStop(0, '#ffffff');
+      nebulaGrad.addColorStop(0.3, '#00cec9');
+      nebulaGrad.addColorStop(0.7, '#8e44ad');
+      nebulaGrad.addColorStop(1, '#05010a');
+      ctx.fillStyle = nebulaGrad;
       ctx.beginPath();
-      ctx.arc(0, 0, 4, 0, Math.PI * 2);
+      ctx.arc(0, 0, Math.max(2, coreR * 0.72 + innerPulse), 0, Math.PI * 2);
       ctx.fill();
 
-      const anchorHpRatio = Math.max(0, a.hp / a.maxHp);
-      const barW = 38;
-      const barH = 4;
-      ctx.fillStyle = 'rgba(10, 12, 16, 0.85)';
-      ctx.fillRect(-barW / 2, -anchorR - 10, barW, barH);
+      // Pupila de vácuo
+      ctx.fillStyle = '#020005';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 2.8, coreR * 0.5 + innerPulse * 0.5, frameCount * 0.05, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Arcos de instabilidade quando a vida está baixa
+      if (hpRatio < 0.45 || isAnchorHit) {
+        const sparkAng = (frameCount * 0.35 + i * 3) % (Math.PI * 2);
+        ctx.strokeStyle = '#e84393';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(sparkAng) * (coreR * 0.8), Math.sin(sparkAng) * (coreR * 0.8));
+        ctx.lineTo(Math.cos(sparkAng) * (anchorR * 1.45), Math.sin(sparkAng) * (anchorR * 1.45));
+        ctx.stroke();
+      }
+
+      // 6. Barra de Vida Rúnica Superior
+      const barW = 44;
+      const barH = 5;
+      const barY = -anchorR - 14;
+
+      ctx.fillStyle = 'rgba(6, 4, 12, 0.9)';
+      ctx.fillRect(-barW / 2 - 1, barY - 1, barW + 2, barH + 2);
+
+      const barGrad = ctx.createLinearGradient(-barW / 2, 0, barW / 2, 0);
+      barGrad.addColorStop(0, '#00cec9');
+      barGrad.addColorStop(1, '#a29bfe');
+      ctx.fillStyle = barGrad;
+      ctx.fillRect(-barW / 2, barY, barW * hpRatio, barH);
+
+      ctx.strokeStyle = isAnchorHit ? '#ffffff' : 'rgba(0, 206, 201, 0.85)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-barW / 2 - 1, barY - 1, barW + 2, barH + 2);
+
       ctx.fillStyle = '#00cec9';
-      ctx.fillRect(-barW / 2, -anchorR - 10, barW * anchorHpRatio, barH);
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 0.8;
-      ctx.strokeRect(-barW / 2, -anchorR - 10, barW, barH);
+      ctx.fillRect(-barW / 2 - 3, barY - 2, 2, barH + 4);
+      ctx.fillRect(barW / 2 + 1, barY - 2, 2, barH + 4);
 
       ctx.restore();
     }

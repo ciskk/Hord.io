@@ -14,6 +14,7 @@ import {
   drops,
   chests,
   gems,
+  acidPuddles,
   bossTelegraphs,
   bossProjectiles,
   bossShockwaves,
@@ -887,6 +888,8 @@ function drawMiniBossShape(e) {
 }
 
 export function drawEnemyShape(e) {
+  if (e.isBossSubTarget) return;
+
   ctx.save();
   ctx.translate(e.x, e.y);
   ctx.scale(e.facing, 1);
@@ -1537,74 +1540,746 @@ export function drawPlayerCharacter() {
   ctx.ellipse(0, 15, 14, 6, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  if (selectedHeroKey === 'BARBARIAN') {
-    ctx.fillStyle = charDef.color.cape;
-    ctx.beginPath();
-    ctx.moveTo(-6, -2 + bob);
-    ctx.lineTo(-14 - Math.abs(capeWave), 15 + bob);
-    ctx.lineTo(-2, 16 + bob);
-    ctx.lineTo(4, -2 + bob);
-    ctx.closePath();
-    ctx.fill();
+  if (selectedHeroKey === 'KNIGHT') {
+    const isDashing = player.dashDuration > 0;
+    const isRetaliating = player.iFrames > 12;
+    // O martelo nas costas desaparece no instante em que o ataque HAMMER_SLAM está ativo
+    const isHammerAttacking = bullets.some(b => b.type === 'HAMMER_SLAM' && b.life > 4);
+    const cCol = charDef.color;
+    const steelMid = cCol.armor || '#718093';
+    const steelLight = cCol.armorLight || '#dcdde1';
+    const steelDark = cCol.armorDark || '#2f3640';
+    const goldTrim = cCol.trim || '#fbc531';
+    const goldDark = cCol.trimDark || '#c79810';
+    const plumeCol = cCol.plume || '#8e44ad';
+    const tabardCol = cCol.tabard || '#f5f6fa';
+    const hammerWood = cCol.hammerWood || '#3d271d';
+    const hammerSteel = cCol.hammerSteel || '#57606f';
+    const hammerGold = cCol.hammerGold || '#f1c40f';
 
-    ctx.fillStyle = '#2d1d12';
-    ctx.fillRect(-7 - legSwing * 0.4, 7 + bob, 5, 8);
-    ctx.fillRect(2 + legSwing * 0.4, 7 + bob, 5, 8);
+    // --- ULT: Pós-Imagens Douradas e Solo Sagrado com Runas ---
+    if (isDashing) {
+      ctx.save();
+      for (let g = 1; g <= 3; g++) {
+        const ghostDist = g * 9;
+        ctx.fillStyle = `rgba(241, 196, 15, ${0.32 / g})`;
+        ctx.beginPath();
+        ctx.ellipse(-ghostDist, 0, 12, 16, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Solo Consagrado na base
+      ctx.strokeStyle = 'rgba(241, 196, 15, 0.75)';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.ellipse(0, 14 + bob, 22, 7, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
 
-    ctx.fillStyle = player.berserkTimer > 0 ? '#c0392b' : '#d35400';
-    ctx.fillRect(-9, -4 + bob, 18, 12);
-    ctx.fillStyle = '#f39c12';
-    ctx.fillRect(-9, 4 + bob, 18, 4);
-
-    ctx.fillStyle = '#e67e22';
+    // 1. Capa Nobre Dupla de Veludo
+    ctx.fillStyle = cCol.capeInner || '#2c1045';
     ctx.beginPath();
-    ctx.arc(0, -9 + bob, 7, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#7f8c8d';
-    ctx.fillRect(-6, -15 + bob, 12, 6);
-    ctx.fillStyle = '#ecf0f1';
-    ctx.beginPath();
-    ctx.moveTo(-6, -13 + bob);
-    ctx.lineTo(-12, -20 + bob);
-    ctx.lineTo(-4, -14 + bob);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(6, -13 + bob);
-    ctx.lineTo(12, -20 + bob);
-    ctx.lineTo(4, -14 + bob);
-    ctx.closePath();
-    ctx.fill();
-  } else if (selectedHeroKey === 'ALCHEMIST') {
-    ctx.fillStyle = charDef.color.cape;
-    ctx.beginPath();
-    ctx.moveTo(-4, -2 + bob);
-    ctx.lineTo(-12 - Math.abs(capeWave), 14 + bob);
-    ctx.lineTo(-2, 15 + bob);
+    ctx.moveTo(-5, -2 + bob);
+    ctx.lineTo(-17 - Math.abs(capeWave * 1.2), 17 + bob);
+    ctx.lineTo(-10 - Math.abs(capeWave * 0.7), 19 + bob);
+    ctx.lineTo(-3, 17 + bob);
     ctx.lineTo(2, -2 + bob);
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = '#1e272e';
-    ctx.fillRect(-6 - legSwing * 0.4, 7 + bob, 4, 7);
-    ctx.fillRect(2 + legSwing * 0.4, 7 + bob, 4, 7);
-
-    ctx.fillStyle = charDef.color.armor;
-    ctx.fillRect(-8, -4 + bob, 16, 12);
-    ctx.fillStyle = '#1abc9c';
-    ctx.fillRect(-8, 5 + bob, 16, 3);
-    ctx.fillRect(-5, 5 + bob, 3, 3);
-    ctx.fillRect(2, 5 + bob, 3, 3);
-
-    ctx.fillStyle = '#f5cd79';
+    ctx.fillStyle = cCol.cape || '#481b6d';
     ctx.beginPath();
-    ctx.arc(0, -9 + bob, 6.5, 0, Math.PI * 2);
+    ctx.moveTo(-5, -3 + bob);
+    ctx.lineTo(-15 - Math.abs(capeWave * 1.1), 15 + bob);
+    ctx.lineTo(-9 - Math.abs(capeWave * 0.6), 17 + bob);
+    ctx.lineTo(-2, 16 + bob);
+    ctx.lineTo(3, -3 + bob);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = goldTrim;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // 2. Coldre Dorsal do Martelo Sagrado (Visível em repouso, some no ataque)
+    if (!isHammerAttacking) {
+      ctx.save();
+      ctx.translate(-2, -3 + bob);
+      ctx.rotate(-0.58);
+
+      // Cabo de carvalho no coldre com ataduras
+      ctx.fillStyle = hammerWood;
+      ctx.fillRect(-2, -4, 4, 30);
+      ctx.strokeStyle = '#1e130c';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-2, 4); ctx.lineTo(2, 7);
+      ctx.moveTo(-2, 12); ctx.lineTo(2, 15);
+      ctx.stroke();
+
+      // Pomo inferior de ferro
+      ctx.fillStyle = hammerSteel;
+      ctx.fillRect(-2.5, 25, 5, 3);
+
+      // Cabeça titânica do martelo nas costas
+      ctx.fillStyle = hammerSteel;
+      ctx.fillRect(-9, -15, 18, 12);
+      ctx.fillStyle = hammerGold;
+      ctx.fillRect(-10, -13, 20, 3);
+      ctx.fillRect(-10, -8, 20, 3);
+      ctx.fillRect(-2, -15, 4, 12);
+
+      // Espigão superior perfurante
+      ctx.fillStyle = steelLight;
+      ctx.beginPath();
+      ctx.moveTo(0, -19);
+      ctx.lineTo(3, -15);
+      ctx.lineTo(-3, -15);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // 3. Pernas Blindadas, Grevas e Sabatons
+    const legLeftX = -7 - legSwing * 0.4;
+    const legRightX = 1.5 + legSwing * 0.4;
+
+    ctx.fillStyle = steelDark;
+    ctx.fillRect(legLeftX, 6 + bob, 5, 8);
+    ctx.fillRect(legRightX, 6 + bob, 5, 8);
+
+    ctx.fillStyle = steelMid;
+    ctx.fillRect(legLeftX + 0.5, 7 + bob, 4, 6.5);
+    ctx.fillRect(legRightX + 0.5, 7 + bob, 4, 6.5);
+    ctx.fillStyle = steelLight;
+    ctx.fillRect(legLeftX + 1.5, 7 + bob, 1.5, 6.5);
+    ctx.fillRect(legRightX + 1.5, 7 + bob, 1.5, 6.5);
+
+    // Joelheiras em losango (Poleyns)
+    ctx.fillStyle = goldTrim;
+    ctx.beginPath();
+    ctx.moveTo(legLeftX + 2.5, 5.5 + bob);
+    ctx.lineTo(legLeftX + 4.5, 7.5 + bob);
+    ctx.lineTo(legLeftX + 2.5, 9.5 + bob);
+    ctx.lineTo(legLeftX + 0.5, 7.5 + bob);
+    ctx.closePath();
     ctx.fill();
 
+    ctx.beginPath();
+    ctx.moveTo(legRightX + 2.5, 5.5 + bob);
+    ctx.lineTo(legRightX + 4.5, 7.5 + bob);
+    ctx.lineTo(legRightX + 2.5, 9.5 + bob);
+    ctx.lineTo(legRightX + 0.5, 7.5 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // Sabatons
+    ctx.fillStyle = steelDark;
+    ctx.fillRect(legLeftX - 1, 12.5 + bob, 6.5, 3.5);
+    ctx.fillRect(legRightX - 1, 12.5 + bob, 6.5, 3.5);
+    ctx.fillStyle = steelLight;
+    ctx.fillRect(legLeftX + 1, 13 + bob, 4, 1.8);
+    ctx.fillRect(legRightX + 1, 13 + bob, 4, 1.8);
+
+    // 4. Tronco com Couraça Chanfrada e Tabardo Sagrado
+    ctx.fillStyle = steelMid;
+    ctx.beginPath();
+    ctx.moveTo(-9, -5 + bob);
+    ctx.lineTo(9, -5 + bob);
+    ctx.lineTo(6.5, 7 + bob);
+    ctx.lineTo(-6.5, 7 + bob);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = steelDark;
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+
+    // Tabardo monástico
+    ctx.fillStyle = tabardCol;
+    ctx.beginPath();
+    ctx.moveTo(-5, -5 + bob);
+    ctx.lineTo(5, -5 + bob);
+    ctx.lineTo(4, 8.5 + bob);
+    ctx.lineTo(-4, 8.5 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // Cruz frontal no tabardo
+    ctx.fillStyle = cCol.tabardCross || '#c23616';
+    ctx.fillRect(-1.2, -4 + bob, 2.4, 10);
+    ctx.fillRect(-3.8, -1.5 + bob, 7.6, 2.4);
+
+    // Cinto e correia do coldre dorsal
+    ctx.fillStyle = '#2c1e18';
+    ctx.fillRect(-7, 4.5 + bob, 14, 3.2);
+    if (!isHammerAttacking) {
+      ctx.strokeStyle = '#2c1e18';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(-6, -4 + bob);
+      ctx.lineTo(5, 5 + bob);
+      ctx.stroke();
+    }
+    ctx.fillStyle = goldTrim;
+    ctx.fillRect(-2.5, 4.0 + bob, 5, 4.2);
+    ctx.fillStyle = steelDark;
+    ctx.fillRect(-1.2, 5.0 + bob, 2.4, 2.2);
+
+    // 5. Ombreira Traseira e Braço Esquerdo
+    ctx.fillStyle = steelDark;
+    ctx.fillRect(-11, -3 + bob, 4, 8);
+    ctx.fillStyle = goldTrim;
+    ctx.beginPath();
+    ctx.moveTo(-7, -6 + bob);
+    ctx.lineTo(-14, -3 + bob);
+    ctx.lineTo(-13, 2 + bob);
+    ctx.lineTo(-8, 0 + bob);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = steelDark;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // 6. Cabeça e Grande Elmo Gótico (Greathelm)
+    ctx.fillStyle = steelMid;
+    ctx.beginPath();
+    ctx.moveTo(-5.5, -6 + bob);
+    ctx.lineTo(6.5, -6 + bob);
+    ctx.lineTo(7.5, -14 + bob);
+    ctx.lineTo(-4.5, -15.5 + bob);
+    ctx.lineTo(-7.0, -9 + bob);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = steelDark;
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+
+    // Crista superior do elmo
+    ctx.fillStyle = steelLight;
+    ctx.beginPath();
+    ctx.moveTo(-1, -15.5 + bob);
+    ctx.lineTo(2.5, -15 + bob);
+    ctx.lineTo(2, -6 + bob);
+    ctx.lineTo(-0.5, -6 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // Reforço em cruz de latão no visor
+    ctx.fillStyle = goldTrim;
+    ctx.fillRect(1.5, -13.5 + bob, 2, 7.5);
+    ctx.fillRect(-2.5, -10.5 + bob, 8.5, 2.2);
+
+    // Fenda ocular estilizada
+    const glowCol = isDashing ? '#ffffff' : (cCol.eyeGlow || '#00d2d3');
+    ctx.fillStyle = glowCol;
+    ctx.fillRect(2.8, -10.2 + bob, 3.5, 1.4);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(4.5, -10.2 + bob, 1.5, 1.4);
+
+    // Penacho Plumoso
+    const plumeSway = player.isMoving ? Math.sin(player.walkCycle) * 3 : Math.sin(frameCount * 0.08) * 1.5;
+    ctx.fillStyle = plumeCol;
+    ctx.beginPath();
+    ctx.moveTo(-3, -15 + bob);
+    ctx.quadraticCurveTo(-9 - plumeSway, -21 + bob, -16 - Math.abs(plumeSway * 1.2), -15 + bob + plumeSway);
+    ctx.quadraticCurveTo(-9 - plumeSway * 0.5, -14 + bob, -4, -13.5 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // 7. Pauldron Nobre Dianteiro
+    ctx.fillStyle = steelLight;
+    ctx.beginPath();
+    ctx.moveTo(5, -6 + bob);
+    ctx.lineTo(13.5, -4 + bob);
+    ctx.lineTo(11.5, 2.5 + bob);
+    ctx.lineTo(4, 0 + bob);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = goldTrim;
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    // 8. Braço e Manopla (Postura Dinâmica de Empunhadura no Ataque)
+    if (isHammerAttacking) {
+      // Braços erguidos em postura pesada de ataque frontal de duas mãos
+      ctx.fillStyle = steelMid;
+      ctx.fillRect(5, -6 + bob, 6, 4.5);
+      ctx.fillStyle = steelDark;
+      ctx.fillRect(9, -8 + bob, 4.5, 4.5);
+      ctx.fillStyle = goldTrim;
+      ctx.fillRect(10, -7 + bob, 2.5, 2.5);
+    } else {
+      ctx.fillStyle = steelMid;
+      ctx.fillRect(6, -2 + bob, 4.5, 7.5);
+      ctx.fillStyle = steelDark;
+      ctx.fillRect(6.5, 3 + bob, 4.5, 3.5);
+      ctx.fillStyle = goldTrim;
+      ctx.fillRect(7.5, 4 + bob, 1.5, 1.5);
+    }
+
+    // --- ULT: Asas Astrais de Éter e Aríete Frontal de Torre (Pavise) ---
+    if (isDashing) {
+      ctx.save();
+      const wingFlap = Math.sin(frameCount * 0.45) * 6;
+
+      // Asas Astrais Celestiais de Luz Translúcida
+      ctx.fillStyle = 'rgba(241, 196, 15, 0.40)';
+      ctx.strokeStyle = '#00d2d3';
+      ctx.lineWidth = 2.0;
+
+      // Asa Esquerda
+      ctx.beginPath();
+      ctx.moveTo(-4, -10 + bob);
+      ctx.quadraticCurveTo(-18, -26 + wingFlap, -34, -18 + wingFlap);
+      ctx.lineTo(-24, -8 + wingFlap * 0.5);
+      ctx.lineTo(-30, 2 + wingFlap);
+      ctx.lineTo(-14, 4 + bob);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Asa Direita
+      ctx.beginPath();
+      ctx.moveTo(2, -10 + bob);
+      ctx.quadraticCurveTo(14, -28 + wingFlap, 32, -22 + wingFlap);
+      ctx.lineTo(22, -9 + wingFlap * 0.5);
+      ctx.lineTo(28, 0 + wingFlap);
+      ctx.lineTo(10, 2 + bob);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Grande Aríete Sagrado Frontal (Escudo Torre Pavise)
+      const pPulse = Math.sin(frameCount * 0.5) * 2.5;
+      const shX = 16;
+      ctx.fillStyle = 'rgba(241, 196, 15, 0.35)';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3.2;
+
+      ctx.beginPath();
+      ctx.moveTo(shX, -22 + pPulse);
+      ctx.lineTo(shX + 11, -12);
+      ctx.lineTo(shX + 10, 14);
+      ctx.lineTo(shX, 22 - pPulse);
+      ctx.lineTo(shX - 4, 16);
+      ctx.lineTo(shX - 4, -16);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Cruz Heráldica Incandescente no Centro do Pavise
+      ctx.strokeStyle = '#f1c40f';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(shX + 4, -14); ctx.lineTo(shX + 4, 14);
+      ctx.moveTo(shX - 1, -2); ctx.lineTo(shX + 8, -2);
+      ctx.stroke();
+
+      // Ondas frontais de pressão e corte cinético
+      ctx.strokeStyle = 'rgba(0, 206, 201, 0.65)';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.arc(shX + 8, 0, 18 + pPulse * 1.5, -Math.PI * 0.45, Math.PI * 0.45);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Glifo Rúnico de Retaliação Melee
+    if (isRetaliating) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(0, 206, 201, 0.85)';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      for (let g = 0; g < 6; g++) {
+        const ga = (g * Math.PI / 3) + frameCount * 0.05;
+        const gx = Math.cos(ga) * 20;
+        const gy = Math.sin(ga) * 20 + bob;
+        if (g === 0) ctx.moveTo(gx, gy);
+        else ctx.lineTo(gx, gy);
+      }
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+    }
+  } else if (selectedHeroKey === 'BARBARIAN') {
+    const isBerserk = (player.berserkTimer || 0) > 0;
+    const skinCol = charDef.color.skin || '#c67846';
+    const runeCol = isBerserk ? '#ffffff' : (charDef.color.tattoo || '#f39c12');
+    const hairCol = charDef.color.hair || '#d35400';
+    const capeCol = charDef.color.cape || '#7f1d1d';
+    const leatherCol = charDef.color.armor || '#2c1e18';
+    const boneCol = charDef.color.bone || '#e2d7c5';
+
+    // 1. Capa Pesada de Pele de Fera com Bainha Desgastada
+    ctx.fillStyle = capeCol;
+    ctx.beginPath();
+    ctx.moveTo(-6, -1 + bob);
+    ctx.lineTo(-15 - Math.abs(capeWave * 1.1), 16 + bob);
+    ctx.lineTo(-8 - Math.abs(capeWave * 0.6), 18 + bob);
+    ctx.lineTo(-2, 17 + bob);
+    ctx.lineTo(4, -1 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#1c120c';
+    ctx.beginPath();
+    ctx.moveTo(-15 - Math.abs(capeWave * 1.1), 14 + bob);
+    ctx.lineTo(-16 - Math.abs(capeWave * 1.1), 17 + bob);
+    ctx.lineTo(-8 - Math.abs(capeWave * 0.6), 19 + bob);
+    ctx.lineTo(-2, 18 + bob);
+    ctx.lineTo(-2, 16 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // 2. Pernas Robustas, Amarras Cruzadas e Botas Pesadas
+    ctx.fillStyle = leatherCol;
+    ctx.fillRect(-7.5 - legSwing * 0.45, 6.5 + bob, 5.5, 8.5);
+    ctx.fillRect(2.0 + legSwing * 0.45, 6.5 + bob, 5.5, 8.5);
+
+    ctx.strokeStyle = '#8d5524';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(-7.5 - legSwing * 0.45, 8.5 + bob);
+    ctx.lineTo(-2.0 - legSwing * 0.45, 12 + bob);
+    ctx.moveTo(2.0 + legSwing * 0.45, 8.5 + bob);
+    ctx.lineTo(7.5 + legSwing * 0.45, 12 + bob);
+    ctx.stroke();
+
+    ctx.fillStyle = '#1a1d20';
+    ctx.fillRect(-8 - legSwing * 0.45, 12.5 + bob, 6.5, 3.5);
+    ctx.fillRect(1.5 + legSwing * 0.45, 12.5 + bob, 6.5, 3.5);
+    ctx.fillStyle = '#7f8c8d';
+    ctx.fillRect(-7 - legSwing * 0.45, 14.5 + bob, 5, 1.5);
+    ctx.fillRect(2.5 + legSwing * 0.45, 14.5 + bob, 5, 1.5);
+
+    // 3. Tronco Musculoso de Colosso Tribal (Silhueta V-Taper Imponente)
+    ctx.fillStyle = skinCol;
+    ctx.beginPath();
+    ctx.moveTo(-10.5, -5 + bob);
+    ctx.lineTo(10.5, -5 + bob);
+    ctx.lineTo(6.5, 7 + bob);
+    ctx.lineTo(-6.5, 7 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // Tatuagens Rúnicas Corporais (Pulsam em chamas no modo Berserk)
+    ctx.strokeStyle = runeCol;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(-7, -2 + bob);
+    ctx.lineTo(-3, 0 + bob);
+    ctx.lineTo(-5, 3 + bob);
+    ctx.lineTo(-1, 5 + bob);
+    ctx.moveTo(1, -3 + bob);
+    ctx.lineTo(5, -1 + bob);
+    ctx.lineTo(3, 2 + bob);
+    ctx.stroke();
+
+    if (isBerserk) {
+      ctx.fillStyle = '#ff7675';
+      ctx.fillRect(-4, 0 + bob, 2.5, 2.5);
+      ctx.fillRect(2, -1 + bob, 2.5, 2.5);
+    }
+
+    // Arnês de Couro em "X" com Broche Central
+    ctx.strokeStyle = '#3d271d';
+    ctx.lineWidth = 2.0;
+    ctx.beginPath();
+    ctx.moveTo(-9, -4 + bob);
+    ctx.lineTo(6, 6 + bob);
+    ctx.moveTo(9, -4 + bob);
+    ctx.lineTo(-6, 6 + bob);
+    ctx.stroke();
+
+    ctx.fillStyle = '#d35400';
+    ctx.beginPath();
+    ctx.arc(0, 1 + bob, 2.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f1c40f';
+    ctx.fillRect(-1, 0 + bob, 2, 2);
+
+    // Cinturão com Fivela de Ferro Rúnico
+    ctx.fillStyle = leatherCol;
+    ctx.fillRect(-7.5, 4.5 + bob, 15, 3.2);
+    ctx.fillStyle = '#7f8c8d';
+    ctx.fillRect(-2.5, 4.0 + bob, 5, 4.2);
+    ctx.fillStyle = '#f1c40f';
+    ctx.fillRect(-1.2, 5.0 + bob, 2.4, 2.2);
+
+    // 4. Ombreira Traseira de Osso / Crânio de Fera com Cravos
+    ctx.fillStyle = boneCol;
+    ctx.beginPath();
+    ctx.moveTo(-11, -6 + bob);
+    ctx.quadraticCurveTo(-15, -4 + bob, -13, 1 + bob);
+    ctx.lineTo(-8, -1 + bob);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#2c1e18';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(-13, -3 + bob);
+    ctx.lineTo(-17, -7 + bob);
+    ctx.lineTo(-11, -6 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // 5. Braços Musculosos com Munhequeiras Reforçadas
+    ctx.fillStyle = skinCol;
+    ctx.fillRect(-11, -3 + bob, 4.5, 8);
+    ctx.fillRect(7, -3 + bob, 4.5, 8);
+    ctx.fillStyle = leatherCol;
+    ctx.fillRect(-11.5, 2 + bob, 5, 3.5);
+    ctx.fillRect(6.5, 2 + bob, 5, 3.5);
+    ctx.fillStyle = '#bdc3c7';
+    ctx.fillRect(-10.5, 3 + bob, 1.5, 1.5);
+    ctx.fillRect(8.0, 3 + bob, 1.5, 1.5);
+
+    // 6. Gola de Peles de Lobo nos Ombros
+    ctx.fillStyle = '#4a332d';
+    ctx.beginPath();
+    ctx.moveTo(-10, -6 + bob);
+    ctx.quadraticCurveTo(0, -3 + bob, 10, -6 + bob);
+    ctx.lineTo(8, -8.5 + bob);
+    ctx.quadraticCurveTo(0, -6 + bob, -8, -8.5 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // 7. Cabeça, Rosto e Olhos Furiosos
+    ctx.fillStyle = skinCol;
+    ctx.beginPath();
+    ctx.arc(0.5, -9.5 + bob, 6.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (isBerserk) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(2.0, -10.5 + bob, 3.5, 2.2);
+      ctx.strokeStyle = '#ff3838';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(2.0, -10.5 + bob, 3.5, 2.2);
+    } else {
+      ctx.fillStyle = '#1e272e';
+      ctx.fillRect(2.2, -10.5 + bob, 2.5, 2.0);
+      ctx.fillStyle = '#f39c12';
+      ctx.fillRect(3.0, -10.2 + bob, 1.4, 1.4);
+    }
+
+    ctx.strokeStyle = '#4a2810';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(1.5, -11.5 + bob);
+    ctx.lineTo(5.2, -10.2 + bob);
+    ctx.stroke();
+
+    // 8. Barba Ruiva Trançada com Anel de Osso e Bigode
+    ctx.fillStyle = hairCol;
+    ctx.beginPath();
+    ctx.moveTo(-2.5, -8.5 + bob);
+    ctx.lineTo(5.5, -8.5 + bob);
+    ctx.quadraticCurveTo(8.5, -3 + bob, 6.0, 1 + bob);
+    ctx.lineTo(1.5, 2.5 + bob);
+    ctx.quadraticCurveTo(0.5, -3 + bob, -2.5, -8.5 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(2.0, 1.5 + bob);
+    ctx.lineTo(5.0, 1.5 + bob);
+    ctx.lineTo(3.5, 6.0 + bob);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = boneCol;
+    ctx.fillRect(2.2, 2.2 + bob, 2.6, 1.8);
+
+    ctx.fillStyle = '#b33927';
+    ctx.beginPath();
+    ctx.moveTo(1.0, -7.5 + bob);
+    ctx.lineTo(6.5, -6.0 + bob);
+    ctx.lineTo(2.5, -5.5 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // 9. Cabelos Longos Selvagens
+    const hairWave = player.isMoving ? Math.sin(player.walkCycle) * 3.5 : Math.sin(frameCount * 0.08) * 1.5;
+    ctx.fillStyle = hairCol;
+    ctx.beginPath();
+    ctx.moveTo(-2, -12 + bob);
+    ctx.quadraticCurveTo(-9 - hairWave * 0.7, -13 + bob, -14 - Math.abs(hairWave), -6 + bob + hairWave * 0.5);
+    ctx.quadraticCurveTo(-8, -7 + bob, -4, -8 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // 10. Diadema de Ferro e Chifres Rústicos Esculpidos
+    ctx.fillStyle = '#57606f';
+    ctx.fillRect(-5.5, -14.5 + bob, 11, 3.2);
+    ctx.fillStyle = '#f1c40f';
+    ctx.fillRect(-0.8, -14.0 + bob, 2.0, 2.2);
+
+    ctx.fillStyle = boneCol;
+    ctx.strokeStyle = '#2d3436';
+    ctx.lineWidth = 1.2;
+
+    ctx.beginPath();
+    ctx.moveTo(-5.0, -13.5 + bob);
+    ctx.quadraticCurveTo(-11.5, -16.5 + bob, -11.0, -22 + bob);
+    ctx.quadraticCurveTo(-7.5, -17.5 + bob, -3.5, -14.5 + bob);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(3.5, -14.5 + bob);
+    ctx.quadraticCurveTo(7.5, -17.5 + bob, 11.0, -22 + bob);
+    ctx.quadraticCurveTo(11.5, -16.5 + bob, 5.0, -13.5 + bob);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  } else if (selectedHeroKey === 'ALCHEMIST') {
+    const fluidColor = player.evolvedPotion ? '#00cec9' : '#2ecc71';
+    const hairSway = player.isMoving ? Math.sin(player.walkCycle) * 4.5 : Math.sin(frameCount * 0.08) * 1.5;
+
+    // 1. Abas do Casaco / Fraque posterior (ondulam fluidas com os passos)
+    ctx.fillStyle = '#165b4c';
+    ctx.beginPath();
+    ctx.moveTo(-5, 3 + bob);
+    ctx.lineTo(-10 - Math.abs(hairSway * 0.9), 15 + bob);
+    ctx.lineTo(-3, 15 + bob);
+    ctx.lineTo(2, 3 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // 2. Caníster Dorsal Esguio (cilindro de vidro fino e vertical, sem sobrecarregar as costas)
+    ctx.fillStyle = 'rgba(20, 36, 30, 0.85)';
+    ctx.fillRect(-8.5, -5 + bob, 4.5, 11);
+    ctx.fillStyle = fluidColor;
+    ctx.fillRect(-8, 0 + bob, 3.5, 5.5);
+    ctx.strokeStyle = '#d4a373';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-8.5, -5 + bob, 4.5, 11);
+    ctx.fillStyle = '#d4a373';
+    ctx.fillRect(-9, -7 + bob, 5.5, 2);
+
+    // 3. Pernas e Botas Esbeltas
+    ctx.fillStyle = '#1e272e';
+    ctx.fillRect(-5 - legSwing * 0.35, 7 + bob, 3.2, 8);
+    ctx.fillRect(1.5 + legSwing * 0.35, 7 + bob, 3.2, 8);
+    ctx.fillStyle = '#d4a373';
+    ctx.fillRect(-5 - legSwing * 0.35, 11 + bob, 3.2, 1.5);
+    ctx.fillRect(1.5 + legSwing * 0.35, 11 + bob, 3.2, 1.5);
+
+    // 4. Tronco com Silhueta Feminina (Corselete ajustado e cintura delineada)
+    ctx.fillStyle = '#16a085';
+    ctx.fillRect(-6, -4 + bob, 12, 10);
+
+    // Corselete escuro acinturado
+    ctx.fillStyle = '#2c1e18';
+    ctx.beginPath();
+    ctx.moveTo(-4.5, -3 + bob);
+    ctx.lineTo(4.5, -3 + bob);
+    ctx.lineTo(3.2, 5 + bob);
+    ctx.lineTo(-3.2, 5 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // Amarração frontal de latão
+    ctx.strokeStyle = '#d4a373';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-1.2, -2 + bob);
+    ctx.lineTo(1.2, -0.5 + bob);
+    ctx.lineTo(-1.2, 1 + bob);
+    ctx.lineTo(1.2, 2.5 + bob);
+    ctx.stroke();
+
+    // Cinto fino e frascos laterais suspensos no quadril
+    ctx.fillStyle = '#4a3525';
+    ctx.fillRect(-5, 4.5 + bob, 10, 1.8);
+    ctx.fillStyle = fluidColor;
+    ctx.fillRect(3.8, 3.5 + bob, 2, 4);
+    ctx.fillStyle = '#9b59b6';
+    ctx.fillRect(3.8, 7.5 + bob, 2, 3.5);
+    ctx.fillStyle = '#d4a373';
+    ctx.fillRect(3.4, 3 + bob, 2.8, 1.2);
+    ctx.fillRect(3.4, 7 + bob, 2.8, 1.2);
+
+    // 5. Pescoço e Respirador Baixado (gola aberta, deixando o queixo e rosto livres)
+    ctx.fillStyle = '#f5cd79';
+    ctx.fillRect(-2, -6 + bob, 4, 3);
+    ctx.fillStyle = '#34495e';
+    ctx.fillRect(-3.5, -5 + bob, 7, 2.2);
+    ctx.fillStyle = '#d4a373';
+    ctx.fillRect(-4, -4.5 + bob, 1.8, 1.8);
+    ctx.fillRect(2.2, -4.5 + bob, 1.8, 1.8);
+
+    // 6. Rosto Feminino Visível
+    ctx.fillStyle = '#f5cd79';
+    ctx.beginPath();
+    ctx.arc(0.5, -9 + bob, 5.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Olho delicado e focado
+    ctx.fillStyle = '#1e272e';
+    ctx.fillRect(2.2, -9.5 + bob, 2.2, 1.5);
+    ctx.fillStyle = '#00cec9';
+    ctx.fillRect(2.7, -9.2 + bob, 1.2, 1.2);
+
+    // 7. Cabelo Roxo Característico, Óculos na Testa e Rabo de Cavalo Fluido
     ctx.fillStyle = '#8e44ad';
     ctx.beginPath();
-    ctx.arc(0, -10 + bob, 8, Math.PI * 0.8, Math.PI * 2.2);
+    ctx.arc(0, -10.5 + bob, 5.8, Math.PI * 0.85, Math.PI * 2.15);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(1, -11 + bob);
+    ctx.lineTo(4, -8 + bob);
+    ctx.lineTo(2, -7 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // Óculos de alquimista (goggles) pousados na testa
+    ctx.fillStyle = '#d4a373';
+    ctx.fillRect(0.8, -12.5 + bob, 4.2, 2.2);
+    ctx.fillStyle = '#00ffcc';
+    ctx.fillRect(1.5, -12.2 + bob, 2.8, 1.4);
+    ctx.strokeStyle = '#4a3525';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0.8, -11.5 + bob);
+    ctx.lineTo(-4, -10.5 + bob);
+    ctx.stroke();
+
+    // Rabo de cavalo longo que ondula para trás com a caminhada
+    ctx.fillStyle = '#d4a373';
+    ctx.fillRect(-5.2, -12 + bob, 2.4, 2.4); // Presilha
+    ctx.fillStyle = '#8e44ad';
+    ctx.beginPath();
+    ctx.moveTo(-4.5, -12 + bob);
+    ctx.quadraticCurveTo(-11 - hairSway * 0.8, -13 + bob - hairSway * 0.3, -15 - Math.abs(hairSway), -4 + bob + hairSway);
+    ctx.quadraticCurveTo(-10 - hairSway * 0.5, -7 + bob, -4.5, -9.5 + bob);
+    ctx.closePath();
+    ctx.fill();
+
+    // 8. Braço e Mão Segurando Frasco Erlenmeyer
+    ctx.fillStyle = '#16a085';
+    ctx.fillRect(-1, -2 + bob, 3.5, 4.5);
+    ctx.fillStyle = '#2c1e18';
+    ctx.fillRect(1, 1 + bob, 3, 3.5);
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+    ctx.beginPath();
+    ctx.moveTo(3, 3.5 + bob);
+    ctx.lineTo(5.5, 3.5 + bob);
+    ctx.lineTo(7, 7.5 + bob);
+    ctx.lineTo(1.5, 7.5 + bob);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = fluidColor;
+    ctx.beginPath();
+    ctx.moveTo(2.4, 5.5 + bob);
+    ctx.lineTo(6.1, 5.5 + bob);
+    ctx.lineTo(6.6, 7.2 + bob);
+    ctx.lineTo(1.9, 7.2 + bob);
+    ctx.closePath();
     ctx.fill();
   } else {
     ctx.fillStyle = charDef.color.cape;
@@ -1749,6 +2424,58 @@ export function render() {
     ctx.beginPath();
     ctx.arc(g.x - g.radius * 0.3, g.y - g.radius * 0.3, Math.max(1, g.radius * 0.28), 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
+  }
+
+  // Renderização das poças ativas no solo (Ácido / Alquimia / Fogo)
+  for (let i = 0; i < acidPuddles.length; i++) {
+    const p = acidPuddles[i];
+    if (p.x < viewLeft || p.x > viewRight || p.y < viewTop || p.y > viewBottom) continue;
+
+    const maxL = p.maxLife || 220;
+    
+    // Janela de animação visível de fade out cobrindo os últimos 50% de vida da poça
+    const fadeWindow = maxL * 0.50;
+    const fadeProgress = Math.min(1, Math.max(0, p.life / fadeWindow));
+
+    // Dissipação visual: a poça encolhe gradualmente até o solo enquanto esvazia o alpha
+    const shrinkFactor = 0.25 + 0.75 * fadeProgress;
+    const pulse = Math.sin(frameCount * 0.14 + i) * 2;
+    const r = Math.max(2, (p.radius + pulse) * shrinkFactor);
+
+    ctx.save();
+    // Opacidade base 50% mais translúcida para Valéria (0.28), atenuada linearmente por globalAlpha
+    const baseAlpha = p.isAlchemist ? 0.28 : 0.60;
+    ctx.globalAlpha = baseAlpha * fadeProgress;
+
+    if (p.isFire) {
+      ctx.fillStyle = '#e67e22';
+      ctx.strokeStyle = '#e74c3c';
+    } else if (p.isEvolved) {
+      ctx.fillStyle = '#00cec9';
+      ctx.strokeStyle = '#81ecec';
+    } else {
+      ctx.fillStyle = '#2ecc71';
+      ctx.strokeStyle = '#27ae60';
+    }
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+
+    const bubbleCount = p.isEvolved ? 4 : 3;
+    for (let b = 0; b < bubbleCount; b++) {
+      const bAng = frameCount * 0.08 + (b * Math.PI * 2 / bubbleCount) + i;
+      const bDist = r * 0.52;
+      const bx = p.x + Math.cos(bAng) * bDist;
+      const by = p.y + Math.sin(bAng) * bDist;
+      ctx.fillStyle = p.isFire ? '#f39c12' : (p.isEvolved ? '#e0ffff' : '#a8e6cf');
+      ctx.beginPath();
+      ctx.arc(bx, by, Math.max(0.5, (2.2 + Math.sin(frameCount * 0.2 + b) * 1.2) * shrinkFactor), 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 
@@ -2038,46 +2765,173 @@ export function render() {
   if (player.axeCount > 0) {
     const count = player.evolvedAxe ? Math.max(player.axeCount, 6) : player.axeCount;
     const r = player.axeRadius || 56;
-    ctx.strokeStyle = player.evolvedAxe ? 'rgba(230, 126, 34, 0.35)' : 'rgba(241, 196, 15, 0.18)';
-    ctx.lineWidth = player.evolvedAxe ? 3.5 : 2;
+    const isBerserk = (player.berserkTimer || 0) > 0;
+    const isEvolved = !!player.evolvedAxe;
+
+    // 1. Anel Guia Orbital
+    ctx.strokeStyle = isEvolved 
+      ? 'rgba(230, 126, 34, 0.45)' 
+      : (isBerserk ? 'rgba(231, 76, 60, 0.40)' : 'rgba(241, 196, 15, 0.22)');
+    ctx.lineWidth = isEvolved ? 3.0 : (isBerserk ? 2.5 : 1.8);
     ctx.beginPath();
     ctx.arc(player.x, player.y, r, 0, Math.PI * 2);
     ctx.stroke();
 
+    // 2. Renderização de cada Machado Nórdico e seu Rastro de Corte
     for (let i = 0; i < count; i++) {
       const angle = player.axeAngle + (i * (Math.PI * 2 / count));
       const ax = player.x + Math.cos(angle) * r;
       const ay = player.y + Math.sin(angle) * r;
 
-      ctx.strokeStyle = player.evolvedAxe ? 'rgba(243, 156, 18, 0.48)' : 'rgba(241, 196, 15, 0.32)';
-      ctx.lineWidth = player.evolvedAxe ? 8 : 5;
+      // 2.1 Esteira Dinâmica de Corte em Arco (Motion Ribbon com Sweet Spot na ponta)
+      const trailLength = isBerserk ? 0.72 : (isEvolved ? 0.58 : 0.44);
+      const ribbonStart = angle - trailLength;
+
+      // Faixa exterior incandescente (indica o gume afiado do corte no arco orbital)
+      ctx.strokeStyle = isBerserk 
+        ? 'rgba(231, 76, 60, 0.65)' 
+        : (isEvolved ? 'rgba(243, 156, 18, 0.60)' : 'rgba(241, 196, 15, 0.40)');
+      ctx.lineWidth = isEvolved ? 9 : (isBerserk ? 8 : 5);
       ctx.beginPath();
-      ctx.arc(player.x, player.y, r, angle - 0.42, angle);
+      ctx.arc(player.x, player.y, r + 4, ribbonStart, angle);
       ctx.stroke();
 
+      // Faixa de fogo/plasma estendida no vácuo de corte
+      ctx.strokeStyle = isBerserk 
+        ? 'rgba(243, 156, 18, 0.35)' 
+        : (isEvolved ? 'rgba(230, 126, 34, 0.35)' : 'rgba(241, 196, 15, 0.18)');
+      ctx.lineWidth = isEvolved ? 18 : 12;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, r, ribbonStart + 0.08, angle);
+      ctx.stroke();
+
+      // 2.2 Desenho do Machado de Guerra Nórdico (Bearded Greataxe)
       ctx.save();
       ctx.translate(ax, ay);
       ctx.rotate(angle + Math.PI / 2);
 
-      ctx.fillStyle = '#5d4037';
-      ctx.fillRect(-2.5, -6, 5, 28);
+      const shaftWood = '#3d271d';
+      const steelDark = '#2c3e50';
+      const steelMid = isEvolved ? '#d35400' : (isBerserk ? '#c0392b' : '#7f8c8d');
+      const steelLight = isEvolved ? '#f39c12' : (isBerserk ? '#e74c3c' : '#bdc3c7');
+      const edgeGlow = isEvolved ? '#ffffff' : (isBerserk ? '#ffffff' : '#f1c40f');
 
-      ctx.fillStyle = player.evolvedAxe ? '#f39c12' : '#bdc3c7';
+      // Cabo de Madeira Rústico voltado para o centro orbital (local +Y)
+      ctx.fillStyle = shaftWood;
+      ctx.fillRect(-2.5, -12, 5, 38);
+
+      // Tiras de Couro Cruzadas no Cabo
+      ctx.strokeStyle = '#1e130c';
+      ctx.lineWidth = 1.4;
       ctx.beginPath();
-      ctx.arc(-9, -12, 11, -Math.PI / 2, Math.PI / 2, true);
-      ctx.lineTo(-2.5, -6);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.arc(9, -12, 11, -Math.PI / 2, Math.PI / 2, false);
-      ctx.lineTo(2.5, -6);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.strokeStyle = player.evolvedAxe ? '#e74c3c' : '#f1c40f';
-      ctx.lineWidth = 1.5;
+      for (let w = -4; w <= 20; w += 6) {
+        ctx.moveTo(-2.5, w);
+        ctx.lineTo(2.5, w + 3.5);
+      }
       ctx.stroke();
+
+      // Pomo Inferior de Ferro com Espigão de Contrapeso
+      ctx.fillStyle = steelDark;
+      ctx.fillRect(-3.5, 23, 7, 3.5);
+      ctx.beginPath();
+      ctx.moveTo(-2, 26.5);
+      ctx.lineTo(2, 26.5);
+      ctx.lineTo(0, 30.5);
+      ctx.closePath();
+      ctx.fill();
+
+      // Braçadeira de Fixação da Cabeça do Machado (Eye / Collar)
+      ctx.fillStyle = steelDark;
+      ctx.fillRect(-3.5, -14, 7, 10);
+      ctx.fillStyle = '#f1c40f';
+      ctx.fillRect(-1.0, -11, 2, 2);
+
+      // --- Cabeça do Machado (Lâmina Nórdica Assimétrica / Bearded Axe) ---
+      // Lâmina Frontal (Voltada para a direção do corte orbital, local +X)
+      ctx.fillStyle = steelMid;
+      ctx.beginPath();
+      ctx.moveTo(2.5, -14);
+      ctx.lineTo(15, -18);                                 // Ponta superior afiada
+      ctx.quadraticCurveTo(20, -9, 14, 2);                 // Curva pronunciada da barba nórdica
+      ctx.quadraticCurveTo(8, -1, 2.5, -5);                // Reentrância inferior voltando ao cabo
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = steelDark;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      // Bisel de Desbaste Interno da Lâmina
+      ctx.fillStyle = steelLight;
+      ctx.beginPath();
+      ctx.moveTo(4, -13);
+      ctx.lineTo(14, -16.5);
+      ctx.quadraticCurveTo(18, -9, 13, 0.5);
+      ctx.lineTo(5, -4.5);
+      ctx.closePath();
+      ctx.fill();
+
+      // Gume de Corte Afiado (Sweet Spot: Corte Crítico e Cura da Passiva)
+      ctx.strokeStyle = edgeGlow;
+      ctx.lineWidth = isBerserk || isEvolved ? 2.8 : 2.0;
+      ctx.beginPath();
+      ctx.moveTo(15, -18);
+      ctx.quadraticCurveTo(20, -9, 14, 2);
+      ctx.stroke();
+
+      // Runas Mágicas Entalhadas na Lâmina
+      ctx.strokeStyle = isBerserk ? '#ffffff' : (isEvolved ? '#ffffff' : '#f39c12');
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(7, -12);
+      ctx.lineTo(11, -9);
+      ctx.lineTo(8, -6);
+      ctx.stroke();
+
+      // --- Espigão / Quebra-Armaduras Traseiro (Local -X) ---
+      if (isEvolved) {
+        // Na Tempestade de Aço, o machado torna-se de Lâmina Dupla Titânica
+        ctx.fillStyle = steelMid;
+        ctx.beginPath();
+        ctx.moveTo(-2.5, -14);
+        ctx.lineTo(-15, -18);
+        ctx.quadraticCurveTo(-20, -9, -14, 2);
+        ctx.quadraticCurveTo(-8, -1, -2.5, -5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = steelDark;
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+
+        ctx.fillStyle = steelLight;
+        ctx.beginPath();
+        ctx.moveTo(-4, -13);
+        ctx.lineTo(-14, -16.5);
+        ctx.quadraticCurveTo(-18, -9, -13, 0.5);
+        ctx.lineTo(-5, -4.5);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = edgeGlow;
+        ctx.lineWidth = 2.8;
+        ctx.beginPath();
+        ctx.moveTo(-15, -18);
+        ctx.quadraticCurveTo(-20, -9, -14, 2);
+        ctx.stroke();
+      } else {
+        // Machado Padrão: Espigão Quebra-Crânios Rústico na Traseira
+        ctx.fillStyle = steelDark;
+        ctx.beginPath();
+        ctx.moveTo(-2.5, -13);
+        ctx.lineTo(-9.5, -10);
+        ctx.lineTo(-2.5, -7);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = steelLight;
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
+
       ctx.restore();
     }
   }
@@ -2093,72 +2947,163 @@ export function render() {
       ctx.save();
       ctx.translate(b.x, b.y);
 
-      ctx.strokeStyle = `rgba(180, 185, 200, ${alpha * 0.35})`;
-      ctx.lineWidth = 2;
+      // 1. Anel Sísmico 360° com Fendas Douradas e Radiação Sacra
+      ctx.strokeStyle = b.isEvolved ? `rgba(230, 126, 34, ${alpha * 0.55})` : `rgba(241, 196, 15, ${alpha * 0.45})`;
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.arc(0, 0, shockR * 0.65, 0, Math.PI * 2);
+      ctx.arc(0, 0, shockR * 0.85, 0, Math.PI * 2);
       ctx.stroke();
 
-      ctx.fillStyle = b.isEvolved ? `rgba(243, 156, 18, ${alpha * 0.32})` : `rgba(241, 196, 15, ${alpha * 0.25})`;
+      // Cone de Projeção Tectônica Frontal
+      ctx.fillStyle = b.isEvolved ? `rgba(230, 126, 34, ${alpha * 0.35})` : `rgba(241, 196, 15, ${alpha * 0.28})`;
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.arc(0, 0, shockR * 1.15, b.angle - Math.PI * 0.28, b.angle + Math.PI * 0.28);
+      ctx.arc(0, 0, shockR * 1.25, b.angle - Math.PI * 0.32, b.angle + Math.PI * 0.32);
       ctx.closePath();
       ctx.fill();
 
-      ctx.strokeStyle = b.isEvolved ? `rgba(231, 76, 60, ${alpha * 0.9})` : `rgba(255, 255, 255, ${alpha * 0.85})`;
-      ctx.lineWidth = 3.5;
-      ctx.beginPath();
-      ctx.arc(0, 0, shockR * 1.15, b.angle - Math.PI * 0.28, b.angle + Math.PI * 0.28);
-      ctx.stroke();
-
-      ctx.strokeStyle = b.isEvolved ? `rgba(255, 234, 167, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
+      // Bordô Incandescente de Ruptura
+      ctx.strokeStyle = b.isEvolved ? `rgba(255, 234, 167, ${alpha * 0.95})` : `rgba(255, 255, 255, ${alpha * 0.9})`;
       ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, shockR * 1.25, b.angle - Math.PI * 0.32, b.angle + Math.PI * 0.32);
+      ctx.stroke();
 
-      const mainCrackLen = shockR * 1.25;
+      // 2. Fissura Sísmica Central Tridimensional
+      const mainCrackLen = shockR * 1.35;
       const perpX = -Math.sin(b.angle);
       const perpY = Math.cos(b.angle);
-      const seg1X = Math.cos(b.angle) * (mainCrackLen * 0.35) + perpX * 7;
-      const seg1Y = Math.sin(b.angle) * (mainCrackLen * 0.35) + perpY * 7;
-      const seg2X = Math.cos(b.angle) * (mainCrackLen * 0.70) - perpX * 9;
-      const seg2Y = Math.sin(b.angle) * (mainCrackLen * 0.70) - perpY * 9;
+      const seg1X = Math.cos(b.angle) * (mainCrackLen * 0.35) + perpX * 8;
+      const seg1Y = Math.sin(b.angle) * (mainCrackLen * 0.35) + perpY * 8;
+      const seg2X = Math.cos(b.angle) * (mainCrackLen * 0.70) - perpX * 10;
+      const seg2Y = Math.sin(b.angle) * (mainCrackLen * 0.70) - perpY * 10;
       const tipX = Math.cos(b.angle) * mainCrackLen;
       const tipY = Math.sin(b.angle) * mainCrackLen;
 
+      // Profundidade da Fenda
+      ctx.strokeStyle = '#1e130c';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
       ctx.lineTo(seg1X, seg1Y);
       ctx.lineTo(seg2X, seg2Y);
       ctx.lineTo(tipX, tipY);
       ctx.stroke();
 
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = b.isEvolved ? `rgba(243, 156, 18, ${alpha * 0.8})` : `rgba(241, 196, 15, ${alpha * 0.8})`;
+      // Núcleo de Fogo e Luz Sacra na Fratura
+      ctx.strokeStyle = b.isEvolved ? `rgba(243, 156, 18, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
+      ctx.lineWidth = 3.2;
       ctx.beginPath();
-      ctx.moveTo(seg1X, seg1Y);
-      ctx.lineTo(seg1X + Math.cos(b.angle + 0.5) * 22, seg1Y + Math.sin(b.angle + 0.5) * 22);
-      ctx.moveTo(seg2X, seg2Y);
-      ctx.lineTo(seg2X + Math.cos(b.angle - 0.5) * 26, seg2Y + Math.sin(b.angle - 0.5) * 26);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(seg1X, seg1Y);
+      ctx.lineTo(seg2X, seg2Y);
+      ctx.lineTo(tipX, tipY);
       ctx.stroke();
 
-      if (progress < 0.48) {
-        const slamPhase = progress / 0.48;
-        const swingAng = b.angle + (1 - slamPhase) * -0.95;
-        const forwardReach = 28 + slamPhase * 8;
+      // Ramificações Laterais
+      ctx.lineWidth = 2.0;
+      ctx.strokeStyle = b.isEvolved ? `rgba(230, 126, 34, ${alpha * 0.85})` : `rgba(241, 196, 15, ${alpha * 0.85})`;
+      ctx.beginPath();
+      ctx.moveTo(seg1X, seg1Y);
+      ctx.lineTo(seg1X + Math.cos(b.angle + 0.55) * 26, seg1Y + Math.sin(b.angle + 0.55) * 26);
+      ctx.moveTo(seg2X, seg2Y);
+      ctx.lineTo(seg2X + Math.cos(b.angle - 0.55) * 30, seg2Y + Math.sin(b.angle - 0.55) * 30);
+      ctx.stroke();
+
+      // 3. Geysers de Luz Sagrada Brotos das Fendas
+      if (progress > 0.25) {
+        const geyserAlpha = Math.sin((progress - 0.25) / 0.75 * Math.PI) * alpha;
+        ctx.fillStyle = `rgba(255, 255, 255, ${geyserAlpha * 0.85})`;
+        ctx.fillRect(seg1X - 2, seg1Y - 14, 4, 14);
+        ctx.fillRect(seg2X - 2, seg2Y - 18, 4, 18);
+        ctx.fillRect(tipX - 2, tipY - 22, 4, 22);
+
+        ctx.fillStyle = b.isEvolved ? `rgba(243, 156, 18, ${geyserAlpha * 0.6})` : `rgba(241, 196, 15, ${geyserAlpha * 0.6})`;
+        ctx.beginPath();
+        ctx.arc(seg1X, seg1Y - 12, 6, 0, Math.PI * 2);
+        ctx.arc(seg2X, seg2Y - 16, 7, 0, Math.PI * 2);
+        ctx.arc(tipX, tipY - 20, 8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 4. Cinemática de Balanço, Arco de Luz e Impacto do Martelo
+      if (progress < 0.65) {
+        const slamPhase = Math.min(1, progress / 0.38);
+        const swingAng = b.angle + (1 - Math.pow(slamPhase, 2)) * -1.25;
+        const forwardReach = 20 + slamPhase * 16;
         const hammerX = Math.cos(b.angle) * forwardReach;
         const hammerY = Math.sin(b.angle) * forwardReach;
+
+        // Faixa em Arco de Luz Sagrada (Motion Ribbon do Swing)
+        if (slamPhase < 0.95) {
+          ctx.strokeStyle = `rgba(255, 255, 255, ${(1 - slamPhase) * 0.85})`;
+          ctx.lineWidth = 7;
+          ctx.beginPath();
+          ctx.arc(0, 0, forwardReach + 10, swingAng - 0.5, swingAng + 0.3);
+          ctx.stroke();
+
+          ctx.strokeStyle = `rgba(241, 196, 15, ${(1 - slamPhase) * 0.6})`;
+          ctx.lineWidth = 14;
+          ctx.beginPath();
+          ctx.arc(0, 0, forwardReach + 10, swingAng - 0.7, swingAng + 0.2);
+          ctx.stroke();
+        }
+
+        // Micro-vibração de impacto
+        const microShake = (slamPhase >= 1.0 && progress < 0.58) ? (Math.random() - 0.5) * 3 : 0;
+
+        // Desenho Fiel do Martelo Sagrado Titânico
         ctx.save();
-        ctx.translate(hammerX, hammerY);
+        ctx.translate(hammerX + microShake, hammerY + microShake);
         ctx.rotate(swingAng + Math.PI / 2);
-        ctx.fillStyle = '#4a235a';
-        ctx.fillRect(-3, -4, 6, 36);
-        ctx.fillStyle = b.isEvolved ? '#e67e22' : '#f1c40f';
-        ctx.fillRect(-17, -22, 34, 18);
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(-17, -22, 34, 18);
+
+        // Cabo de carvalho com amarras cruzadas
+        ctx.fillStyle = '#3d271d';
+        ctx.fillRect(-3, -2, 6, 42);
+        ctx.strokeStyle = '#1e130c';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        for (let st = 4; st <= 36; st += 7) {
+          ctx.moveTo(-3, st); ctx.lineTo(3, st + 4);
+        }
+        ctx.stroke();
+
+        // Pomo inferior
+        ctx.fillStyle = '#57606f';
+        ctx.fillRect(-4, 40, 8, 3.5);
+
+        // Colar e cabeça de guerra
+        ctx.fillStyle = '#2f3640';
+        ctx.fillRect(-4.5, -6, 9, 8);
+
+        // Bloco principal de ferro forjado
+        ctx.fillStyle = b.isEvolved ? '#d35400' : '#57606f';
+        ctx.fillRect(-18, -25, 36, 20);
+        ctx.strokeStyle = '#2f3640';
+        ctx.lineWidth = 1.6;
+        ctx.strokeRect(-18, -25, 36, 20);
+
+        // Faixas e placas biseladas em ouro sagrado
+        ctx.fillStyle = b.isEvolved ? '#f39c12' : '#f1c40f';
+        ctx.fillRect(-19, -23, 38, 4);
+        ctx.fillRect(-19, -13, 38, 4);
+        ctx.fillRect(-4, -25, 8, 20);
+
+        // Runa central radiante
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-2, -18, 4, 6);
+
+        // Espigão superior perfurante
+        ctx.fillStyle = '#dcdde1';
+        ctx.beginPath();
+        ctx.moveTo(0, -32);
+        ctx.lineTo(5, -25);
+        ctx.lineTo(-5, -25);
+        ctx.closePath();
+        ctx.fill();
         ctx.restore();
       }
+
       ctx.restore();
       continue;
     }

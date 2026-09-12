@@ -1,269 +1,444 @@
+/**
+ * src/entities/enemies.js
+ * Fábrica de Inimigos, Mini-Chefes, Chefes e Objetos do Cenário (Fase 1).
+ */
 import { ENEMY_TYPES, BOSS_TYPES, MINI_BOSS_TYPES } from '../config/enemies.js';
+import { getSquadDefinition } from '../config/squads.js';
 import { player } from './player.js';
-import { playSfx, triggerHaptic } from '../core/audio.js';
-import { firstBossKilled } from '../systems/waves.js';
-import { initBoss } from './bosses/bossRegistry.js';
 import { 
   enemies, 
-  enemyBullets, 
-  acidPuddles, 
-  bossTelegraphs, 
-  bossProjectiles, 
-  gems, 
   props, 
+  viewW, 
+  viewH, 
   frameCount, 
-  gameState, 
-  triggerShake, 
-  createHitParticles, 
-  activeBoss,
   setActiveBoss, 
-  setCurrentArenaTheme, 
+  triggerShake,
+  setCurrentArenaTheme,
   setIsWavePaused,
-  viewW,
-  viewH
+  enemyBullets,
+  bossTelegraphs,
+  bossShockwaves,
+  voidVortices
 } from '../main.js';
+import { playSfx, triggerHaptic } from '../core/audio.js';
+import { initBoss } from './bosses/bossRegistry.js';
 
-// Constantes canônicas do motor
-export const MAX_ACTIVE_ENEMIES = 110;
+export const MAX_ENEMIES = 150;
 
-// Cálculo Dinâmico de Spawn Seguro além das bordas visíveis
-export function getSafeSpawnDistance(padding = 90) {
-  const halfW = viewW / 2;
-  const halfH = viewH / 2;
-  return Math.hypot(halfW, halfH) + padding;
+/**
+ * Retorna uma coordenada fora da tela de visão do jogador.
+ * @param {number} minDist Distância mínima adicional além da borda da tela.
+ * @param {number} maxDist Distância máxima adicional além da borda da tela.
+ * @returns {{ x: number, y: number }}
+ */
+function getOffscreenSpawnPoint(minDist = 80, maxDist = 180) {
+  const halfW = (viewW || 1200) / 2;
+  const halfH = (viewH || 800) / 2;
+  const screenRadius = Math.hypot(halfW, halfH);
+  const dist = screenRadius + minDist + Math.random() * (maxDist - minDist);
+  const ang = Math.random() * Math.PI * 2;
+  return {
+    x: player.x + Math.cos(ang) * dist,
+    y: player.y + Math.sin(ang) * dist
+  };
 }
 
-// Compressão de massa invisível: absorve atributos do spawn excedente em monstros fora da tela
-function stackOffscreenMob(typeKey, count) {
-  const t = ENEMY_TYPES[typeKey];
-  if (!t) return;
-  let bestEnemy = null;
-  let maxDistSq = 0;
-  const threshold = getSafeSpawnDistance(20);
-  const thresholdSq = threshold * threshold;
+/**
+ * Caso a população atinja o limite máximo (hard cap), funde os atributos
+ * em um monstro comum situado fora da visão do jogador.
+ * @param {string} typeKey Tipo base do inimigo.
+ * @param {number} hpToAdd Quantidade de vida a acumular.
+ * @param {number} xpToAdd Quantidade de XP a acumular.
+ * @returns {boolean} Verdadeiro se a fusão foi realizada com sucesso.
+ */
+export function stackOffscreenMob(typeKey, hpToAdd, xpToAdd) {
+  const halfW = (viewW || 1200) / 2;
+  const halfH = (viewH || 800) / 2;
+  const offscreenThresholdSq = (Math.hypot(halfW, halfH) + 160) ** 2;
 
-  for (let i = 0; i < enemies.length; i++) {
+  for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
-    if (e.isBoss || e.isMiniBoss) continue;
+    if (e.isBoss || e.isMiniBoss || e.isBossSubTarget || e.hp <= 0) continue;
+
     const dx = e.x - player.x;
     const dy = e.y - player.y;
-    const dSq = dx * dx + dy * dy;
-    if (dSq > thresholdSq && dSq > maxDistSq) {
-      maxDistSq = dSq;
-      bestEnemy = e;
+    if ((dx * dx + dy * dy) > offscreenThresholdSq) {
+      e.hp += hpToAdd;
+      e.maxHp += hpToAdd;
+      e.xp += xpToAdd;
+      e.stackCount = (e.stackCount || 1) + 1;
+      e.damage = Math.round(e.damage * 1.05);
+      return true;
     }
   }
-
-  if (bestEnemy) {
-    const seconds = Math.floor(frameCount / 60);
-    const scaling = 1 + Math.pow(seconds / 60, 1.35) * 0.45;
-    const addHp = t.hp * scaling * count * 0.85;
-    bestEnemy.hp += addHp;
-    bestEnemy.maxHp += addHp;
-    bestEnemy.xp += t.xp * count;
-    bestEnemy.damage = Math.min(bestEnemy.damage * 1.25, bestEnemy.damage + Math.round(count * 1.5));
-    bestEnemy.radius = Math.min(bestEnemy.radius * 1.15, t.radius * 1.4);
-  }
+  return false;
 }
 
-// Spawns de Criaturas Normais com Hard Cap e Distância Dinâmica Segura
-export function spawnMobCluster(typeKey, count, eliteChance = 0) {
-  if (gameState.isWavePaused) return;
+/**
+ * Cria a estrutura de dados padronizada para uma entidade inimiga comum.
+ * @param {string} typeKey Chave do tipo de inimigo em ENEMY_TYPES.
+ * @param {number} x Coordenada X.
+ * @param {number} y Coordenada Y.
+ * @param {boolean} isElite Indica se o monstro receberá modificadores de Elite.
+ * @returns {Object} Instância do inimigo.
+ */
+export function createEnemy(typeKey, x, y, isElite = false) {
+  const def = ENEMY_TYPES[typeKey] || ENEMY_TYPES.ZOMBIE;
+  const minutes = frameCount / 3600;
+  const scaleFactor = 1.0 + (minutes * 0.28);
 
-  if (enemies.length >= MAX_ACTIVE_ENEMIES) {
-    stackOffscreenMob(typeKey, count);
-    return;
+  let hp = Math.round(def.hp * scaleFactor);
+  let maxHp = hp;
+  let damage = def.damage;
+  let speed = def.speed;
+  let radius = def.radius;
+  let xp = def.xp;
+  let color = def.color;
+  let eliteMod = null;
+
+  if (isElite) {
+    hp = Math.round(hp * 2.8);
+    maxHp = hp;
+    damage = Math.round(damage * 1.35);
+    radius = Math.round(radius * 1.25);
+    xp = Math.round(xp * 3);
+    eliteMod = Math.random() < 0.5 ? 'FROST' : 'TOXIC';
+    color = eliteMod === 'FROST' ? '#74b9ff' : '#9b59b6';
   }
 
-  let toSpawn = count;
-  if (enemies.length + toSpawn > MAX_ACTIVE_ENEMIES) {
-    const overflow = (enemies.length + toSpawn) - MAX_ACTIVE_ENEMIES;
-    stackOffscreenMob(typeKey, overflow);
-    toSpawn -= overflow;
+  let attackRange = 24;
+  let attackWindupFrames = 20;
+  let attackStrikeFrames = 4;
+  let attackRecoveryFrames = 38;
+  let attackCooldownMax = 30;
+
+  if (typeKey === 'BAT') {
+    attackRange = 20;
+    attackWindupFrames = 16;
+    attackStrikeFrames = 4;
+    attackRecoveryFrames = 30;
+    attackCooldownMax = 20;
+  } else if (typeKey === 'GOLEM') {
+    attackRange = 34;
+    attackWindupFrames = 28;
+    attackStrikeFrames = 6;
+    attackRecoveryFrames = 48;
+    attackCooldownMax = 36;
+  } else if (typeKey === 'STALKER') {
+    attackRange = 24;
+    attackWindupFrames = 18;
+    attackStrikeFrames = 4;
+    attackRecoveryFrames = 32;
+    attackCooldownMax = 25;
+  } else {
+    attackRange = Math.max(22, Math.round(radius * 1.5));
   }
-  if (toSpawn <= 0) return;
 
-  const angle = Math.random() * Math.PI * 2;
-  const spawnDistance = getSafeSpawnDistance(90) + Math.random() * 50;
-  const cx = player.x + Math.cos(angle) * spawnDistance;
-  const cy = player.y + Math.sin(angle) * spawnDistance;
-  const t = ENEMY_TYPES[typeKey];
-  const seconds = Math.floor(frameCount / 60);
-  const scaling = 1 + Math.pow(seconds / 60, 1.35) * 0.45;
-  const boss1Mult = firstBossKilled ? 1.25 : 1.0;
-
-  for (let i = 0; i < toSpawn; i++) {
-    const isElite = Math.random() < eliteChance;
-    const eliteMods = ['FROST', 'HASTE', 'TOXIC'];
-    const mod = isElite ? eliteMods[Math.floor(Math.random() * eliteMods.length)] : null;
-    const hpMult = isElite ? 2.6 : 1.0;
-    const radMult = isElite ? 1.35 : 1.0;
-
-    const offsetX = (Math.random() - 0.5) * 80;
-    const offsetY = (Math.random() - 0.5) * 80;
-
-    enemies.push({
-      x: cx + offsetX,
-      y: cy + offsetY,
-      baseType: typeKey,
-      radius: t.radius * radMult,
-      speed: t.speed * (mod === 'HASTE' ? 1.5 : (0.92 + Math.random() * 0.16)),
-      hp: t.hp * scaling * hpMult,
-      maxHp: t.hp * scaling * hpMult,
-      color: t.color,
-      damage: Math.round(t.damage * (isElite ? 1.4 : 1) * boss1Mult),
-      behavior: t.behavior,
-      xp: t.xp * (isElite ? 4 : 1),
-      isElite: isElite,
-      eliteMod: mod,
-      dashState: 'chase',
-      dashTimer: 0,
-      dashAngle: 0,
-      summonTimer: 0,
-      shootTimer: Math.random() * 60,
-      stunTimer: 0,
-      facing: 1,
-      hitFlash: 0,
-      orbitalHitCd: 0
-    });
-  }
-}
-
-// Fábrica de Mini Bosses com Raio Dinâmico Fora da Tela
-export function spawnMiniBoss(typeKey) {
-  if (activeBoss || gameState.isWavePaused) return null;
-
-  const t = MINI_BOSS_TYPES[typeKey];
-  if (!t) return null;
-
-  const angle = Math.random() * Math.PI * 2;
-  const spawnDistance = getSafeSpawnDistance(90) + 40;
-  const seconds = Math.floor(frameCount / 60);
-  const scaling = 1 + Math.pow(seconds / 60, 1.35) * 0.38;
-  const scaledHp = Math.round(t.hp * scaling);
-  const boss1Mult = firstBossKilled ? 1.25 : 1.0;
-
-  const miniBoss = {
-    x: player.x + Math.cos(angle) * spawnDistance,
-    y: player.y + Math.sin(angle) * spawnDistance,
-    name: t.name,
+  return {
+    x,
+    y,
     baseType: typeKey,
-    radius: t.radius,
-    speed: t.speed,
-    hp: scaledHp,
-    maxHp: scaledHp,
-    color: t.color,
-    damage: Math.round(t.damage * boss1Mult),
-    behavior: t.behavior,
-    xp: t.xp,
-    goldReward: t.gold,
-    isMiniBoss: true,
-    isBoss: false,
-    facing: 1,
+    radius,
+    speed,
+    baseSpeed: speed,
+    hp,
+    maxHp,
+    color,
+    damage,
+    behavior: def.behavior,
+    xp,
+    facing: (player.x >= x ? 1 : -1),
     hitFlash: 0,
     orbitalHitCd: 0,
     slowTimer: 0,
     slowFactor: 0,
     stunTimer: 0,
-    stateTimer: 0,
-    telegraphTimer: 0,
-    telegraphMax: 0,
+    isElite: !!isElite,
+    eliteMod,
+    // Máquina de Estados Melee (src/systems/combat.js)
+    combatState: 'CHASE',
+    attackTimer: 0,
+    attackRange,
+    attackWindupFrames,
+    attackStrikeFrames,
+    attackRecoveryFrames,
+    attackCooldown: 0,
+    attackCooldownMax,
+    attackAngle: 0,
+    hasHitInStrike: false,
+    // Máquina de Pavio para Kamikazes (src/main.js)
+    fuseState: 'CHASE',
+    fuseTimer: 0,
+    fuseTelegraph: null,
+    explodedNaturally: false,
+    // Timers de comportamentos táticos específicos
+    shootTimer: Math.floor(Math.random() * 60),
     dashTimer: 0,
     dashState: 'chase',
     dashAngle: 0,
-    shootTimer: 0,
+    summonTimer: 0,
+    auraTimer: 0,
+    throwTimer: 0,
+    hiveTimer: 0,
+    blinkTimer: 0,
+    vortexTimer: 0,
+    cycleTimer: 0,
+    cycleState: 0,
     slamTimer: 0,
     mortarTimer: 0,
-    ritualTimer: 0,
-    shieldAngle: 0
+    ritualTimer: 0
+  };
+}
+
+/**
+ * Gera um grupo concentrado de monstros da mesma espécie.
+ * @param {string} typeKey Chave do tipo em ENEMY_TYPES.
+ * @param {number} count Quantidade de monstros a gerar.
+ * @param {number} eliteChance Probabilidade de spawn de elite [0, 1].
+ */
+export function spawnMobCluster(typeKey, count, eliteChance = 0) {
+  const def = ENEMY_TYPES[typeKey] || ENEMY_TYPES.ZOMBIE;
+  const minutes = frameCount / 3600;
+  const scaleFactor = 1.0 + (minutes * 0.28);
+  const scaledHp = Math.round(def.hp * scaleFactor);
+  const pt = getOffscreenSpawnPoint(60, 140);
+
+  for (let i = 0; i < count; i++) {
+    if (enemies.length >= MAX_ENEMIES) {
+      stackOffscreenMob(typeKey, scaledHp, def.xp);
+      continue;
+    }
+
+    const isElite = Math.random() < eliteChance;
+    const spreadR = Math.random() * 45;
+    const spreadA = Math.random() * Math.PI * 2;
+    const mx = pt.x + Math.cos(spreadA) * spreadR;
+    const my = pt.y + Math.sin(spreadA) * spreadR;
+
+    enemies.push(createEnemy(typeKey, mx, my, isElite));
+  }
+}
+
+/**
+ * Gera um esquadrão tático com formação orientada ao jogador conforme src/config/squads.js.
+ * @param {string} squadKey Chave da formação em SQUAD_TYPES.
+ * @param {number} eliteChance Probabilidade de spawn de elite [0, 1].
+ */
+export function spawnSquad(squadKey, eliteChance = 0) {
+  const squadDef = getSquadDefinition(squadKey);
+  if (!squadDef) {
+    spawnMobCluster('ZOMBIE', 6, eliteChance);
+    return;
+  }
+
+  const center = getOffscreenSpawnPoint(70, 160);
+  const angleToPlayer = Math.atan2(player.y - center.y, player.x - center.x);
+  const cosA = Math.cos(angleToPlayer);
+  const sinA = Math.sin(angleToPlayer);
+
+  for (let i = 0; i < squadDef.members.length; i++) {
+    const member = squadDef.members[i];
+    const def = ENEMY_TYPES[member.type] || ENEMY_TYPES.ZOMBIE;
+    const minutes = frameCount / 3600;
+    const scaleFactor = 1.0 + (minutes * 0.28);
+    const scaledHp = Math.round(def.hp * scaleFactor);
+
+    if (enemies.length >= MAX_ENEMIES) {
+      stackOffscreenMob(member.type, scaledHp, def.xp);
+      continue;
+    }
+
+    const fwd = member.offsetForward || 0;
+    const lat = member.offsetLateral || 0;
+    const mx = center.x + cosA * fwd - sinA * lat;
+    const my = center.y + sinA * fwd + cosA * lat;
+
+    const canBeElite = member.type !== 'BAT' && member.type !== 'EXPLODER';
+    const isElite = canBeElite && (Math.random() < eliteChance);
+
+    enemies.push(createEnemy(member.type, mx, my, isElite));
+  }
+}
+
+/**
+ * Instancia um mini-chefe programado da onda.
+ * @param {string} miniBossType Chave do mini-chefe em MINI_BOSS_TYPES.
+ * @returns {Object|null}
+ */
+export function spawnMiniBoss(miniBossType) {
+  const def = MINI_BOSS_TYPES[miniBossType];
+  if (!def) return null;
+
+  const minutes = frameCount / 3600;
+  const scaleFactor = 1.0 + (minutes * 0.28);
+  const hp = Math.round(def.hp * scaleFactor);
+  const pt = getOffscreenSpawnPoint(100, 200);
+
+  const miniBoss = {
+    x: pt.x,
+    y: pt.y,
+    name: def.name,
+    baseType: miniBossType,
+    radius: def.radius,
+    speed: def.speed,
+    baseSpeed: def.speed,
+    hp: hp,
+    maxHp: hp,
+    color: def.color,
+    damage: def.damage,
+    behavior: def.behavior,
+    xp: def.xp,
+    goldReward: def.gold,
+    isMiniBoss: true,
+    isBoss: false,
+    facing: player.x >= pt.x ? 1 : -1,
+    hitFlash: 0,
+    orbitalHitCd: 0,
+    slowTimer: 0,
+    slowFactor: 0,
+    stunTimer: 0,
+    combatState: 'CHASE',
+    attackTimer: 0,
+    attackRange: Math.max(26, Math.round(def.radius * 1.3)),
+    attackWindupFrames: 22,
+    attackStrikeFrames: 5,
+    attackRecoveryFrames: 42,
+    attackCooldown: 0,
+    attackCooldownMax: 30,
+    attackAngle: 0,
+    hasHitInStrike: false,
+    fuseState: 'CHASE',
+    fuseTimer: 0,
+    fuseTelegraph: null,
+    explodedNaturally: false,
+    shootTimer: 0,
+    dashTimer: 0,
+    dashState: 'chase',
+    dashAngle: 0,
+    auraTimer: 0,
+    throwTimer: 0,
+    hiveTimer: 0,
+    blinkTimer: 0,
+    vortexTimer: 0,
+    cycleTimer: 0,
+    cycleState: 0,
+    hasSlammed: false,
+    chargeAngle: null,
+    slamTimer: 0,
+    mortarTimer: 0,
+    ritualTimer: 0
   };
 
-  enemies.push(miniBoss);
-  triggerShake(7);
   playSfx('boss');
+  triggerShake(8);
   triggerHaptic('medium');
 
+  enemies.push(miniBoss);
   return miniBoss;
 }
 
-// Invocação de Chefe, Expurgo de Mobs e Troca de Arena
-export function triggerBossEncounter(bossIndex) {
-  if (activeBoss) return;
-  setIsWavePaused(true);
+/**
+ * Dispara o encontro contra um chefe de fase.
+ * @param {number} bossId Identificador do chefe (1 a 4).
+ * @returns {Object|null}
+ */
+const BOSS_ARENA_THEMES = {
+  1: 'VAMPIRE',
+  2: 'MONOLITH',
+  3: 'REAPER',
+  4: 'ABYSS'
+};
 
-  let totalPurgedXp = 0;
-  for (let i = 0; i < enemies.length; i++) {
-    totalPurgedXp += enemies[i].xp;
-    createHitParticles(enemies[i].x, enemies[i].y, '#ffffff', 2);
-  }
+export function triggerBossEncounter(bossId) {
+  const bossDef = BOSS_TYPES[bossId];
+  if (!bossDef) return null;
+
+  // 1. Limpa todos os monstros comuns, projéteis e perigos residuais da arena
   enemies.length = 0;
   enemyBullets.length = 0;
-  acidPuddles.length = 0;
   bossTelegraphs.length = 0;
-  bossProjectiles.length = 0;
+  bossShockwaves.length = 0;
+  voidVortices.length = 0;
 
-  if (totalPurgedXp > 0) {
-    gems.push({ x: player.x + 40, y: player.y, radius: 8, value: totalPurgedXp, isSuper: true });
-  }
+  // 2. Bloqueia o spawn de qualquer criatura comum
+  setIsWavePaused(true);
 
-  triggerShake(24);
-  playSfx('evolution');
-  triggerHaptic('heavy');
-
-  const themes = ['VAMPIRE', 'MONOLITH', 'REAPER', 'ABYSS'];
-  setCurrentArenaTheme(themes[bossIndex - 1]);
+  // 3. Transiciona o tema da arena para o cenário temático do Boss
+  setCurrentArenaTheme(BOSS_ARENA_THEMES[bossId] || 'ABYSS');
 
   const angle = Math.random() * Math.PI * 2;
-  const spawnDistance = 300;
-  const bData = BOSS_TYPES[bossIndex];
+  const bx = player.x + Math.cos(angle) * 380;
+  const by = player.y + Math.sin(angle) * 380;
 
-  const newBoss = {
-    x: player.x + Math.cos(angle) * spawnDistance,
-    y: player.y + Math.sin(angle) * spawnDistance,
-    name: bData.name,
-    bossId: bData.bossId,
-    radius: bData.radius,
-    speed: bData.speed,
-    hp: bData.hp,
-    maxHp: bData.hp,
-    color: bData.color,
-    damage: bData.damage,
-    xp: bData.xp,
+  const boss = {
+    x: bx,
+    y: by,
+    bossId: bossDef.bossId,
+    name: bossDef.name,
+    hp: bossDef.hp,
+    maxHp: bossDef.hp,
+    radius: bossDef.radius,
+    speed: bossDef.speed,
+    baseSpeed: bossDef.speed,
+    color: bossDef.color,
+    damage: bossDef.damage,
+    xp: bossDef.xp,
     isBoss: true,
+    isMiniBoss: false,
+    isFinalBoss: !!bossDef.isFinalBoss,
     isEnraged: false,
-    isFinalBoss: !!bData.isFinalBoss,
-    facing: 1,
+    facing: player.x >= bx ? 1 : -1,
     hitFlash: 0,
     orbitalHitCd: 0,
-    stateTimer: 0,
-    teleportTimer: 0,
+    slowTimer: 0,
     stunTimer: 0,
-    phase: 1,
-    beamAngle: 0
+    windupTimer: 0,
+    windupAction: null,
+    combatState: 'CHASE'
   };
 
-  // Inicializa propriedades e estados específicos no módulo dedicado do chefe
-  initBoss(newBoss);
+  initBoss(boss);
+  setActiveBoss(boss);
+  enemies.push(boss);
 
-  setActiveBoss(newBoss);
-  enemies.push(newBoss);
-  
   const bossHud = document.getElementById('boss-hud');
-  document.getElementById('boss-name').innerText = bData.name;
-  bossHud.style.display = 'block';
+  if (bossHud) bossHud.style.display = 'flex';
+
+  const bossName = document.getElementById('boss-name');
+  if (bossName) bossName.innerText = bossDef.name;
+
+  const bossHpFill = document.getElementById('boss-hp-fill');
+  if (bossHpFill) {
+    bossHpFill.style.width = '100%';
+    bossHpFill.style.background = '';
+    bossHpFill.style.boxShadow = '';
+  }
+
+  const bossHpVal = document.getElementById('boss-hp-val');
+  if (bossHpVal) bossHpVal.innerText = '100%';
+
+  playSfx('boss');
+  triggerShake(16);
+  triggerHaptic('heavy');
+
+  return boss;
 }
 
+/**
+ * Spawna objetos quebráveis pelo cenário (barris, caixas).
+ */
 export function spawnProp() {
-  if (props.length >= 10 || gameState.isWavePaused) return;
-  const angle = Math.random() * Math.PI * 2;
-  const dist = getSafeSpawnDistance(60) + Math.random() * 200;
+  if (props.length >= 14) return;
+  const ang = Math.random() * Math.PI * 2;
+  const dist = 180 + Math.random() * 320;
+
   props.push({
-    x: player.x + Math.cos(angle) * dist,
-    y: player.y + Math.sin(angle) * dist,
-    hp: 35,
-    maxHp: 35,
+    x: player.x + Math.cos(ang) * dist,
+    y: player.y + Math.sin(ang) * dist,
     radius: 14,
-    type: Math.random() < 0.5 ? 'BRAZIER' : 'CRATE',
-    hitFlash: 0
+    hp: 18,
+    maxHp: 18,
+    hitFlash: 0,
+    color: '#95a5a6'
   });
 }

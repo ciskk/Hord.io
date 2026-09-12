@@ -14,6 +14,7 @@ import {
   buyMetaUpgrade, 
   resetMetaTree 
 } from '../entities/player.js';
+import { bullets, enemyBullets } from '../systems/projectiles.js';
 import { 
   gameState, 
   triggerShake, 
@@ -26,8 +27,6 @@ import {
   setActiveBoss,
   bossShockwaves,
   voidVortices,
-  bullets,
-  enemyBullets,
   bossTelegraphs,
   bossProjectiles
 } from '../main.js';
@@ -410,6 +409,8 @@ export function initUI() {
     }
   };
 
+  window.addEventListener('player:levelup', levelUp);
+
   bindClick('pause-btn', togglePause);
   bindClick('resume-btn', togglePause);
   bindClick('abandon-btn', openCharacterSelect);
@@ -437,76 +438,81 @@ export function initUI() {
   }
 
   // Configuração dos Marcadores Visuais de Fase e Subtítulo Dinâmico no Boss HUD
-  const bossHudEl = document.getElementById('boss-hud');
-  const bossHpFillEl = document.getElementById('boss-hp-fill');
+  try {
+    const bossHudEl = document.getElementById('boss-hud');
+    const bossHpFillEl = document.getElementById('boss-hp-fill');
 
-  if (bossHudEl && bossHpFillEl && bossHpFillEl.parentElement) {
-    const barContainer = bossHpFillEl.parentElement;
-    barContainer.style.position = 'relative';
+    if (bossHudEl && bossHpFillEl && bossHpFillEl.parentElement) {
+      const barContainer = bossHpFillEl.parentElement;
+      barContainer.style.position = 'relative';
 
-    // Marcador de 70% (Fase 2)
-    let marker70 = document.getElementById('boss-marker-70');
-    if (!marker70) {
-      marker70 = document.createElement('div');
-      marker70.id = 'boss-marker-70';
-      marker70.style.cssText = 'position:absolute; left:70%; top:0; bottom:0; width:2px; background:#e84393; box-shadow:0 0 6px #e84393; z-index:4; pointer-events:none; display:none;';
-      barContainer.appendChild(marker70);
-    }
-
-    // Marcador de 30% (Fase 3)
-    let marker30 = document.getElementById('boss-marker-30');
-    if (!marker30) {
-      marker30 = document.createElement('div');
-      marker30.id = 'boss-marker-30';
-      marker30.style.cssText = 'position:absolute; left:30%; top:0; bottom:0; width:2px; background:#00cec9; box-shadow:0 0 6px #00cec9; z-index:4; pointer-events:none; display:none;';
-      barContainer.appendChild(marker30);
-    }
-
-    // Subtítulo da Fase Ativa
-    let phaseBadge = document.getElementById('boss-phase-badge');
-    if (!phaseBadge) {
-      phaseBadge = document.createElement('div');
-      phaseBadge.id = 'boss-phase-badge';
-      phaseBadge.style.cssText = 'font-size:10px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; text-align:center; margin-top:3px; display:none;';
-      bossHudEl.appendChild(phaseBadge);
-    }
-
-    // Sincronização via MutationObserver disparada a cada atualização de estilo da barra
-    const hudObserver = new MutationObserver(() => {
-      if (activeBoss && activeBoss.bossId === 4) {
-        marker70.style.display = 'block';
-        marker30.style.display = 'block';
-        phaseBadge.style.display = 'block';
-
-        if (activeBoss.isStaggered) {
-          phaseBadge.innerText = 'COLAPSO DE ESTABILIDADE (VULNERÁVEL)';
-          phaseBadge.style.color = '#f1c40f';
-          bossHpFillEl.style.background = 'linear-gradient(90deg, #f39c12, #f1c40f)';
-          bossHpFillEl.style.boxShadow = '0 0 14px rgba(241, 196, 15, 0.85)';
-        } else if (activeBoss.phase === 3) {
-          phaseBadge.innerText = 'FASE 3: SINGULARIDADE PRIMORDIAL';
-          phaseBadge.style.color = '#00cec9';
-          bossHpFillEl.style.background = 'linear-gradient(90deg, #0984e3, #00cec9)';
-          bossHpFillEl.style.boxShadow = '0 0 14px rgba(0, 206, 201, 0.85)';
-        } else if (activeBoss.phase === 2) {
-          phaseBadge.innerText = 'FASE 2: FRATURA DO HORIZONTE';
-          phaseBadge.style.color = '#e84393';
-          bossHpFillEl.style.background = 'linear-gradient(90deg, #c0392b, #e84393)';
-          bossHpFillEl.style.boxShadow = '0 0 14px rgba(232, 67, 147, 0.85)';
-        } else {
-          phaseBadge.innerText = 'FASE 1: TRONO DO VÁZIO';
-          phaseBadge.style.color = '#a29bfe';
-          bossHpFillEl.style.background = 'linear-gradient(90deg, #341f97, #8e44ad)';
-          bossHpFillEl.style.boxShadow = '0 0 14px rgba(142, 68, 173, 0.85)';
-        }
-      } else {
-        marker70.style.display = 'none';
-        marker30.style.display = 'none';
-        phaseBadge.style.display = 'none';
+      // Marcador de 70% (Fase 2)
+      let marker70 = document.getElementById('boss-marker-70');
+      if (!marker70) {
+        marker70 = document.createElement('div');
+        marker70.id = 'boss-marker-70';
+        marker70.style.cssText = 'position:absolute; left:70%; top:0; bottom:0; width:2px; background:#e84393; box-shadow:0 0 6px #e84393; z-index:4; pointer-events:none; display:none;';
+        barContainer.appendChild(marker70);
       }
-    });
 
-    hudObserver.observe(bossHpFillEl, { attributes: true, attributeFilter: ['style'] });
+      // Marcador de 30% (Fase 3)
+      let marker30 = document.getElementById('boss-marker-30');
+      if (!marker30) {
+        marker30 = document.createElement('div');
+        marker30.id = 'boss-marker-30';
+        marker30.style.cssText = 'position:absolute; left:30%; top:0; bottom:0; width:2px; background:#00cec9; box-shadow:0 0 6px #00cec9; z-index:4; pointer-events:none; display:none;';
+        barContainer.appendChild(marker30);
+      }
+
+      // Subtítulo da Fase Ativa
+      let phaseBadge = document.getElementById('boss-phase-badge');
+      if (!phaseBadge) {
+        phaseBadge = document.createElement('div');
+        phaseBadge.id = 'boss-phase-badge';
+        phaseBadge.style.cssText = 'font-size:10px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; text-align:center; margin-top:3px; display:none;';
+        bossHudEl.appendChild(phaseBadge);
+      }
+
+      // Sincronização via MutationObserver disparada a cada atualização de estilo da barra
+      const hudObserver = new MutationObserver(() => {
+        if (!marker70 || !marker30 || !phaseBadge) return;
+        if (activeBoss && activeBoss.bossId === 4) {
+          marker70.style.display = 'block';
+          marker30.style.display = 'block';
+          phaseBadge.style.display = 'block';
+
+          if (activeBoss.isStaggered) {
+            phaseBadge.innerText = 'COLAPSO DE ESTABILIDADE (VULNERÁVEL)';
+            phaseBadge.style.color = '#f1c40f';
+            bossHpFillEl.style.background = 'linear-gradient(90deg, #f39c12, #f1c40f)';
+            bossHpFillEl.style.boxShadow = '0 0 14px rgba(241, 196, 15, 0.85)';
+          } else if (activeBoss.phase === 3) {
+            phaseBadge.innerText = 'FASE 3: SINGULARIDADE PRIMORDIAL';
+            phaseBadge.style.color = '#00cec9';
+            bossHpFillEl.style.background = 'linear-gradient(90deg, #0984e3, #00cec9)';
+            bossHpFillEl.style.boxShadow = '0 0 14px rgba(0, 206, 201, 0.85)';
+          } else if (activeBoss.phase === 2) {
+            phaseBadge.innerText = 'FASE 2: FRATURA DO HORIZONTE';
+            phaseBadge.style.color = '#e84393';
+            bossHpFillEl.style.background = 'linear-gradient(90deg, #c0392b, #e84393)';
+            bossHpFillEl.style.boxShadow = '0 0 14px rgba(232, 67, 147, 0.85)';
+          } else {
+            phaseBadge.innerText = 'FASE 1: TRONO DO VÁZIO';
+            phaseBadge.style.color = '#a29bfe';
+            bossHpFillEl.style.background = 'linear-gradient(90deg, #341f97, #8e44ad)';
+            bossHpFillEl.style.boxShadow = '0 0 14px rgba(142, 68, 173, 0.85)';
+          }
+        } else {
+          marker70.style.display = 'none';
+          marker30.style.display = 'none';
+          phaseBadge.style.display = 'none';
+        }
+      });
+
+      hudObserver.observe(bossHpFillEl, { attributes: true, attributeFilter: ['style'] });
+    }
+  } catch (err) {
+    console.warn('Aviso: Não foi possível inicializar os marcadores do Boss HUD:', err);
   }
 
   document.addEventListener('visibilitychange', () => {
