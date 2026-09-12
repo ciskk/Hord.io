@@ -203,8 +203,10 @@ function renderStage() {
   const rect = previewCanvas.getBoundingClientRect();
   const width = rect.width || 280;
   const height = rect.height || 320;
+  const isCompact = height < 260 || width < 260;
   const centerX = width / 2;
-  const centerY = height * 0.58;
+  const centerY = isCompact ? height * 0.62 : height * 0.58;
+  const pedestalOffsetY = isCompact ? 28 : 36;
 
   const colors = THEME_COLORS[currentHeroKey] || THEME_COLORS.KNIGHT;
 
@@ -220,16 +222,16 @@ function renderStage() {
   c.fillRect(0, 0, width, height);
 
   // 2. Pedestal de Pedra e Círculos Rúnicos Místicos
-  drawSummoningPedestal(c, centerX, centerY + 36, colors);
+  drawSummoningPedestal(c, centerX, centerY + pedestalOffsetY, colors, isCompact);
 
   // 3. Ondas de Choque Arcanas (Surges)
-  drawShockwaves(c, centerX, centerY + 36, colors);
+  drawShockwaves(c, centerX, centerY + pedestalOffsetY, colors);
 
   // 4. Partículas Elementais Flutuantes
-  drawAtmosphericParticles(c, centerX, centerY + 20, colors);
+  drawAtmosphericParticles(c, centerX, centerY + (isCompact ? 14 : 20), colors);
 
-  // 5. Renderização do Modelo do Herói em 3.0x
-  drawHeroInstance(c, centerX, centerY, colors);
+  // 5. Renderização do Modelo do Herói em 3.0x (ou 2.45x em compact/mobile)
+  drawHeroInstance(c, centerX, centerY, colors, isCompact);
 
   // Efeito de Vinheta Suave nas Bordas
   const vignette = c.createRadialGradient(centerX, height / 2, width * 0.45, centerX, height / 2, width * 0.75);
@@ -242,11 +244,13 @@ function renderStage() {
 /**
  * Desenha a base de pedra e os anéis rúnicos rotativos em direções opostas.
  */
-function drawSummoningPedestal(c, x, y, colors) {
+function drawSummoningPedestal(c, x, y, colors, isCompact = false) {
   const time = previewTime * 0.02;
+  const scale = isCompact ? 0.82 : 1.0;
 
   c.save();
   c.translate(x, y);
+  c.scale(scale, scale);
 
   // Sombra profunda projetada pela base de pedra
   c.fillStyle = 'rgba(0, 0, 0, 0.65)';
@@ -426,7 +430,7 @@ function drawAtmosphericParticles(c, x, y, colors) {
 /**
  * Renderiza o campeão central ampliado com todas as camadas e estados de postura.
  */
-function drawHeroInstance(c, x, y, colors) {
+function drawHeroInstance(c, x, y, colors, isCompact = false) {
   const isSkill = currentPose === 'skill';
   const isCombat = currentPose === 'combat';
 
@@ -438,8 +442,8 @@ function drawHeroInstance(c, x, y, colors) {
   const plumeSway = Math.sin(t * 0.07) * 2.8;
   const hairSway = Math.sin(t * 0.07) * 3.0;
 
-  // Escala ampliada padrão para o vitral da skin
-  const heroScale = 3.1;
+  // Escala ampliada (adaptável para telas menores)
+  const heroScale = isCompact ? 2.45 : 3.1;
 
   // Pulso de energia da aura
   if (isSkill || surgeTimer > 0) {

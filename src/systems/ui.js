@@ -711,6 +711,13 @@ const CHARACTER_PROFILES = {
 };
 
 let activeShowcaseHeroKey = 'KNIGHT';
+let activeMobileTab = 'skills'; // 'skills' | 'stats'
+
+export function isMobileScreen() {
+  return window.innerWidth <= 768 || 
+         ('ontouchstart' in window && window.innerWidth <= 900) || 
+         /Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
+}
 
 export function openCharacterSelect() {
   resetDeathAudioFilter();
@@ -737,6 +744,10 @@ export function openCharacterSelect() {
   const showcaseContainer = document.getElementById('char-showcase');
   if (!charModal || !pedestalsContainer || !showcaseContainer) return;
 
+  // Detecção e aplicação de classe mobile para layout responsivo exclusivo
+  const isMobile = isMobileScreen();
+  charModal.classList.toggle('is-mobile-device', isMobile);
+
   // Atualizar contador de Almas no cabeçalho
   const soulsVal = document.getElementById('char-souls-val');
   if (soulsVal) {
@@ -752,6 +763,22 @@ export function openCharacterSelect() {
     segs += '</div>';
     return segs;
   };
+
+  const heroKeys = Object.keys(CHARACTERS);
+
+  function selectAdjacentHero(step) {
+    const curIdx = heroKeys.indexOf(activeShowcaseHeroKey);
+    const nextIdx = (curIdx + step + heroKeys.length) % heroKeys.length;
+    try { playSfx('card_hover'); } catch(e) {}
+    triggerHaptic('light');
+    renderShowcase(heroKeys[nextIdx]);
+
+    // Rola suavemente o botão de pedestal ativo para o centro no carrossel mobile
+    const activeBtn = pedestalsContainer.querySelector(`[data-hero="${heroKeys[nextIdx]}"]`);
+    if (activeBtn && activeBtn.scrollIntoView) {
+      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }
 
   function renderShowcase(heroKey) {
     activeShowcaseHeroKey = heroKey;
@@ -794,53 +821,79 @@ export function openCharacterSelect() {
         <div class="showcase-role-tag">Função: <b>${char.role || 'Guerreiro'}</b></div>
       </div>
 
-      <div class="showcase-lore-quote">
-        “${char.lore || ''}”
+      <!-- Abas Rápidas de Alternância no Mobile (Ocultas no Desktop via CSS) -->
+      <div class="mobile-tab-nav" id="mobile-char-tabs">
+        <button class="mobile-tab-btn ${activeMobileTab === 'skills' ? 'active' : ''}" data-tab="skills">
+          ⚔ Habilidades
+        </button>
+        <button class="mobile-tab-btn ${activeMobileTab === 'stats' ? 'active' : ''}" data-tab="stats">
+          📊 Atributos & Lore
+        </button>
       </div>
 
-      <div class="showcase-cards-container">
-        <!-- Card: Bênção Passiva -->
-        <div class="tactical-card passive-card">
-          <div class="card-top-tag">
-            <span class="card-type-icon">🛡</span>
-            <span>BÊNÇÃO PASSIVA</span>
+      <div class="showcase-tab-content-wrapper">
+        <!-- Conteúdo 1: Cards Táticos (Habilidades & Armas) -->
+        <div class="showcase-cards-container ${activeMobileTab === 'skills' ? 'mobile-active' : ''}">
+          <!-- Card: Bênção Passiva -->
+          <div class="tactical-card passive-card">
+            <div class="card-top-tag">
+              <span class="card-type-icon">🛡</span>
+              <span>BÊNÇÃO PASSIVA</span>
+            </div>
+            <div class="card-title-text" style="color: ${profile.themeColor};">${char.passive?.name || 'Aura Sagrada'}</div>
+            <div class="card-desc-text">${char.passive?.desc || ''}</div>
           </div>
-          <div class="card-title-text" style="color: ${profile.themeColor};">${char.passive?.name || 'Aura Sagrada'}</div>
-          <div class="card-desc-text">${char.passive?.desc || ''}</div>
+
+          <!-- Card: Arma Inicial -->
+          <div class="tactical-card weapon-card">
+            <div class="card-top-tag">
+              <span class="card-type-icon">⚔</span>
+              <span>ARMA INICIAL · ${char.weapon?.type || profile.weaponName}</span>
+            </div>
+            <div class="card-title-text" style="color: ${profile.themeColor};">${char.weapon?.name || profile.weaponName}</div>
+            <div class="card-desc-text">${char.weapon?.desc || ''}</div>
+          </div>
+
+          <!-- Card: Poder Ancestral -->
+          <div class="tactical-card skill-card">
+            <div class="card-top-tag">
+              <span class="card-type-icon">⚡</span>
+              <span>PODER ANCESTRAL · Recarga: ${char.skill?.cooldown || '7s'}</span>
+            </div>
+            <div class="card-title-text" style="color: ${profile.themeColor};">${char.skill?.name || 'Habilidade'}</div>
+            <div class="card-desc-text">${char.skill?.desc || ''}</div>
+          </div>
         </div>
 
-        <!-- Card: Arma Inicial -->
-        <div class="tactical-card weapon-card">
-          <div class="card-top-tag">
-            <span class="card-type-icon">⚔</span>
-            <span>ARMA INICIAL · ${char.weapon?.type || profile.weaponName}</span>
+        <!-- Conteúdo 2: Biometria & Citação de Lore -->
+        <div class="showcase-radar-container ${activeMobileTab === 'stats' ? 'mobile-active' : ''}">
+          <div class="showcase-lore-quote">
+            “${char.lore || ''}”
           </div>
-          <div class="card-title-text" style="color: ${profile.themeColor};">${char.weapon?.name || profile.weaponName}</div>
-          <div class="card-desc-text">${char.weapon?.desc || ''}</div>
-        </div>
 
-        <!-- Card: Poder Ancestral -->
-        <div class="tactical-card skill-card">
-          <div class="card-top-tag">
-            <span class="card-type-icon">⚡</span>
-            <span>PODER ANCESTRAL · Recarga: ${char.skill?.cooldown || '7s'}</span>
+          <div class="showcase-radar-bars">
+            <div class="attr-row"><span>PODER DE IMPACTO</span>${renderSegments(profile.levels.dano)}</div>
+            <div class="attr-row"><span>CONTROLE DE ÁREA</span>${renderSegments(profile.levels.area)}</div>
+            <div class="attr-row"><span>AGILIDADE & ESQUIVA</span>${renderSegments(profile.levels.vel)}</div>
+            <div class="attr-row"><span>RESISTÊNCIA</span>${renderSegments(profile.levels.res)}</div>
           </div>
-          <div class="card-title-text" style="color: ${profile.themeColor};">${char.skill?.name || 'Habilidade'}</div>
-          <div class="card-desc-text">${char.skill?.desc || ''}</div>
         </div>
-      </div>
-
-      <div class="showcase-radar-bars">
-        <div class="attr-row"><span>PODER DE IMPACTO</span>${renderSegments(profile.levels.dano)}</div>
-        <div class="attr-row"><span>CONTROLE DE ÁREA</span>${renderSegments(profile.levels.area)}</div>
-        <div class="attr-row"><span>AGILIDADE & ESQUIVA</span>${renderSegments(profile.levels.vel)}</div>
-        <div class="attr-row"><span>RESISTÊNCIA</span>${renderSegments(profile.levels.res)}</div>
       </div>
 
       <button class="card-btn btn-summon-hero" id="confirm-hero-btn">
         ⚡ DESPERTAR NA ARENA ⚡
       </button>
     `;
+
+    // Alternância de Abas Mobile
+    const tabBtns = showcaseContainer.querySelectorAll('.mobile-tab-btn');
+    tabBtns.forEach(tBtn => {
+      tBtn.onclick = () => {
+        activeMobileTab = tBtn.getAttribute('data-tab');
+        try { playSfx('card_hover'); } catch(e) {}
+        renderShowcase(heroKey);
+      };
+    });
 
     const confirmBtn = document.getElementById('confirm-hero-btn');
     if (confirmBtn) {
@@ -861,7 +914,7 @@ export function openCharacterSelect() {
   }
 
   pedestalsContainer.innerHTML = '';
-  Object.keys(CHARACTERS).forEach(key => {
+  heroKeys.forEach(key => {
     const c = CHARACTERS[key];
     const profile = CHARACTER_PROFILES[key] || CHARACTER_PROFILES.KNIGHT;
     const diff = c.difficulty || 1;
@@ -890,6 +943,57 @@ export function openCharacterSelect() {
 
     pedestalsContainer.appendChild(btn);
   });
+
+  // Setas de Navegação Rápida do Palco (Ideal para touch)
+  const prevBtn = document.getElementById('btn-stage-prev');
+  if (prevBtn) {
+    prevBtn.onclick = (e) => {
+      e.stopPropagation();
+      selectAdjacentHero(-1);
+    };
+  }
+
+  const nextBtn = document.getElementById('btn-stage-next');
+  if (nextBtn) {
+    nextBtn.onclick = (e) => {
+      e.stopPropagation();
+      selectAdjacentHero(1);
+    };
+  }
+
+  // Gestos de Deslize Touch (Swipe) no Palco de Evocação
+  const stageViewport = document.querySelector('.char-stage-viewport');
+  if (stageViewport && !stageViewport._hasSwipeAttached) {
+    stageViewport._hasSwipeAttached = true;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+
+    stageViewport.addEventListener('touchstart', (e) => {
+      if (e.touches && e.touches[0]) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+      }
+    }, { passive: true });
+
+    stageViewport.addEventListener('touchend', (e) => {
+      if (e.changedTouches && e.changedTouches[0]) {
+        const deltaX = e.changedTouches[0].clientX - touchStartX;
+        const deltaY = e.changedTouches[0].clientY - touchStartY;
+        const deltaTime = Date.now() - touchStartTime;
+
+        // Movimento horizontal de no mínimo 38px e predominante sobre o vertical
+        if (Math.abs(deltaX) > 38 && Math.abs(deltaX) > Math.abs(deltaY) * 1.3 && deltaTime < 550) {
+          if (deltaX < 0) {
+            selectAdjacentHero(1); // Deslize para esquerda -> próximo
+          } else {
+            selectAdjacentHero(-1); // Deslize para direita -> anterior
+          }
+        }
+      }
+    }, { passive: true });
+  }
 
   // Configuração dos Controles Interativos da Prévia
   const facingBtn = document.getElementById('btn-preview-facing');
