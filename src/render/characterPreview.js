@@ -15,6 +15,8 @@ let previewCanvas = null;
 let previewCtx = null;
 let animFrameId = null;
 let isRunning = false;
+let previewResizeObserver = null;
+let windowListenersAttached = false;
 
 // Estado da Prévia do Herói
 let currentHeroKey = 'KNIGHT';
@@ -40,7 +42,37 @@ const THEME_COLORS = {
 export function initPreviewCanvas(canvasElement) {
   if (!canvasElement) return false;
   previewCanvas = canvasElement;
-  previewCtx = previewCanvas.getContext('2d');
+  previewCtx = previewCanvas.getContext('2d', { alpha: true });
+
+  // Observer inteligente para detectar qualquer alteração de tamanho CSS ou orientação
+  if (typeof ResizeObserver !== 'undefined') {
+    if (previewResizeObserver) {
+      previewResizeObserver.disconnect();
+    }
+    previewResizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect && (entry.contentRect.width > 0 || entry.contentRect.height > 0)) {
+          resizePreviewCanvas();
+        }
+      }
+    });
+    previewResizeObserver.observe(previewCanvas);
+  }
+
+  // Ouvintes de redimensionamento de janela e rotação em mobile
+  if (!windowListenersAttached && typeof window !== 'undefined') {
+    windowListenersAttached = true;
+    window.addEventListener('resize', () => {
+      if (isRunning) resizePreviewCanvas();
+    }, { passive: true });
+
+    window.addEventListener('orientationchange', () => {
+      if (isRunning) {
+        setTimeout(resizePreviewCanvas, 40);
+        setTimeout(resizePreviewCanvas, 160);
+      }
+    }, { passive: true });
+  }
 
   resizePreviewCanvas();
   initParticles();
@@ -51,12 +83,20 @@ export function resizePreviewCanvas() {
   if (!previewCanvas || !previewCtx) return;
   const rect = previewCanvas.getBoundingClientRect();
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const w = rect.width || 280;
-  const h = rect.height || 320;
+  const w = previewCanvas.clientWidth || rect.width || 0;
+  const h = previewCanvas.clientHeight || rect.height || 0;
 
-  previewCanvas.width = Math.floor(w * dpr);
-  previewCanvas.height = Math.floor(h * dpr);
-  previewCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (w > 0 && h > 0) {
+    const targetW = Math.round(w * dpr);
+    const targetH = Math.round(h * dpr);
+    if (previewCanvas.width !== targetW || previewCanvas.height !== targetH) {
+      previewCanvas.width = targetW;
+      previewCanvas.height = targetH;
+    }
+  }
+
+  previewCtx.setTransform(1, 0, 0, 1, 0, 0);
+  previewCtx.scale(dpr, dpr);
 }
 
 /**
@@ -196,17 +236,63 @@ function renderLoop() {
 }
 
 /**
+ * Sincroniza dinamicamente as dimensões do buffer com as dimensões CSS do elemento.
+ * Previne 100% qualquer distorção, esticamento ou deslocamento em mobile e desktop.
+ */
+function syncCanvasDimensions() {
+  if (!previewCanvas || !previewCtx) return { width: 280, height: 320, dpr: 1, skipFrame: true };
+
+  const rect = previewCanvas.getBoundingClientRect();
+  const clientW = previewCanvas.clientWidth || rect.width || 0;
+  const clientH = previewCanvas.clientHeight || rect.height || 0;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  // Se o elemento estiver com display:none ou dimensões 0 durante transições, não renderiza neste frame
+  if (clientW <= 0 || clientH <= 0) {
+    return {
+      width: previewCanvas.width ? (previewCanvas.width / dpr) : 280,
+      height: previewCanvas.height ? (previewCanvas.height / dpr) : 320,
+      dpr,
+      skipFrame: previewCanvas.width <= 0
+    };
+  }
+
+  const targetW = Math.round(clientW * dpr);
+  const targetH = Math.round(clientH * dpr);
+
+  // Auto-ajuste per-frame à prova de falhas: garante que o buffer interno
+  // tenha SEMPRE a mesmíssima proporção de aspecto que o CSS
+  if (previewCanvas.width !== targetW || previewCanvas.height !== targetH) {
+    previewCanvas.width = targetW;
+    previewCanvas.height = targetH;
+  }
+
+  return {
+    width: clientW,
+    height: clientH,
+    dpr,
+    skipFrame: false
+  };
+}
+
+/**
  * Desenha o palco completo: Altar de pedra, círculos rúnicos, partículas e o herói.
  */
 function renderStage() {
+  const sync = syncCanvasDimensions();
+  if (sync.skipFrame) return;
+
   const c = previewCtx;
-  const rect = previewCanvas.getBoundingClientRect();
-  const width = rect.width || 280;
-  const height = rect.height || 320;
+  const { width, height, dpr } = sync;
+
+  // Reset total da matriz de transformação e aplicação da escala DPR a cada frame
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.scale(dpr, dpr);
+
   const isCompact = height < 260 || width < 260;
   const centerX = width / 2;
-  const centerY = isCompact ? height * 0.62 : height * 0.58;
-  const pedestalOffsetY = isCompact ? 28 : 36;
+  const centerY = isCompact ? height * 0.60 : height * 0.58;
+  const pedestalOffsetY = isCompact ? 26 : 36;
 
   const colors = THEME_COLORS[currentHeroKey] || THEME_COLORS.KNIGHT;
 

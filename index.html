@@ -119,7 +119,7 @@
   </div>
 </div>
 
-<!-- Modal da Árvore de Habilidades: Astrolábio das Almas -->
+<!-- Modal da Árvore de Habilidades: Astrolábio das Almas (O Planetário Rúnico) -->
 <div id="talents-modal" class="modal-overlay">
   <div class="modal-box astrolabe-modal">
     <div class="modal-header">
@@ -127,35 +127,90 @@
         <h2 class="modal-header-title glow-gold">ASTROLÁBIO DAS ALMAS</h2>
         <div class="modal-header-sub">Consagre essências cósmicas em aprimoramentos permanentes</div>
       </div>
-      <button class="card-btn" id="close-talents-btn" style="width: auto; padding: 6px 14px; background: #27ae60; border: none; font-weight: 800;">
-        Salvar e Retornar
+      <div class="astrolabe-header-actions">
+        <button id="open-blessings-summary-btn" class="hud-btn astrolabe-header-btn" title="Ver somatório de todas as bênçãos ativas">
+          📜 Bênçãos
+        </button>
+        <button id="reset-talents-btn" class="hud-btn astrolabe-header-btn btn-reset-gold" title="Purificar árvore e reaver 100% das almas">
+          ↻ Purificar (100%)
+        </button>
+        <button class="card-btn" id="close-talents-btn" style="width: auto; padding: 6px 14px; background: #27ae60; border: none; font-weight: 800;">
+          Salvar e Retornar
+        </button>
+      </div>
+    </div>
+
+    <!-- Barra de Filtros de Constelação -->
+    <div class="astrolabe-constellation-tabs" id="astrolabe-constellation-tabs">
+      <button class="constellation-tab active" data-constellation="all">
+        <span class="tab-glow-dot">✨</span> TODAS
+      </button>
+      <button class="constellation-tab tab-guerra" data-constellation="guerra">
+        <span class="tab-glow-dot">⚔️</span> GUERRA
+      </button>
+      <button class="constellation-tab tab-egide" data-constellation="egide">
+        <span class="tab-glow-dot">🛡️</span> ÉGIDE
+      </button>
+      <button class="constellation-tab tab-destino" data-constellation="destino">
+        <span class="tab-glow-dot">🔮</span> DESTINO
       </button>
     </div>
 
-    <!-- Mapa Celestial Radial com Filamentos Vetoriais Matemáticos -->
-    <div class="astrolabe-viewport">
+    <!-- Mapa Celestial Interativo com Filamentos Vetoriais Conectivos -->
+    <div class="astrolabe-viewport" id="astrolabe-viewport">
+      <div class="astrolabe-nebula-bg"></div>
       <svg id="astrolabe-filaments-svg" class="astrolabe-filaments-layer"></svg>
 
-      <div id="astrolabe-core" class="astrolabe-core">
+      <div id="astrolabe-core" class="astrolabe-core" title="Coração Astral do Astrolábio">
         <div class="core-rings"></div>
         <div class="core-label">ALMAS</div>
-        <div class="core-val"><svg class="inline-gold-icon" viewBox="0 0 24 24"><polygon points="12,2 21,8 21,16 12,22 3,16 3,8" fill="none" stroke="#f1c40f" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#f1c40f"/></svg><span id="talents-gold-val">0</span></div>
-        <button id="reset-talents-btn" class="core-reset-btn" title="Purificar e recuperar 100% das almas">PURIFICAR</button>
+        <div class="core-val">
+          <svg class="inline-gold-icon" viewBox="0 0 24 24"><polygon points="12,2 21,8 21,16 12,22 3,16 3,8" fill="none" stroke="#f1c40f" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#f1c40f"/></svg>
+          <span id="talents-gold-val">0</span>
+        </div>
       </div>
 
       <div id="astrolabe-nodes-container" class="astrolabe-nodes-container"></div>
     </div>
 
-    <!-- Forja Mística Inferior (Painel de Inspeção do Nó Selecionado) -->
+    <!-- Forja Mística Inferior (Painel de Inspeção com Comparativo Antes vs Depois) -->
     <div id="talent-forge-drawer" class="talent-forge-drawer">
       <div class="forge-left">
+        <div class="forge-header-tags">
+          <span id="forge-constellation-badge" class="forge-constellation-badge">CONSTELAÇÃO DA GUERRA</span>
+          <span id="forge-tier-badge" class="forge-tier-badge">TIER 1</span>
+        </div>
         <div id="forge-node-name" class="forge-node-name">Selecione uma Runa</div>
-        <div id="forge-node-desc" class="forge-node-desc">Toque em qualquer constelação acima para forjar poder.</div>
+        <div id="forge-node-desc" class="forge-node-desc">Toque em qualquer constelação acima para forjar poder permanente.</div>
+        <div id="forge-node-lore" class="forge-node-lore"></div>
       </div>
+      
       <div class="forge-right">
-        <div id="forge-node-level" class="forge-node-level">-- / --</div>
-        <button id="forge-buy-btn" class="card-btn forge-buy-btn" disabled>FUNDIR ALMAS</button>
+        <!-- Comparativo de Atributo Antes vs Depois -->
+        <div class="forge-stat-comparison" id="forge-stat-comparison">
+          <div class="comparison-row">
+            <span class="comp-label">Atual:</span>
+            <span id="forge-comp-current" class="comp-val-cur">--</span>
+            <span class="comp-arrow">➔</span>
+            <span class="comp-label">Próximo:</span>
+            <span id="forge-comp-next" class="comp-val-next">--</span>
+          </div>
+          <div class="forge-level-meter" id="forge-level-meter"></div>
+        </div>
+
+        <button id="forge-buy-btn" class="card-btn forge-buy-btn" disabled>
+          ⚡ FUNDIR ALMAS
+        </button>
       </div>
+    </div>
+
+    <!-- Modal Retrátil de Resumo das Bênçãos da Conta -->
+    <div id="blessings-summary-drawer" class="blessings-summary-drawer" style="display: none;">
+      <div class="blessings-drawer-header">
+        <div class="blessings-drawer-title">📜 BÊNÇÃOS ATIVAS DA CONTA</div>
+        <button id="close-blessings-drawer-btn" class="hud-btn" style="padding: 2px 8px; font-size: 11px;">✕ Fechar</button>
+      </div>
+      <div id="blessings-summary-grid" class="blessings-summary-grid"></div>
     </div>
   </div>
 </div>

@@ -810,10 +810,12 @@ html, body {
 /* ======================================================== */
 
 .modal-box-altar {
-  max-width: min(96vw, 1080px);
-  max-height: 92vh;
+  max-width: min(96vw, 1100px);
+  min-height: min(650px, 94vh);
+  max-height: min(96vh, 760px);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .char-modal-header-actions {
@@ -852,7 +854,7 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 520px;
+  max-height: 630px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -987,16 +989,19 @@ html, body {
   justify-content: center;
   align-items: center;
   flex-grow: 1;
-  min-height: 260px;
+  min-height: 320px;
+  overflow: hidden;
 }
 
 #char-preview-canvas {
   width: 100%;
   height: 100%;
-  max-height: 340px;
+  max-height: 440px;
+  min-height: 320px;
   display: block;
   cursor: pointer;
   touch-action: none;
+  box-sizing: border-box;
 }
 
 .char-stage-hint {
@@ -1140,7 +1145,7 @@ html, body {
   flex-direction: column;
   position: relative;
   overflow-y: auto;
-  max-height: 520px;
+  max-height: 630px;
   box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.85);
 }
 
@@ -1323,6 +1328,7 @@ html, body {
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   width: 100%;
+  margin-top: auto;
 }
 
 .btn-summon-hero:hover {
@@ -1335,13 +1341,108 @@ html, body {
 /* ======================================================== */
 
 .astrolabe-modal {
-  max-width: min(94vw, 760px);
+  position: relative;
+  max-width: min(94vw, 780px);
+  overflow: hidden;
 }
 
+.astrolabe-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.astrolabe-header-btn {
+  font-size: 11px !important;
+  padding: 6px 12px !important;
+  border-radius: 6px;
+}
+
+.btn-reset-gold {
+  background: rgba(192, 57, 43, 0.25) !important;
+  border: 1px solid rgba(231, 76, 60, 0.5) !important;
+  color: #ff7675 !important;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.btn-reset-gold:hover {
+  background: rgba(192, 57, 43, 0.5) !important;
+  color: #fff !important;
+  box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+}
+
+/* Barra de Filtros de Constelação */
+.astrolabe-constellation-tabs {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 4px 0 8px 0;
+  flex-wrap: wrap;
+}
+
+.constellation-tab {
+  background: rgba(18, 24, 38, 0.75);
+  border: 1.5px solid #28344d;
+  border-radius: 20px;
+  color: #8c9bb2;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 5px 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  backdrop-filter: blur(4px);
+}
+
+.constellation-tab:hover {
+  background: rgba(28, 38, 60, 0.9);
+  border-color: #4a5c80;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.constellation-tab.active {
+  color: #ffffff;
+  background: rgba(30, 42, 66, 0.95);
+  border-color: #ffffff;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.35);
+}
+
+.constellation-tab.tab-guerra.active {
+  border-color: #e74c3c;
+  color: #ff7675;
+  box-shadow: 0 0 14px rgba(231, 76, 60, 0.45);
+  background: rgba(45, 18, 22, 0.9);
+}
+
+.constellation-tab.tab-egide.active {
+  border-color: #2ecc71;
+  color: #55efc4;
+  box-shadow: 0 0 14px rgba(46, 204, 113, 0.45);
+  background: rgba(16, 42, 28, 0.9);
+}
+
+.constellation-tab.tab-destino.active {
+  border-color: #9b59b6;
+  color: #d6a2e8;
+  box-shadow: 0 0 14px rgba(155, 89, 182, 0.45);
+  background: rgba(36, 18, 48, 0.9);
+}
+
+.tab-glow-dot {
+  font-size: 12px;
+}
+
+/* Viewport Celestial */
 .astrolabe-viewport {
   position: relative;
   width: 100%;
-  height: clamp(260px, 46vh, 360px);
+  height: clamp(260px, 46vh, 370px);
   background: radial-gradient(circle at center, #111624 0%, #080b12 85%);
   border: 1.5px solid #232d45;
   border-radius: 14px;
@@ -1351,6 +1452,25 @@ html, body {
   align-items: center;
   justify-content: center;
   box-shadow: inset 0 0 40px rgba(0,0,0,0.9);
+}
+
+/* Fundo de Nebulosa Galáctica */
+.astrolabe-nebula-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(231, 76, 60, 0.1) 0%, transparent 45%),
+    radial-gradient(circle at 80% 30%, rgba(46, 204, 113, 0.1) 0%, transparent 45%),
+    radial-gradient(circle at 50% 80%, rgba(155, 89, 182, 0.12) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(241, 196, 15, 0.05) 0%, transparent 35%);
+  animation: nebulaPulse 10s ease-in-out infinite alternate;
+  z-index: 1;
+}
+
+@keyframes nebulaPulse {
+  0% { opacity: 0.7; transform: scale(1); }
+  100% { opacity: 1; transform: scale(1.05); }
 }
 
 /* Núcleo Central de Almas */
@@ -1397,60 +1517,11 @@ html, body {
   color: var(--gold-runic);
 }
 
-.core-reset-btn {
-  margin-top: 3px;
-  background: rgba(192, 57, 43, 0.3);
-  border: 1px solid #c0392b;
-  color: #ff7675;
-  border-radius: 4px;
-  font-size: 8px;
-  padding: 1px 5px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
 .astrolabe-nodes-container {
   position: absolute;
   inset: 0;
   pointer-events: auto;
-}
-
-/* Nós Orbitais */
-.astrolabe-node {
-  position: absolute;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: #141926;
-  border: 2px solid #2e374f;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.2s, box-shadow 0.2s;
   z-index: 6;
-}
-
-.astrolabe-node:hover {
-  transform: translate(-50%, -50%) scale(1.14);
-}
-
-.astrolabe-node.active {
-  border-color: #fff;
-  box-shadow: 0 0 16px rgba(255, 255, 255, 0.6);
-}
-
-.astrolabe-node.invested {
-  border-color: var(--gold-runic);
-  box-shadow: 0 0 14px rgba(241, 196, 15, 0.4);
-}
-
-.astrolabe-node.maxed {
-  background: radial-gradient(circle, #3d2f09 0%, #171305 100%);
-  border-color: #f39c12;
-  box-shadow: 0 0 20px rgba(243, 156, 18, 0.7);
 }
 
 /* Camada Vetorial de Filamentos Cósmicos */
@@ -1467,15 +1538,49 @@ html, body {
   stroke: #222a3d;
   stroke-width: 1.5px;
   stroke-dasharray: 4, 4;
-  transition: stroke 0.3s ease, stroke-width 0.3s ease;
+  transition: opacity 0.3s ease, stroke 0.3s ease, stroke-width 0.3s ease;
+}
+
+.filament-line.locked {
+  stroke: #181f2e;
+  stroke-width: 1px;
+  stroke-dasharray: 2, 4;
+  opacity: 0.4;
+}
+
+.filament-line.available {
+  stroke: #364866;
+  stroke-width: 1.5px;
+  stroke-dasharray: 4, 4;
+  opacity: 0.8;
 }
 
 .filament-line.active {
   stroke: var(--gold-runic);
-  stroke-width: 2px;
+  stroke-width: 2.2px;
   stroke-dasharray: 8, 4;
   animation: filamentFlow 1.8s linear infinite;
-  filter: drop-shadow(0 0 4px var(--gold-glow));
+  filter: drop-shadow(0 0 5px var(--gold-glow));
+  opacity: 1;
+}
+
+.filament-line.active.filament-guerra {
+  stroke: #e74c3c;
+  filter: drop-shadow(0 0 5px rgba(231, 76, 60, 0.7));
+}
+
+.filament-line.active.filament-egide {
+  stroke: #2ecc71;
+  filter: drop-shadow(0 0 5px rgba(46, 204, 113, 0.7));
+}
+
+.filament-line.active.filament-destino {
+  stroke: #a29bfe;
+  filter: drop-shadow(0 0 5px rgba(162, 155, 254, 0.7));
+}
+
+.filament-line.dimmed {
+  opacity: 0.12 !important;
 }
 
 @keyframes filamentFlow {
@@ -1490,7 +1595,117 @@ html, body {
   margin-right: 3px;
 }
 
-/* Ícone Vetorial Matemático dentro do Nó */
+/* Nós Orbitais */
+.astrolabe-node {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #121622;
+  border: 2px solid #28334b;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.2s, box-shadow 0.2s, opacity 0.3s;
+  z-index: 6;
+}
+
+.astrolabe-node:hover {
+  transform: translate(-50%, -50%) scale(1.16);
+  z-index: 9;
+}
+
+.astrolabe-node.invested {
+  border-color: var(--gold-runic);
+  box-shadow: 0 0 14px rgba(241, 196, 15, 0.45);
+}
+
+.astrolabe-node.node-guerra.invested {
+  border-color: #e74c3c;
+  box-shadow: 0 0 14px rgba(231, 76, 60, 0.5);
+}
+
+.astrolabe-node.node-egide.invested {
+  border-color: #2ecc71;
+  box-shadow: 0 0 14px rgba(46, 204, 113, 0.5);
+}
+
+.astrolabe-node.node-destino.invested {
+  border-color: #9b59b6;
+  box-shadow: 0 0 14px rgba(155, 89, 182, 0.5);
+}
+
+.astrolabe-node.maxed {
+  background: radial-gradient(circle, #3a2c08 0%, #151205 100%);
+  border-color: #f39c12;
+  box-shadow: 0 0 20px rgba(243, 156, 18, 0.7);
+}
+
+.astrolabe-node.node-guerra.maxed {
+  background: radial-gradient(circle, #3d1414 0%, #150808 100%);
+  border-color: #ff7675;
+  box-shadow: 0 0 20px rgba(231, 76, 60, 0.8);
+}
+
+.astrolabe-node.node-egide.maxed {
+  background: radial-gradient(circle, #0e3020 0%, #06150e 100%);
+  border-color: #55efc4;
+  box-shadow: 0 0 20px rgba(46, 204, 113, 0.8);
+}
+
+.astrolabe-node.node-destino.maxed {
+  background: radial-gradient(circle, #2a143b 0%, #100617 100%);
+  border-color: #d6a2e8;
+  box-shadow: 0 0 20px rgba(155, 89, 182, 0.8);
+}
+
+.astrolabe-node.active {
+  border-color: #ffffff !important;
+  transform: translate(-50%, -50%) scale(1.2) !important;
+  box-shadow: 0 0 22px rgba(255, 255, 255, 0.85), 0 0 35px var(--gold-glow) !important;
+  z-index: 10 !important;
+}
+
+.astrolabe-node.locked {
+  opacity: 0.45;
+  border-style: dashed;
+  border-color: #202738;
+}
+
+.astrolabe-node.dimmed {
+  opacity: 0.18;
+}
+
+.astrolabe-node.dimmed:hover {
+  opacity: 0.6;
+}
+
+/* Talento Mestre (Keystone) */
+.astrolabe-node.node-keystone {
+  width: 52px;
+  height: 52px;
+  border-width: 2.5px;
+  border-color: #f1c40f;
+}
+
+.keystone-crown-glow {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(241, 196, 15, 0.6);
+  animation: keystonePulse 2.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes keystonePulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.15); opacity: 0.9; box-shadow: 0 0 16px rgba(241, 196, 15, 0.55); }
+}
+
+/* Ícone Vetorial dentro do Nó */
 .node-svg-icon {
   width: 22px;
   height: 22px;
@@ -1519,7 +1734,7 @@ html, body {
   color: var(--gold-runic);
 }
 
-/* Medidores Segmentados em Trapézios Vetoriais (Substituem as estrelas) */
+/* Medidores Segmentados em Trapézios Vetoriais (Substituem as estrelas na seleção) */
 .segmented-meter {
   display: flex;
   gap: 3px;
@@ -1550,62 +1765,288 @@ html, body {
 
 /* Forja Mística Inferior */
 .talent-forge-drawer {
-  background: #0d101a;
-  border: 1.5px solid #23293d;
-  border-radius: 10px;
-  padding: 10px 14px;
+  background: linear-gradient(135deg, #0e121d 0%, #080b12 100%);
+  border: 1.5px solid #20283c;
+  border-radius: 12px;
+  padding: 12px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   text-align: left;
-  gap: 12px;
+  gap: 16px;
+  margin-top: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
-.forge-left { flex-grow: 1; }
+.forge-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.forge-header-tags {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.forge-constellation-badge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  background: rgba(241, 196, 15, 0.15);
+  color: var(--gold-runic);
+  border: 1px solid rgba(241, 196, 15, 0.35);
+}
+
+.forge-constellation-badge.badge-guerra {
+  background: rgba(231, 76, 60, 0.2);
+  color: #ff7675;
+  border-color: rgba(231, 76, 60, 0.4);
+}
+
+.forge-constellation-badge.badge-egide {
+  background: rgba(46, 204, 113, 0.2);
+  color: #55efc4;
+  border-color: rgba(46, 204, 113, 0.4);
+}
+
+.forge-constellation-badge.badge-destino {
+  background: rgba(155, 89, 182, 0.2);
+  color: #d6a2e8;
+  border-color: rgba(155, 89, 182, 0.4);
+}
+
+.forge-tier-badge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #182030;
+  color: #8c9bb2;
+  border: 1px solid #28354f;
+}
 
 .forge-node-name {
   font-family: var(--font-heading);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 800;
   color: #fff;
+  letter-spacing: 0.5px;
 }
 
 .forge-node-desc {
-  font-size: 10px;
-  color: #8c94a8;
-  line-height: 1.35;
+  font-size: 11px;
+  color: #9bb0cc;
+  line-height: 1.4;
   margin-top: 2px;
+}
+
+.forge-node-lore {
+  font-size: 10px;
+  font-style: italic;
+  color: #62728f;
+  margin-top: 4px;
 }
 
 .forge-right {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 8px;
   flex-shrink: 0;
+  min-width: 220px;
 }
 
-.forge-node-level {
-  font-size: 10px;
+.forge-stat-comparison {
+  background: rgba(12, 16, 25, 0.9);
+  border: 1px solid #222b40;
+  border-radius: 8px;
+  padding: 6px 12px;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comparison-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.comp-label {
+  color: #697794;
+  font-size: 9px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.comp-val-cur {
+  color: #bdc3c7;
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.comp-arrow {
+  color: #f1c40f;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.comp-val-next {
+  color: #2ecc71;
   font-weight: 800;
-  color: var(--gold-runic);
+  font-family: monospace;
+  text-shadow: 0 0 6px rgba(46, 204, 113, 0.35);
+}
+
+.forge-diamonds-bar {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.forge-diamond-pip {
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  background: #171d2b;
+  border: 1px solid #2e3b54;
+  border-radius: 1px;
+  transition: all 0.2s ease;
+}
+
+.forge-diamond-pip.filled {
+  background: var(--gold-runic);
+  border-color: #fff;
+  box-shadow: 0 0 6px var(--gold-runic);
 }
 
 .forge-buy-btn {
-  padding: 6px 14px !important;
+  padding: 7px 16px !important;
   font-size: 11px !important;
-  width: auto !important;
+  width: 100% !important;
   background: linear-gradient(135deg, #f39c12, #d35400) !important;
   color: #000 !important;
   border: none !important;
   font-weight: 800 !important;
+  border-radius: 6px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.forge-buy-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(243, 156, 18, 0.45);
 }
 
 .forge-buy-btn:disabled {
-  background: #232838 !important;
-  color: #666 !important;
+  background: #1f2535 !important;
+  color: #616e88 !important;
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.7;
+}
+
+/* Modal Retrátil de Resumo das Bênçãos da Conta */
+.blessings-summary-drawer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, rgba(13, 17, 26, 0.98) 0%, rgba(8, 10, 16, 0.99) 100%);
+  border-top: 2px solid #2e3a54;
+  border-radius: 14px 14px 0 0;
+  padding: 14px 18px;
+  z-index: 25;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  max-height: 82%;
+  overflow-y: auto;
+  animation: slideUpDrawer 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUpDrawer {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.blessings-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #212a3f;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+.blessings-drawer-title {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--gold-runic);
+  letter-spacing: 1px;
+}
+
+.blessings-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.blessing-stat-card {
+  background: rgba(18, 24, 38, 0.7);
+  border: 1px solid #222d42;
+  border-left-width: 4px;
+  border-radius: 6px;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  transition: transform 0.15s ease;
+}
+
+.blessing-stat-card:hover {
+  transform: translateX(2px);
+  background: rgba(26, 34, 52, 0.85);
+}
+
+.blessing-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.blessing-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.blessing-label {
+  font-size: 9px;
+  color: #8c9bb2;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.blessing-val {
+  font-size: 12px;
+  font-weight: 900;
+  font-family: monospace;
+  margin-top: 1px;
 }
 
 /* ======================================================== */
@@ -2080,6 +2521,7 @@ html, body {
   .modal-box-altar {
     max-width: min(95vw, 440px);
     width: 100%;
+    min-height: 0;
     max-height: 88dvh;
     height: auto;
     border-radius: 20px;
@@ -2199,12 +2641,17 @@ html, body {
     height: 165px;
     position: relative;
     width: 100%;
+    overflow: hidden;
   }
 
   #char-preview-canvas {
     max-height: 165px;
-    height: 100%;
-    width: 100%;
+    min-height: 165px;
+    height: 100% !important;
+    width: 100% !important;
+    display: block;
+    object-fit: contain;
+    box-sizing: border-box;
   }
 
   .stage-nav-arrow {
@@ -2388,9 +2835,33 @@ html, body {
   }
 
   /* 3. Astrolábio de Talentos */
+  .astrolabe-header-actions {
+    gap: 4px;
+  }
+
+  .astrolabe-header-btn {
+    padding: 4px 8px !important;
+    font-size: 9.5px !important;
+  }
+
   #close-talents-btn {
     padding: 4px 8px !important;
-    font-size: 10px !important;
+    font-size: 9.5px !important;
+  }
+
+  .astrolabe-constellation-tabs {
+    gap: 4px;
+    margin: 2px 0 6px 0;
+  }
+
+  .constellation-tab {
+    padding: 3px 8px;
+    font-size: 9px;
+    gap: 4px;
+  }
+
+  .tab-glow-dot {
+    font-size: 10px;
   }
 
   .astrolabe-viewport {
@@ -2400,8 +2871,8 @@ html, body {
   }
 
   .astrolabe-core {
-    width: 72px;
-    height: 72px;
+    width: 68px;
+    height: 68px;
   }
 
   .core-rings {
@@ -2416,25 +2887,24 @@ html, body {
     font-size: 10px;
   }
 
-  .core-reset-btn {
-    font-size: 7px;
-    padding: 1px 4px;
-    margin-top: 2px;
-  }
-
   .astrolabe-node {
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
     border-width: 1.5px;
   }
 
+  .astrolabe-node.node-keystone {
+    width: 44px;
+    height: 44px;
+  }
+
   .node-svg-icon {
-    width: 18px;
-    height: 18px;
+    width: 17px;
+    height: 17px;
   }
 
   .node-lvl-pip {
-    font-size: 7px;
+    font-size: 6.5px;
     margin-top: 1px;
   }
 
@@ -2450,32 +2920,92 @@ html, body {
     width: 100%;
   }
 
+  .forge-header-tags {
+    gap: 4px;
+    margin-bottom: 2px;
+  }
+
+  .forge-constellation-badge,
+  .forge-tier-badge {
+    font-size: 8px;
+    padding: 1px 5px;
+  }
+
   .forge-node-name {
     font-size: 12px;
   }
 
   .forge-node-desc {
     font-size: 9px;
-    line-height: 1.3;
+    line-height: 1.25;
     margin-top: 1px;
   }
 
+  .forge-node-lore {
+    display: none;
+  }
+
   .forge-right {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
     width: 100%;
+    min-width: 0;
+    gap: 5px;
     margin-top: 2px;
   }
 
-  .forge-node-level {
-    font-size: 9px;
+  .forge-stat-comparison {
+    padding: 4px 8px;
+  }
+
+  .comparison-row {
+    font-size: 9.5px;
+  }
+
+  .comp-label {
+    font-size: 8px;
+  }
+
+  .forge-diamond-pip {
+    width: 6px;
+    height: 6px;
   }
 
   .forge-buy-btn {
-    padding: 5px 12px !important;
+    padding: 6px 10px !important;
     font-size: 10px !important;
-    width: auto !important;
+    width: 100% !important;
+  }
+
+  /* Resumo de Bênçãos Mobile */
+  .blessings-summary-drawer {
+    padding: 10px 12px;
+    max-height: 88%;
+  }
+
+  .blessings-drawer-title {
+    font-size: 11px;
+  }
+
+  .blessings-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+  }
+
+  .blessing-stat-card {
+    padding: 5px 7px;
+    gap: 5px;
+  }
+
+  .blessing-icon {
+    font-size: 13px;
+  }
+
+  .blessing-label {
+    font-size: 7.5px;
+  }
+
+  .blessing-val {
+    font-size: 10px;
   }
 
   /* 4. Cartas de Tarô de Upgrade */

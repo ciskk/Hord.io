@@ -27,25 +27,245 @@ export function getPersistentGold() {
 
 export function addPersistentGold(amount) {
   const current = getPersistentGold();
-  const next = Math.max(0, current + amount);
+  let finalAmount = amount;
+  if (amount > 0 && typeof player !== 'undefined' && player && player.goldMultiplier) {
+    finalAmount = Math.round(amount * player.goldMultiplier);
+  }
+  const next = Math.max(0, current + finalAmount);
   localStorage.setItem(GOLD_KEY, next.toString());
   return next;
 }
 
 export const META_TALENTS = [
-  { id: 'hp', name: "Vitalidade Rúnica", maxLvl: 10, costBase: 40, costScale: 1.4, desc: "+3% Vida Máxima por nível", getBonus: lvl => lvl * 0.03 },
-  { id: 'speed', name: "Passos Ligeiros", maxLvl: 10, costBase: 50, costScale: 1.4, desc: "+2% Velocidade de Movimento por nível", getBonus: lvl => lvl * 0.02 },
-  { id: 'damage', name: "Poder Ancestral", maxLvl: 10, costBase: 60, costScale: 1.45, desc: "+5% Dano Global por nível", getBonus: lvl => lvl * 0.05 },
-  { id: 'reroll', name: "Destino Favorável", maxLvl: 3, costBase: 120, costScale: 1.9, desc: "+1 Reroll de Upgrades por partida por nível", getBonus: lvl => lvl },
-  { id: 'magnet', name: "Ímã do Vazio", maxLvl: 10, costBase: 35, costScale: 1.35, desc: "+15 Raio de Atração por nível", getBonus: lvl => lvl * 15 }
+  // --- ⚔️ CONSTELAÇÃO DA GUERRA (OFENSIVA & LETALIDADE) ---
+  {
+    id: 'damage',
+    constellation: 'guerra',
+    tier: 1,
+    name: "Poder Ancestral",
+    lore: "A essência dos antigos reis incute fúria desmedida em cada golpe desferido.",
+    maxLvl: 10,
+    costBase: 40,
+    costScale: 1.35,
+    desc: "+5% Dano Global por nível",
+    statLabel: "Dano Global",
+    formatVal: lvl => `+${lvl * 5}%`,
+    getBonus: lvl => lvl * 0.05
+  },
+  {
+    id: 'crit',
+    constellation: 'guerra',
+    tier: 2,
+    parent: 'damage',
+    name: "Precisão Letal",
+    lore: "Golpes desferidos no ponto cego rasgam a carne e a alma dos monstros.",
+    maxLvl: 5,
+    costBase: 65,
+    costScale: 1.5,
+    desc: "+2% Chance de Crítico por nível (Críticos causam 150% de dano)",
+    statLabel: "Chance Crítica",
+    formatVal: lvl => `+${lvl * 2}%`,
+    getBonus: lvl => lvl * 0.02
+  },
+  {
+    id: 'cooldown',
+    constellation: 'guerra',
+    tier: 2,
+    parent: 'damage',
+    name: "Vontade Incansável",
+    lore: "O pulsar da batalha acelera o ritmo de empunhadura e feitiços.",
+    maxLvl: 5,
+    costBase: 70,
+    costScale: 1.5,
+    desc: "-2% Tempo de Recarga das armas e habilidades por nível",
+    statLabel: "Redução Recarga",
+    formatVal: lvl => `-${lvl * 2}%`,
+    getBonus: lvl => lvl * 0.02
+  },
+  {
+    id: 'execute',
+    constellation: 'guerra',
+    tier: 3,
+    parent: 'crit',
+    name: "Fúria Executora",
+    lore: "Sentindo o estertor da morte, a lâmina torna-se brutalmente impiedosa.",
+    maxLvl: 5,
+    costBase: 90,
+    costScale: 1.55,
+    desc: "+8% Dano contra inimigos com menos de 30% de HP por nível",
+    statLabel: "Dano de Execução",
+    formatVal: lvl => `+${lvl * 8}%`,
+    getBonus: lvl => lvl * 0.08
+  },
+
+  // --- 🛡️ CONSTELAÇÃO DA ÉGIDE (SOBREVIVÊNCIA & BALUARTE) ---
+  {
+    id: 'hp',
+    constellation: 'egide',
+    tier: 1,
+    name: "Vitalidade Rúnica",
+    lore: "O sangue é purificado e fortalecido pelo sacrifício dos mártires.",
+    maxLvl: 10,
+    costBase: 35,
+    costScale: 1.35,
+    desc: "+4% Vida Máxima por nível",
+    statLabel: "Vida Máxima",
+    formatVal: lvl => `+${lvl * 4}%`,
+    getBonus: lvl => lvl * 0.04
+  },
+  {
+    id: 'armor',
+    constellation: 'egide',
+    tier: 2,
+    parent: 'hp',
+    name: "Carapaça Blindada",
+    lore: "Placas etéreas repelem as presas e o veneno corrosivo da horda.",
+    maxLvl: 5,
+    costBase: 60,
+    costScale: 1.5,
+    desc: "-1 Dano sofrido absoluto por nível (mitigação direta)",
+    statLabel: "Armadura Direta",
+    formatVal: lvl => `-${lvl} Dano sofrido`,
+    getBonus: lvl => lvl
+  },
+  {
+    id: 'speed',
+    constellation: 'egide',
+    tier: 2,
+    parent: 'hp',
+    name: "Passos Ligeiros",
+    lore: "Passadas tão ágeis quanto o vento uivante sobre as lápides ancestrais.",
+    maxLvl: 6,
+    costBase: 45,
+    costScale: 1.4,
+    desc: "+2.5% Velocidade de Movimento por nível",
+    statLabel: "Velocidade",
+    formatVal: lvl => `+${(lvl * 2.5).toFixed(1)}%`,
+    getBonus: lvl => lvl * 0.025
+  },
+  {
+    id: 'regen',
+    constellation: 'egide',
+    tier: 3,
+    parent: 'armor',
+    name: "Bênção Vital",
+    lore: "Um fio de graça divina cicatriza feridas mesmo sob o caos do combate.",
+    maxLvl: 5,
+    costBase: 80,
+    costScale: 1.5,
+    desc: "+0.5 HP regenerado por segundo continuamente por nível",
+    statLabel: "Regeneração",
+    formatVal: lvl => `+${(lvl * 0.5).toFixed(1)} HP/s`,
+    getBonus: lvl => lvl * 0.5
+  },
+  {
+    id: 'phoenix',
+    constellation: 'egide',
+    tier: 4,
+    parent: 'regen',
+    isKeystone: true,
+    name: "Renascimento da Fênix",
+    lore: "A morte recusa tua alma: uma explosão solar repele quem ousou te ferir.",
+    maxLvl: 1,
+    costBase: 320,
+    costScale: 1.0,
+    desc: "Sobrevive a 1 golpe fatal por partida, restaura 35% HP e repele a horda",
+    statLabel: "Segunda Chance",
+    formatVal: lvl => lvl > 0 ? "Ativo (1 Reviver)" : "Inativo",
+    getBonus: lvl => lvl
+  },
+
+  // --- 🔮 CONSTELAÇÃO DO DESTINO (ALQUIMIA & META-RIQUEZA) ---
+  {
+    id: 'magnet',
+    constellation: 'destino',
+    tier: 1,
+    name: "Ímã do Vazio",
+    lore: "Um vórtice gravitacional puxa as essências arcanas dispersas.",
+    maxLvl: 8,
+    costBase: 30,
+    costScale: 1.35,
+    desc: "+20 Raio de Atração de gemas e ouro por nível",
+    statLabel: "Raio de Atração",
+    formatVal: lvl => `+${lvl * 20} px`,
+    getBonus: lvl => lvl * 20
+  },
+  {
+    id: 'gold',
+    constellation: 'destino',
+    tier: 2,
+    parent: 'magnet',
+    name: "Cobiça Espectral",
+    lore: "Moedas e essências cósmicas multiplicam-se ao tocarem tua mão.",
+    maxLvl: 8,
+    costBase: 50,
+    costScale: 1.4,
+    desc: "+5% Ouro e Almas recolhidos na arena por nível",
+    statLabel: "Bônus de Almas",
+    formatVal: lvl => `+${lvl * 5}%`,
+    getBonus: lvl => lvl * 0.05
+  },
+  {
+    id: 'xp',
+    constellation: 'destino',
+    tier: 2,
+    parent: 'magnet',
+    name: "Sabedoria Arcana",
+    lore: "Compreensão profunda das runas acelera o ganho de transcendência.",
+    maxLvl: 5,
+    costBase: 65,
+    costScale: 1.45,
+    desc: "+4% Ganho de XP por nível (acelera cartas de Tarô)",
+    statLabel: "Bônus de XP",
+    formatVal: lvl => `+${lvl * 4}%`,
+    getBonus: lvl => lvl * 0.04
+  },
+  {
+    id: 'reroll',
+    constellation: 'destino',
+    tier: 3,
+    parent: 'gold',
+    name: "Destino Favorável",
+    lore: "O tecido do acaso curva-se diante da tua soberana determinação.",
+    maxLvl: 3,
+    costBase: 120,
+    costScale: 1.8,
+    desc: "+1 Reroll de cartas de Tarô por partida por nível",
+    statLabel: "Rerolls de Tarô",
+    formatVal: lvl => `+${lvl} Rerolls`,
+    getBonus: lvl => lvl
+  },
+  {
+    id: 'transmute',
+    constellation: 'destino',
+    tier: 4,
+    parent: 'xp',
+    isKeystone: true,
+    name: "Transmutação Cósmica",
+    lore: "Baús de chefes ressoam com energia astral, duplicando suas dádivas.",
+    maxLvl: 1,
+    costBase: 300,
+    costScale: 1.0,
+    desc: "25% de chance de baús de chefes concederem dádiva dupla",
+    statLabel: "Baú Duplo",
+    formatVal: lvl => lvl > 0 ? "25% de Chance" : "Inativo",
+    getBonus: lvl => lvl * 0.25
+  }
 ];
 
 export function getMetaLevels() {
   try {
     const raw = localStorage.getItem(META_KEY);
-    return raw ? JSON.parse(raw) : { hp: 0, speed: 0, damage: 0, reroll: 0, magnet: 0 };
+    const parsed = raw ? JSON.parse(raw) : {};
+    const result = {};
+    META_TALENTS.forEach(t => {
+      result[t.id] = (typeof parsed[t.id] === 'number') ? parsed[t.id] : 0;
+    });
+    return result;
   } catch (e) {
-    return { hp: 0, speed: 0, damage: 0, reroll: 0, magnet: 0 };
+    const result = {};
+    META_TALENTS.forEach(t => { result[t.id] = 0; });
+    return result;
   }
 }
 
@@ -64,6 +284,9 @@ export function buyMetaUpgrade(talentId) {
   const talent = META_TALENTS.find(t => t.id === talentId);
   const currentLvl = levels[talentId] || 0;
   if (!talent || currentLvl >= talent.maxLvl) return false;
+
+  // Pré-requisito de nó pai (deve ter pelo menos 1 rank no nó antecessor)
+  if (talent.parent && (levels[talent.parent] || 0) < 1) return false;
 
   const cost = getMetaUpgradeCost(talentId, currentLvl);
   const gold = getPersistentGold();
@@ -93,11 +316,22 @@ export function resetMetaTree() {
 export function getMetaBonuses() {
   const levels = getMetaLevels();
   return {
-    hpMult: 1 + (levels.hp || 0) * 0.03,
-    speedMult: 1 + (levels.speed || 0) * 0.02,
     damageMult: 1 + (levels.damage || 0) * 0.05,
+    critBonus: (levels.crit || 0) * 0.02,
+    cooldownReduction: (levels.cooldown || 0) * 0.02,
+    executeBonus: (levels.execute || 0) * 0.08,
+
+    hpMult: 1 + (levels.hp || 0) * 0.04,
+    armorBonus: (levels.armor || 0) * 1,
+    speedMult: 1 + (levels.speed || 0) * 0.025,
+    regenBonus: (levels.regen || 0) * 0.5,
+    phoenixRevives: (levels.phoenix || 0) * 1,
+
+    magnetBonus: (levels.magnet || 0) * 20,
+    goldMult: 1 + (levels.gold || 0) * 0.05,
+    xpMult: 1 + (levels.xp || 0) * 0.04,
     rerolls: levels.reroll || 0,
-    magnetBonus: (levels.magnet || 0) * 15
+    doubleChestChance: (levels.transmute || 0) * 0.25
   };
 }
 
@@ -522,6 +756,9 @@ export function updateSpinningAxes(dt) {
 
         const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
         let finalDmg = isCrit ? dmg * player.critMult : dmg;
+        if (player.executeBonus > 0 && e.maxHp && (e.hp / e.maxHp) < 0.30) {
+          finalDmg *= (1 + player.executeBonus);
+        }
 
         e.hp -= finalDmg;
         e.hitFlash = 4;
@@ -770,7 +1007,8 @@ export function fireWeapons() {
 
 export function addXP(amount) {
   playSfx('gem');
-  player.xp += amount;
+  const mult = (player && player.xpMultiplier) ? player.xpMultiplier : 1.0;
+  player.xp += Math.round(amount * mult);
   while (player.xp >= player.nextXp) {
     player.xp -= player.nextXp;
     player.level++;
@@ -793,10 +1031,18 @@ export function resetPlayer(heroKey) {
 
   player.maxHp = Math.round(c.stats.maxHp * meta.hpMult);
   player.hp = player.maxHp;
+  player.armor = meta.armorBonus || 0;
+  player.hpRegen = meta.regenBonus || 0;
+  player.regenTimer = 0;
   player.level = 1;
   player.xp = 0;
   player.nextXp = 20;
-  player.cooldownReduction = 0;
+  player.cooldownReduction = meta.cooldownReduction || 0;
+  player.executeBonus = meta.executeBonus || 0;
+  player.phoenixRevives = meta.phoenixRevives || 0;
+  player.goldMultiplier = meta.goldMult || 1.0;
+  player.xpMultiplier = meta.xpMult || 1.0;
+  player.doubleChestChance = meta.doubleChestChance || 0;
 
   player.baseDamage = c.stats.damage;
   player.damagePercentBonus = 0;
@@ -813,11 +1059,11 @@ export function resetPlayer(heroKey) {
   player.speed = player.baseSpeed;
   player.projectiles = c.stats.projectiles;
   player.magnet = c.stats.magnet + meta.magnetBonus;
-  player.critChance = c.stats.critChance;
+  player.critChance = (c.stats.critChance || 0.15) + (meta.critBonus || 0);
   player.critMult = 1.5;
   player.auraLvl = c.stats.auraLvl;
   player.orbitals = c.stats.orbitals;
-  player.skillMaxCd = c.stats.skillCooldownMax;
+  player.skillMaxCd = Math.round(c.stats.skillCooldownMax * (1 - (meta.cooldownReduction || 0)));
   player.skillCd = 0;
   player.knockbackReceived = c.stats.knockbackReceived !== undefined ? c.stats.knockbackReceived : 1.0;
   player.knockbackDealt = c.stats.knockbackDealt !== undefined ? c.stats.knockbackDealt : 1.0;
@@ -874,7 +1120,7 @@ export function resetPlayer(heroKey) {
       count: c.stats.projectiles || 1,
       damageMult: 1.0,
       timer: 0,
-      cooldown: c.stats.attackCooldown
+      cooldown: Math.round(c.stats.attackCooldown * (1 - (meta.cooldownReduction || 0)))
     }
   ];
 

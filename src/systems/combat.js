@@ -195,6 +195,7 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
 
               let playerDmgTaken = e.damage;
               if (selectedHeroKey === 'KNIGHT') playerDmgTaken *= 0.80;
+              if (player.armor > 0) playerDmgTaken = Math.max(1, playerDmgTaken - player.armor);
 
               player.hp -= playerDmgTaken;
               player.iFrames = 25;

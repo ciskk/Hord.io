@@ -1767,11 +1767,39 @@ function update(dt) {
 
   processEnemyMeleeAttacks(player, enemies, dt);
 
+  // Regeneração contínua de Vida (Meta-Talento: Bênção Vital)
+  if (player.hpRegen > 0 && player.hp > 0 && player.hp < player.maxHp) {
+    player.hp = Math.min(player.maxHp, player.hp + player.hpRegen * (dt / 60));
+  }
+
   if (player.hp <= 0 && !gameState.isDead) {
-    if (!lastAttackerName) lastAttackerName = "Horda Devoradora";
-    player.hp = 0;
-    triggerDeath();
-    return;
+    if ((player.phoenixRevives || 0) > 0) {
+      player.phoenixRevives--;
+      player.hp = Math.round(player.maxHp * 0.35);
+      player.iFrames = 90;
+      triggerShake(16);
+      try { playSfx('warp'); } catch(e) {}
+      triggerHaptic('heavy');
+      addDamageText(player.x, player.y, "RENASCIMENTO DA FÊNIX!", true, "#f1c40f");
+      createHitParticles(player.x, player.y, "#f1c40f", 16);
+
+      // Repele e danifica inimigos próximos
+      enemies.forEach(e => {
+        const dSq = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
+        if (dSq < 240 * 240) {
+          const ang = Math.atan2(e.y - player.y, e.x - player.x);
+          e.pushVx = Math.cos(ang) * 16;
+          e.pushVy = Math.sin(ang) * 16;
+          e.hp -= 40;
+          e.hitFlash = 6;
+        }
+      });
+    } else {
+      if (!lastAttackerName) lastAttackerName = "Horda Devoradora";
+      player.hp = 0;
+      triggerDeath();
+      return;
+    }
   }
 
   for (let i = props.length - 1; i >= 0; i--) {

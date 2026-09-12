@@ -54,6 +54,9 @@ export function updateProjectiles(dt) {
               impactDmg *= isBossTarget ? 1.5 : 2.0;
               isKaelExecute = true;
             }
+            if (player.executeBonus > 0 && e.maxHp && (e.hp / e.maxHp) < 0.30) {
+              impactDmg *= (1 + player.executeBonus);
+            }
             e.hp -= impactDmg;
             e.hitFlash = 4;
             addDamageText(e.x, e.y, Math.round(impactDmg), isCrit || isKaelExecute, isKaelExecute ? '#00cec9' : (isCrit ? '#f1c40f' : (b.isEvolved ? '#00cec9' : '#2ecc71')));
@@ -141,6 +144,9 @@ export function updateProjectiles(dt) {
           finalDmg *= isBossTarget ? 1.5 : 2.0;
           isKaelExecute = true;
         }
+        if (player.executeBonus > 0 && e.maxHp && (e.hp / e.maxHp) < 0.30) {
+          finalDmg *= (1 + player.executeBonus);
+        }
 
         e.hp -= finalDmg;
         e.hitFlash = 4;
@@ -214,6 +220,7 @@ export function updateProjectiles(dt) {
     if (player.iFrames <= 0 && (pdx * pdx + pdy * pdy) < hitRadius * hitRadius) {
       let finalEbDamage = eb.damage;
       if (selectedHeroKey === 'KNIGHT') finalEbDamage = Math.round(finalEbDamage * 0.80);
+      if (player.armor > 0) finalEbDamage = Math.max(1, finalEbDamage - player.armor);
       player.hp -= finalEbDamage;
       player.iFrames = 22;
       triggerShake(6);
