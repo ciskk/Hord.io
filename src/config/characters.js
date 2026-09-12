@@ -22,8 +22,8 @@ export const CHARACTERS = {
     },
     startingWeapon: "HAMMER",
     stats: { 
-      hp: 252, 
-      maxHp: 252, 
+      hp: 126, 
+      maxHp: 126, 
       speed: 3.2, 
       damage: 46, 
       auraLvl: 1, 
@@ -37,6 +37,7 @@ export const CHARACTERS = {
       knockbackDealt: 1.5
     }
   },
+
   MAGE: {
     name: "Ignis",
     title: "A Piromante",
@@ -57,8 +58,8 @@ export const CHARACTERS = {
     },
     startingWeapon: "STAFF",
     stats: { 
-      hp: 147, 
-      maxHp: 147, 
+      hp: 73.5, 
+      maxHp: 73.5, 
       speed: 3.5, 
       damage: 36, 
       auraLvl: 0, 
@@ -72,6 +73,7 @@ export const CHARACTERS = {
       knockbackDealt: 4.0
     }
   },
+
   ROGUE: {
     name: "Kael",
     title: "O Andarilho Sombrio",
@@ -95,8 +97,8 @@ export const CHARACTERS = {
     },
     startingWeapon: "SWORD",
     stats: { 
-      hp: 175, 
-      maxHp: 175, 
+      hp: 87.5, 
+      maxHp: 87.5, 
       speed: 3.7, 
       damage: 35, 
       auraLvl: 0, 
@@ -110,6 +112,7 @@ export const CHARACTERS = {
       knockbackDealt: 4.0
     }
   },
+
   BARBARIAN: {
     name: "Kragdor",
     title: "O Bárbaro Furioso",
@@ -128,8 +131,8 @@ export const CHARACTERS = {
     },
     startingWeapon: "AXE",
     stats: { 
-      hp: 308, 
-      maxHp: 308, 
+      hp: 154, 
+      maxHp: 154, 
       speed: 3.1, 
       damage: 54, 
       auraLvl: 0, 
@@ -143,6 +146,7 @@ export const CHARACTERS = {
       knockbackDealt: 1.5
     }
   },
+
   ALCHEMIST: {
     name: "Valéria",
     title: "A Alquimista Cáustica",
@@ -157,8 +161,8 @@ export const CHARACTERS = {
     },
     startingWeapon: "POTION",
     stats: { 
-      hp: 182, 
-      maxHp: 182, 
+      hp: 91, 
+      maxHp: 91, 
       speed: 3.4, 
       damage: 43, 
       auraLvl: 0, 
