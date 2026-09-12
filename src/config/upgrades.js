@@ -72,12 +72,12 @@ export const upgradesPool = [
     title: "Superposição Cáustica",
     rarity: "card-rare",
     badge: "Poção",
-    desc: "Aumenta em +15% o dano corrosivo e a área de contaminação das poças ácidas",
-    stat: "+15% Dano & Área (Máx: 3)",
+    desc: "Aumenta em +5% o dano corrosivo e a área de contaminação das poças ácidas",
+    stat: "+5% Dano & Área (Máx: 3)",
     apply: () => {
       const w = player.weapons.find(wp => wp.type === 'POTION');
       if (w) {
-        w.damageMult += 0.15;
+        w.damageMult += 0.05;
         w.potencyCount = (w.potencyCount || 0) + 1;
       }
     },

@@ -703,7 +703,7 @@ export function fireWeapons() {
       const dx = targetX - player.x;
       const dy = targetY - player.y;
       const count = player.evolvedPotion ? Math.max(w.count, 5) : w.count;
-      const potencyMult = 1 + (w.potencyCount || 0) * 0.15;
+      const potencyMult = 1 + (w.potencyCount || 0) * 0.05;
       const gravity = 0.24;
 
       const basePotionDmg = (player.damage * w.damageMult * (player.evolvedPotion ? 1.6 : 1.0)) * 0.60;
