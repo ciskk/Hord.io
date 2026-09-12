@@ -367,6 +367,9 @@ html, body {
   color: #fff;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-box-compact {
@@ -660,13 +663,6 @@ html, body {
   text-align: left;
 }
 
-@media (max-width: 680px) {
-  .pause-layout-grid {
-    grid-template-columns: 1fr;
-    max-height: 70vh;
-    overflow-y: auto;
-  }
-}
 
 .section-tag {
   font-family: var(--font-body);
@@ -825,13 +821,6 @@ html, body {
   margin-top: 4px;
 }
 
-@media (max-width: 680px) {
-  .char-altar-layout {
-    grid-template-columns: 1fr;
-    max-height: 72vh;
-    overflow-y: auto;
-  }
-}
 
 .char-pedestals-col {
   display: flex;
@@ -1402,5 +1391,458 @@ html, body {
   .card-icon-wrapper svg {
     width: 20px;
     height: 20px;
+  }
+}
+
+/* ======================================================== */
+/* OTIMIZAÇÃO COMPLETA PARA SMARTPHONES VERTICAIS (PORTRAIT)*/
+/* ======================================================== */
+
+@media (max-width: 768px) {
+  /* 0. HUD de Combate Mobile */
+  #hud {
+    top: max(env(safe-area-inset-top, 6px), 6px);
+    left: max(env(safe-area-inset-left, 6px), 6px);
+    right: max(env(safe-area-inset-right, 6px), 6px);
+  }
+
+  .hud-badge {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+
+  .hud-timer {
+    font-size: 13px;
+  }
+
+  #pause-btn {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  #skill-btn-container {
+    bottom: max(env(safe-area-inset-bottom, 16px), 16px);
+    right: max(env(safe-area-inset-right, 14px), 14px);
+    width: 60px;
+    height: 60px;
+  }
+
+  /* 1. Modais Universais */
+  .modal-overlay {
+    padding: max(env(safe-area-inset-top, 6px), 6px) 
+             max(env(safe-area-inset-right, 6px), 6px) 
+             max(env(safe-area-inset-bottom, 6px), 6px) 
+             max(env(safe-area-inset-left, 6px), 6px);
+  }
+
+  .modal-box {
+    padding: 12px 10px;
+    max-width: 96vw;
+    max-height: 96dvh;
+    border-radius: 12px;
+  }
+
+  .modal-header {
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    gap: 6px;
+  }
+
+  .modal-header-title {
+    font-size: 15px;
+    letter-spacing: 0.5px;
+  }
+
+  .modal-header-sub {
+    font-size: 9px;
+  }
+
+  /* 2. Altar dos Condenados (Seleção de Heróis) */
+  .char-altar-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  /* Barra horizontal deslizável suave para os pedestais no topo */
+  .char-pedestals-col {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 6px;
+    max-height: none;
+    padding-bottom: 6px;
+    padding-right: 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    flex-shrink: 0;
+  }
+
+  .char-pedestal-btn {
+    flex: 0 0 auto;
+    min-width: 124px;
+    padding: 6px 8px;
+    gap: 8px;
+    border-radius: 8px;
+  }
+
+  .char-pedestal-btn:hover {
+    transform: none;
+  }
+
+  .char-pedestal-emblem {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+  }
+
+  .char-pedestal-emblem svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .char-pedestal-title {
+    font-size: 8px;
+    letter-spacing: 0.3px;
+  }
+
+  .char-pedestal-name {
+    font-size: 11px;
+  }
+
+  /* Vitral compacto com CTA em destaque */
+  .char-vitral-showcase {
+    padding: 10px 12px;
+    border-radius: 10px;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.85);
+  }
+
+  .showcase-header {
+    margin-bottom: 4px;
+  }
+
+  .showcase-name {
+    font-size: 17px;
+    margin: 1px 0;
+  }
+
+  .showcase-weapon-tag {
+    font-size: 9px;
+  }
+
+  .showcase-lore {
+    font-size: 10px;
+    line-height: 1.35;
+    margin: 4px 0 8px 0;
+  }
+
+  .showcase-radar-bars {
+    padding: 6px 8px;
+    margin-bottom: 8px;
+    gap: 4px;
+    border-radius: 6px;
+  }
+
+  .attr-row {
+    font-size: 9px;
+  }
+
+  .segment-cell {
+    width: 10px;
+    height: 5px;
+    gap: 2px;
+  }
+
+  .btn-summon-hero {
+    padding: 9px 12px !important;
+    font-size: 12px !important;
+    margin-top: 2px;
+  }
+
+  #open-talents-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+    height: 28px;
+  }
+
+  /* 3. Astrolábio de Talentos */
+  #close-talents-btn {
+    padding: 4px 8px !important;
+    font-size: 10px !important;
+  }
+
+  .astrolabe-viewport {
+    height: clamp(210px, 36vh, 290px);
+    margin: 4px 0;
+    border-radius: 10px;
+  }
+
+  .astrolabe-core {
+    width: 72px;
+    height: 72px;
+  }
+
+  .core-rings {
+    inset: -6px;
+  }
+
+  .core-label {
+    font-size: 7px;
+  }
+
+  .core-val {
+    font-size: 10px;
+  }
+
+  .core-reset-btn {
+    font-size: 7px;
+    padding: 1px 4px;
+    margin-top: 2px;
+  }
+
+  .astrolabe-node {
+    width: 40px;
+    height: 40px;
+    border-width: 1.5px;
+  }
+
+  .node-svg-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .node-lvl-pip {
+    font-size: 7px;
+    margin-top: 1px;
+  }
+
+  .talent-forge-drawer {
+    padding: 8px 10px;
+    gap: 6px;
+    flex-direction: column;
+    align-items: stretch;
+    border-radius: 8px;
+  }
+
+  .forge-left {
+    width: 100%;
+  }
+
+  .forge-node-name {
+    font-size: 12px;
+  }
+
+  .forge-node-desc {
+    font-size: 9px;
+    line-height: 1.3;
+    margin-top: 1px;
+  }
+
+  .forge-right {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-top: 2px;
+  }
+
+  .forge-node-level {
+    font-size: 9px;
+  }
+
+  .forge-buy-btn {
+    padding: 5px 12px !important;
+    font-size: 10px !important;
+    width: auto !important;
+  }
+
+  /* 4. Cartas de Tarô de Upgrade */
+  .modal-box-tarot {
+    padding: 10px 10px;
+  }
+
+  .upgrade-cards-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 6px 0;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  .upgrade-card-pro {
+    padding: 8px 10px;
+    gap: 4px;
+    border-radius: 10px;
+  }
+
+  .upgrade-card-pro .card-icon-wrapper {
+    width: 38px;
+    height: 38px;
+    margin-bottom: 2px;
+  }
+
+  .upgrade-card-pro .card-icon-wrapper svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .upgrade-card-pro .card-title {
+    font-size: 12px !important;
+    margin-bottom: 1px;
+  }
+
+  .upgrade-card-pro .card-stat {
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+  }
+
+  .upgrade-card-pro .rarity-badge {
+    font-size: 8px;
+    padding: 1px 5px;
+  }
+
+  .upgrade-card-pro .synergy-indicator-tag {
+    font-size: 7px;
+    padding: 1px 5px;
+    top: 5px;
+    right: 5px;
+  }
+
+  .reroll-btn-styled {
+    padding: 6px 14px !important;
+    font-size: 11px !important;
+    margin-top: 4px !important;
+  }
+
+  /* 5. Grimório Tático (Pausa) */
+  .modal-box-large {
+    padding: 10px 10px;
+  }
+
+  .pause-layout-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 72vh;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  /* Posiciona os botões de Retomar e Abandonar logo no topo para acesso instantâneo */
+  .pause-actions-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 4px;
+    order: -1;
+  }
+
+  .build-inventory-scroll {
+    max-height: 120px;
+    padding: 6px;
+    gap: 4px;
+  }
+
+  .build-item-badge {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .synergies-tracker-list {
+    max-height: 110px;
+    overflow-y: auto;
+    padding: 6px;
+    gap: 4px;
+  }
+
+  .synergy-row {
+    padding: 4px 6px;
+    font-size: 9px;
+  }
+
+  .stats-mini-grid {
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+
+  .stat-box {
+    padding: 4px 8px;
+  }
+
+  .stat-box-label {
+    font-size: 8px;
+  }
+
+  .stat-box-value {
+    font-size: 11px;
+  }
+
+  .volume-control-card {
+    padding: 6px 8px;
+    margin-bottom: 6px;
+  }
+
+  /* 6. Morte e Vitória */
+  .death-tombstone {
+    padding: 14px 12px !important;
+    max-width: 94vw !important;
+  }
+
+  .skull-emblem {
+    font-size: 32px;
+    margin-bottom: 4px;
+  }
+
+  .death-title {
+    font-size: 18px;
+    letter-spacing: 1px;
+    margin: 4px 0;
+  }
+
+  .death-epitaph {
+    padding: 8px 10px;
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .btn-death-rebirth {
+    padding: 10px !important;
+    font-size: 12px !important;
+    margin-top: 10px;
+  }
+}
+
+/* Ajustes finos para telas ultra-estreitas (< 400px, ex: iPhone SE / Galaxy Mini) */
+@media (max-width: 400px) {
+  .char-pedestal-btn {
+    min-width: 110px;
+    padding: 5px 6px;
+    gap: 6px;
+  }
+
+  .char-pedestal-name {
+    font-size: 10px;
+  }
+
+  .modal-header-title {
+    font-size: 13px;
+  }
+
+  .astrolabe-viewport {
+    height: clamp(190px, 32vh, 250px);
+  }
+
+  .astrolabe-core {
+    width: 64px;
+    height: 64px;
+  }
+
+  .astrolabe-node {
+    width: 35px;
+    height: 35px;
   }
 }
