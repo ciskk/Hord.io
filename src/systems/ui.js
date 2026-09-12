@@ -470,7 +470,7 @@ export function openChestModal(tier = 'BOSS') {
           setLastTime(performance.now());
 
           if (!activeBoss) {
-            setCurrentArenaTheme('INDUSTRIAL');
+            setCurrentArenaTheme('CEMETERY');
             setIsWavePaused(false);
             resetSpawnTimer();
             triggerShake(8);

@@ -781,7 +781,7 @@ O sistema separa preparação, execução e recuperação para evitar que ataque
 
 A arena possui 5 temas:
 
-1. Industrial
+1. Cemitério Noturno (Padrão: grama escura, lápides, cruzes, lajes, tufos e fogos-fátuos)
 2. Vampírico
 3. Monólito
 4. Ceifador
@@ -789,10 +789,10 @@ A arena possui 5 temas:
 
 O ambiente também pode renderizar:
 
-- brasas
-- grades
-- texturas procedurais
-- poças elementais
+- fogos-fátuos e almas errantes (ou brasas temáticas de boss)
+- lápides, cruzes e lajes góticas procedurais
+- névoa rasteira translúcida
+- poças elementais e sangue dos monstros
 - marcas de impacto
 - elementos decorativos específicos de cada arena
 

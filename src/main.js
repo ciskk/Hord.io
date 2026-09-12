@@ -114,7 +114,7 @@ export let frameCount = 0;
 export let spawnTimer = 0;
 export let screenShake = 0;
 export let freezeTimer = 0;
-export let currentArenaTheme = 'INDUSTRIAL';
+export let currentArenaTheme = 'CEMETERY';
 export let lastTime = performance.now();
 
 // Controle Diegético: Rastreamento da Causa Mortis e Decaimento da Barra Fantasma (Ghost Bar)
@@ -231,7 +231,7 @@ export function resetGame() {
 
   resetBossSchedule();
   resetMiniBossSchedule();
-  currentArenaTheme = 'INDUSTRIAL';
+  currentArenaTheme = 'CEMETERY';
   gameState.isWavePaused = false;
   gameState.kills = 0;
   frameCount = 0;
@@ -1856,7 +1856,7 @@ function update(dt) {
         const tier = ch.tier || 'BOSS';
         chests.splice(i, 1);
         if (tier === 'BOSS') {
-          setCurrentArenaTheme('INDUSTRIAL');
+          setCurrentArenaTheme('CEMETERY');
           setIsWavePaused(false);
           resetSpawnTimer();
         }
