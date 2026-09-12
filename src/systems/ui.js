@@ -5,6 +5,14 @@
  */
 
 import { CHARACTERS } from '../config/characters.js';
+import { 
+  startPreview, 
+  stopPreview, 
+  setPreviewHero, 
+  togglePreviewFacing, 
+  setPreviewPose, 
+  triggerHeroSurge 
+} from '../render/characterPreview.js';
 import { BOSS_TYPES } from '../config/enemies.js';
 import { getRandomUpgrades, checkSynergies } from '../config/upgrades.js';
 import { checkIsSynergyIngredient, getSynergyTrackerList } from '../config/items.js';
@@ -593,6 +601,43 @@ export function triggerVictory() {
 
 // Brasões Heráldicos Vetoriais dos Campeões (Geometria 24x24)
 const HERO_EMBLEMS_SVG = {
+  KNIGHT: `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="5" y="4" width="14" height="7" rx="1.5"/>
+      <line x1="12" y1="11" x2="12" y2="22"/>
+      <line x1="9" y1="22" x2="15" y2="22"/>
+      <polygon points="12,1 14,4 10,4" fill="currentColor"/>
+      <line x1="12" y1="6" x2="12" y2="9" stroke="#fff"/>
+      <line x1="9" y1="7.5" x2="15" y2="7.5" stroke="#fff"/>
+    </svg>
+  `,
+  PALADIN: `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="5" y="4" width="14" height="7" rx="1.5"/>
+      <line x1="12" y1="11" x2="12" y2="22"/>
+      <line x1="9" y1="22" x2="15" y2="22"/>
+      <polygon points="12,1 14,4 10,4" fill="currentColor"/>
+      <line x1="12" y1="6" x2="12" y2="9" stroke="#fff"/>
+      <line x1="9" y1="7.5" x2="15" y2="7.5" stroke="#fff"/>
+    </svg>
+  `,
+  MAGE: `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2v20"/>
+      <circle cx="12" cy="5" r="3"/>
+      <path d="M8 8c0 4 8 4 8 8"/>
+      <polygon points="12,1 15,4 9,4" fill="currentColor"/>
+      <path d="M7 3l2 2M17 3l-2 2"/>
+    </svg>
+  `,
+  ROGUE: `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14.5 2.5l7 7-12 12-7-7z"/>
+      <line x1="2.5" y1="21.5" x2="6.5" y2="17.5"/>
+      <line x1="17" y1="5" x2="19" y2="7"/>
+      <path d="M5 19l14-14"/>
+    </svg>
+  `,
   WARRIOR: `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="M14.5 2.5l7 7-12 12-7-7z"/>
@@ -616,16 +661,6 @@ const HERO_EMBLEMS_SVG = {
       <path d="M8 15c2-1 6-1 8 0" stroke-opacity="0.6"/>
       <circle cx="12" cy="18" r="1.5" fill="currentColor"/>
     </svg>
-  `,
-  PALADIN: `
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="5" y="4" width="14" height="7" rx="1.5"/>
-      <line x1="12" y1="11" x2="12" y2="22"/>
-      <line x1="9" y1="22" x2="15" y2="22"/>
-      <polygon points="12,1 14,4 10,4" fill="currentColor"/>
-      <line x1="12" y1="6" x2="12" y2="9" stroke="#fff"/>
-      <line x1="9" y1="7.5" x2="15" y2="7.5" stroke="#fff"/>
-    </svg>
   `
 };
 
@@ -643,6 +678,24 @@ const CHARACTER_PROFILES = {
     weaponName: 'Martelo dos Titãs',
     levels: { dano: 4, area: 4, vel: 1, res: 5 }
   },
+  MAGE: {
+    themeColor: '#ff7675',
+    emblemSvg: HERO_EMBLEMS_SVG.MAGE,
+    weaponName: 'Cajado da Tormenta',
+    levels: { dano: 5, area: 3, vel: 3, res: 2 }
+  },
+  ROGUE: {
+    themeColor: '#00cec9',
+    emblemSvg: HERO_EMBLEMS_SVG.ROGUE,
+    weaponName: 'Lâminas Espirituais',
+    levels: { dano: 4, area: 2, vel: 5, res: 2 }
+  },
+  WARRIOR: {
+    themeColor: '#00cec9',
+    emblemSvg: HERO_EMBLEMS_SVG.ROGUE,
+    weaponName: 'Lâminas Espectrais',
+    levels: { dano: 4, area: 2, vel: 5, res: 2 }
+  },
   BARBARIAN: {
     themeColor: '#e74c3c',
     emblemSvg: HERO_EMBLEMS_SVG.BARBARIAN,
@@ -654,24 +707,6 @@ const CHARACTER_PROFILES = {
     emblemSvg: HERO_EMBLEMS_SVG.ALCHEMIST,
     weaponName: 'Frascos Cáusticos',
     levels: { dano: 3, area: 5, vel: 3, res: 2 }
-  },
-  ROGUE: {
-    themeColor: '#00cec9',
-    emblemSvg: HERO_EMBLEMS_SVG.WARRIOR,
-    weaponName: 'Lâminas Espirituais',
-    levels: { dano: 4, area: 2, vel: 5, res: 2 }
-  },
-  WARRIOR: {
-    themeColor: '#00cec9',
-    emblemSvg: HERO_EMBLEMS_SVG.WARRIOR,
-    weaponName: 'Lâminas Espectrais',
-    levels: { dano: 4, area: 2, vel: 5, res: 2 }
-  },
-  MAGE: {
-    themeColor: '#e17055',
-    emblemSvg: HERO_EMBLEMS_SVG.ALCHEMIST,
-    weaponName: 'Cajado da Tormenta',
-    levels: { dano: 5, area: 3, vel: 3, res: 2 }
   }
 };
 
@@ -702,7 +737,13 @@ export function openCharacterSelect() {
   const showcaseContainer = document.getElementById('char-showcase');
   if (!charModal || !pedestalsContainer || !showcaseContainer) return;
 
-  // Função geradora de medidores segmentados em trapézios
+  // Atualizar contador de Almas no cabeçalho
+  const soulsVal = document.getElementById('char-souls-val');
+  if (soulsVal) {
+    soulsVal.innerText = getPersistentGold();
+  }
+
+  // Função geradora de medidores segmentados estilizados
   const renderSegments = (val) => {
     let segs = '<div class="segmented-meter">';
     for (let i = 1; i <= 5; i++) {
@@ -717,20 +758,77 @@ export function openCharacterSelect() {
     const char = CHARACTERS[heroKey] || CHARACTERS.KNIGHT;
     const profile = CHARACTER_PROFILES[heroKey] || CHARACTER_PROFILES.KNIGHT;
 
+    setPreviewHero(heroKey);
+
+    const badge = document.getElementById('stage-archetype-badge');
+    if (badge) {
+      badge.innerText = char.title.toUpperCase();
+      badge.style.color = profile.themeColor;
+      badge.style.borderColor = `${profile.themeColor}88`;
+      badge.style.boxShadow = `0 0 14px ${profile.themeColor}33`;
+    }
+
     showcaseContainer.style.setProperty('--showcase-color', profile.themeColor);
+    charModal.style.setProperty('--showcase-color', profile.themeColor);
+
+    const diff = char.difficulty || 1;
+    let diffDots = '';
+    for (let d = 1; d <= 3; d++) {
+      diffDots += `<span class="diff-dot ${d <= diff ? 'filled' : 'empty'}">◆</span>`;
+    }
+    const diffLabel = diff === 1 ? 'Iniciante' : (diff === 2 ? 'Equilibrado' : 'Avançado');
+
     showcaseContainer.innerHTML = `
-      <div class="showcase-header">
-        <div>
-          <div class="showcase-archetype">${char.title}</div>
-          <div class="showcase-name">${char.name}</div>
-          <div class="showcase-weapon-tag">Arma Inicial: <b>${profile.weaponName}</b></div>
+      <div class="showcase-header-v2">
+        <div class="showcase-title-row">
+          <div class="showcase-archetype-pill" style="color: ${profile.themeColor}; border-color: ${profile.themeColor};">
+            ${char.title}
+          </div>
+          <div class="showcase-diff-badge" title="Dificuldade do Herói">
+            <span class="diff-label">${diffLabel}</span>
+            <span class="diff-dots">${diffDots}</span>
+          </div>
         </div>
-        <div class="char-pedestal-emblem" style="border-color: ${profile.themeColor}; color: ${profile.themeColor};">
-          ${profile.emblemSvg}
-        </div>
+
+        <div class="showcase-name-v2">${char.name}</div>
+        <div class="showcase-role-tag">Função: <b>${char.role || 'Guerreiro'}</b></div>
       </div>
 
-      <div class="showcase-lore">${char.desc}</div>
+      <div class="showcase-lore-quote">
+        “${char.lore || ''}”
+      </div>
+
+      <div class="showcase-cards-container">
+        <!-- Card: Bênção Passiva -->
+        <div class="tactical-card passive-card">
+          <div class="card-top-tag">
+            <span class="card-type-icon">🛡</span>
+            <span>BÊNÇÃO PASSIVA</span>
+          </div>
+          <div class="card-title-text" style="color: ${profile.themeColor};">${char.passive?.name || 'Aura Sagrada'}</div>
+          <div class="card-desc-text">${char.passive?.desc || ''}</div>
+        </div>
+
+        <!-- Card: Arma Inicial -->
+        <div class="tactical-card weapon-card">
+          <div class="card-top-tag">
+            <span class="card-type-icon">⚔</span>
+            <span>ARMA INICIAL · ${char.weapon?.type || profile.weaponName}</span>
+          </div>
+          <div class="card-title-text" style="color: ${profile.themeColor};">${char.weapon?.name || profile.weaponName}</div>
+          <div class="card-desc-text">${char.weapon?.desc || ''}</div>
+        </div>
+
+        <!-- Card: Poder Ancestral -->
+        <div class="tactical-card skill-card">
+          <div class="card-top-tag">
+            <span class="card-type-icon">⚡</span>
+            <span>PODER ANCESTRAL · Recarga: ${char.skill?.cooldown || '7s'}</span>
+          </div>
+          <div class="card-title-text" style="color: ${profile.themeColor};">${char.skill?.name || 'Habilidade'}</div>
+          <div class="card-desc-text">${char.skill?.desc || ''}</div>
+        </div>
+      </div>
 
       <div class="showcase-radar-bars">
         <div class="attr-row"><span>PODER DE IMPACTO</span>${renderSegments(profile.levels.dano)}</div>
@@ -740,16 +838,18 @@ export function openCharacterSelect() {
       </div>
 
       <button class="card-btn btn-summon-hero" id="confirm-hero-btn">
-        DESPERTAR NA ARENA
+        ⚡ DESPERTAR NA ARENA ⚡
       </button>
     `;
 
     const confirmBtn = document.getElementById('confirm-hero-btn');
     if (confirmBtn) {
       confirmBtn.onclick = () => {
+        stopPreview();
         setSelectedHeroKey(heroKey);
         charModal.style.display = 'none';
         resetGame();
+        try { playSfx('warp'); } catch(e) {}
       };
     }
 
@@ -764,10 +864,13 @@ export function openCharacterSelect() {
   Object.keys(CHARACTERS).forEach(key => {
     const c = CHARACTERS[key];
     const profile = CHARACTER_PROFILES[key] || CHARACTER_PROFILES.KNIGHT;
+    const diff = c.difficulty || 1;
+    let miniDots = '◆'.repeat(diff) + '◇'.repeat(3 - diff);
 
     const btn = document.createElement('div');
     btn.className = `char-pedestal-btn ${key === activeShowcaseHeroKey ? 'active' : ''}`;
     btn.setAttribute('data-hero', key);
+    btn.style.setProperty('--btn-theme-color', profile.themeColor);
     btn.innerHTML = `
       <div class="char-pedestal-emblem" style="border-color: ${profile.themeColor}; color: ${profile.themeColor};">
         ${profile.emblemSvg}
@@ -775,19 +878,51 @@ export function openCharacterSelect() {
       <div class="char-pedestal-info">
         <div class="char-pedestal-title" style="color: ${profile.themeColor};">${c.title}</div>
         <div class="char-pedestal-name">${c.name}</div>
+        <div class="char-pedestal-role-mini">${c.role || ''} · <span class="mini-diff" style="color: ${profile.themeColor};">${miniDots}</span></div>
       </div>
+      <div class="pedestal-active-glow" style="background: ${profile.themeColor};"></div>
     `;
 
     btn.onclick = () => {
-      playSfx('card_hover');
+      try { playSfx('card_hover'); } catch(e) {}
       renderShowcase(key);
     };
 
     pedestalsContainer.appendChild(btn);
   });
 
+  // Configuração dos Controles Interativos da Prévia
+  const facingBtn = document.getElementById('btn-preview-facing');
+  if (facingBtn) {
+    facingBtn.onclick = () => {
+      const dir = togglePreviewFacing();
+      facingBtn.classList.toggle('flipped', dir === -1);
+      try { playSfx('card_hover'); } catch(e) {}
+    };
+  }
+
+  const poseBtns = document.querySelectorAll('.stage-pose-btn');
+  poseBtns.forEach(pBtn => {
+    pBtn.onclick = () => {
+      poseBtns.forEach(b => b.classList.remove('active'));
+      pBtn.classList.add('active');
+      const pose = pBtn.getAttribute('data-pose');
+      setPreviewPose(pose);
+    };
+  });
+
+  const previewCanvasEl = document.getElementById('char-preview-canvas');
+  if (previewCanvasEl) {
+    previewCanvasEl.onclick = () => {
+      triggerHeroSurge(true);
+    };
+  }
+
   renderShowcase(activeShowcaseHeroKey);
   charModal.style.display = 'flex';
+
+  // Iniciar loop de animação da prévia em canvas
+  startPreview(activeShowcaseHeroKey);
 }
 
 // Runas Sagradas do Astrolábio (SVG Matemático Puro em Grade 24x24)
@@ -857,6 +992,7 @@ const ASTROLABE_NODE_COORDS = [
 let selectedAstrolabeNodeId = 'max_hp';
 
 export function openTalentsModal() {
+  stopPreview();
   const charModal = document.getElementById('char-modal');
   if (charModal) charModal.style.display = 'none';
 

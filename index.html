@@ -72,18 +72,46 @@
     <div class="modal-header">
       <div style="text-align: left;">
         <h2 class="modal-header-title">ALTAR DOS CONDENADOS</h2>
-        <div class="modal-header-sub">Desperte um arquétipo para enfrentar a horda</div>
+        <div class="modal-header-sub">Desperte um arquétipo ancestral para enfrentar a horda</div>
       </div>
-      <button id="open-talents-btn" class="hud-btn" style="border-color: #f39c12; color: #f39c12;">
-        <svg class="inline-gold-icon" viewBox="0 0 24 24" style="margin-right: 4px;"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="#f1c40f" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#f1c40f"/></svg>ASTROLÁBIO DE ALMAS
-      </button>
+      <div class="char-modal-header-actions">
+        <div class="char-souls-counter" title="Almas acumuladas para o Astrolábio">
+          <svg class="inline-gold-icon" viewBox="0 0 24 24"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="#f1c40f" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#f1c40f"/></svg>
+          <span id="char-souls-val">0</span>
+        </div>
+        <button id="open-talents-btn" class="hud-btn" style="border-color: #f39c12; color: #f39c12;">
+          <svg class="inline-gold-icon" viewBox="0 0 24 24" style="margin-right: 4px;"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="#f1c40f" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#f1c40f"/></svg>ASTROLÁBIO
+        </button>
+      </div>
     </div>
     
     <div class="char-altar-layout">
-      <!-- Coluna Esquerda: Pedestais de Escolha -->
+      <!-- Coluna 1: Pedestais de Escolha (Roster) -->
       <div id="char-pedestals" class="char-pedestals-col"></div>
 
-      <!-- Coluna Direita: Vitral e Invocação -->
+      <!-- Coluna 2: Palco Central de Evocação da Skin (Canvas 2D ao Vivo) -->
+      <div class="char-stage-col">
+        <div class="char-stage-badge" id="stage-archetype-badge">O PALADINO</div>
+        
+        <div class="char-stage-viewport">
+          <canvas id="char-preview-canvas" width="280" height="340"></canvas>
+          <div class="char-stage-hint">Toque para emanar fúria</div>
+        </div>
+
+        <!-- Controles Interativos da Prévia -->
+        <div class="char-stage-controls">
+          <button id="btn-preview-facing" class="stage-ctrl-btn" title="Inverter Ângulo do Herói">
+            <span>↺</span> Girar
+          </button>
+          <div class="stage-pose-group">
+            <button class="stage-pose-btn active" data-pose="idle" title="Postura Ociosa">✨ Repouso</button>
+            <button class="stage-pose-btn" data-pose="combat" title="Postura de Combate">⚔ Combate</button>
+            <button class="stage-pose-btn" data-pose="skill" title="Postura de Poder / Habilidade">🔥 Poder</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coluna 3: Grimório Tático & Invocação -->
       <div id="char-showcase" class="char-vitral-showcase"></div>
     </div>
   </div>
