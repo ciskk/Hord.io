@@ -13,241 +13,265 @@ export function tileHash(gx, gy) {
   return n - Math.floor(n);
 }
 
+// Ruído suave de baixa frequência para gerar caminhos e manchas de terreno
+function smoothNoise(x, y) {
+  const i = Math.floor(x);
+  const j = Math.floor(y);
+  const fx = x - i;
+  const fy = y - j;
+  const sx = fx * fx * (3 - 2 * fx);
+  const sy = fy * fy * (3 - 2 * fy);
+
+  const n00 = tileHash(i, j);
+  const n10 = tileHash(i + 1, j);
+  const n01 = tileHash(i, j + 1);
+  const n11 = tileHash(i + 1, j + 1);
+
+  const nx0 = n00 + sx * (n10 - n00);
+  const nx1 = n01 + sx * (n11 - n01);
+  return nx0 + sy * (nx1 - nx0);
+}
+
 export const ambientEmbers = [];
-for (let i = 0; i < 40; i++) {
+for (let i = 0; i < 45; i++) {
   ambientEmbers.push({
     x: Math.random() * 2000 - 1000,
     y: Math.random() * 2000 - 1000,
-    r: Math.random() * 1.6 + 0.5,
-    speed: Math.random() * 0.45 + 0.25,
-    alpha: Math.random() * 0.4 + 0.2
+    r: Math.random() * 1.8 + 0.6,
+    speed: Math.random() * 0.45 + 0.2,
+    alpha: Math.random() * 0.45 + 0.25
   });
 }
 
 export function renderEnvironment(ctx) {
-  const tileSize = 110;
-  const startCol = Math.floor(camera.x / tileSize);
+  const tileSize = 96;
+  const startCol = Math.floor(camera.x / tileSize) - 1;
   const endCol = Math.floor((camera.x + viewW) / tileSize) + 1;
-  const startRow = Math.floor(camera.y / tileSize);
+  const startRow = Math.floor(camera.y / tileSize) - 1;
   const endRow = Math.floor((camera.y + viewH) / tileSize) + 1;
 
+  // 1. Renderização do Solo com Macro-Zonas (Sem bordas quadradas)
   for (let c = startCol; c <= endCol; c++) {
     for (let r = startRow; r <= endRow; r++) {
       const tileX = c * tileSize;
       const tileY = r * tileSize;
       const h = tileHash(c, r);
+      const macroZone = smoothNoise(c * 0.18, r * 0.18);
 
       if (currentArenaTheme === 'CEMETERY' || currentArenaTheme === 'INDUSTRIAL') {
-        // Grama noturna escura com variação de musgo e terra úmida
-        ctx.fillStyle = h > 0.65 ? '#102216' : (h > 0.35 ? '#0c1a11' : '#08130c');
-      } else if (currentArenaTheme === 'VAMPIRE') {
-        ctx.fillStyle = h > 0.6 ? '#2c0c16' : (h > 0.3 ? '#1f070e' : '#130307');
-      } else if (currentArenaTheme === 'MONOLITH') {
-        ctx.fillStyle = h > 0.6 ? '#2b1407' : (h > 0.3 ? '#1c0d05' : '#110702');
-      } else if (currentArenaTheme === 'REAPER') {
-        ctx.fillStyle = h > 0.6 ? '#0b1d28' : (h > 0.3 ? '#06131c' : '#030b10');
-      } else if (currentArenaTheme === 'ABYSS') {
-        ctx.fillStyle = h > 0.6 ? '#1b082e' : (h > 0.3 ? '#120421' : '#090212');
-      }
-      ctx.fillRect(tileX, tileY, tileSize, tileSize);
+        // Variação orgânica entre terra revirada, grama noturna e caminhos de pedra gótica
+        if (macroZone > 0.62) {
+          // Trilha de lajotas antigas desgastadas
+          ctx.fillStyle = (c + r) % 2 === 0 ? '#121714' : '#161c18';
+          ctx.fillRect(tileX, tileY, tileSize, tileSize);
+          
+          // Detalhe de pedras de calçamento
+          ctx.fillStyle = '#0c100e';
+          ctx.fillRect(tileX + 10, tileY + 12, 32, 22);
+          ctx.fillRect(tileX + 50, tileY + 24, 38, 26);
+          ctx.fillRect(tileX + 18, tileY + 54, 44, 28);
+        } else if (macroZone < 0.36) {
+          // Manchas de terra úmida / cova aberta
+          ctx.fillStyle = h > 0.5 ? '#0e1510' : '#080d09';
+          ctx.fillRect(tileX, tileY, tileSize, tileSize);
 
-      if (currentArenaTheme === 'CEMETERY' || currentArenaTheme === 'INDUSTRIAL') {
-        // Fendas sutis de terra úmida entre os ladrilhos
-        ctx.strokeStyle = '#050b07';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(tileX + 0.5, tileY + 0.5, tileSize - 1, tileSize - 1);
+          // Poça de água lamacenta refletindo o céu escuro
+          if (h < 0.25) {
+            ctx.fillStyle = 'rgba(5, 12, 10, 0.75)';
+            ctx.beginPath();
+            ctx.ellipse(tileX + 48, tileY + 48, 28, 14, h * 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#030806';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        } else {
+          // Grama de cemitério densa e escura
+          ctx.fillStyle = h > 0.6 ? '#0b160f' : (h > 0.3 ? '#08120c' : '#060d09');
+          ctx.fillRect(tileX, tileY, tileSize, tileSize);
+        }
 
-        const h2 = tileHash(c + 113, r + 227);
-        const h3 = tileHash(c - 79, r + 911);
-
-        if (h < 0.08) {
-          // 1. Lápide de Pedra Vertical Gótica
-          const gx = tileX + 32 + (h2 * 28);
-          const gy = tileY + 28 + (h3 * 22);
-          const tw = 22, th = 30;
-
-          // Sombra projetada no solo
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-          ctx.beginPath();
-          ctx.ellipse(gx + tw / 2, gy + th + 1, 15, 5, 0, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Corpo de pedra arqueado
-          ctx.fillStyle = '#222b26';
-          ctx.beginPath();
-          ctx.moveTo(gx, gy + th);
-          ctx.lineTo(gx, gy + 11);
-          ctx.arc(gx + tw / 2, gy + 11, tw / 2, Math.PI, 0);
-          ctx.lineTo(gx + tw, gy + th);
-          ctx.closePath();
-          ctx.fill();
-
-          // Borda de pedra
-          ctx.strokeStyle = '#35433a';
-          ctx.lineWidth = 1.2;
-          ctx.stroke();
-
-          // Cruz entalhada na pedra
-          ctx.strokeStyle = '#121815';
+        // Raízes e fissuras no solo
+        if (h > 0.88) {
+          ctx.strokeStyle = '#040805';
           ctx.lineWidth = 1.2;
           ctx.beginPath();
-          ctx.moveTo(gx + tw / 2, gy + 8);
-          ctx.lineTo(gx + tw / 2, gy + 22);
-          ctx.moveTo(gx + 5, gy + 13);
-          ctx.lineTo(gx + tw - 5, gy + 13);
-          ctx.stroke();
-
-          // Musgo na base da lápide
-          ctx.fillStyle = '#16331e';
-          ctx.fillRect(gx - 2, gy + th - 3, tw + 4, 3);
-
-        } else if (h >= 0.08 && h < 0.15) {
-          // 2. Cruz de Pedra Gótica Antiga
-          const cx = tileX + 42 + (h2 * 22);
-          const cy = tileY + 30 + (h3 * 20);
-
-          // Sombra da cruz
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-          ctx.beginPath();
-          ctx.ellipse(cx, cy + 26, 12, 4, 0, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Haste vertical e travessão horizontal
-          ctx.fillStyle = '#26322b';
-          ctx.fillRect(cx - 3, cy, 6, 26);
-          ctx.fillRect(cx - 10, cy + 6, 20, 5);
-
-          // Contorno de pedra
-          ctx.strokeStyle = '#38463e';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(cx - 3, cy, 6, 26);
-          ctx.strokeRect(cx - 10, cy + 6, 20, 5);
-
-        } else if (h >= 0.15 && h < 0.22) {
-          // 3. Laje Mortuária Antiga Cravada na Terra
-          const sx = tileX + 22 + (h2 * 20);
-          const sy = tileY + 28 + (h3 * 20);
-          const lw = 46, lh = 28;
-
-          // Rebaixo de terra escura
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-          ctx.fillRect(sx + 3, sy + 3, lw, lh);
-
-          // Laje de pedra
-          ctx.fillStyle = '#1b231e';
-          ctx.fillRect(sx, sy, lw, lh);
-          ctx.strokeStyle = '#29352e';
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(sx, sy, lw, lh);
-
-          // Fissura na laje
-          ctx.strokeStyle = '#0a100c';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(sx + 8, sy + 5);
-          ctx.lineTo(sx + 20, sy + 15);
-          ctx.lineTo(sx + 36, sy + 23);
-          ctx.stroke();
-
-        } else if (h >= 0.22 && h < 0.42) {
-          // 4. Tufos de Grama Alta & Ervas Selvagens
-          const tx = tileX + 20 + (h2 * 60);
-          const ty = tileY + 25 + (h3 * 55);
-
-          ctx.strokeStyle = '#1b3b24';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(tx, ty);
-          ctx.quadraticCurveTo(tx - 4, ty - 10, tx - 7, ty - 14);
-          ctx.moveTo(tx + 4, ty);
-          ctx.quadraticCurveTo(tx + 2, ty - 14, tx + 1, ty - 18);
-          ctx.moveTo(tx + 8, ty);
-          ctx.quadraticCurveTo(tx + 12, ty - 10, tx + 15, ty - 13);
-          ctx.stroke();
-
-          // Ponta iluminada pelo luar
-          ctx.strokeStyle = '#285535';
-          ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          ctx.moveTo(tx + 4, ty - 8);
-          ctx.lineTo(tx + 1, ty - 18);
-          ctx.stroke();
-
-        } else if (h >= 0.42 && h < 0.49) {
-          // 5. Flores Funerárias Secas e Mancha de Musgo
-          const fx = tileX + 30 + (h2 * 45);
-          const fy = tileY + 30 + (h3 * 45);
-
-          ctx.fillStyle = '#162e1c';
-          ctx.beginPath();
-          ctx.arc(fx, fy, 9, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = '#5c1b2c';
-          ctx.beginPath();
-          ctx.arc(fx - 3, fy - 2, 2.5, 0, Math.PI * 2);
-          ctx.arc(fx + 3, fy - 1, 2, 0, Math.PI * 2);
-          ctx.arc(fx, fy + 3, 2, 0, Math.PI * 2);
-          ctx.fill();
-
-        } else if (h >= 0.49 && h < 0.58) {
-          // 6. Seixos e Pedras de Pavimento Quebrado
-          const px = tileX + 25 + (h2 * 50);
-          const py = tileY + 25 + (h3 * 50);
-
-          ctx.fillStyle = '#1b2620';
-          ctx.beginPath();
-          ctx.arc(px, py, 3.5, 0, Math.PI * 2);
-          ctx.arc(px + 9, py + 6, 2.5, 0, Math.PI * 2);
-          ctx.arc(px - 7, py + 4, 3, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = '#2c3b32';
-          ctx.lineWidth = 1;
+          ctx.moveTo(tileX + 10, tileY + 15);
+          ctx.lineTo(tileX + 45, tileY + 48);
+          ctx.lineTo(tileX + 80, tileY + 52);
           ctx.stroke();
         }
 
-      } else if (currentArenaTheme === 'VAMPIRE') {
-        ctx.strokeStyle = '#5c1022';
-        ctx.lineWidth = 2.5;
-        ctx.strokeRect(tileX + 1, tileY + 1, tileSize - 2, tileSize - 2);
-        if (h < 0.35) {
-          ctx.fillStyle = 'rgba(142, 68, 173, 0.2)';
-          ctx.beginPath();
-          ctx.arc(tileX + 55, tileY + 55, 18, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      } else if (currentArenaTheme === 'MONOLITH') {
-        ctx.strokeStyle = h < 0.3 ? '#e67e22' : '#3d1c0b';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(tileX + 1, tileY + 1, tileSize - 2, tileSize - 2);
-      } else if (currentArenaTheme === 'REAPER') {
-        ctx.strokeStyle = '#00cec9';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(tileX + 1, tileY + 1, tileSize - 2, tileSize - 2);
-      } else if (currentArenaTheme === 'ABYSS') {
-        ctx.strokeStyle = '#9b59b6';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(tileX + 1, tileY + 1, tileSize - 2, tileSize - 2);
+      } else {
+        // Fallback estilizado para os outros biomas
+        const colMap = {
+          VAMPIRE: ['#22060d', '#150307'],
+          MONOLITH: ['#200e04', '#120601'],
+          REAPER: ['#06131c', '#02090e'],
+          ABYSS: ['#120420', '#07010d']
+        };
+        const colors = colMap[currentArenaTheme] || ['#0d1410', '#070a08'];
+        ctx.fillStyle = h > 0.5 ? colors[0] : colors[1];
+        ctx.fillRect(tileX, tileY, tileSize, tileSize);
       }
     }
   }
 
-  // Névoa Baixa Rasteira no Cemitério (sutil e translúcida, preserva contraste de gameplay)
+  // 2. Props e Cenografia de Primeiro Plano (Lápides, Mausoléus e Detalhes)
   if (currentArenaTheme === 'CEMETERY' || currentArenaTheme === 'INDUSTRIAL') {
-    const mistShift1 = (frameCount * 0.4) % viewW;
-    const mistShift2 = (frameCount * 0.25) % viewW;
+    for (let c = startCol; c <= endCol; c++) {
+      for (let r = startRow; r <= endRow; r++) {
+        const tileX = c * tileSize;
+        const tileY = r * tileSize;
+        const h = tileHash(c, r);
+        const h2 = tileHash(c + 71, r + 137);
+        const h3 = tileHash(c - 93, r + 419);
 
-    ctx.fillStyle = 'rgba(25, 55, 40, 0.04)';
-    ctx.fillRect(camera.x, camera.y, viewW, viewH);
+        // Macro-Monumento: Mausoléu Antigo (a cada ~80 ladrilhos)
+        if (c % 9 === 0 && r % 9 === 0) {
+          const mx = tileX + 16;
+          const my = tileY + 12;
 
-    ctx.fillStyle = 'rgba(40, 85, 60, 0.035)';
-    ctx.beginPath();
-    ctx.ellipse(camera.x + mistShift1, camera.y + viewH * 0.35, 260, 70, 0.08, 0, Math.PI * 2);
-    ctx.ellipse(camera.x + ((mistShift1 + viewW * 0.5) % viewW), camera.y + viewH * 0.75, 320, 80, -0.06, 0, Math.PI * 2);
-    ctx.ellipse(camera.x + mistShift2, camera.y + viewH * 0.55, 220, 60, 0.04, 0, Math.PI * 2);
-    ctx.fill();
+          // Sombra projetada densa
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+          ctx.beginPath();
+          ctx.ellipse(mx + 36, my + 64, 44, 16, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Estrutura do Mausoléu
+          ctx.fillStyle = '#1c2420';
+          ctx.fillRect(mx, my, 72, 60);
+          ctx.strokeStyle = '#2d3b34';
+          ctx.lineWidth = 1.8;
+          ctx.strokeRect(mx, my, 72, 60);
+
+          // Frontão triangular superior
+          ctx.fillStyle = '#24302a';
+          ctx.beginPath();
+          ctx.moveTo(mx - 4, my);
+          ctx.lineTo(mx + 36, my - 24);
+          ctx.lineTo(mx + 76, my);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // Grade de ferro / portão lacrado
+          ctx.fillStyle = '#0a0d0b';
+          ctx.fillRect(mx + 20, my + 18, 32, 42);
+          ctx.strokeStyle = '#3e4a43';
+          ctx.lineWidth = 1.2;
+          for (let b = mx + 24; b < mx + 52; b += 6) {
+            ctx.beginPath();
+            ctx.moveTo(b, my + 18);
+            ctx.lineTo(b, my + 60);
+            ctx.stroke();
+          }
+          continue;
+        }
+
+        // Lápides e Cruzes Góticas com Velas Acesas
+        if (h < 0.08) {
+          const gx = tileX + 24 + (h2 * 36);
+          const gy = tileY + 20 + (h3 * 28);
+          const tw = 24, th = 34;
+
+          // Sombra
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+          ctx.beginPath();
+          ctx.ellipse(gx + tw / 2, gy + th + 2, 16, 6, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Lápide arqueada chanfrada
+          ctx.fillStyle = '#202924';
+          ctx.beginPath();
+          ctx.moveTo(gx, gy + th);
+          ctx.lineTo(gx, gy + 12);
+          ctx.arc(gx + tw / 2, gy + 12, tw / 2, Math.PI, 0);
+          ctx.lineTo(gx + tw, gy + th);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.strokeStyle = '#3a4940';
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+
+          // Cruz gravada
+          ctx.strokeStyle = '#0f1411';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(gx + tw / 2, gy + 10);
+          ctx.lineTo(gx + tw / 2, gy + 26);
+          ctx.moveTo(gx + 6, gy + 16);
+          ctx.lineTo(gx + tw - 6, gy + 16);
+          ctx.stroke();
+
+          // Vela mortuária acessa na base
+          const candleX = gx + tw + 3;
+          const candleY = gy + th - 2;
+          const flicker = Math.sin(frameCount * 0.2 + gx) * 1.5;
+
+          ctx.fillStyle = '#ded3aa';
+          ctx.fillRect(candleX - 1.5, candleY - 8, 3, 8);
+
+          // Chama e iluminação ambiente local
+          ctx.fillStyle = 'rgba(243, 156, 18, 0.22)';
+          ctx.beginPath();
+          ctx.arc(candleX, candleY - 10, 10 + flicker, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#f39c12';
+          ctx.beginPath();
+          ctx.arc(candleX, candleY - 9, 2.2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(candleX, candleY - 10, 1.2, 0, Math.PI * 2);
+          ctx.fill();
+
+        } else if (h >= 0.08 && h < 0.16) {
+          // Cruz de Pedra Antiga Quebrada
+          const cx = tileX + 36 + (h2 * 26);
+          const cy = tileY + 24 + (h3 * 26);
+
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+          ctx.beginPath();
+          ctx.ellipse(cx, cy + 28, 14, 5, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#28332c';
+          ctx.fillRect(cx - 3, cy, 6, 28);
+          ctx.fillRect(cx - 11, cy + 8, 22, 6);
+          ctx.strokeStyle = '#43544a';
+          ctx.lineWidth = 1.2;
+          ctx.strokeRect(cx - 3, cy, 6, 28);
+          ctx.strokeRect(cx - 11, cy + 8, 22, 6);
+
+          // Musgo acumulado
+          ctx.fillStyle = '#163820';
+          ctx.fillRect(cx - 4, cy + 22, 8, 6);
+
+        } else if (h >= 0.16 && h < 0.38) {
+          // Tufos de capim alto balançando
+          const tx = tileX + 20 + (h2 * 55);
+          const ty = tileY + 20 + (h3 * 55);
+          const wind = Math.sin(frameCount * 0.04 + tx * 0.05) * 4;
+
+          ctx.strokeStyle = '#1b3823';
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.moveTo(tx, ty);
+          ctx.quadraticCurveTo(tx - 3 + wind, ty - 10, tx - 6 + wind * 1.5, ty - 16);
+          ctx.moveTo(tx + 4, ty);
+          ctx.quadraticCurveTo(tx + 3 + wind, ty - 12, tx + 4 + wind * 1.5, ty - 20);
+          ctx.moveTo(tx + 8, ty);
+          ctx.quadraticCurveTo(tx + 11 + wind, ty - 10, tx + 14 + wind * 1.5, ty - 15);
+          ctx.stroke();
+        }
+      }
+    }
   }
 
+  // 3. Poças de Sangue e Ácido
   bloodSplats.forEach(b => {
     ctx.fillStyle = b.color;
     ctx.beginPath();
@@ -266,45 +290,51 @@ export function renderEnvironment(ctx) {
     ctx.stroke();
   });
 
+  // 4. Fogos-Fátuos Flutuantes (Partículas de Ambiente)
   for (let s of ambientEmbers) {
-    const floatY = s.y - (frameCount * 0.35 * s.speed);
-    const sway = Math.sin(frameCount * 0.03 + s.y) * 6;
+    const floatY = s.y - (frameCount * 0.3 * s.speed);
+    const sway = Math.sin(frameCount * 0.03 + s.y) * 8;
     let sx = (((s.x + sway) - camera.x * s.speed) % viewW + viewW) % viewW;
     let sy = ((floatY - camera.y * s.speed) % viewH + viewH) % viewH;
 
-    if (currentArenaTheme === 'MONOLITH') {
-      ctx.fillStyle = `rgba(230, 126, 34, ${s.alpha * 1.5})`;
-      ctx.beginPath();
-      ctx.arc(camera.x + sx, camera.y + sy, s.r, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (currentArenaTheme === 'VAMPIRE') {
-      ctx.fillStyle = `rgba(192, 57, 43, ${s.alpha})`;
-      ctx.beginPath();
-      ctx.arc(camera.x + sx, camera.y + sy, s.r, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (currentArenaTheme === 'REAPER') {
-      ctx.fillStyle = `rgba(0, 206, 201, ${s.alpha})`;
-      ctx.beginPath();
-      ctx.arc(camera.x + sx, camera.y + sy, s.r, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (currentArenaTheme === 'ABYSS') {
-      ctx.fillStyle = `rgba(155, 89, 182, ${s.alpha * 1.4})`;
-      ctx.beginPath();
-      ctx.arc(camera.x + sx, camera.y + sy, s.r, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      // CEMETERY: Fogo-fátuo / Alma Errante espectral (verde esmeralda e ciano)
-      const pulse = Math.sin(frameCount * 0.06 + s.x) * 0.3 + 0.7;
-      // Aura espectral externa
-      ctx.fillStyle = `rgba(46, 204, 113, ${s.alpha * 0.28 * pulse})`;
-      ctx.beginPath();
-      ctx.arc(camera.x + sx, camera.y + sy, s.r * 2.3, 0, Math.PI * 2);
-      ctx.fill();
-      // Núcleo brilhante ciano-esmeralda
-      ctx.fillStyle = `rgba(120, 250, 195, ${s.alpha * 1.2 * pulse})`;
-      ctx.beginPath();
-      ctx.arc(camera.x + sx, camera.y + sy, s.r, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    const pulse = Math.sin(frameCount * 0.05 + s.x) * 0.35 + 0.65;
+    ctx.fillStyle = `rgba(46, 204, 113, ${s.alpha * 0.25 * pulse})`;
+    ctx.beginPath();
+    ctx.arc(camera.x + sx, camera.y + sy, s.r * 2.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = `rgba(168, 255, 219, ${s.alpha * pulse})`;
+    ctx.beginPath();
+    ctx.arc(camera.x + sx, camera.y + sy, s.r, 0, Math.PI * 2);
+    ctx.fill();
   }
+
+  // 5. Névoa Volumétrica com Efeito de Paralaxe no Mundo
+  if (currentArenaTheme === 'CEMETERY' || currentArenaTheme === 'INDUSTRIAL') {
+    const mist1 = (frameCount * 0.35 + camera.x * 0.2) % 1200;
+    const mist2 = (frameCount * 0.20 + camera.y * 0.15) % 1200;
+
+    ctx.fillStyle = 'rgba(20, 50, 35, 0.04)';
+    ctx.fillRect(camera.x, camera.y, viewW, viewH);
+
+    ctx.fillStyle = 'rgba(35, 75, 55, 0.035)';
+    ctx.beginPath();
+    ctx.ellipse(camera.x + (viewW * 0.5) - mist1 + 600, camera.y + viewH * 0.4, 380, 90, 0.05, 0, Math.PI * 2);
+    ctx.ellipse(camera.x + mist2, camera.y + viewH * 0.75, 440, 110, -0.05, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 6. Vinheta Periférica Sombria (Foco Dramático no Centro da Ação)
+  const vignette = ctx.createRadialGradient(
+    camera.x + viewW / 2, 
+    camera.y + viewH / 2, 
+    Math.min(viewW, viewH) * 0.35,
+    camera.x + viewW / 2, 
+    camera.y + viewH / 2, 
+    Math.max(viewW, viewH) * 0.75
+  );
+  vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  vignette.addColorStop(1, 'rgba(3, 7, 5, 0.65)');
+  ctx.fillStyle = vignette;
+  ctx.fillRect(camera.x, camera.y, viewW, viewH);
 }
