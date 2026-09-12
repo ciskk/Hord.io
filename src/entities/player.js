@@ -114,6 +114,8 @@ export const player = {
   baseSpeed: 3.4,
   pushVx: 0,
   pushVy: 0,
+  knockbackReceived: 1.0,
+  knockbackDealt: 1.0,
 
   hp: 120,
   maxHp: 120,
@@ -242,20 +244,61 @@ export function triggerHeroSkill() {
     triggerShake(9);
     triggerHaptic('heavy');
   } else if (selectedHeroKey === 'MAGE') {
-    player.iFrames = 26;
-    const moveAng = Math.atan2(inputY || 0.0001, inputX || player.facing);
-    player.ignisDashVx = Math.cos(moveAng) * 14.2;
-    player.ignisDashVy = Math.sin(moveAng) * 14.2;
-    player.ignisDashDuration = 14;
-    playSfx('acid');
-    triggerShake(6);
-    triggerHaptic('medium');
+    player.iFrames = 30;
+    const inputLen = Math.hypot(inputX, inputY);
+    const moveAng = inputLen > 0.05 
+      ? Math.atan2(inputY, inputX) 
+      : (player.facing === -1 ? Math.PI : 0);
+
+    player.ignisDashVx = Math.cos(moveAng) * 15.5;
+    player.ignisDashVy = Math.sin(moveAng) * 15.5;
+    player.ignisDashDuration = 16;
+    if (Math.abs(player.ignisDashVx) > 0.1) {
+      player.facing = player.ignisDashVx >= 0 ? 1 : -1;
+    }
+
+    // Ponto de Ignição: Rugido térmico, dispersão de partículas e anulação de projéteis hostis
+    playSfx('boss');
+    triggerShake(9);
+    triggerHaptic('heavy');
+    createHitParticles(player.x, player.y, '#ffffff', 16);
+    createHitParticles(player.x, player.y, '#f1c40f', 22);
+    createHitParticles(player.x, player.y, '#e74c3c', 16);
+
+    for (let i = enemyBullets.length - 1; i >= 0; i--) {
+      const eb = enemyBullets[i];
+      const edx = eb.x - player.x;
+      const edy = eb.y - player.y;
+      if (edx * edx + edy * edy < 95 * 95) {
+        createHitParticles(eb.x, eb.y, '#f1c40f', 4);
+        enemyBullets.splice(i, 1);
+      }
+    }
   } else if (selectedHeroKey === 'ROGUE') {
     player.invisTimer = 120;
     player.isPhasing = true;
-    createHitParticles(player.x, player.y, '#34495e', 24);
+    player.iFrames = 25;
+    
     playSfx('evolution');
-    triggerHaptic('light');
+    triggerShake(7);
+    triggerHaptic('medium');
+
+    // Dispersão volumétrica de fumaça densa com partículas astrais
+    createHitParticles(player.x, player.y, '#1e272e', 18);
+    createHitParticles(player.x, player.y, '#00cec9', 12);
+    createHitParticles(player.x, player.y, '#16a085', 14);
+    createHitParticles(player.x, player.y, '#ffffff', 6);
+
+    // Onda de atordoamento postural imediato nos monstros próximos à detonação
+    for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
+      const dx = e.x - player.x;
+      const dy = e.y - player.y;
+      if (dx * dx + dy * dy < 80 * 80 && !e.isBoss) {
+        e.stunTimer = Math.max(e.stunTimer || 0, 30);
+        e.hitFlash = 3;
+      }
+    }
   } else if (selectedHeroKey === 'BARBARIAN') {
     triggerShake(18);
     playSfx('boss');
@@ -446,15 +489,16 @@ export function updateSpinningAxes(dt) {
         addDamageText(seg.closestX, seg.closestY, Math.round(finalDmg), isCrit || isMeleeAdrenaline, dmgColor);
         createHitParticles(seg.closestX, seg.closestY, isOuterZone ? '#e67e22' : '#d35400', isOuterZone ? 4 : 2);
 
-        // Repulsão tangencial e radial
+        // Repulsão tangencial e radial amplificada pelo peso do personagem
+        const kbMult = player.knockbackDealt || 1.0;
         if (isOuterZone) {
           const tanAng = angle + Math.PI * 0.5;
-          const pushForce = (player.evolvedAxe ? 12 : 7) * (player.berserkTimer > 0 ? 1.6 : 1.0);
+          const pushForce = (player.evolvedAxe ? 12 : 7) * (player.berserkTimer > 0 ? 1.6 : 1.0) * kbMult;
           e.x += Math.cos(tanAng) * pushForce;
           e.y += Math.sin(tanAng) * pushForce;
         } else {
           const radAng = Math.atan2(e.y - player.y, e.x - player.x);
-          const pushForce = (player.evolvedAxe ? 16 : 11) * (player.berserkTimer > 0 ? 1.5 : 1.0);
+          const pushForce = (player.evolvedAxe ? 16 : 11) * (player.berserkTimer > 0 ? 1.5 : 1.0) * kbMult;
           e.x += Math.cos(radAng) * pushForce;
           e.y += Math.sin(radAng) * pushForce;
         }
@@ -541,6 +585,13 @@ export function fireWeapons() {
     } else if (w.type === 'STAFF') {
       playSfx('shoot');
       const count = player.evolvedStaff ? Math.max(w.count, 4) : w.count;
+      const primaryTarget = inRange[0].enemy;
+      player.facing = primaryTarget.x >= player.x ? 1 : -1;
+      player.staffCastTimer = 11;
+
+      // Flash da coroa do cajado na ponta do lançamento
+      createHitParticles(player.x + player.facing * 14, player.y - 5, '#ffffff', 5);
+      createHitParticles(player.x + player.facing * 14, player.y - 5, '#f1c40f', 7);
 
       for (let i = 0; i < count; i++) {
         const target = inRange[i % inRange.length].enemy;
@@ -552,10 +603,10 @@ export function fireWeapons() {
           type: 'STAFF',
           x: player.x,
           y: player.y,
-          vx: Math.cos(angle) * (player.evolvedStaff ? 11.5 : 9.8),
-          vy: Math.sin(angle) * (player.evolvedStaff ? 11.5 : 9.8),
+          vx: Math.cos(angle) * (player.evolvedStaff ? 12.0 : 10.2),
+          vy: Math.sin(angle) * (player.evolvedStaff ? 12.0 : 10.2),
           angle: angle,
-          radius: player.evolvedStaff ? 11 : 8,
+          radius: player.evolvedStaff ? 12 : 9,
           damage: player.damage * w.damageMult * (player.evolvedStaff ? 1.7 : 1.25),
           life: 55,
           piercing: (player.staffPierceBonus || 0) + (player.evolvedStaff ? 5 : 2),
@@ -692,6 +743,8 @@ export function resetPlayer(heroKey) {
   player.orbitals = c.stats.orbitals;
   player.skillMaxCd = c.stats.skillCooldownMax;
   player.skillCd = 0;
+  player.knockbackReceived = c.stats.knockbackReceived !== undefined ? c.stats.knockbackReceived : 1.0;
+  player.knockbackDealt = c.stats.knockbackDealt !== undefined ? c.stats.knockbackDealt : 1.0;
   player.dashDuration = 0;
   player.dashVx = 0;
   player.dashVy = 0;
@@ -722,6 +775,7 @@ export function resetPlayer(heroKey) {
   player.attackTimer = 0;
   player.isMoving = false;
   player.staffPierceBonus = 0;
+  player.staffCastTimer = 0;
 
   player.axeAngle = 0;
   player.axeSpinSpeed = 0.085;

@@ -52,6 +52,14 @@ export function updateProjectiles(dt) {
             e.hitFlash = 4;
             addDamageText(e.x, e.y, Math.round(impactDmg), isCrit, isCrit ? '#f1c40f' : (b.isEvolved ? '#00cec9' : '#2ecc71'));
             createHitParticles(e.x, e.y, b.isEvolved ? '#00cec9' : '#2ecc71', 3);
+
+            // Repulsão explosiva radial da poção ao atingir o solo
+            if (!e.isBoss && !e.isBossSubTarget) {
+              const pushAng = Math.atan2(e.y - b.y, e.x - b.x);
+              const pushPower = 5.0 * (player.knockbackDealt || 1.0) * (e.isElite ? 0.5 : 1.0);
+              e.x += Math.cos(pushAng) * pushPower;
+              e.y += Math.sin(pushAng) * pushPower;
+            }
           }
         }
 
@@ -117,6 +125,16 @@ export function updateProjectiles(dt) {
         e.hp -= finalDmg;
         e.hitFlash = 4;
 
+        // Knockback desferido nos monstros: Pesados dobram a força; Elites resistem 50%; Chefes são imunes
+        if (!e.isBoss && !e.isBossSubTarget) {
+          const impactAngle = b.angle !== undefined ? b.angle : Math.atan2(b.vy || 0, b.vx || 0);
+          const baseWeaponPush = (b.type === 'HAMMER_SLAM' ? 14.0 : (b.type === 'STAFF' ? 6.0 : 4.5));
+          const eliteResist = e.isElite ? 0.5 : 1.0;
+          const totalPush = baseWeaponPush * (player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0) * eliteResist;
+          e.x += Math.cos(impactAngle) * totalPush;
+          e.y += Math.sin(impactAngle) * totalPush;
+        }
+
         if (isCrit || isMeleeAdrenaline) {
           playSfx('crit');
           triggerHaptic('light');
@@ -181,6 +199,15 @@ export function updateProjectiles(dt) {
       const col = eb.color || '#e74c3c';
       addDamageText(player.x, player.y, `-${eb.damage}`, false, col);
       createHitParticles(player.x, player.y, col, 5);
+
+      // Knockback sofrido por projétil inimigo
+      const hasSuperArmor = (player.dashDuration > 0) || (player.ignisDashDuration > 0) || (player.invisTimer > 0);
+      if (!hasSuperArmor) {
+        const bulletAng = Math.atan2(eb.vy || (player.y - eb.y), eb.vx || (player.x - eb.x));
+        const bulletPush = 6.5 * (player.knockbackReceived !== undefined ? player.knockbackReceived : 1.0);
+        player.pushVx = Math.cos(bulletAng) * bulletPush;
+        player.pushVy = Math.sin(bulletAng) * bulletPush;
+      }
 
       enemyBullets.splice(i, 1);
     }

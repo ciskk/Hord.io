@@ -20,6 +20,8 @@ import {
   damageTexts, 
   particles, 
   bloodSplats, 
+  dyingEnemies,
+  addDyingEnemy,
   addDamageText, 
   createHitParticles, 
   addBloodSplat, 
@@ -56,6 +58,7 @@ export {
   damageTexts, 
   particles, 
   bloodSplats, 
+  dyingEnemies,
   addDamageText, 
   createHitParticles, 
   addBloodSplat, 
@@ -183,6 +186,7 @@ export function resetGame() {
   player.isPhasing = false;
 
   enemies.length = 0;
+  dyingEnemies.length = 0;
   bullets.length = 0;
   enemyBullets.length = 0;
   acidPuddles.length = 0;
@@ -255,6 +259,7 @@ function update(dt) {
   // Timers do Jogador e Sincronização de Estados Reativos (Fase 2.1)
   if (player.iFrames > 0) player.iFrames = Math.max(0, player.iFrames - dt);
   if (player.skillCd > 0) player.skillCd = Math.max(0, player.skillCd - dt);
+  if (player.staffCastTimer > 0) player.staffCastTimer = Math.max(0, player.staffCastTimer - dt);
 
   if (player.invisTimer > 0) {
     player.invisTimer = Math.max(0, player.invisTimer - dt);
@@ -395,16 +400,31 @@ function update(dt) {
     }
   } else if (player.ignisDashDuration > 0) {
     player.ignisDashDuration -= dt;
+
+    // Redirecionamento térmico contínuo em tempo real
+    const inputLen = Math.hypot(inputX, inputY);
+    if (inputLen > 0.05) {
+      const moveAng = Math.atan2(inputY, inputX);
+      player.ignisDashVx = Math.cos(moveAng) * 15.5;
+      player.ignisDashVy = Math.sin(moveAng) * 15.5;
+      if (Math.abs(player.ignisDashVx) > 0.1) {
+        player.facing = player.ignisDashVx >= 0 ? 1 : -1;
+      }
+    }
+
     player.x += player.ignisDashVx * dt;
     player.y += player.ignisDashVy * dt;
-    player.iFrames = Math.max(player.iFrames, 6);
-    createHitParticles(player.x, player.y, '#e67e22', 3);
+    player.iFrames = Math.max(player.iFrames, 8);
 
-    if (Math.floor(frameCount) % 3 === 0) {
+    createHitParticles(player.x, player.y, '#ffffff', 2);
+    createHitParticles(player.x, player.y, '#f1c40f', 3);
+    createHitParticles(player.x, player.y, '#e67e22', 2);
+
+    if (Math.floor(frameCount) % 2 === 0) {
       acidPuddles.push({
         x: player.x,
         y: player.y,
-        radius: 36,
+        radius: 38,
         life: 280,
         maxLife: 280,
         isFire: true
@@ -416,15 +436,41 @@ function update(dt) {
       if (e.isBoss && e.mistState === 'DASHING') continue;
 
       const dSq = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
-      if (dSq < (player.radius + e.radius + 16) ** 2) {
-        let impactDmg = player.damage * 1.5;
+      if (dSq < (player.radius + e.radius + 18) ** 2) {
+        let impactDmg = player.damage * 1.6;
         if (e.isBoss || e.isBossSubTarget) {
           impactDmg *= 1.25; // Adrenalina Melee garantida
           if (e.isVulnerable) impactDmg *= 1.25;
         }
         e.hp -= impactDmg;
-        e.hitFlash = 3;
-        addDamageText(e.x, e.y, Math.round(impactDmg), true, '#e67e22');
+        e.hitFlash = 4;
+        addDamageText(e.x, e.y, Math.round(impactDmg), true, '#f1c40f');
+        createHitParticles(e.x, e.y, '#f1c40f', 3);
+      }
+    }
+
+    // Supernova Térmica Terminal ao encerrar o Passo Ígneo
+    if (player.ignisDashDuration <= 0) {
+      triggerShake(11);
+      playSfx('boss');
+      triggerHaptic('heavy');
+      createHitParticles(player.x, player.y, '#ffffff', 18);
+      createHitParticles(player.x, player.y, '#f1c40f', 24);
+      createHitParticles(player.x, player.y, '#e74c3c', 18);
+
+      // Repulsão de choque térmico nos inimigos ao redor
+      for (let i = 0; i < enemies.length; i++) {
+        const e = enemies[i];
+        const edx = e.x - player.x;
+        const edy = e.y - player.y;
+        const dist = Math.hypot(edx, edy);
+        if (dist < 85) {
+          const nx = dist > 0.001 ? edx / dist : 1;
+          const ny = dist > 0.001 ? edy / dist : 0;
+          e.x += nx * 24;
+          e.y += ny * 24;
+          e.hitFlash = 5;
+        }
       }
     }
   } else {
@@ -439,6 +485,15 @@ function update(dt) {
     player.x += inputX * player.speed * dt;
     player.y += inputY * player.speed * dt;
   }
+
+  // Integração física e amortecimento por atrito do Knockback
+  player.x += (player.pushVx || 0) * dt;
+  player.y += (player.pushVy || 0) * dt;
+  const friction = Math.pow(0.80, dt);
+  player.pushVx = (player.pushVx || 0) * friction;
+  player.pushVy = (player.pushVy || 0) * friction;
+  if (Math.abs(player.pushVx) < 0.05) player.pushVx = 0;
+  if (Math.abs(player.pushVy) < 0.05) player.pushVy = 0;
 
   camera.x = player.x - viewW / 2;
   camera.y = player.y - viewH / 2;
@@ -681,9 +736,10 @@ function update(dt) {
           playSfx('hit');
           const cleaveHitColor = tel.color || '#00cec9';
           addDamageText(player.x, player.y, `-${tel.damage}`, true, cleaveHitColor);
-          createHitParticles(tel.x, tel.y, cleaveHitColor, 16);
-          player.x += Math.cos(playerAng) * 28;
-          player.y += Math.sin(playerAng) * 28;
+          createHitParticles(tel.x, player.y, cleaveHitColor, 16);
+          const bossPushDist = 28 * (player.knockbackReceived !== undefined ? player.knockbackReceived : 1.0);
+          player.x += Math.cos(playerAng) * bossPushDist;
+          player.y += Math.sin(playerAng) * bossPushDist;
 
           if (player.hp <= 0) {
             player.hp = 0;
@@ -1392,6 +1448,11 @@ function update(dt) {
       gameState.kills++;
       createHitParticles(e.x, e.y, e.color, 6);
       addBloodSplat(e.x, e.y);
+
+      if (!e.isBoss && !e.isMiniBoss && !e.isBossSubTarget && !e.explodedNaturally) {
+        const hitAng = Math.atan2(e.y - player.y, e.x - player.x);
+        addDyingEnemy(e, hitAng);
+      }
 
       // Limpeza de telegrafia de pavio associada ao monstro
       if (e.fuseTelegraph) {

@@ -21,23 +21,94 @@ export const CHARACTERS = {
       hammerWood: "#3d271d"
     },
     startingWeapon: "HAMMER",
-    stats: { hp: 252, maxHp: 252, speed: 3.2, damage: 46, auraLvl: 1, projectiles: 1, orbitals: 0, magnet: 85, attackCooldown: 36, critChance: 0.15, skillCooldownMax: 420 }
+    stats: { 
+      hp: 252, 
+      maxHp: 252, 
+      speed: 3.2, 
+      damage: 46, 
+      auraLvl: 1, 
+      projectiles: 1, 
+      orbitals: 0, 
+      magnet: 85, 
+      attackCooldown: 36, 
+      critChance: 0.15, 
+      skillCooldownMax: 420,
+      knockbackReceived: 0.5,
+      knockbackDealt: 1.5
+    }
   },
   MAGE: {
     name: "Ignis",
     title: "A Piromante",
     desc: "Passiva: Críticos aplicam queimadura residual.<br><b>Arma Inicial: Cajado da Tormenta</b> (Canaliza e dispara esferas concentradas de poder mágico ígneo).<br><b>Poder: Passo Ígneo</b> (Dash veloz com rastro contínuo de fogo e fantasmas térmicos, atravessando inimigos com imunidade).",
-    color: { armor: "#c0392b", trim: "#e67e22", hair: "#f39c12", cape: "#b71540" },
+    color: { 
+      robe: "#541212", 
+      robeDark: "#220808", 
+      corset: "#1c1116", 
+      trim: "#d35400", 
+      trimGold: "#f1c40f", 
+      cape: "#80121d", 
+      capeInner: "#e74c3c", 
+      sash: "#d35400", 
+      eyeGlow: "#ffffff", 
+      staffWood: "#2c1e18", 
+      staffGold: "#f1c40f", 
+      crystal: "#ff7675" 
+    },
     startingWeapon: "STAFF",
-    stats: { hp: 147, maxHp: 147, speed: 3.5, damage: 36, auraLvl: 0, projectiles: 1, orbitals: 0, magnet: 90, attackCooldown: 28, critChance: 0.28, skillCooldownMax: 360 }
+    stats: { 
+      hp: 147, 
+      maxHp: 147, 
+      speed: 3.5, 
+      damage: 36, 
+      auraLvl: 0, 
+      projectiles: 1, 
+      orbitals: 0, 
+      magnet: 90, 
+      attackCooldown: 28, 
+      critChance: 0.28, 
+      skillCooldownMax: 360,
+      knockbackReceived: 1.0,
+      knockbackDealt: 4.0
+    }
   },
   ROGUE: {
     name: "Kael",
     title: "O Andarilho Sombrio",
-    desc: "Passiva: 1.5x de dano em oponentes com menos de 35% de vida (1.15x contra chefes).<br><b>Arma Inicial: Lâminas Espirituais</b> (Espadas astrais velozes arremessadas contra inimigos no alcance).<br><b>Poder: Bomba de Fumaça</b> (Invisibilidade contra inimigos comuns e 100% de crítico por 2.0s).",
-    color: { armor: "#27ae60", trim: "#2ecc71", hair: "#1e272e", cape: "#10ac84" },
+    desc: "Passiva: 1.5x de dano em oponentes com menos de 35% de vida (1.15x contra chefes).<br><b>Arma Inicial: Lâminas Espirituais</b> (Espadas astrais velozes arremessadas contra inimigos no alcance).<br><b>Poder: Bomba de Fumaça</b> (Invisibilidade, transposição de massa com empurrão atordoante e 100% de crítico por 2.0s).",
+    color: { 
+      tunic: "#1e272e", 
+      tunicDark: "#0f1417", 
+      leatherStraps: "#2d3436", 
+      buckles: "#bdc3c7", 
+      hood: "#182c25", 
+      cape: "#0e4438", 
+      capeInner: "#07261f", 
+      capeTrim: "#16a085", 
+      shadowFace: "#0a0d0e", 
+      eyeGlow: "#00cec9", 
+      bandages: "#7f8c8d", 
+      scabbard: "#1e272e", 
+      bladeSteel: "#81ecec", 
+      bladeGlow: "#00cec9", 
+      hiltGold: "#f1c40f" 
+    },
     startingWeapon: "SWORD",
-    stats: { hp: 175, maxHp: 175, speed: 3.7, damage: 35, auraLvl: 0, projectiles: 1, orbitals: 1, magnet: 150, attackCooldown: 24, critChance: 0.24, skillCooldownMax: 450 }
+    stats: { 
+      hp: 175, 
+      maxHp: 175, 
+      speed: 3.7, 
+      damage: 35, 
+      auraLvl: 0, 
+      projectiles: 1, 
+      orbitals: 1, 
+      magnet: 150, 
+      attackCooldown: 24, 
+      critChance: 0.24, 
+      skillCooldownMax: 450,
+      knockbackReceived: 1.0,
+      knockbackDealt: 4.0
+    }
   },
   BARBARIAN: {
     name: "Kragdor",
@@ -56,14 +127,49 @@ export const CHARACTERS = {
       axeWood: "#3d271d" 
     },
     startingWeapon: "AXE",
-    stats: { hp: 308, maxHp: 308, speed: 3.1, damage: 54, auraLvl: 0, projectiles: 1, orbitals: 0, magnet: 95, attackCooldown: 38, critChance: 0.18, skillCooldownMax: 480 }
+    stats: { 
+      hp: 308, 
+      maxHp: 308, 
+      speed: 3.1, 
+      damage: 54, 
+      auraLvl: 0, 
+      projectiles: 1, 
+      orbitals: 0, 
+      magnet: 95, 
+      attackCooldown: 38, 
+      critChance: 0.18, 
+      skillCooldownMax: 480,
+      knockbackReceived: 0.5,
+      knockbackDealt: 1.5
+    }
   },
   ALCHEMIST: {
     name: "Valéria",
     title: "A Alquimista Cáustica",
     desc: "Passiva: Poças ácidas duram mais e causam lentidão.<br><b>Arma Inicial: Frascos Cáusticos</b> (Super alcance com predição de movimento; bombardeia com antecedência a rota do alvo com poças gigantes concentradas no mesmo local).<br><b>Poder: Reagente Volátil</b> (Explosão radial de 6 frascos corrosivos).",
-    color: { armor: "#22312b", trim: "#d4a373", hair: "#3a1f47", cape: "#2ecc71", leather: "#2c1e18", lens: "#00ffcc" },
+    color: { 
+      armor: "#22312b", 
+      trim: "#d4a373", 
+      hair: "#3a1f47", 
+      cape: "#2ecc71", 
+      leather: "#2c1e18", 
+      lens: "#00ffcc" 
+    },
     startingWeapon: "POTION",
-    stats: { hp: 182, maxHp: 182, speed: 3.4, damage: 43, auraLvl: 0, projectiles: 1, orbitals: 0, magnet: 120, attackCooldown: 34, critChance: 0.20, skillCooldownMax: 400 }
+    stats: { 
+      hp: 182, 
+      maxHp: 182, 
+      speed: 3.4, 
+      damage: 43, 
+      auraLvl: 0, 
+      projectiles: 1, 
+      orbitals: 0, 
+      magnet: 120, 
+      attackCooldown: 34, 
+      critChance: 0.20, 
+      skillCooldownMax: 400,
+      knockbackReceived: 1.0,
+      knockbackDealt: 4.0
+    }
   }
 };

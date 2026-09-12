@@ -10,6 +10,26 @@ import { selectedHeroKey } from '../entities/player.js';
 export const damageTexts = [];
 export const particles = [];
 export const bloodSplats = [];
+export const dyingEnemies = [];
+
+export function addDyingEnemy(e, hitAngle = 0) {
+  if (!e || e.isBoss || e.isMiniBoss || e.isBossSubTarget) return;
+  const pushSpeed = 2.2;
+  dyingEnemies.push({
+    x: e.x,
+    y: e.y,
+    vx: Math.cos(hitAngle) * pushSpeed,
+    vy: Math.sin(hitAngle) * pushSpeed,
+    facing: e.facing || 1,
+    radius: e.radius,
+    baseType: e.baseType,
+    variant: e.variant || 0,
+    color: e.color,
+    isElite: !!e.isElite,
+    timer: 11,
+    maxTimer: 11
+  });
+}
 
 export function addDamageText(x, y, text, isCrit = false, color = '#fff') {
   damageTexts.push({
@@ -72,6 +92,20 @@ export function updateCombatVisuals(dt) {
     }
   }
   particles.length = pWrite;
+
+  let deWrite = 0;
+  for (let i = 0; i < dyingEnemies.length; i++) {
+    const de = dyingEnemies[i];
+    de.x += de.vx * dt;
+    de.y += de.vy * dt;
+    de.vx *= Math.pow(0.85, dt);
+    de.vy *= Math.pow(0.85, dt);
+    de.timer -= dt;
+    if (de.timer > 0) {
+      dyingEnemies[deWrite++] = de;
+    }
+  }
+  dyingEnemies.length = deWrite;
 }
 
 /**
@@ -169,6 +203,16 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
               triggerHaptic('medium');
               addDamageText(player.x, player.y, `-${Math.round(playerDmgTaken)}`, false, '#e74c3c');
               createHitParticles(player.x, player.y, '#e74c3c', 6);
+
+              // Impulso de Knockback sofrido: Leves tomam 100% e Pesados tomam 50%
+              const hasSuperArmor = (player.dashDuration > 0) || (player.ignisDashDuration > 0) || (player.invisTimer > 0);
+              if (!hasSuperArmor) {
+                const pushAngle = Math.atan2(player.y - e.y, player.x - e.x);
+                const baseMobKnockback = 9.5;
+                const finalPush = baseMobKnockback * (player.knockbackReceived !== undefined ? player.knockbackReceived : 1.0);
+                player.pushVx = Math.cos(pushAngle) * finalPush;
+                player.pushVy = Math.sin(pushAngle) * finalPush;
+              }
 
               // Passiva de retaliação de Sir Roland (KNIGHT) com Adrenalina Melee
               if (selectedHeroKey === 'KNIGHT') {
