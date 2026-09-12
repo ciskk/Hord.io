@@ -1,6 +1,8 @@
 /**
  * src/main.js
+ * Loop Principal, Pipeline de Física/Combate e Sincronização Grim Cyber-Gothic
  */
+
 import { 
   player, 
   resetPlayer, 
@@ -50,15 +52,15 @@ import {
 } from './systems/waves.js';
 import { initUI, openCharacterSelect, triggerDeath, triggerVictory, openChestModal } from './systems/ui.js';
 import { render } from './render/renderer.js';
-import { playSfx, triggerHaptic } from './core/audio.js';
+import { playSfx, triggerHaptic, resetDeathAudioFilter } from './core/audio.js';
 import { updateBoss } from './entities/bosses/bossRegistry.js';
 
-// Reexportações diretas das variáveis já importadas no topo do módulo
+// Reexportações diretas das variáveis de combate e projéteis
 export { 
   damageTexts, 
   particles, 
   bloodSplats, 
-  dyingEnemies,
+  dyingEnemies, 
   addDamageText, 
   createHitParticles, 
   addBloodSplat, 
@@ -114,6 +116,13 @@ export let screenShake = 0;
 export let freezeTimer = 0;
 export let currentArenaTheme = 'INDUSTRIAL';
 export let lastTime = performance.now();
+
+// Controle Diegético: Rastreamento da Causa Mortis e Decaimento da Barra Fantasma (Ghost Bar)
+export let lastAttackerName = '';
+export function setLastAttackerName(name) { lastAttackerName = name; }
+
+let ghostHp = 120;
+let ghostHpTimer = 0;
 
 export function setLastTime(t) { lastTime = t; }
 export function resetSpawnTimer() { spawnTimer = 0; }
@@ -217,6 +226,15 @@ export function resetGame() {
   gameState.isPaused = false;
   lastTime = performance.now();
 
+  // Reset de Variáveis Visuais e Grim Cyber-Gothic
+  lastAttackerName = '';
+  ghostHp = player.maxHp;
+  ghostHpTimer = 0;
+  resetDeathAudioFilter();
+
+  const bloodFilter = document.getElementById('blood-screen-filter');
+  if (bloodFilter) bloodFilter.classList.remove('active');
+
   updateSkillUI();
 
   const hideEl = id => {
@@ -256,7 +274,7 @@ function update(dt) {
     if (freezeOverlay) freezeOverlay.style.display = 'none';
   }
 
-  // Timers do Jogador e Sincronização de Estados Reativos (Fase 2.1)
+  // Timers do Jogador e Sincronização de Estados Reativos
   if (player.iFrames > 0) player.iFrames = Math.max(0, player.iFrames - dt);
   if (player.skillCd > 0) player.skillCd = Math.max(0, player.skillCd - dt);
   if (player.staffCastTimer > 0) player.staffCastTimer = Math.max(0, player.staffCastTimer - dt);
@@ -275,7 +293,6 @@ function update(dt) {
     }
   }
 
-  // Escapamento sutil e espaçado de vapor (apenas em movimento e em intervalos longos de ~54 frames)
   if (selectedHeroKey === 'ALCHEMIST' && player.isMoving && Math.floor(frameCount) % 54 === 0) {
     const ventX = player.x - player.facing * 7;
     const ventY = player.y - 12;
@@ -317,6 +334,7 @@ function update(dt) {
         v.tickTimer = 0;
         player.hp -= v.damage;
         player.iFrames = 20;
+        lastAttackerName = "Vórtice do Vazio";
         triggerShake(5);
         playSfx('hit');
         addDamageText(player.x, player.y, `-${v.damage}`, false, '#9b59b6');
@@ -337,7 +355,6 @@ function update(dt) {
   if (player.dashDuration > 0) {
     player.dashDuration -= dt;
 
-    // Redirecionamento contínuo em tempo real via analógico ou WASD
     const inputLen = Math.hypot(inputX, inputY);
     if (inputLen > 0.05) {
       const moveAng = Math.atan2(inputY, inputX);
@@ -364,7 +381,7 @@ function update(dt) {
       if (dSq < (player.radius + e.radius + 20) ** 2) {
         let impactDmg = player.damage * 1.8;
         if (e.isBoss || e.isBossSubTarget) {
-          impactDmg *= 1.25; // Adrenalina Melee garantida pelo contato do Dash
+          impactDmg *= 1.25;
           if (e.isVulnerable) impactDmg *= 1.25;
         }
         e.hp -= impactDmg;
@@ -389,7 +406,6 @@ function update(dt) {
       }
     }
 
-    // Supernova terminal ao encerrar a Investida Sagrada
     if (player.dashDuration <= 0) {
       triggerShake(13);
       playSfx('boss');
@@ -401,7 +417,6 @@ function update(dt) {
   } else if (player.ignisDashDuration > 0) {
     player.ignisDashDuration -= dt;
 
-    // Redirecionamento térmico contínuo em tempo real
     const inputLen = Math.hypot(inputX, inputY);
     if (inputLen > 0.05) {
       const moveAng = Math.atan2(inputY, inputX);
@@ -439,7 +454,7 @@ function update(dt) {
       if (dSq < (player.radius + e.radius + 18) ** 2) {
         let impactDmg = player.damage * 1.6;
         if (e.isBoss || e.isBossSubTarget) {
-          impactDmg *= 1.25; // Adrenalina Melee garantida
+          impactDmg *= 1.25;
           if (e.isVulnerable) impactDmg *= 1.25;
         }
         e.hp -= impactDmg;
@@ -449,7 +464,6 @@ function update(dt) {
       }
     }
 
-    // Supernova Térmica Terminal ao encerrar o Passo Ígneo
     if (player.ignisDashDuration <= 0) {
       triggerShake(11);
       playSfx('boss');
@@ -458,7 +472,6 @@ function update(dt) {
       createHitParticles(player.x, player.y, '#f1c40f', 24);
       createHitParticles(player.x, player.y, '#e74c3c', 18);
 
-      // Repulsão de choque térmico nos inimigos ao redor
       for (let i = 0; i < enemies.length; i++) {
         const e = enemies[i];
         const edx = e.x - player.x;
@@ -486,7 +499,7 @@ function update(dt) {
     player.y += inputY * player.speed * dt;
   }
 
-  // Integração física e amortecimento por atrito do Knockback
+  // Knockback e Amortecimento
   player.x += (player.pushVx || 0) * dt;
   player.y += (player.pushVy || 0) * dt;
   const friction = Math.pow(0.80, dt);
@@ -502,6 +515,7 @@ function update(dt) {
   fireWeapons();
   updateSpinningAxes(dt);
 
+  // Aura Sagrada
   if (player.auraLvl > 0 || player.evolvedAura) {
     player.auraTimer += dt;
     const auraInterval = player.evolvedAura ? 18 : 26;
@@ -524,14 +538,10 @@ function update(dt) {
         const dy = e.y - player.y;
         if (dx * dx + dy * dy < aRadiusSq) {
           let currentAuraDmg = auraDmg;
-          let isMeleeAdrenaline = false;
           if (e.isBoss || e.isBossSubTarget) {
             const bossRef = e.isBoss ? e : (e.parentBoss || e);
             const distToBoss = Math.hypot(player.x - bossRef.x, player.y - bossRef.y);
-            if (distToBoss <= 130) {
-              currentAuraDmg *= 1.25;
-              isMeleeAdrenaline = true;
-            }
+            if (distToBoss <= 130) currentAuraDmg *= 1.25;
             if (e.isVulnerable) currentAuraDmg *= 1.25;
           }
           const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
@@ -561,6 +571,7 @@ function update(dt) {
     }
   }
 
+  // Bíblias Protetoras
   if (player.orbitals > 0) {
     player.orbitalAngle += (player.evolvedOrbitals ? 0.13 : 0.068) * dt;
     const orbDist = player.evolvedOrbitals ? 88 : 72;
@@ -577,14 +588,10 @@ function update(dt) {
         const rSum = e.radius + 12;
         if (dx * dx + dy * dy < rSum * rSum) {
           let dmg = player.damage * (player.evolvedOrbitals ? 1.2 : 0.75);
-          let isMeleeAdrenaline = false;
           if (e.isBoss || e.isBossSubTarget) {
             const bossRef = e.isBoss ? e : (e.parentBoss || e);
             const distToBoss = Math.hypot(player.x - bossRef.x, player.y - bossRef.y);
-            if (distToBoss <= 130) {
-              dmg *= 1.25;
-              isMeleeAdrenaline = true;
-            }
+            if (distToBoss <= 130) dmg *= 1.25;
             if (e.isVulnerable) dmg *= 1.25;
           }
           const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
@@ -619,7 +626,6 @@ function update(dt) {
   checkBossSchedule(seconds);
   checkMiniBossSchedule(seconds);
 
-  // Invocação de Esquadrões Táticos baseada em cadência equilibrada
   if (!gameState.isWavePaused) {
     spawnTimer += dt;
     if (spawnTimer >= currentWave.rate) {
@@ -638,10 +644,7 @@ function update(dt) {
     }
   }
 
-  // Resolução física e separação de corpos (Massa Relativa 70/30 & Crowd Shove)
   resolveWorldPhysics(player, enemies, dt);
-
-  // Execução do subsistema desacoplado de projéteis e poças
   updateProjectiles(dt);
   updateAcidPuddles(dt);
 
@@ -658,6 +661,7 @@ function update(dt) {
       player.hp -= sw.damage;
       player.iFrames = 25;
       sw.hitPlayer = true;
+      lastAttackerName = activeBoss ? activeBoss.name : "Onda de Choque Sísmica";
       triggerShake(9);
       playSfx('hit');
       const swColor = sw.color || (activeBoss && activeBoss.bossId === 3 ? '#00cec9' : '#e67e22');
@@ -702,6 +706,7 @@ function update(dt) {
         if (dSq < tel.radius * tel.radius && player.iFrames <= 0) {
           player.hp -= tel.damage;
           player.iFrames = 25;
+          lastAttackerName = "Teleporte Carmesim";
           triggerShake(10);
           playSfx('hit');
           addDamageText(player.x, player.y, `-${tel.damage}`, false, '#8e44ad');
@@ -732,6 +737,7 @@ function update(dt) {
         if (cDist < tel.radius && angleDiff <= Math.PI * 0.52 && player.iFrames <= 0) {
           player.hp -= tel.damage;
           player.iFrames = 28;
+          lastAttackerName = "Corte de Foice Espectral";
           triggerShake(12);
           playSfx('hit');
           const cleaveHitColor = tel.color || '#00cec9';
@@ -771,6 +777,7 @@ function update(dt) {
         if (dSq < tel.radius * tel.radius && player.iFrames <= 0) {
           player.hp -= tel.damage;
           player.iFrames = 25;
+          lastAttackerName = "Monólito Basáltico";
           triggerShake(10);
           playSfx('hit');
           addDamageText(player.x, player.y, `-${tel.damage}`, false, '#e67e22');
@@ -787,9 +794,7 @@ function update(dt) {
 
       if (tel.type === 'FISSURE_NODE') {
         triggerShake(5);
-        if (tel.nodeIndex === 1 || tel.nodeIndex === 4) {
-          playSfx('hit');
-        }
+        if (tel.nodeIndex === 1 || tel.nodeIndex === 4) playSfx('hit');
         createHitParticles(tel.x, tel.y, '#d35400', 8);
         createHitParticles(tel.x, tel.y, '#f39c12', 5);
 
@@ -797,6 +802,7 @@ function update(dt) {
         if (dSq < tel.radius * tel.radius && player.iFrames <= 0) {
           player.hp -= tel.damage;
           player.iFrames = 25;
+          lastAttackerName = "Fissura Tectônica";
           triggerShake(8);
           playSfx('hit');
           addDamageText(player.x, player.y, `-${tel.damage}`, false, '#e67e22');
@@ -829,6 +835,7 @@ function update(dt) {
       if (dSq < tel.radius * tel.radius && player.iFrames <= 0) {
         player.hp -= tel.damage;
         player.iFrames = 25;
+        lastAttackerName = activeBoss ? activeBoss.name : "Cataclismo de Chefe";
         triggerShake(10);
         playSfx('hit');
         addDamageText(player.x, player.y, `-${tel.damage}`, false, '#e74c3c');
@@ -870,6 +877,7 @@ function update(dt) {
     if (player.iFrames <= 0 && (pdx * pdx + pdy * pdy) < (player.radius + bp.radius) ** 2) {
       player.hp -= bp.damage;
       player.iFrames = 25;
+      lastAttackerName = bp.type === 'SOUL_SCYTHE' ? "Foice Giratória Espiritual" : "Projétil Abissal";
       triggerShake(8);
       playSfx('hit');
       const projHitColor = bp.color || '#e74c3c';
@@ -912,13 +920,9 @@ function update(dt) {
         curSpeed *= (1 - maxSlow);
       }
 
-      if (e.combatState === 'WINDUP') {
-        curSpeed *= 0.15;
-      } else if (e.combatState === 'STRIKE') {
-        curSpeed *= 0.10;
-      } else if (e.combatState === 'RECOVERY') {
-        curSpeed *= -0.30;
-      }
+      if (e.combatState === 'WINDUP') curSpeed *= 0.15;
+      else if (e.combatState === 'STRIKE') curSpeed *= 0.10;
+      else if (e.combatState === 'RECOVERY') curSpeed *= -0.30;
 
       if (e.isBoss && e.isEnraged && Math.floor(frameCount) % 5 === 0) {
         createHitParticles(
@@ -972,7 +976,7 @@ function update(dt) {
             e.y -= Math.sin(angle) * curSpeed * dt;
           } else if (distToPlayerSq > 240 * 240) {
             e.x += Math.cos(angle) * curSpeed * dt;
-            e.y -= Math.sin(angle) * curSpeed * dt;
+            e.y += Math.sin(angle) * curSpeed * dt;
           }
           e.shootTimer += dt;
           if (e.shootTimer >= 154) {
@@ -1034,9 +1038,7 @@ function update(dt) {
           curSpeed = 0;
           e.fuseTimer -= dt;
           e.hitFlash = Math.max(e.hitFlash || 0, 1);
-          if (Math.floor(frameCount) % 5 === 0) {
-            createHitParticles(e.x, e.y, '#e67e22', 1);
-          }
+          if (Math.floor(frameCount) % 5 === 0) createHitParticles(e.x, e.y, '#e67e22', 1);
           if (e.fuseTimer <= 0) {
             e.hp = 0;
             e.explodedNaturally = true;
@@ -1066,9 +1068,7 @@ function update(dt) {
           curSpeed = 0;
           e.fuseTimer -= dt;
           e.hitFlash = Math.max(e.hitFlash || 0, 1);
-          if (Math.floor(frameCount) % 5 === 0) {
-            createHitParticles(e.x, e.y, '#d35400', 1);
-          }
+          if (Math.floor(frameCount) % 5 === 0) createHitParticles(e.x, e.y, '#d35400', 1);
           if (e.fuseTimer <= 0) {
             e.hp = 0;
             e.explodedNaturally = true;
@@ -1245,9 +1245,7 @@ function update(dt) {
           e.y += Math.sin(angle) * curSpeed * dt;
         } else if (e.blinkTimer < 130) {
           e.hitFlash = 1;
-          if (Math.floor(frameCount) % 4 === 0) {
-            createHitParticles(e.x, e.y, '#a29bfe', 2);
-          }
+          if (Math.floor(frameCount) % 4 === 0) createHitParticles(e.x, e.y, '#a29bfe', 2);
         } else {
           e.blinkTimer = 0;
           createHitParticles(e.x, e.y, '#6c5ce7', 12);
@@ -1424,6 +1422,7 @@ function update(dt) {
           if (gdist < 110 && player.iFrames <= 0) {
             player.hp -= e.damage;
             player.iFrames = 25;
+            lastAttackerName = "Ritual Gravitacional";
             triggerShake(8);
             playSfx('hit');
             addDamageText(player.x, player.y, `-${Math.round(e.damage)}`, false, '#341f97');
@@ -1435,9 +1434,6 @@ function update(dt) {
             }
           }
         }
-      } else if (e.behavior === 'shielded') {
-        e.x += Math.cos(angle) * curSpeed * dt;
-        e.y += Math.sin(angle) * curSpeed * dt;
       } else {
         e.x += Math.cos(angle) * curSpeed * dt;
         e.y += Math.sin(angle) * curSpeed * dt;
@@ -1454,7 +1450,6 @@ function update(dt) {
         addDyingEnemy(e, hitAng);
       }
 
-      // Limpeza de telegrafia de pavio associada ao monstro
       if (e.fuseTelegraph) {
         const tIdx = bossTelegraphs.indexOf(e.fuseTelegraph);
         if (tIdx !== -1) bossTelegraphs.splice(tIdx, 1);
@@ -1465,7 +1460,6 @@ function update(dt) {
         acidPuddles.push({ x: e.x, y: e.y, radius: 32, life: 340, maxLife: 340, isFire: false });
       }
 
-      // Detonação de Kamikaze com Pavio e Friendly Fire
       if (e.behavior === 'kamikaze') {
         if (e.explodedNaturally) {
           playSfx('hit');
@@ -1476,6 +1470,7 @@ function update(dt) {
           if (pDistSq <= 50 * 50 && player.iFrames <= 0) {
             player.hp -= e.damage;
             player.iFrames = 20;
+            lastAttackerName = "Explosão Necrótica";
             addDamageText(player.x, player.y, `-${Math.round(e.damage)}`, false, '#e67e22');
             if (player.hp <= 0) {
               player.hp = 0;
@@ -1522,6 +1517,7 @@ function update(dt) {
           if (pDistSq <= 60 * 60 && player.iFrames <= 0) {
             player.hp -= e.damage;
             player.iFrames = 25;
+            lastAttackerName = "Estilhaço Suicida";
             triggerShake(9);
             playSfx('hit');
             addDamageText(player.x, player.y, `-${Math.round(e.damage)}`, false, '#e67e22');
@@ -1622,9 +1618,7 @@ function update(dt) {
         triggerShake(20);
         triggerHaptic('heavy');
 
-        if (e.bossId === 1) {
-          setFirstBossKilled(true);
-        }
+        if (e.bossId === 1) setFirstBossKilled(true);
         
         const bossXp = e.xp || 400;
         gems.push({
@@ -1693,9 +1687,7 @@ function update(dt) {
         });
 
         if (e.behavior === 'splitter_queen') {
-          for (let k = 0; k < 3; k++) {
-            spawnMobCluster('SPLITTER', 1);
-          }
+          for (let k = 0; k < 3; k++) spawnMobCluster('SPLITTER', 1);
         }
 
         if (Math.random() < 0.40) {
@@ -1718,11 +1710,10 @@ function update(dt) {
     }
   }
 
-  // Resolução de ataques corpo a corpo
   processEnemyMeleeAttacks(player, enemies, dt);
 
-  // Verificação de segurança global de integridade do jogador
   if (player.hp <= 0 && !gameState.isDead) {
+    if (!lastAttackerName) lastAttackerName = "Horda Devoradora";
     player.hp = 0;
     triggerDeath();
     return;
@@ -1823,21 +1814,31 @@ function update(dt) {
     if (!e.isBoss && !e.isMiniBoss) {
       const dx = e.x - player.x;
       const dy = e.y - player.y;
-      if (dx * dx + dy * dy >= despawnDistSq) {
-        keep = false;
-      }
+      if (dx * dx + dy * dy >= despawnDistSq) keep = false;
     }
-    if (keep) {
-      enemies[writeIdx++] = e;
-    }
+    if (keep) enemies[writeIdx++] = e;
   }
   enemies.length = writeIdx;
+
+  // Atualização Visual do HUD de HP com Decaimento da Barra Fantasma (Ghost Bar)
+  if (player.hp < ghostHp) {
+    ghostHpTimer += dt;
+    if (ghostHpTimer > 20) {
+      ghostHp = Math.max(player.hp, ghostHp - 1.8 * dt);
+    }
+  } else {
+    ghostHp = player.hp;
+    ghostHpTimer = 0;
+  }
 
   const hpVal = document.getElementById('hp-val');
   if (hpVal) hpVal.innerText = Math.max(0, Math.ceil(player.hp));
 
   const hpFill = document.getElementById('hp-fill');
   if (hpFill) hpFill.style.width = `${Math.max(0, (player.hp / player.maxHp) * 100)}%`;
+
+  const hpGhostFill = document.getElementById('hp-ghost-fill');
+  if (hpGhostFill) hpGhostFill.style.width = `${Math.max(0, (ghostHp / player.maxHp) * 100)}%`;
 
   const lvlVal = document.getElementById('lvl-val');
   if (lvlVal) lvlVal.innerText = player.level;

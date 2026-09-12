@@ -1,25 +1,35 @@
 /**
  * src/core/audio.js
  * Motor de Áudio Procedural via Web Audio API e Feedback Háptico
+ * Integrado ao Design System Grim Cyber-Gothic
  */
+
 export let audioCtx = null;
 let masterGainNode = null;
+let masterFilterNode = null;
 let currentVolume = 1.0;
 
-// Escala musical pentatônica para coleta de gemas
+// Escala musical pentatônica para coleta fluida de gemas
 let gemPitchStep = 0;
 let lastGemTime = 0;
 const gemScale = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.5];
 
-// Cooldowns para throttling (impede saturação auditiva em eventos simultâneos)
-const soundCooldowns = { hit: 0, shoot: 0, crit: 0, charge: 0, warp: 0 };
+// Throttling para impedir saturação acústica em momentos de alta densidade de combate
+const soundCooldowns = { 
+  hit: 0, 
+  shoot: 0, 
+  crit: 0, 
+  charge: 0, 
+  warp: 0,
+  card_hover: 0
+};
 
 export function triggerHaptic(type) {
   try {
     if (navigator.vibrate) {
       if (type === 'light') navigator.vibrate(10);
-      else if (type === 'medium') navigator.vibrate(20);
-      else if (type === 'heavy') navigator.vibrate([25, 30, 25]);
+      else if (type === 'medium') navigator.vibrate(22);
+      else if (type === 'heavy') navigator.vibrate([30, 40, 30]);
     }
   } catch (e) {}
 }
@@ -27,9 +37,17 @@ export function triggerHaptic(type) {
 export function initAudio() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Roteamento Mestre: Canais Individuais -> masterGainNode -> masterFilterNode -> destination
     masterGainNode = audioCtx.createGain();
     masterGainNode.gain.setValueAtTime(currentVolume, audioCtx.currentTime);
-    masterGainNode.connect(audioCtx.destination);
+
+    masterFilterNode = audioCtx.createBiquadFilter();
+    masterFilterNode.type = 'lowpass';
+    masterFilterNode.frequency.setValueAtTime(22000, audioCtx.currentTime);
+
+    masterGainNode.connect(masterFilterNode);
+    masterFilterNode.connect(audioCtx.destination);
   }
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
@@ -45,6 +63,28 @@ export function setGameVolume(val) {
   }
 }
 
+/**
+ * Filtro de Necrose Auditiva (Game Over):
+ * Corta agudos e médios bruscamente (low-pass a 180Hz) para simular asfixia sensorial e morte
+ */
+export function applyDeathAudioFilter() {
+  if (!audioCtx || !masterFilterNode) return;
+  const t = audioCtx.currentTime;
+  masterFilterNode.frequency.cancelScheduledValues(t);
+  masterFilterNode.frequency.setTargetAtTime(180, t, 0.12);
+}
+
+/**
+ * Restauração do Espectro Auditivo:
+ * Reabre a passagem de frequências ao renascer ou iniciar nova partida
+ */
+export function resetDeathAudioFilter() {
+  if (!audioCtx || !masterFilterNode) return;
+  const t = audioCtx.currentTime;
+  masterFilterNode.frequency.cancelScheduledValues(t);
+  masterFilterNode.frequency.setTargetAtTime(22000, t, 0.04);
+}
+
 export function playSfx(type) {
   if (!audioCtx || currentVolume <= 0) return;
   const now = performance.now();
@@ -55,6 +95,8 @@ export function playSfx(type) {
   if (type === 'crit' && now - soundCooldowns.crit < 45) return;
   if (type === 'charge' && now - soundCooldowns.charge < 120) return;
   if (type === 'warp' && now - soundCooldowns.warp < 80) return;
+  if (type === 'card_hover' && now - soundCooldowns.card_hover < 50) return;
+
   if (soundCooldowns[type] !== undefined) soundCooldowns[type] = now;
 
   try {
@@ -215,7 +257,6 @@ export function playSfx(type) {
         o.stop(t + idx * 0.06 + 0.18);
       });
     } else if (type === 'singularity') {
-      // Sub-grave expansivo da Singularidade Primordial
       filter.frequency.setValueAtTime(220, t);
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(80, t);
@@ -227,7 +268,6 @@ export function playSfx(type) {
       osc.stop(t + 0.65);
       triggerHaptic('heavy');
     } else if (type === 'charge') {
-      // Glissando harmônico ascendente para telegrafia de feixes
       filter.frequency.setValueAtTime(3200, t);
       osc.type = 'sine';
       osc.frequency.setValueAtTime(260 * pitchJitter, t);
@@ -239,7 +279,6 @@ export function playSfx(type) {
       osc.stop(t + 0.32);
       triggerHaptic('medium');
     } else if (type === 'shatter') {
-      // Ruptura de matéria e destruição de âncora
       filter.frequency.setValueAtTime(1400, t);
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(180, t);
@@ -263,7 +302,6 @@ export function playSfx(type) {
       ringOsc.stop(t + 0.3);
       triggerHaptic('heavy');
     } else if (type === 'warp') {
-      // Varredura de deslocamento dimensional
       filter.frequency.setValueAtTime(1800, t);
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(580 * pitchJitter, t);
@@ -274,6 +312,92 @@ export function playSfx(type) {
       osc.start(t);
       osc.stop(t + 0.16);
       triggerHaptic('medium');
+    } 
+    
+    // --- Novos Efeitos da Identidade Visual Grim Cyber-Gothic ---
+
+    else if (type === 'death_heartbeat') {
+      // Batimento duplo visceral em sub-grave (60Hz descendo para 25Hz)
+      [0, 0.26].forEach((offset, idx) => {
+        const hOsc = audioCtx.createOscillator();
+        const hGain = audioCtx.createGain();
+        const hFilter = audioCtx.createBiquadFilter();
+
+        hFilter.type = 'lowpass';
+        hFilter.frequency.value = 160;
+
+        hOsc.connect(hGain);
+        hGain.connect(hFilter);
+        hFilter.connect(masterGainNode);
+
+        hOsc.type = 'sine';
+        const startT = t + offset;
+        hOsc.frequency.setValueAtTime(62, startT);
+        hOsc.frequency.exponentialRampToValueAtTime(26, startT + 0.16);
+
+        hGain.gain.setValueAtTime(0.001, startT);
+        hGain.gain.linearRampToValueAtTime(idx === 0 ? 0.38 : 0.26, startT + 0.02);
+        hGain.gain.exponentialRampToValueAtTime(0.001, startT + 0.22);
+
+        hOsc.start(startT);
+        hOsc.stop(startT + 0.22);
+      });
+      triggerHaptic('heavy');
+    } else if (type === 'tombstone_slam') {
+      // Impacto telúrico de pedra contra ferro negro na tela de morte
+      filter.frequency.setValueAtTime(320, t);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(110, t);
+      osc.frequency.exponentialRampToValueAtTime(28, t + 0.45);
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.32, t + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+      osc.start(t);
+      osc.stop(t + 0.45);
+      triggerHaptic('heavy');
+    } else if (type === 'card_hover') {
+      // Pequeno estalo rúnico ao sobrevoar cartas de tarô
+      filter.frequency.setValueAtTime(1400, t);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(780, t);
+      osc.frequency.exponentialRampToValueAtTime(350, t + 0.025);
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.035, t + 0.003);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.025);
+      osc.start(t);
+      osc.stop(t + 0.025);
+    } else if (type === 'card_select') {
+      // Ressonância mística de selamento ao escolher uma evolução
+      [440, 880, 1320].forEach((freq, idx) => {
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.connect(g);
+        g.connect(masterGainNode);
+        o.type = 'sine';
+        o.frequency.value = freq;
+        g.gain.setValueAtTime(0.001, t + idx * 0.02);
+        g.gain.linearRampToValueAtTime(0.08, t + idx * 0.02 + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.02 + 0.28);
+        o.start(t + idx * 0.02);
+        o.stop(t + idx * 0.02 + 0.28);
+      });
+      triggerHaptic('medium');
+    } else if (type === 'chest_fanfare') {
+      // Arpejo cintilante de abertura do baú de chefe
+      [392, 523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.connect(g);
+        g.connect(masterGainNode);
+        o.type = 'triangle';
+        o.frequency.value = freq;
+        g.gain.setValueAtTime(0.001, t + idx * 0.05);
+        g.gain.linearRampToValueAtTime(0.09, t + idx * 0.05 + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.05 + 0.35);
+        o.start(t + idx * 0.05);
+        o.stop(t + idx * 0.05 + 0.35);
+      });
+      triggerHaptic('heavy');
     }
   } catch (e) {}
 }

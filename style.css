@@ -1,8 +1,53 @@
+/* ======================================================== */
+/* HORD.IO: DESIGN SYSTEM GRIM CYBER-GOTHIC                 */
+/* ======================================================== */
+
+:root {
+  --bg-void: #0a0c10;
+  --bg-panel: #121520;
+  --bg-card: #181d2e;
+  --bg-card-hover: #1e243b;
+  --border-subtle: #23293d;
+  --border-strong: #333d59;
+  
+  --gold-runic: #f1c40f;
+  --gold-glow: rgba(241, 196, 15, 0.45);
+  --crimson-blood: #e74c3c;
+  --crimson-dark: #8b0000;
+  --abyss-purple: #9b59b6;
+  --abyss-glow: rgba(155, 89, 182, 0.35);
+  --spectral-cyan: #00cec9;
+  --spectral-blue: #0984e3;
+  --vital-green: #2ecc71;
+
+  --font-display: 'Cinzel Decorative', 'Cinzel', serif;
+  --font-heading: 'Cinzel', serif;
+  --font-body: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
 * {
   box-sizing: border-box;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+}
+
+/* Custom Scrollbar Diegética */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(10, 12, 16, 0.6);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a3148;
+  border-radius: 4px;
+  border: 1px solid rgba(241, 196, 15, 0.2);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3e4868;
 }
 
 html, body {
@@ -11,11 +56,12 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #0a0c10;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg-void);
+  font-family: var(--font-body);
   touch-action: none;
   position: fixed;
   inset: 0;
+  color: #fff;
 }
 
 #game-canvas {
@@ -24,14 +70,55 @@ html, body {
   height: 100%;
 }
 
+/* ======================================================== */
+/* PÓS-PROCESSAMENTO & ATMOSFERA                            */
+/* ======================================================== */
+
 #vignette {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(circle at center, transparent 32%, rgba(6, 8, 14, 0.55) 70%, rgba(2, 3, 6, 0.94) 100%);
+  background: radial-gradient(circle at center, transparent 30%, rgba(6, 8, 14, 0.6) 70%, rgba(2, 3, 6, 0.96) 100%);
   z-index: 6;
   transition: background 0.8s ease;
 }
+
+/* Filtro Carmesim de Necrose e Pulsação Cardíaca (Game Over) */
+#blood-screen-filter {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 90;
+  opacity: 0;
+  background: radial-gradient(circle at center, rgba(139, 0, 0, 0.15) 15%, rgba(60, 0, 0, 0.82) 70%, #150000 100%);
+  mix-blend-mode: multiply;
+  transition: opacity 0.8s ease-in-out;
+}
+
+#blood-screen-filter.active {
+  opacity: 1;
+  animation: deathHeartbeat 2.6s infinite ease-in-out;
+}
+
+@keyframes deathHeartbeat {
+  0%, 100% { opacity: 0.72; transform: scale(1); }
+  50% { opacity: 0.98; transform: scale(1.02); }
+}
+
+#freeze-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  border: 6px solid rgba(0, 206, 201, 0.45);
+  background: radial-gradient(circle at center, rgba(0, 206, 201, 0.04) 40%, rgba(0, 206, 201, 0.18) 100%);
+  box-shadow: inset 0 0 35px rgba(0, 206, 201, 0.3);
+  z-index: 5;
+  display: none;
+}
+
+/* ======================================================== */
+/* HUD DE COMBATE EM ALTA FIDELIDADE                        */
+/* ======================================================== */
 
 #hud {
   position: fixed;
@@ -41,8 +128,8 @@ html, body {
   pointer-events: none;
   color: #fff;
   font-size: clamp(11px, 1.8vw, 13px);
-  font-weight: bold;
-  text-shadow: 1px 1px 3px #000;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
   z-index: 10;
 }
 
@@ -53,24 +140,92 @@ html, body {
   margin-bottom: 4px;
 }
 
+.hud-badge {
+  background: rgba(14, 18, 28, 0.88);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 3px 8px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  letter-spacing: 0.5px;
+}
+
+.hp-badge { border-color: rgba(231, 76, 60, 0.5); }
+.gold-badge { border-color: rgba(241, 196, 15, 0.5); color: var(--gold-runic); }
+.lvl-badge { border-color: rgba(0, 206, 201, 0.5); }
+
+.hud-timer {
+  font-family: var(--font-heading);
+  font-size: clamp(13px, 2vw, 16px);
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #f1f2f6;
+  text-shadow: 0 0 10px rgba(255,255,255,0.3);
+}
+
 .bar-bg {
   width: 100%;
   height: 8px;
-  background: rgba(0, 0, 0, 0.8);
-  border: 1px solid #333;
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid #2a3148;
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 6px;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
 }
 
-#hp-fill { width: 100%; height: 100%; background: #e74c3c; transition: width 0.1s; }
-#xp-fill { width: 0%; height: 100%; background: #00d2d3; transition: width 0.1s; }
-#boss-hp-fill { width: 100%; height: 100%; background: #9b59b6; transition: width 0.05s; }
+.hp-bar-container {
+  height: 10px;
+  border-color: rgba(231, 76, 60, 0.4);
+}
+
+#hp-ghost-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  background: #f39c12;
+  box-shadow: 0 0 8px rgba(243, 156, 18, 0.5);
+  transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  z-index: 1;
+}
+
+#hp-fill {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #c0392b, #e74c3c);
+  box-shadow: 0 0 8px rgba(231, 76, 60, 0.7);
+  transition: width 0.08s ease;
+  z-index: 2;
+}
+
+#xp-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #0984e3, #00cec9);
+  box-shadow: 0 0 8px rgba(0, 206, 201, 0.6);
+  transition: width 0.12s ease;
+}
+
+#boss-hp-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #8e44ad, #e056fd);
+  box-shadow: 0 0 10px rgba(224, 86, 253, 0.65);
+  transition: width 0.05s linear;
+}
 
 #wave-banner {
-  color: #f1c40f;
+  color: var(--gold-runic);
+  font-family: var(--font-heading);
   font-size: clamp(10px, 1.6vw, 12px);
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
   text-transform: uppercase;
 }
 
@@ -79,60 +234,55 @@ html, body {
   margin-top: 4px;
 }
 
-#freeze-overlay {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  border: 6px solid rgba(0, 210, 211, 0.5);
-  background: rgba(0, 210, 211, 0.08);
-  z-index: 5;
-  display: none;
-}
-
-/* Botões na HUD */
+/* Botões da HUD */
 .hud-btn {
   pointer-events: auto;
-  background: rgba(20, 24, 36, 0.85);
-  border: 1.5px solid #f1c40f;
-  color: #f1c40f;
+  background: rgba(20, 24, 36, 0.88);
+  border: 1.5px solid var(--gold-runic);
+  color: var(--gold-runic);
   height: 34px;
   border-radius: 8px;
+  font-family: var(--font-heading);
   font-size: clamp(10px, 1.6vw, 12px);
-  font-weight: bold;
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.6);
   padding: 0 12px;
-  transition: transform 0.1s ease, background 0.15s ease;
+  transition: transform 0.1s ease, background 0.15s ease, box-shadow 0.2s ease;
+}
+
+.hud-btn:hover {
+  box-shadow: 0 0 12px var(--gold-glow);
 }
 
 .hud-btn:active {
   transform: scale(0.94);
-  background: #f1c40f;
+  background: var(--gold-runic);
   color: #000;
 }
 
-/* Botão de Poder Ergonômico */
+/* Botão de Habilidade Ativa ("Selo Arcano") */
 #skill-btn-container {
   position: fixed;
   bottom: max(env(safe-area-inset-bottom, 24px), 24px);
   right: max(env(safe-area-inset-right, 20px), 20px);
-  width: clamp(56px, 12vw, 72px);
-  height: clamp(56px, 12vw, 72px);
+  width: clamp(58px, 12vw, 74px);
+  height: clamp(58px, 12vw, 74px);
   border-radius: 50%;
-  background: rgba(18, 22, 32, 0.82);
+  background: radial-gradient(circle, #1a2030 0%, #0c0f17 100%);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 2px solid rgba(241, 196, 15, 0.45);
+  border: 2px solid rgba(241, 196, 15, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 15;
   cursor: pointer;
   touch-action: none;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.65);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.75), inset 0 0 10px rgba(0, 0, 0, 0.8);
   user-select: none;
   transition: transform 0.1s, border-color 0.2s, box-shadow 0.2s;
 }
@@ -142,14 +292,14 @@ html, body {
 }
 
 #skill-btn-container.ready {
-  border-color: #f1c40f;
-  box-shadow: 0 0 18px rgba(241, 196, 15, 0.65), inset 0 0 10px rgba(241, 196, 15, 0.3);
-  animation: skillPulse 1.8s infinite ease-in-out;
+  border-color: var(--gold-runic);
+  box-shadow: 0 0 22px rgba(241, 196, 15, 0.7), inset 0 0 12px rgba(241, 196, 15, 0.4);
+  animation: skillArcanePulse 1.8s infinite ease-in-out;
 }
 
-@keyframes skillPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.06); }
+@keyframes skillArcanePulse {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.06); filter: brightness(1.2); }
 }
 
 #skill-cooldown-mask {
@@ -157,39 +307,40 @@ html, body {
   inset: 0;
   border-radius: 50%;
   pointer-events: none;
-  background: conic-gradient(rgba(0, 0, 0, 0.75) 0deg, transparent 0deg);
+  background: conic-gradient(rgba(0, 0, 0, 0.8) 0deg, transparent 0deg);
 }
 
 #skill-icon {
   position: relative;
   z-index: 2;
-  width: clamp(22px, 5vw, 32px);
-  height: clamp(22px, 5vw, 32px);
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+  width: clamp(24px, 5vw, 34px);
+  height: clamp(24px, 5vw, 34px);
+  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.9));
   pointer-events: none;
 }
 
 #skill-timer-text {
   position: absolute;
   z-index: 3;
-  font-size: clamp(10px, 2.2vw, 13px);
+  font-family: var(--font-heading);
+  font-size: clamp(11px, 2.4vw, 14px);
   font-weight: 800;
   color: #fff;
-  text-shadow: 0 1px 4px #000;
+  text-shadow: 0 1px 4px #000, 0 0 6px rgba(0,0,0,0.8);
   pointer-events: none;
 }
 
 /* ======================================================== */
-/* SISTEMA UNIVERSAL DE MODAIS (RETRACTO / PAISAGEM / PC)   */
+/* SISTEMA UNIVERSAL DE MODAIS (DARK GOTHIC)                */
 /* ======================================================== */
 
 .modal-overlay {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.88);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(5, 7, 10, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   justify-content: center;
   align-items: center;
   z-index: 99;
@@ -200,15 +351,13 @@ html, body {
            max(env(safe-area-inset-left, 10px), 10px);
 }
 
-#talents-modal {
-  z-index: 110;
-}
+#talents-modal { z-index: 110; }
 
 .modal-box {
-  background: #121520;
-  border: 1.5px solid #2e344e;
+  background: linear-gradient(170deg, #151926 0%, #0d1017 100%);
+  border: 1.5px solid var(--border-strong);
   border-radius: clamp(10px, 2vw, 16px);
-  padding: clamp(12px, 2.5vw, 20px);
+  padding: clamp(14px, 2.5vw, 22px);
   width: 100%;
   max-width: min(92vw, 860px);
   max-height: min(94vh, 94dvh);
@@ -216,19 +365,19 @@ html, body {
   flex-direction: column;
   text-align: center;
   color: #fff;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   box-sizing: border-box;
 }
 
 .modal-box-compact {
-  max-width: min(90vw, 420px);
+  max-width: min(90vw, 440px);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #1e2438;
+  border-bottom: 1px solid var(--border-subtle);
   padding-bottom: clamp(6px, 1.5vh, 12px);
   margin-bottom: clamp(8px, 1.5vh, 14px);
   flex-shrink: 0;
@@ -236,129 +385,891 @@ html, body {
 }
 
 .modal-header-title {
+  font-family: var(--font-heading);
   font-size: clamp(14px, 2vw, 18px);
   font-weight: 800;
-  color: #f1c40f;
+  color: var(--gold-runic);
+  letter-spacing: 1px;
   margin: 0;
   line-height: 1.2;
 }
 
 .modal-header-sub {
   font-size: clamp(9px, 1.4vw, 11px);
-  color: #8890a6;
-  margin-top: 2px;
+  color: #8c94a8;
+  margin-top: 3px;
+  letter-spacing: 0.3px;
 }
 
 .currency-badge {
-  background: #1a1e2d;
-  border: 1px solid #3e445e;
+  background: rgba(22, 27, 40, 0.9);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: clamp(4px, 1vh, 6px) clamp(8px, 1.5vw, 12px);
+  font-family: var(--font-heading);
   font-size: clamp(11px, 1.6vw, 13px);
-  font-weight: bold;
-  color: #f1c40f;
+  font-weight: 800;
+  color: var(--gold-runic);
   white-space: nowrap;
 }
 
-/* Grid de Heróis Auto-Ajustável */
-#char-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
-  gap: clamp(8px, 1.4vw, 14px);
-  max-height: clamp(260px, 60vh, 580px);
-  overflow-y: auto;
-  padding: 4px 2px;
-  -webkit-overflow-scrolling: touch;
-}
-
-.char-card {
-  background: #181d2e;
-  border: 1.5px solid #2c334d;
-  border-radius: 12px;
-  padding: clamp(10px, 1.8vw, 14px);
-  text-align: left;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 8px;
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.char-card:hover {
-  transform: translateY(-2px);
-  border-color: #f1c40f;
-  box-shadow: 0 6px 16px rgba(241, 196, 15, 0.15);
-  background: #1e243b;
-}
-
-.char-card:active {
-  transform: scale(0.98);
-}
-
-.char-badge {
-  display: inline-block;
-  font-size: 9px;
+/* Tipografia de Destaque */
+.gothic-title {
+  font-family: var(--font-heading);
   font-weight: 800;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: #f1c40f;
-  letter-spacing: 0.5px;
+  margin: 4px 0;
+}
+
+.glow-gold {
+  color: var(--gold-runic);
+  text-shadow: 0 0 14px var(--gold-glow);
+}
+
+.level-up-badge {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--spectral-cyan);
+  text-transform: uppercase;
   margin-bottom: 2px;
 }
 
-.char-name {
-  font-size: clamp(13px, 1.8vw, 15px);
+/* ======================================================== */
+/* 1. TELA DE GAME OVER (HORROR & PUNIÇÃO)                   */
+/* ======================================================== */
+
+.modal-death {
+  background: rgba(10, 0, 0, 0.94) !important;
+  backdrop-filter: blur(14px) grayscale(65%) !important;
+  -webkit-backdrop-filter: blur(14px) grayscale(65%) !important;
+}
+
+.death-tombstone {
+  border: 2px solid var(--crimson-dark) !important;
+  background: radial-gradient(circle at top, #240508 0%, #0c0203 100%) !important;
+  box-shadow: 0 0 50px rgba(139, 0, 0, 0.65), inset 0 0 35px rgba(0, 0, 0, 0.95) !important;
+  max-width: 480px !important;
+  padding: 24px 20px !important;
+  animation: tombstoneRise 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes tombstoneRise {
+  from { opacity: 0; transform: scale(0.86) translateY(35px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.skull-emblem {
+  font-size: 40px;
+  color: #c0392b;
+  text-shadow: 0 0 22px var(--crimson-blood);
+  animation: floatSkull 3s infinite ease-in-out;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+@keyframes floatSkull {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.death-title {
+  font-family: var(--font-display);
+  font-size: clamp(17px, 3.2vw, 24px);
+  color: var(--crimson-blood);
+  text-shadow: 0 0 18px rgba(231, 76, 60, 0.85), 2px 2px 4px #000;
+  letter-spacing: 2px;
+  margin: 6px 0;
+}
+
+.death-divider {
+  width: 65%;
+  height: 2px;
+  margin: 10px auto;
+  background: linear-gradient(90deg, transparent, var(--crimson-dark), var(--crimson-blood), var(--crimson-dark), transparent);
+}
+
+.death-epitaph {
+  font-family: var(--font-body);
+  background: rgba(0, 0, 0, 0.55);
+  border: 1.5px solid #3d070b;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #ddd;
+  line-height: 1.6;
+  font-size: 12px;
+  text-align: left;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+.btn-death-rebirth {
+  background: linear-gradient(135deg, #c0392b, #7f0000) !important;
+  border: 1px solid var(--crimson-blood) !important;
+  font-family: var(--font-heading);
   font-weight: 800;
-  color: #fff;
-  margin-bottom: 4px;
+  letter-spacing: 1.5px;
+  color: #fff !important;
+  margin-top: 14px;
+  box-shadow: 0 6px 20px rgba(192, 57, 43, 0.45);
 }
 
-.char-desc {
-  font-size: clamp(10px, 1.4vw, 11px);
-  color: #9aa0b4;
-  line-height: 1.35;
-  flex-grow: 1;
+.btn-death-rebirth:hover {
+  box-shadow: 0 0 20px rgba(231, 76, 60, 0.75);
 }
 
-/* Grid da Skill Tree (Talentos) Auto-Ajustável */
-#talents-list {
+/* ======================================================== */
+/* 2. MODAL DE UPGRADES (TARÔ ARCANO DE PODER)             */
+/* ======================================================== */
+
+.modal-box-tarot {
+  max-width: min(94vw, 760px);
+}
+
+.upgrade-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
-  gap: clamp(8px, 1.4vw, 12px);
-  max-height: clamp(230px, 52vh, 520px);
-  overflow-y: auto;
-  padding: 4px 2px;
-  -webkit-overflow-scrolling: touch;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
 }
 
-.talent-card {
-  background: #171c2c;
-  border: 1.5px solid #28304a;
-  border-radius: 12px;
-  padding: clamp(10px, 1.6vw, 13px);
+.upgrade-card-pro {
+  position: relative;
+  background: linear-gradient(165deg, #181d2e 0%, #0d1018 100%);
+  border: 2px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 16px 14px;
+  text-align: center;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  text-align: left;
+  align-items: center;
   gap: 8px;
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.2s, box-shadow 0.2s;
+  overflow: hidden;
 }
 
-.talent-info {
+.upgrade-card-pro::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.upgrade-card-pro:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.75);
+}
+
+.upgrade-card-pro:active {
+  transform: scale(0.97);
+}
+
+.card-icon-wrapper {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
+}
+
+.card-icon-wrapper svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* Raridades dos Cards */
+.upgrade-card-pro.card-common {
+  border-color: #576574;
+}
+.upgrade-card-pro.card-common .card-icon-wrapper {
+  border-color: #576574;
+  background: rgba(87, 101, 116, 0.15);
+}
+
+.upgrade-card-pro.card-rare {
+  border-color: var(--spectral-blue);
+  box-shadow: 0 0 16px rgba(9, 132, 227, 0.25);
+}
+.upgrade-card-pro.card-rare .card-icon-wrapper {
+  border-color: var(--spectral-blue);
+  background: rgba(9, 132, 227, 0.2);
+}
+
+.upgrade-card-pro.card-legendary {
+  border-color: var(--gold-runic);
+  box-shadow: 0 0 20px rgba(241, 196, 15, 0.35);
+  animation: legendaryBorderPulse 2.5s infinite alternate;
+}
+.upgrade-card-pro.card-legendary .card-icon-wrapper {
+  border-color: var(--gold-runic);
+  background: rgba(241, 196, 15, 0.2);
+}
+
+@keyframes legendaryBorderPulse {
+  0% { box-shadow: 0 0 14px rgba(241, 196, 15, 0.3); }
+  100% { box-shadow: 0 0 26px rgba(241, 196, 15, 0.65); }
+}
+
+.synergy-indicator-tag {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 8px;
+  font-weight: 800;
+  background: #f39c12;
+  color: #000;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+.reroll-btn-styled {
+  background: linear-gradient(135deg, #8e44ad, #5e2776) !important;
+  border: 1.5px solid #be79df !important;
+  font-family: var(--font-body);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(142, 68, 173, 0.4);
+}
+
+/* ======================================================== */
+/* 3. TELA DE PAUSA: GRIMÓRIO TÁTICO                        */
+/* ======================================================== */
+
+.modal-box-large {
+  max-width: min(92vw, 800px);
+}
+
+.pause-layout-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 0.95fr;
+  gap: 16px;
+  text-align: left;
+}
+
+@media (max-width: 680px) {
+  .pause-layout-grid {
+    grid-template-columns: 1fr;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+}
+
+.section-tag {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--gold-runic);
+  letter-spacing: 1.2px;
+  margin: 0 0 6px 0;
+  text-transform: uppercase;
+}
+
+.build-inventory-scroll {
+  background: #0b0e16;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.build-item-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #141926;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+.build-item-badge .name {
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.build-item-badge .counter {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--gold-runic);
+  background: rgba(241, 196, 15, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.synergies-tracker-list {
+  background: #0b0e16;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 10px;
+}
+
+.synergy-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.stats-mini-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.stat-box {
+  background: #121724;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.stat-box-label {
+  font-size: 9px;
+  color: #8c94a8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-box-value {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.volume-control-card {
+  background: #121724;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.volume-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 700;
+  color: #aaa;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.custom-slider {
+  width: 100%;
+  accent-color: var(--gold-runic);
+  cursor: pointer;
+  height: 6px;
+}
+
+.pause-actions-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.btn-resume {
+  background: #27ae60 !important;
+  border: none !important;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+}
+
+.btn-abandon {
+  background: #7f1d1d !important;
+  border: 1px solid #b91c1c !important;
+  letter-spacing: 0.8px;
+}
+
+/* ======================================================== */
+/* NOVO ALTAR DOS CONDENADOS (SELEÇÃO DE HERÓIS)            */
+/* ======================================================== */
+
+.modal-box-altar {
+  max-width: min(94vw, 860px);
+}
+
+.char-altar-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 16px;
+  text-align: left;
+  margin-top: 4px;
+}
+
+@media (max-width: 680px) {
+  .char-altar-layout {
+    grid-template-columns: 1fr;
+    max-height: 72vh;
+    overflow-y: auto;
+  }
+}
+
+.char-pedestals-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.char-pedestal-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #151928, #0c0e18);
+  border: 1.5px solid #283049;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.char-pedestal-btn:hover {
+  transform: translateX(4px);
+  border-color: var(--gold-runic);
+}
+
+.char-pedestal-btn.active {
+  background: linear-gradient(135deg, #1d253d, #111524);
+  box-shadow: 0 0 16px rgba(241, 196, 15, 0.25);
+}
+
+.char-pedestal-emblem {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.char-pedestal-info {
   flex-grow: 1;
 }
 
-.talent-buy-btn {
+.char-pedestal-title {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.char-pedestal-name {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+}
+
+/* Vitral de Exibição Dinâmica */
+.char-vitral-showcase {
+  background: radial-gradient(circle at top, #182033 0%, #0a0d16 100%);
+  border: 2px solid #2d3854;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.85);
+}
+
+.char-vitral-showcase::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--showcase-color, var(--gold-runic));
+  box-shadow: 0 0 12px var(--showcase-color, var(--gold-runic));
+}
+
+.showcase-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.showcase-archetype {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--showcase-color, var(--gold-runic));
+}
+
+.showcase-name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: #fff;
+  margin: 2px 0;
+}
+
+.showcase-weapon-tag {
+  font-size: 10px;
+  color: #8c94a8;
+  font-weight: 600;
+}
+
+.showcase-lore {
+  font-size: 11px;
+  color: #a4b0be;
+  line-height: 1.45;
+  margin: 8px 0 12px 0;
+  flex-grow: 1;
+}
+
+.showcase-radar-bars {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.attr-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 700;
+  color: #8c94a8;
+}
+
+.attr-stars {
+  color: var(--showcase-color, var(--gold-runic));
+  letter-spacing: 2px;
+}
+
+.btn-summon-hero {
+  background: var(--showcase-color, var(--gold-runic)) !important;
+  color: #000 !important;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: 1px;
+  border: none !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  padding: 11px;
+}
+
+/* ======================================================== */
+/* NOVO ASTROLÁBIO DAS ALMAS (ÁRVORE DE HABILIDADES)        */
+/* ======================================================== */
+
+.astrolabe-modal {
+  max-width: min(94vw, 760px);
+}
+
+.astrolabe-viewport {
+  position: relative;
+  width: 100%;
+  height: clamp(260px, 46vh, 360px);
+  background: radial-gradient(circle at center, #111624 0%, #080b12 85%);
+  border: 1.5px solid #232d45;
+  border-radius: 14px;
+  margin: 6px 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.9);
+}
+
+/* Núcleo Central de Almas */
+.astrolabe-core {
+  position: relative;
+  z-index: 5;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #2a1f0a 0%, #0d0c07 100%);
+  border: 2px solid var(--gold-runic);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 24px rgba(241, 196, 15, 0.35), inset 0 0 14px rgba(241, 196, 15, 0.2);
+}
+
+.core-rings {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 1px dashed rgba(241, 196, 15, 0.35);
+  animation: coreSpin 16s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes coreSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.core-label {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #8c94a8;
+}
+
+.core-val {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--gold-runic);
+}
+
+.core-reset-btn {
+  margin-top: 3px;
+  background: rgba(192, 57, 43, 0.3);
+  border: 1px solid #c0392b;
+  color: #ff7675;
+  border-radius: 4px;
+  font-size: 8px;
+  padding: 1px 5px;
   cursor: pointer;
-  border-radius: 6px;
   font-weight: bold;
 }
 
-.talent-buy-btn:disabled {
+.astrolabe-nodes-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+
+/* Nós Orbitais */
+.astrolabe-node {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #141926;
+  border: 2px solid #2e374f;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.2s, box-shadow 0.2s;
+  z-index: 6;
+}
+
+.astrolabe-node:hover {
+  transform: translate(-50%, -50%) scale(1.14);
+}
+
+.astrolabe-node.active {
+  border-color: #fff;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.6);
+}
+
+.astrolabe-node.invested {
+  border-color: var(--gold-runic);
+  box-shadow: 0 0 14px rgba(241, 196, 15, 0.4);
+}
+
+.astrolabe-node.maxed {
+  background: radial-gradient(circle, #3d2f09 0%, #171305 100%);
+  border-color: #f39c12;
+  box-shadow: 0 0 20px rgba(243, 156, 18, 0.7);
+}
+
+/* Camada Vetorial de Filamentos Cósmicos */
+.astrolabe-filaments-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.filament-line {
+  stroke: #222a3d;
+  stroke-width: 1.5px;
+  stroke-dasharray: 4, 4;
+  transition: stroke 0.3s ease, stroke-width 0.3s ease;
+}
+
+.filament-line.active {
+  stroke: var(--gold-runic);
+  stroke-width: 2px;
+  stroke-dasharray: 8, 4;
+  animation: filamentFlow 1.8s linear infinite;
+  filter: drop-shadow(0 0 4px var(--gold-glow));
+}
+
+@keyframes filamentFlow {
+  from { stroke-dashoffset: 24; }
+  to { stroke-dashoffset: 0; }
+}
+
+.inline-gold-icon {
+  width: 12px;
+  height: 12px;
+  vertical-align: middle;
+  margin-right: 3px;
+}
+
+/* Ícone Vetorial Matemático dentro do Nó */
+.node-svg-icon {
+  width: 22px;
+  height: 22px;
+  display: block;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.8));
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.astrolabe-node:hover .node-svg-icon {
+  transform: scale(1.12);
+}
+
+.astrolabe-node.invested .node-svg-icon {
+  filter: drop-shadow(0 0 5px var(--gold-glow));
+}
+
+.node-lvl-pip {
+  font-size: 8px;
+  font-weight: 800;
+  color: #8c94a8;
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+}
+
+.astrolabe-node.invested .node-lvl-pip {
+  color: var(--gold-runic);
+}
+
+/* Medidores Segmentados em Trapézios Vetoriais (Substituem as estrelas) */
+.segmented-meter {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.segment-cell {
+  width: 14px;
+  height: 6px;
+  background: #181d2a;
+  border: 1px solid #283147;
+  transform: skewX(-20deg);
+  border-radius: 1px;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.segment-cell.filled {
+  background: var(--showcase-color, var(--gold-runic));
+  border-color: #fff;
+  box-shadow: 0 0 6px var(--showcase-color, var(--gold-runic));
+}
+
+.char-pedestal-emblem svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+/* Forja Mística Inferior */
+.talent-forge-drawer {
+  background: #0d101a;
+  border: 1.5px solid #23293d;
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+  gap: 12px;
+}
+
+.forge-left { flex-grow: 1; }
+
+.forge-node-name {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.forge-node-desc {
+  font-size: 10px;
+  color: #8c94a8;
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+.forge-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.forge-node-level {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--gold-runic);
+}
+
+.forge-buy-btn {
+  padding: 6px 14px !important;
+  font-size: 11px !important;
+  width: auto !important;
+  background: linear-gradient(135deg, #f39c12, #d35400) !important;
+  color: #000 !important;
+  border: none !important;
+  font-weight: 800 !important;
+}
+
+.forge-buy-btn:disabled {
+  background: #232838 !important;
+  color: #666 !important;
   cursor: not-allowed;
   opacity: 0.6;
 }
 
-/* Botões Genéricos de Ação */
+/* ======================================================== */
+/* BOTÕES & CARDS GENÉRICOS DE AÇÃO                         */
+/* ======================================================== */
+
 .card-btn {
   width: 100%;
   padding: clamp(9px, 1.8vh, 12px);
@@ -366,9 +1277,9 @@ html, body {
   border-radius: 8px;
   background: #232738;
   color: #fff;
-  border: 1px solid #3e445e;
+  border: 1px solid var(--border-strong);
   font-size: clamp(11px, 1.6vw, 13px);
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -376,13 +1287,17 @@ html, body {
   transition: transform 0.1s ease, border-color 0.15s ease, background 0.15s ease;
 }
 
+.card-btn:hover {
+  border-color: var(--gold-runic);
+}
+
 .card-btn:active {
   background: #3e445e;
-  border-color: #f1c40f;
+  border-color: var(--gold-runic);
   transform: scale(0.98);
 }
 
-/* Cards de Upgrades / Baú */
+/* Cards de Upgrades Antigos (Retrocompatibilidade) */
 .upgrade-card {
   width: 100%;
   padding: clamp(9px, 1.6vh, 12px);
@@ -390,7 +1305,7 @@ html, body {
   border-radius: 10px;
   background: #1a1e2d;
   color: #fff;
-  border: 1.5px solid #3e445e;
+  border: 1.5px solid var(--border-strong);
   text-align: left;
   cursor: pointer;
   transition: transform 0.1s, border-color 0.15s;
@@ -413,7 +1328,7 @@ html, body {
 
 .card-title {
   font-size: clamp(12px, 1.8vw, 14px);
-  font-weight: bold;
+  font-weight: 700;
   color: #fff;
   margin-bottom: 2px;
 }
@@ -428,22 +1343,25 @@ html, body {
 .card-common .rarity-badge { background: #2f3640; color: #dcdde1; }
 .card-rare { border-color: #0984e3; box-shadow: 0 0 10px rgba(9, 132, 227, 0.25); }
 .card-rare .rarity-badge { background: #0984e3; color: #fff; }
-.card-legendary { border-color: #f1c40f; box-shadow: 0 0 14px rgba(241, 196, 15, 0.35); }
-.card-legendary .rarity-badge { background: #f1c40f; color: #000; }
+.card-legendary { border-color: var(--gold-runic); box-shadow: 0 0 14px rgba(241, 196, 15, 0.35); }
+.card-legendary .rarity-badge { background: var(--gold-runic); color: #000; }
 
 .chest-reward-item {
   background: rgba(241, 196, 15, 0.12);
-  border: 1px solid #f1c40f;
+  border: 1px solid var(--gold-runic);
   padding: 8px 10px;
   border-radius: 8px;
   margin: 6px 0;
   font-size: clamp(11px, 1.6vw, 13px);
-  font-weight: bold;
-  color: #f1c40f;
+  font-weight: 700;
+  color: var(--gold-runic);
   text-align: left;
 }
 
-/* Otimização especial para celular na horizontal (Landscape curto) */
+/* ======================================================== */
+/* OTIMIZAÇÃO ESPECIAL PARA SMARTPHONES EM LANDSCAPE CURTO  */
+/* ======================================================== */
+
 @media (max-height: 480px) and (orientation: landscape) {
   .modal-box {
     padding: 10px 14px;
@@ -466,5 +1384,23 @@ html, body {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+  .upgrade-cards-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 6px 0;
+  }
+  .upgrade-card-pro {
+    padding: 8px;
+    gap: 4px;
+  }
+  .card-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    margin-bottom: 2px;
+  }
+  .card-icon-wrapper svg {
+    width: 20px;
+    height: 20px;
   }
 }

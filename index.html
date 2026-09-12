@@ -11,26 +11,46 @@
   <meta name="mobile-web-app-capable" content="yes">
   
   <title>Hord.io: Survivors Evolution</title>
+
+  <!-- Tipografia Dark Fantasy: Cinzel Decorative para impacto/morte, Cinzel para menus e Outfit para estatísticas numéricas -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
 
+<!-- Pós-Processamento e Atmosfera -->
 <div id="vignette"></div>
+<div id="blood-screen-filter"></div>
 <div id="freeze-overlay"></div>
 
+<!-- HUD de Combate em Alta Fidelidade -->
 <div id="hud">
   <div class="hud-row">
-    <span>HP: <span id="hp-val">120</span></span>
-    <span id="timer-val">00:00</span>
+    <div class="hud-badge hp-badge">
+      <span>HP: <span id="hp-val">120</span></span>
+    </div>
+    <span id="timer-val" class="hud-timer">00:00</span>
     <div style="display: flex; align-items: center; gap: 8px;">
-      <span style="color:#f1c40f; font-size: clamp(10px, 1.5vw, 11px);">🪙 <span id="gold-val">0</span></span>
-      <button id="pause-btn" class="hud-btn" style="width: 32px; height: 32px; padding: 0;">⏸</button>
+      <div class="hud-badge gold-badge">
+        <span>🪙 <span id="gold-val">0</span></span>
+      </div>
+      <button id="pause-btn" class="hud-btn" style="width: 34px; height: 34px; padding: 0;" aria-label="Pausar Batalha">⏸</button>
     </div>
   </div>
-  <div class="bar-bg"><div id="hp-fill"></div></div>
+
+  <!-- Barra de Vida com Camada Fantasma (Ghost Bar Decay) -->
+  <div class="bar-bg hp-bar-container">
+    <div id="hp-ghost-fill"></div>
+    <div id="hp-fill"></div>
+  </div>
   
   <div class="hud-row">
-    <span>NV <span id="lvl-val">1</span> | ABATES: <span id="kills-val">0</span></span>
+    <div class="hud-badge lvl-badge">
+      <span>NV <span id="lvl-val">1</span> | ABATES: <span id="kills-val">0</span></span>
+    </div>
     <span id="wave-banner">Onda 1: Reconhecimento</span>
   </div>
   <div class="bar-bg"><div id="xp-fill"></div></div>
@@ -46,53 +66,81 @@
 
 <canvas id="game-canvas"></canvas>
 
-<!-- Modal de Seleção de Herói (Grid Universal) -->
+<!-- Modal de Seleção de Herói: Altar dos Condenados -->
 <div id="char-modal" class="modal-overlay" style="display: flex;">
-  <div class="modal-box">
+  <div class="modal-box modal-box-altar">
     <div class="modal-header">
       <div style="text-align: left;">
-        <h2 class="modal-header-title">SELECIONE O SOBREVIVENTE</h2>
-        <div class="modal-header-sub">Escolha o arquétipo e entre na arena</div>
+        <h2 class="modal-header-title">ALTAR DOS CONDENADOS</h2>
+        <div class="modal-header-sub">Desperte um arquétipo para enfrentar a horda</div>
       </div>
       <button id="open-talents-btn" class="hud-btn" style="border-color: #f39c12; color: #f39c12;">
-        ⚡ TALENTOS
+        <svg class="inline-gold-icon" viewBox="0 0 24 24" style="margin-right: 4px;"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="#f1c40f" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#f1c40f"/></svg>ASTROLÁBIO DE ALMAS
       </button>
     </div>
     
-    <div id="char-list"></div>
+    <div class="char-altar-layout">
+      <!-- Coluna Esquerda: Pedestais de Escolha -->
+      <div id="char-pedestals" class="char-pedestals-col"></div>
+
+      <!-- Coluna Direita: Vitral e Invocação -->
+      <div id="char-showcase" class="char-vitral-showcase"></div>
+    </div>
   </div>
 </div>
 
-<!-- Modal da Árvore de Talentos (Meta-Progressão Universal) -->
+<!-- Modal da Árvore de Habilidades: Astrolábio das Almas -->
 <div id="talents-modal" class="modal-overlay">
-  <div class="modal-box" style="border-color: #f39c12;">
+  <div class="modal-box astrolabe-modal">
     <div class="modal-header">
       <div style="text-align: left;">
-        <h2 class="modal-header-title">ÁRVORE DE TALENTOS</h2>
-        <div class="modal-header-sub">Aprimoramentos permanentes entre partidas</div>
+        <h2 class="modal-header-title glow-gold">ASTROLÁBIO DAS ALMAS</h2>
+        <div class="modal-header-sub">Consagre essências cósmicas em aprimoramentos permanentes</div>
       </div>
-      <div class="currency-badge">
-        🪙 <span id="talents-gold-val" style="color: #fff;">0</span>
-      </div>
+      <button class="card-btn" id="close-talents-btn" style="width: auto; padding: 6px 14px; background: #27ae60; border: none; font-weight: 800;">
+        Salvar e Retornar
+      </button>
     </div>
 
-    <div id="talents-list"></div>
+    <!-- Mapa Celestial Radial com Filamentos Vetoriais Matemáticos -->
+    <div class="astrolabe-viewport">
+      <svg id="astrolabe-filaments-svg" class="astrolabe-filaments-layer"></svg>
 
-    <div style="display: flex; gap: 8px; margin-top: 10px; flex-shrink: 0;">
-      <button class="card-btn" id="close-talents-btn" style="background: #27ae60; border: none; font-weight: bold;">Salvar e Voltar</button>
-      <button class="card-btn" id="reset-talents-btn" style="background: #2c334d; border: none; font-size: 11px; max-width: 40%;">Resetar (100%)</button>
+      <div id="astrolabe-core" class="astrolabe-core">
+        <div class="core-rings"></div>
+        <div class="core-label">ALMAS</div>
+        <div class="core-val"><svg class="inline-gold-icon" viewBox="0 0 24 24"><polygon points="12,2 21,8 21,16 12,22 3,16 3,8" fill="none" stroke="#f1c40f" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#f1c40f"/></svg><span id="talents-gold-val">0</span></div>
+        <button id="reset-talents-btn" class="core-reset-btn" title="Purificar e recuperar 100% das almas">PURIFICAR</button>
+      </div>
+
+      <div id="astrolabe-nodes-container" class="astrolabe-nodes-container"></div>
+    </div>
+
+    <!-- Forja Mística Inferior (Painel de Inspeção do Nó Selecionado) -->
+    <div id="talent-forge-drawer" class="talent-forge-drawer">
+      <div class="forge-left">
+        <div id="forge-node-name" class="forge-node-name">Selecione uma Runa</div>
+        <div id="forge-node-desc" class="forge-node-desc">Toque em qualquer constelação acima para forjar poder.</div>
+      </div>
+      <div class="forge-right">
+        <div id="forge-node-level" class="forge-node-level">-- / --</div>
+        <button id="forge-buy-btn" class="card-btn forge-buy-btn" disabled>FUNDIR ALMAS</button>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Modal de Upgrades -->
+<!-- Modal de Upgrades (Cartas de Tarô de Poder Arcano) -->
 <div id="upgrade-modal" class="modal-overlay">
-  <div class="modal-box modal-box-compact">
-    <h3 style="margin: 0 0 4px 0; color:#f1c40f; font-size: clamp(14px, 2.2vw, 17px);">EVOLUÇÃO DISPONÍVEL!</h3>
-    <p style="font-size:11px; color:#aaa; margin-bottom: 8px;">Selecione um aprimoramento tático:</p>
-    <div id="upgrade-list"></div>
-    <button id="reroll-btn" class="card-btn" style="background: #8e44ad; border: none; margin-top: 8px; display: none;">
-      🎲 Trocar Escolhas (Rerolls: <span id="reroll-count">0</span>)
+  <div class="modal-box modal-box-tarot">
+    <div class="modal-header" style="justify-content: center; flex-direction: column; text-align: center;">
+      <span class="level-up-badge">TRANSCENDÊNCIA DE NÍVEL</span>
+      <h2 class="gothic-title glow-gold">ESCOLHA SEU DESTINO</h2>
+      <div class="modal-header-sub">Invoque uma bênção arcana para remodelar o combate</div>
+    </div>
+    <div id="upgrade-list" class="upgrade-cards-grid"></div>
+    <button id="reroll-btn" class="card-btn reroll-btn-styled" style="display: none;">
+      🎲 Rolar Novas Cartas (Restantes: <span id="reroll-count">0</span>)
     </button>
   </div>
 </div>
@@ -107,23 +155,48 @@
   </div>
 </div>
 
-<!-- Modal de Pausa com Slider de Volume -->
+<!-- Modal de Pausa com Grimório Tático de Duas Colunas -->
 <div id="pause-modal" class="modal-overlay">
-  <div class="modal-box modal-box-compact">
-    <h3 style="margin: 0 0 4px 0; color:#f1c40f; font-size: clamp(14px, 2.2vw, 17px);">JOGO PAUSADO</h3>
-    <p style="font-size:11px; color:#aaa; margin-bottom: 10px;">Batalha congelada no tempo.</p>
-    
-    <div style="margin: 8px 0; text-align: left; background: #1a1e2d; padding: 10px 12px; border-radius: 10px; border: 1.5px solid #3e445e;">
-      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: bold; color: #f1c40f; margin-bottom: 6px;">
-        <span>VOLUME DO ÁUDIO</span>
-        <span id="volume-val" style="color: #fff; font-size: 11px;">50%</span>
+  <div class="modal-box modal-box-large">
+    <div class="modal-header">
+      <div style="text-align: left;">
+        <h2 class="modal-header-title">GRIMÓRIO TÁTICO</h2>
+        <div class="modal-header-sub">Batalha suspensa no vácuo do tempo</div>
       </div>
-      <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" 
-             style="width: 100%; accent-color: #f1c40f; cursor: pointer; height: 6px;">
+      <div class="currency-badge">
+        🪙 <span id="pause-gold-val">0</span>
+      </div>
     </div>
+    
+    <div class="pause-layout-grid">
+      <!-- Coluna Esquerda: Arsenal Ativo & Rastreador de Sinergias -->
+      <div class="pause-column">
+        <h4 class="section-tag">ARSENAL ADQUIRIDO</h4>
+        <div id="pause-build-list" class="build-inventory-scroll"></div>
 
-    <button class="card-btn" id="resume-btn" style="background:#27ae60; border:none; margin-top: 6px;">Retomar Batalha</button>
-    <button class="card-btn" id="abandon-btn" style="background:#c0392b; border:none; margin-top:6px;">Abandonar Partida</button>
+        <h4 class="section-tag" style="margin-top: 10px;">RASTREADOR DE FUSÕES (SINERGIAS)</h4>
+        <div id="pause-synergies-tracker" class="synergies-tracker-list"></div>
+      </div>
+
+      <!-- Coluna Direita: Biometria em Tempo Real, Áudio e Ações -->
+      <div class="pause-column">
+        <h4 class="section-tag">BIOMETRIA DO SOBREVIVENTE</h4>
+        <div id="pause-stats-grid" class="stats-mini-grid"></div>
+
+        <div class="volume-control-card">
+          <div class="volume-header">
+            <span>VOLUME GERAL</span>
+            <span id="volume-val">50%</span>
+          </div>
+          <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" class="custom-slider">
+        </div>
+
+        <div class="pause-actions-group">
+          <button class="card-btn btn-resume" id="resume-btn">RETOMAR BATALHA</button>
+          <button class="card-btn btn-abandon" id="abandon-btn">ABANDONAR ARENA</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -145,12 +218,16 @@
   </div>
 </div>
 
-<!-- Modal de Morte -->
-<div id="death-modal" class="modal-overlay">
-  <div class="modal-box modal-box-compact" style="border-color:#e74c3c;">
-    <h3 style="margin: 0 0 6px 0; color:#e74c3c; font-size: clamp(14px, 2.2vw, 17px);">FIM DA SOBREVIVÊNCIA</h3>
-    <p id="death-summary" style="font-size:12px; line-height: 1.5; color: #ccc; margin-bottom: 8px;"></p>
-    <button class="card-btn" id="restart-death-btn" style="background:#c0392b; border:none; margin-top:6px;">Renascer na Arena</button>
+<!-- Modal de Morte Dramática: Lápide dos Condenados -->
+<div id="death-modal" class="modal-overlay modal-death">
+  <div class="modal-box death-tombstone">
+    <div class="skull-emblem">☠</div>
+    <h1 class="death-title" id="death-verdict-title">SUA ALMA FOI CONSUMIDA</h1>
+    <div class="death-divider"></div>
+    <div id="death-summary" class="death-epitaph"></div>
+    <button class="card-btn btn-death-rebirth" id="restart-death-btn">
+      RENASCER NA ARENA
+    </button>
   </div>
 </div>
 
@@ -164,7 +241,7 @@
   </div>
 </div>
 
-<!-- Botão de Poder Ergonômico -->
+<!-- Botão de Habilidade Ativa ("Selo Arcano") -->
 <div id="skill-btn-container">
   <div id="skill-cooldown-mask"></div>
   <svg id="skill-icon" viewBox="0 0 24 24">
