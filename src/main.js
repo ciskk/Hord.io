@@ -52,6 +52,7 @@ import {
 } from './systems/waves.js';
 import { initUI, openCharacterSelect, triggerDeath, triggerVictory, openChestModal } from './systems/ui.js';
 import { render } from './render/renderer.js';
+import { transitionToArenaTheme, getWaveArenaTheme, resetEnvironment, ARENA_PALETTES } from './render/environment.js';
 import { playSfx, triggerHaptic, resetDeathAudioFilter } from './core/audio.js';
 import { updateBoss } from './entities/bosses/bossRegistry.js';
 
@@ -114,7 +115,7 @@ export let frameCount = 0;
 export let spawnTimer = 0;
 export let screenShake = 0;
 export let freezeTimer = 0;
-export let currentArenaTheme = 'CEMETERY';
+export let currentArenaTheme = 'IVORY_OSSUARY';
 export let lastTime = performance.now();
 
 // Controle Diegético: Rastreamento da Causa Mortis e Decaimento da Barra Fantasma (Ghost Bar)
@@ -231,7 +232,8 @@ export function resetGame() {
 
   resetBossSchedule();
   resetMiniBossSchedule();
-  currentArenaTheme = 'CEMETERY';
+  currentArenaTheme = 'IVORY_OSSUARY';
+  resetEnvironment();
   gameState.isWavePaused = false;
   gameState.kills = 0;
   frameCount = 0;
@@ -280,6 +282,14 @@ function update(dt) {
   frameCount += dt;
   const seconds = Math.floor(frameCount / 60);
   const currentWave = getCurrentWave(seconds);
+
+  // Transição suave de arena a cada 3 ondas (1-3 Ossário, 4-6 Sal Carmesim, 7-9 Basílica)
+  if (!activeBoss) {
+    const targetTheme = getWaveArenaTheme(currentWave.index);
+    if (targetTheme !== currentArenaTheme) {
+      transitionToArenaTheme(targetTheme);
+    }
+  }
 
   if (screenShake > 0) screenShake = Math.max(0, screenShake - 0.7 * dt);
 
@@ -1884,7 +1894,9 @@ function update(dt) {
         const tier = ch.tier || 'BOSS';
         chests.splice(i, 1);
         if (tier === 'BOSS') {
-          setCurrentArenaTheme('CEMETERY');
+          const waveSeconds = Math.floor(frameCount / 60);
+          const currentWave = getCurrentWave(waveSeconds);
+          transitionToArenaTheme(getWaveArenaTheme(currentWave.index), 120);
           setIsWavePaused(false);
           resetSpawnTimer();
         }
@@ -1971,7 +1983,8 @@ function update(dt) {
     if (gameState.isWavePaused && !activeBoss) {
       waveBanner.innerText = "ABRA O BAÚ PARA CONTINUAR!";
     } else {
-      waveBanner.innerText = currentWave.name;
+      const arenaName = ARENA_PALETTES[currentArenaTheme]?.name;
+      waveBanner.innerText = arenaName ? `${currentWave.name} • ${arenaName}` : currentWave.name;
     }
   }
 

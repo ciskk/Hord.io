@@ -78,7 +78,7 @@ html, body {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(circle at center, transparent 30%, rgba(6, 8, 14, 0.6) 70%, rgba(2, 3, 6, 0.96) 100%);
+  background: radial-gradient(circle at center, transparent 55%, rgba(6, 8, 14, 0.22) 82%, rgba(2, 3, 6, 0.45) 100%);
   z-index: 6;
   transition: background 0.8s ease;
 }

@@ -22,6 +22,7 @@ import {
 } from '../main.js';
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { initBoss } from './bosses/bossRegistry.js';
+import { transitionToArenaTheme } from '../render/environment.js';
 
 export const MAX_ENEMIES = 150;
 
@@ -364,8 +365,8 @@ export function triggerBossEncounter(bossId) {
   // 2. Bloqueia o spawn de qualquer criatura comum
   setIsWavePaused(true);
 
-  // 3. Transiciona o tema da arena para o cenário temático do Boss
-  setCurrentArenaTheme(BOSS_ARENA_THEMES[bossId] || 'ABYSS');
+  // 3. Transiciona o tema da arena para o cenário temático do Boss suavemente
+  transitionToArenaTheme(BOSS_ARENA_THEMES[bossId] || 'ABYSS', 60);
 
   const angle = Math.random() * Math.PI * 2;
   const bx = player.x + Math.cos(angle) * 380;

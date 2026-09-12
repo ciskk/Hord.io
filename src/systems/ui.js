@@ -56,8 +56,11 @@ import {
   voidVortices,
   bossTelegraphs,
   bossProjectiles,
-  lastAttackerName
+  lastAttackerName,
+  frameCount
 } from '../main.js';
+import { transitionToArenaTheme, getWaveArenaTheme } from '../render/environment.js';
+import { getCurrentWave } from '../systems/waves.js';
 
 // Biblioteca de Glifos Vetoriais Leves para Cartas de Poder
 const UPGRADE_ICONS = {
@@ -516,7 +519,9 @@ export function openChestModal(tier = 'BOSS') {
           setLastTime(performance.now());
 
           if (!activeBoss) {
-            setCurrentArenaTheme('CEMETERY');
+            const waveSeconds = Math.floor(frameCount / 60);
+            const currentWave = getCurrentWave(waveSeconds);
+            transitionToArenaTheme(getWaveArenaTheme(currentWave.index), 90);
             setIsWavePaused(false);
             resetSpawnTimer();
             triggerShake(8);
