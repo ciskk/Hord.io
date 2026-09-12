@@ -749,6 +749,78 @@ export function renderSurrealAbyssArena(ctx) {
   }
 
   // ==========================================
+  // CAMADA 4.5: BARREIRA INVISÍVEL DE CONTENÇÃO (EFEITO REATIVO)
+  // ==========================================
+  const barrierR = R - (player.radius || 14) - 2;
+  const pVecX = player.x - cx;
+  const pVecY = player.y - cy;
+  const pDistToCenter = Math.hypot(pVecX, pVecY) || 1;
+  const distToBarrier = barrierR - pDistToCenter;
+  const contactIntensity = activeBoss ? (activeBoss.barrierContact || 0) : 0;
+
+  if (distToBarrier < 95 || contactIntensity > 0.05) {
+    const playerAng = Math.atan2(pVecY, pVecX);
+    const proximityRatio = Math.min(1.0, Math.max(0, 1.0 - (distToBarrier / 95)));
+    const totalIntensity = Math.min(1.0, proximityRatio * 0.55 + contactIntensity * 0.85);
+
+    ctx.save();
+    const arcSpan = 0.46;
+    const arcStart = playerAng - arcSpan;
+    const arcEnd = playerAng + arcSpan;
+
+    ctx.strokeStyle = phase === 3 
+      ? `rgba(0, 206, 201, ${totalIntensity * 0.75})` 
+      : (phase === 2 ? `rgba(232, 67, 147, ${totalIntensity * 0.75})` : `rgba(186, 120, 255, ${totalIntensity * 0.75})`);
+    ctx.lineWidth = 4 + contactIntensity * 4;
+    ctx.beginPath();
+    ctx.arc(cx, cy, barrierR, arcStart, arcEnd);
+    ctx.stroke();
+
+    ctx.strokeStyle = `rgba(255, 255, 255, ${totalIntensity * 0.9})`;
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+
+    const hexCount = 7;
+    for (let hx = 0; hx < hexCount; hx++) {
+      const hxAng = arcStart + (hx / (hexCount - 1)) * (arcSpan * 2);
+      const hxDist = barrierR - 4;
+      const cellX = cx + Math.cos(hxAng) * hxDist;
+      const cellY = cy + Math.sin(hxAng) * hxDist;
+      const hexPulse = Math.sin(frameCount * 0.2 + hx) * 0.3 + 0.7;
+
+      ctx.strokeStyle = phase === 3 
+        ? `rgba(0, 206, 201, ${totalIntensity * 0.5 * hexPulse})` 
+        : `rgba(232, 67, 147, ${totalIntensity * 0.5 * hexPulse})`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      for (let s = 0; s < 6; s++) {
+        const sAng = (s * Math.PI) / 3 + frameCount * 0.02;
+        const sx = cellX + Math.cos(sAng) * 9;
+        const sy = cellY + Math.sin(sAng) * 9;
+        if (s === 0) ctx.moveTo(sx, sy);
+        else ctx.lineTo(sx, sy);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    if (contactIntensity > 0.1) {
+      const contactX = cx + Math.cos(playerAng) * barrierR;
+      const contactY = cy + Math.sin(playerAng) * barrierR;
+      for (let r = 1; r <= 3; r++) {
+        const ripR = ((frameCount * 2.2 + r * 16) % 48);
+        const ripAlpha = Math.max(0, 1 - (ripR / 48)) * contactIntensity * 0.7;
+        ctx.strokeStyle = phase === 3 ? `rgba(129, 236, 236, ${ripAlpha})` : `rgba(255, 121, 168, ${ripAlpha})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(contactX, contactY, ripR, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  // ==========================================
   // CAMADA 5: PLACAS EXTERNAS QUEBRADAS À DERIVA (FASES 2 E 3)
   // ==========================================
   if (R < 610) {

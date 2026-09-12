@@ -21,7 +21,8 @@ const soundCooldowns = {
   crit: 0, 
   charge: 0, 
   warp: 0,
-  card_hover: 0
+  card_hover: 0,
+  forcefield: 0
 };
 
 export function triggerHaptic(type) {
@@ -96,6 +97,7 @@ export function playSfx(type) {
   if (type === 'charge' && now - soundCooldowns.charge < 120) return;
   if (type === 'warp' && now - soundCooldowns.warp < 80) return;
   if (type === 'card_hover' && now - soundCooldowns.card_hover < 50) return;
+  if (type === 'forcefield' && now - soundCooldowns.forcefield < 90) return;
 
   if (soundCooldowns[type] !== undefined) soundCooldowns[type] = now;
 
@@ -312,6 +314,17 @@ export function playSfx(type) {
       osc.start(t);
       osc.stop(t + 0.16);
       triggerHaptic('medium');
+    } else if (type === 'forcefield') {
+      filter.frequency.setValueAtTime(1400, t);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(120 * pitchJitter, t);
+      osc.frequency.exponentialRampToValueAtTime(360, t + 0.12);
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.09, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+      osc.start(t);
+      osc.stop(t + 0.12);
+      triggerHaptic('light');
     } 
     
     // --- Novos Efeitos da Identidade Visual Grim Cyber-Gothic ---

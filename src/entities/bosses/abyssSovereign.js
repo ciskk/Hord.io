@@ -383,8 +383,6 @@ function startSkillCast(boss) {
 }
 
 function updateEventHorizon(boss, dt, context) {
-  if (boss.phase < 2) return;
-
   const { player, addDamageText, triggerShake, createHitParticles } = context;
 
   if (boss.arenaRadius > boss.targetArenaRadius) {
@@ -397,12 +395,54 @@ function updateEventHorizon(boss, dt, context) {
   const pdy = player.y - boss.arenaCenterY;
   const pDist = Math.hypot(pdx, pdy) || 1;
 
-  if (pDist > boss.arenaRadius) {
-    const excess = pDist - boss.arenaRadius;
-    const pullFactor = Math.min(3.8, 1.2 + excess * 0.035) * dt;
-    player.x -= (pdx / pDist) * pullFactor;
-    player.y -= (pdy / pDist) * pullFactor;
+  // Barreira Física Invisível Impenetrável (Ativa em todas as fases)
+  const maxRadius = boss.arenaRadius - (player.radius || 14) - 2;
 
+  if (pDist > maxRadius) {
+    // Clamping físico estrito - impede qualquer fuga para fora do Altar
+    player.x = boss.arenaCenterX + (pdx / pDist) * maxRadius;
+    player.y = boss.arenaCenterY + (pdy / pDist) * maxRadius;
+
+    const nx = pdx / pDist;
+    const ny = pdy / pDist;
+
+    // Cancela componentes de velocidade voltados para fora da arena (knockback, dashes)
+    const pushDot = (player.pushVx || 0) * nx + (player.pushVy || 0) * ny;
+    if (pushDot > 0) {
+      player.pushVx -= pushDot * nx;
+      player.pushVy -= pushDot * ny;
+    }
+    const dashDot = (player.dashVx || 0) * nx + (player.dashVy || 0) * ny;
+    if (dashDot > 0) {
+      player.dashVx -= dashDot * nx;
+      player.dashVy -= dashDot * ny;
+    }
+    const ignisDot = (player.ignisDashVx || 0) * nx + (player.ignisDashVy || 0) * ny;
+    if (ignisDot > 0) {
+      player.ignisDashVx -= ignisDot * nx;
+      player.ignisDashVy -= ignisDot * ny;
+    }
+
+    // Marcação de contato com a barreira invisível
+    boss.barrierContact = 1.0;
+    boss.barrierContactAngle = Math.atan2(pdy, pdx);
+
+    if (Math.floor(context.frameCount) % 4 === 0) {
+      createHitParticles(player.x + nx * 8, player.y + ny * 8, boss.phase === 3 ? '#00cec9' : '#e84393', 3);
+      createHitParticles(player.x + nx * 8, player.y + ny * 8, '#ffffff', 2);
+    }
+
+    if (!boss.lastBarrierSound || context.frameCount - boss.lastBarrierSound > 22) {
+      boss.lastBarrierSound = context.frameCount;
+      playSfx('forcefield');
+      triggerHaptic('light');
+    }
+  } else {
+    boss.barrierContact = Math.max(0, (boss.barrierContact || 0) - 0.04 * dt);
+  }
+
+  // Dano por asfixia caso o jogador de alguma forma exceda o horizonte de eventos
+  if (pDist > boss.arenaRadius) {
     boss.asphyxiaTimer += dt;
     if (boss.asphyxiaTimer >= 36 && player.iFrames <= 0) {
       boss.asphyxiaTimer = 0;

@@ -539,6 +539,55 @@ function update(dt) {
   if (Math.abs(player.pushVx) < 0.05) player.pushVx = 0;
   if (Math.abs(player.pushVy) < 0.05) player.pushVy = 0;
 
+  // Barreira Física de Contenção Dimensional (Impede fuga do Altar do Fim dos Tempos)
+  if (activeBoss && (activeBoss.bossId === 4 || activeBoss.arenaCenterX !== undefined)) {
+    const acx = activeBoss.arenaCenterX;
+    const acy = activeBoss.arenaCenterY;
+    const ar = activeBoss.arenaRadius || 620;
+    const maxR = ar - (player.radius || 14) - 2;
+    const pdx = player.x - acx;
+    const pdy = player.y - acy;
+    const pDist = Math.hypot(pdx, pdy) || 1;
+
+    if (pDist > maxR) {
+      player.x = acx + (pdx / pDist) * maxR;
+      player.y = acy + (pdy / pDist) * maxR;
+
+      const nx = pdx / pDist;
+      const ny = pdy / pDist;
+
+      const pushDot = (player.pushVx || 0) * nx + (player.pushVy || 0) * ny;
+      if (pushDot > 0) {
+        player.pushVx -= pushDot * nx;
+        player.pushVy -= pushDot * ny;
+      }
+      const dashDot = (player.dashVx || 0) * nx + (player.dashVy || 0) * ny;
+      if (dashDot > 0) {
+        player.dashVx -= dashDot * nx;
+        player.dashVy -= dashDot * ny;
+      }
+      const ignisDot = (player.ignisDashVx || 0) * nx + (player.ignisDashVy || 0) * ny;
+      if (ignisDot > 0) {
+        player.ignisDashVx -= ignisDot * nx;
+        player.ignisDashVy -= ignisDot * ny;
+      }
+
+      activeBoss.barrierContact = 1.0;
+      activeBoss.barrierContactAngle = Math.atan2(pdy, pdx);
+
+      if (Math.floor(frameCount) % 4 === 0) {
+        createHitParticles(player.x + nx * 6, player.y + ny * 6, activeBoss.phase === 3 ? '#00cec9' : '#e84393', 3);
+        createHitParticles(player.x + nx * 6, player.y + ny * 6, '#ffffff', 2);
+      }
+
+      if (!activeBoss.lastBarrierSound || frameCount - activeBoss.lastBarrierSound > 22) {
+        activeBoss.lastBarrierSound = frameCount;
+        playSfx('forcefield');
+        triggerHaptic('light');
+      }
+    }
+  }
+
   camera.x = player.x - viewW / 2;
   camera.y = player.y - viewH / 2;
 
