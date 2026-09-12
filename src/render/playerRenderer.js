@@ -33,17 +33,125 @@ export function drawPlayerOrbitals() {
   if (player.orbitals <= 0) return;
 
   const orbDist = player.evolvedOrbitals ? 88 : 72;
+  const isEvolved = !!player.evolvedOrbitals;
+
+  // 1. Anel Guia Orbital Celestial
+  ctx.strokeStyle = isEvolved 
+    ? 'rgba(241, 196, 15, 0.28)' 
+    : 'rgba(52, 152, 219, 0.20)';
+  ctx.lineWidth = isEvolved ? 2.2 : 1.4;
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, orbDist, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Anel pontilhado rúnico sutil no entorno
+  ctx.save();
+  ctx.setLineDash([4, 8]);
+  ctx.strokeStyle = isEvolved 
+    ? 'rgba(243, 156, 18, 0.18)' 
+    : 'rgba(41, 128, 185, 0.14)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, orbDist + (isEvolved ? 6 : 4), 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // 2. Renderização de Cada Tomo Celestial Aberto e seus Rastros
+  const bookW = isEvolved ? 20 : 18;
+  const bookH = isEvolved ? 14 : 12;
+  const halfW = bookW / 2;
+  const halfH = bookH / 2;
+
   for (let oIdx = 0; oIdx < player.orbitals; oIdx++) {
     const angle = player.orbitalAngle + (oIdx * (Math.PI * 2 / player.orbitals));
     const ox = player.x + Math.cos(angle) * orbDist;
     const oy = player.y + Math.sin(angle) * orbDist;
+
+    // Rastro Estelar (Trail) atrás do tomo
+    const trailLength = isEvolved ? 0.38 : 0.24;
+    const trailSteps = 5;
+    for (let s = 1; s <= trailSteps; s++) {
+      const tAngle = angle - (trailLength * (s / trailSteps));
+      const tx = player.x + Math.cos(tAngle) * orbDist;
+      const ty = player.y + Math.sin(tAngle) * orbDist;
+      const alpha = (1 - s / trailSteps) * (isEvolved ? 0.35 : 0.22);
+      ctx.fillStyle = isEvolved 
+        ? `rgba(241, 196, 15, ${alpha})` 
+        : `rgba(0, 206, 201, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(tx, ty, (isEvolved ? 5 : 3.5) * (1 - s / trailSteps), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     ctx.save();
     ctx.translate(ox, oy);
     ctx.rotate(angle + Math.PI / 2);
-    ctx.fillStyle = player.evolvedOrbitals ? '#f1c40f' : '#2980b9';
-    ctx.fillRect(-6, -8, 12, 16);
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(-2, -6, 4, 12);
+
+    // Halo de Luz Sagrada ao redor do livro
+    const haloRadius = isEvolved ? 15 : 12;
+    const haloGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, haloRadius);
+    haloGrad.addColorStop(0, isEvolved ? 'rgba(241, 196, 15, 0.35)' : 'rgba(52, 152, 219, 0.30)');
+    haloGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = haloGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, haloRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 1. Capa de Couro Mística Externa (ângulo aberto)
+    ctx.fillStyle = isEvolved ? '#b7791f' : '#1b3a4b';
+    ctx.beginPath();
+    ctx.roundRect(-halfW - 1, -halfH - 1, bookW + 2, bookH + 2, 2);
+    ctx.fill();
+    ctx.strokeStyle = isEvolved ? '#f1c40f' : '#3498db';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // 2. Páginas de Pergaminho Abertas
+    // Página Esquerda
+    const pageGradLeft = ctx.createLinearGradient(-halfW, 0, 0, 0);
+    pageGradLeft.addColorStop(0, '#e8e2d5');
+    pageGradLeft.addColorStop(1, '#fcfbfa');
+    ctx.fillStyle = pageGradLeft;
+    ctx.beginPath();
+    ctx.roundRect(-halfW, -halfH, halfW - 0.5, bookH, [2, 0, 0, 2]);
+    ctx.fill();
+
+    // Página Direita
+    const pageGradRight = ctx.createLinearGradient(0, 0, halfW, 0);
+    pageGradRight.addColorStop(0, '#fcfbfa');
+    pageGradRight.addColorStop(1, '#e8e2d5');
+    ctx.fillStyle = pageGradRight;
+    ctx.beginPath();
+    ctx.roundRect(0.5, -halfH, halfW - 0.5, bookH, [0, 2, 2, 0]);
+    ctx.fill();
+
+    // 3. Linhas de Encantamento / Texto Rúnico
+    ctx.strokeStyle = isEvolved ? 'rgba(217, 119, 6, 0.45)' : 'rgba(41, 128, 185, 0.40)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(-halfW + 2, -3); ctx.lineTo(-2, -3);
+    ctx.moveTo(-halfW + 2, 0);  ctx.lineTo(-2, 0);
+    ctx.moveTo(-halfW + 2, 3);  ctx.lineTo(-2, 3);
+    ctx.moveTo(2, -3); ctx.lineTo(halfW - 2, -3);
+    ctx.moveTo(2, 0);  ctx.lineTo(halfW - 2, 0);
+    ctx.moveTo(2, 3);  ctx.lineTo(halfW - 2, 3);
+    ctx.stroke();
+
+    // 4. Lombada Central
+    ctx.fillStyle = isEvolved ? '#78350f' : '#0f172a';
+    ctx.fillRect(-0.75, -halfH - 1, 1.5, bookH + 2);
+
+    // 5. Cruz Sagrada / Runa Luminosa
+    ctx.fillStyle = isEvolved ? '#fef08a' : '#38bdf8';
+    ctx.fillRect(-0.75, -4, 1.5, 8);
+    ctx.fillRect(-3, -2, 6, 1.5);
+
+    // Ponto de luz divino
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(0, -1.25, 1, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.restore();
   }
 }

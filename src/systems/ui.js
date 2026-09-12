@@ -7,6 +7,7 @@
 import { CHARACTERS } from '../config/characters.js';
 import { BOSS_TYPES } from '../config/enemies.js';
 import { getRandomUpgrades, checkSynergies } from '../config/upgrades.js';
+import { checkIsSynergyIngredient, getSynergyTrackerList } from '../config/items.js';
 import { triggerBossEncounter } from '../entities/enemies.js';
 import { 
   playSfx, 
@@ -160,16 +161,7 @@ export function renderBossSelectModal() {
  * Renderizador de Cartas de Tarô Arcano (Level-up)
  */
 function isSynergyIngredient(optId) {
-  if (optId === 'wings' && player.weapons.some(w => w.type === 'SWORD')) return true;
-  if (optId === 'dmg' && player.weapons.some(w => w.type === 'AXE' || w.type === 'STAFF')) return true;
-  if (optId === 'frost_passive' && player.weapons.some(w => w.type === 'POTION')) return true;
-  if (optId === 'armor' && (player.weapons.some(w => w.type === 'HAMMER') || player.auraLvl > 0)) return true;
-  if (optId === 'sword_extra' && player.hasWingsPassive) return true;
-  if (optId === 'axe_extra' && player.hasPowerPassive) return true;
-  if (optId === 'potion_volley' && (player.slowChance || 0) >= 0.15) return true;
-  if (optId === 'staff_projectiles' && player.hasPowerPassive) return true;
-  if (optId === 'hammer_crush' && player.hasArmorPassive) return true;
-  return false;
+  return checkIsSynergyIngredient(optId, player);
 }
 
 function renderUpgradeCards() {
@@ -304,55 +296,7 @@ function renderPauseInventory() {
   // 3. Rastreador de Fusões e Sinergias (Evolution Tracker)
   const synTracker = document.getElementById('pause-synergies-tracker');
   if (synTracker) {
-    const sword = player.weapons.find(w => w.type === 'SWORD');
-    const potion = player.weapons.find(w => w.type === 'POTION');
-    const staff = player.weapons.find(w => w.type === 'STAFF');
-    const hammer = player.weapons.find(w => w.type === 'HAMMER');
-
-    const synList = [
-      {
-        name: "Lâmina Dimensional",
-        isReady: sword && sword.count >= 4 && player.hasWingsPassive,
-        isEvolved: player.evolvedSword,
-        req: "Espadas Nv 4 + Asas"
-      },
-      {
-        name: "Tempestade de Aço",
-        isReady: (player.axeCount || 1) >= 3 && player.hasPowerPassive,
-        isEvolved: player.evolvedAxe,
-        req: "Machado Nv 3 + Poder"
-      },
-      {
-        name: "Dilúvio Biológico",
-        isReady: potion && potion.count >= 3 && (player.slowChance || 0) >= 0.15,
-        isEvolved: player.evolvedPotion,
-        req: "Poção Nv 3 + Gelo"
-      },
-      {
-        name: "Cataclismo Solar",
-        isReady: staff && staff.count >= 3 && player.hasPowerPassive,
-        isEvolved: player.evolvedStaff,
-        req: "Cajado Nv 3 + Poder"
-      },
-      {
-        name: "Martelo dos Titãs",
-        isReady: hammer && hammer.count >= 3 && player.hasArmorPassive,
-        isEvolved: player.evolvedHammer,
-        req: "Martelo Nv 3 + Armadura"
-      },
-      {
-        name: "Santuário Celestial",
-        isReady: player.auraLvl >= 5 && player.hasArmorPassive,
-        isEvolved: player.evolvedAura,
-        req: "Aura Nv 5 + Armadura"
-      },
-      {
-        name: "Vórtice do Apocalipse",
-        isReady: player.orbitals >= 4 && player.hasWingsPassive,
-        isEvolved: player.evolvedOrbitals,
-        req: "Bíblias Nv 4 + Asas"
-      }
-    ];
+    const synList = getSynergyTrackerList(player);
 
     synTracker.innerHTML = synList.map(s => {
       let statusColor = '#e74c3c';
@@ -398,70 +342,159 @@ export function openChestModal(tier = 'BOSS') {
 
   const modal = document.getElementById('chest-modal');
   const list = document.getElementById('chest-rewards-list');
+  const claimBtn = document.getElementById('chest-claim-btn');
+  const titleElem = document.getElementById('chest-modal-title');
+  const subElem = document.getElementById('chest-modal-sub');
+
   if (!modal || !list) return;
   list.innerHTML = '';
 
   const isMini = tier === 'MINI_BOSS';
 
-  const titleElem = modal.querySelector('h3');
   if (titleElem) {
     titleElem.innerText = isMini ? "TESOURO DE ELITE!" : "TESOURO DO CHEFE!";
     titleElem.style.color = isMini ? "#3498db" : "#f1c40f";
   }
+  if (subElem) {
+    subElem.innerText = isMini 
+      ? "Campeão abatido. Relíquias arcanas desvendadas:" 
+      : "A arena foi purificada. Recompensas lendárias concedidas:";
+  }
+
+  // 1. Preparar lista de recompensas
+  const pendingRewards = [];
 
   if (isMini) {
-    const rewards = getRandomUpgrades(1);
-    rewards.forEach(r => {
-      r.apply();
-      const item = document.createElement('div');
-      item.className = 'chest-reward-item';
-      item.style.borderColor = '#3498db';
-      item.style.background = 'rgba(52, 152, 219, 0.15)';
-      item.innerHTML = `<b style="color:#3498db;">${r.title}</b> • <span style="font-size:10px; color:#ddd;">${r.stat}</span>`;
-      list.appendChild(item);
+    const upgradeCount = Math.random() < 0.25 ? 2 : 1;
+    const upgrades = getRandomUpgrades(upgradeCount);
+    upgrades.forEach(u => {
+      pendingRewards.push({
+        isLegendary: false,
+        title: u.title,
+        desc: u.desc,
+        stat: u.stat,
+        badge: u.badge || "Upgrade",
+        iconSvg: UPGRADE_ICONS[u.id] || `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#3498db"/></svg>`,
+        apply: () => u.apply()
+      });
     });
   } else {
     const syns = checkSynergies();
     if (syns.length > 0) {
-      playSfx('evolution');
-      triggerShake(14);
       const evo = syns[0];
-      evo.apply();
-      const evoItem = document.createElement('div');
-      evoItem.className = 'chest-reward-item';
-      evoItem.style.borderColor = '#f1c40f';
-      evoItem.style.background = 'rgba(241, 196, 15, 0.25)';
-      evoItem.innerHTML = `<span style="color:#f1c40f; font-size:13px; font-weight:800;">★ EVOLUÇÃO LENDÁRIA ★</span><br><b>${evo.name}</b><br><span style="font-size:10px; color:#ddd;">${evo.desc}</span>`;
-      list.appendChild(evoItem);
+      pendingRewards.push({
+        isLegendary: true,
+        title: evo.name,
+        desc: evo.desc,
+        stat: "★ PODER MÁXIMO ★",
+        badge: "Evolução",
+        iconSvg: `<svg viewBox="0 0 24 24"><path fill="#f1c40f" d="M12 2l3 7h7l-5.5 4.5 2 7-6.5-4.5-6.5 4.5 2-7L2 9h7z"/></svg>`,
+        apply: () => evo.apply()
+      });
     }
 
-    const rewards = getRandomUpgrades(2);
-    rewards.forEach(r => {
-      r.apply();
-      const item = document.createElement('div');
-      item.className = 'chest-reward-item';
-      item.innerHTML = `<b>${r.title}</b> • <span style="font-size:10px; color:#ddd;">${r.stat}</span>`;
-      list.appendChild(item);
+    const upgrades = getRandomUpgrades(2);
+    upgrades.forEach(u => {
+      pendingRewards.push({
+        isLegendary: false,
+        title: u.title,
+        desc: u.desc,
+        stat: u.stat,
+        badge: u.badge || "Upgrade",
+        iconSvg: UPGRADE_ICONS[u.id] || `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#f1c40f"/></svg>`,
+        apply: () => u.apply()
+      });
     });
   }
 
-  const claimBtn = document.getElementById('chest-claim-btn');
-  if (claimBtn) {
-    claimBtn.onclick = () => {
-      modal.style.display = 'none';
-      gameState.isPaused = false;
-      setLastTime(performance.now());
-
-      if (!activeBoss) {
-        setCurrentArenaTheme('INDUSTRIAL');
-        setIsWavePaused(false);
-        resetSpawnTimer();
-        triggerShake(8);
-        playSfx('level');
+  // Fallback se todos os upgrades já foram maximizados
+  if (pendingRewards.length === 0) {
+    pendingRewards.push({
+      isLegendary: false,
+      title: "Bênção da Fortuna",
+      desc: "Todos os poderes conhecidos atingiram o apogeu! Recupera vitalidade e concede ouro.",
+      stat: "+100 HP & +50 Ouro",
+      badge: "Fortuna",
+      iconSvg: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#f1c40f"/></svg>`,
+      apply: () => {
+        player.hp = Math.min(player.maxHp, player.hp + 100);
+        addPersistentGold(50);
       }
-    };
+    });
   }
+
+  // 2. Criar cartas no estado enigmático
+  const cardElements = [];
+  pendingRewards.forEach(r => {
+    const card = document.createElement('div');
+    card.className = `chest-card ${r.isLegendary ? 'legendary-card' : ''}`;
+    card.innerHTML = `
+      <div class="chest-card-icon">${r.iconSvg}</div>
+      <div class="chest-card-info">
+        ${r.isLegendary ? '<span class="legendary-pill">★ EVOLUÇÃO LENDÁRIA ★</span>' : ''}
+        <div class="chest-card-title">
+          <span>${r.title}</span>
+          <span style="font-size: 10px; color: ${r.isLegendary ? '#f1c40f' : '#8890a6'}; font-weight: normal;">${r.badge}</span>
+        </div>
+        <div class="chest-card-stat">${r.stat}</div>
+        <div class="chest-card-desc">${r.desc}</div>
+      </div>
+    `;
+    list.appendChild(card);
+    cardElements.push({ el: card, reward: r });
+  });
+
+  // 3. Travar o botão de claim durante a revelação
+  if (claimBtn) {
+    claimBtn.disabled = true;
+    claimBtn.innerText = "Revelando Recompensas...";
+    claimBtn.onclick = null;
+  }
+
   modal.style.display = 'flex';
+
+  // 4. Sequência cadenciada de Unboxing
+  let currentIdx = 0;
+  function revealNext() {
+    if (currentIdx >= cardElements.length) {
+      if (claimBtn) {
+        claimBtn.disabled = false;
+        claimBtn.innerText = "Equipar Poderes e Continuar";
+        claimBtn.onclick = () => {
+          modal.style.display = 'none';
+          gameState.isPaused = false;
+          setLastTime(performance.now());
+
+          if (!activeBoss) {
+            setCurrentArenaTheme('INDUSTRIAL');
+            setIsWavePaused(false);
+            resetSpawnTimer();
+            triggerShake(8);
+            playSfx('level');
+          }
+        };
+      }
+      return;
+    }
+
+    const { el, reward } = cardElements[currentIdx];
+    reward.apply();
+    el.classList.add('revealed');
+
+    if (reward.isLegendary) {
+      playSfx('evolution');
+      triggerShake(12);
+      triggerHaptic('heavy');
+    } else {
+      playSfx('card_hover');
+    }
+
+    currentIdx++;
+    setTimeout(revealNext, reward.isLegendary ? 520 : 360);
+  }
+
+  // Delay para animação da tampa abrir antes da primeira carta
+  setTimeout(revealNext, 450);
 }
 
 /**

@@ -145,13 +145,22 @@
   </div>
 </div>
 
-<!-- Modal do Baú de Chefe -->
+<!-- Modal do Baú de Tesouro (Unboxing Dramático) -->
 <div id="chest-modal" class="modal-overlay">
-  <div class="modal-box modal-box-compact" style="border-color:#f1c40f;">
-    <h3 style="margin: 0 0 4px 0; color:#f1c40f; font-size: clamp(14px, 2.2vw, 17px);">TESOURO DO CHEFE!</h3>
-    <p style="font-size:11px; color:#aaa; margin-bottom: 8px;">A arena foi purificada. Recompensas lendárias obtidas:</p>
-    <div id="chest-rewards-list"></div>
-    <button class="card-btn" id="chest-claim-btn" style="background:#f39c12; border:none; margin-top:8px; color:#000; font-weight: bold;">Equipar Poderes e Continuar</button>
+  <div class="modal-box chest-modal-box">
+    <div class="chest-unboxing-header">
+      <div class="chest-anim-stage">
+        <div class="chest-rays"></div>
+        <div class="chest-icon-visual">
+          <div class="chest-lid-graphic"></div>
+          <div class="chest-base-graphic"></div>
+        </div>
+      </div>
+      <h3 id="chest-modal-title">TESOURO DO CHEFE!</h3>
+      <p id="chest-modal-sub">A arena foi purificada. Recompensas lendárias concedidas:</p>
+    </div>
+    <div id="chest-rewards-list" class="chest-rewards-grid"></div>
+    <button class="card-btn" id="chest-claim-btn">Equipar Poderes e Continuar</button>
   </div>
 </div>
 

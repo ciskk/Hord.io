@@ -112,16 +112,116 @@ export function render() {
   for (let i = 0; i < chests.length; i++) {
     const ch = chests[i];
     if (ch.x < viewLeft || ch.x > viewRight || ch.y < viewTop || ch.y > viewBottom) continue;
-    ctx.save();
-    ctx.translate(ch.x, ch.y);
-    ctx.fillStyle = 'rgba(241, 196, 15, 0.35)';
+
+    const z = Math.min(0, ch.z || 0);
+    const isMini = ch.tier === 'MINI_BOSS';
+    const bw = isMini ? 22 : 26;
+    const bh = isMini ? 16 : 19;
+    const hw = bw / 2;
+    const hh = bh / 2;
+
+    // 1. Sombra elíptica no solo
+    const shadowScale = Math.max(0.3, 1 - Math.abs(z) / 90);
+    const shadowAlpha = Math.max(0.12, 0.45 * shadowScale);
+    ctx.fillStyle = `rgba(0, 0, 0, ${shadowAlpha})`;
     ctx.beginPath();
-    ctx.arc(0, 0, ch.radius + 6, 0, Math.PI * 2);
+    ctx.ellipse(ch.x, ch.y + 4, (ch.radius + 3) * shadowScale, ((ch.radius + 3) * 0.42) * shadowScale, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#d35400';
-    ctx.fillRect(-11, -8, 22, 16);
-    ctx.fillStyle = '#f1c40f';
-    ctx.fillRect(-11, -3, 22, 4);
+
+    // 2. Feixes de Luz Místicos (God Rays) e Pulso Radiante quando em repouso
+    if (ch.isResting) {
+      const rayColor = isMini ? 'rgba(52, 152, 219, 0.07)' : 'rgba(241, 196, 15, 0.08)';
+      const glowColor = isMini ? 'rgba(52, 152, 219, 0.22)' : 'rgba(241, 196, 15, 0.25)';
+      const angleRot = frameCount * 0.012 + (ch.pulseOffset || 0);
+
+      ctx.save();
+      ctx.translate(ch.x, ch.y + 2);
+      ctx.rotate(angleRot);
+      ctx.fillStyle = rayColor;
+      for (let r = 0; r < 6; r++) {
+        const rayA = (r * Math.PI * 2) / 6;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, ch.radius + 18, rayA - 0.22, rayA + 0.22);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+
+      const pulse = Math.sin(frameCount * 0.08 + (ch.pulseOffset || 0)) * 2.2;
+      ctx.fillStyle = glowColor;
+      ctx.beginPath();
+      ctx.arc(ch.x, ch.y + 2, ch.radius + 3 + pulse, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 3. Arte Procedural do Baú em Perspectiva 2.5D
+    ctx.save();
+    ctx.translate(ch.x, ch.y + z);
+
+    // Caixa de madeira reforçada
+    const woodGrad = ctx.createLinearGradient(-hw, -hh, -hw, hh);
+    woodGrad.addColorStop(0, '#542d18');
+    woodGrad.addColorStop(0.5, '#3a1e0f');
+    woodGrad.addColorStop(1, '#241208');
+    ctx.fillStyle = woodGrad;
+    ctx.beginPath();
+    ctx.roundRect(-hw, -hh + 3, bw, bh - 3, 3);
+    ctx.fill();
+    ctx.strokeStyle = '#1a0b04';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Tampa arredondada superior (Lid)
+    const lidGrad = ctx.createLinearGradient(-hw, -hh - 4, -hw, -hh + 5);
+    lidGrad.addColorStop(0, isMini ? '#47535e' : '#733c1d');
+    lidGrad.addColorStop(0.5, isMini ? '#2f3640' : '#542d18');
+    lidGrad.addColorStop(1, isMini ? '#1e272e' : '#33190c');
+    ctx.fillStyle = lidGrad;
+    ctx.beginPath();
+    ctx.roundRect(-hw - 1, -hh - 3, bw + 2, 7, [4, 4, 1, 1]);
+    ctx.fill();
+    ctx.strokeStyle = isMini ? '#718093' : '#8d4b24';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Tiras verticais de aço reforçado
+    const strapColor = isMini ? '#718093' : '#d35400';
+    const rivetColor = isMini ? '#dcdde1' : '#f1c40f';
+    const strapOffset = hw * 0.52;
+    [-strapOffset, strapOffset].forEach(sx => {
+      ctx.fillStyle = strapColor;
+      ctx.fillRect(sx - 1.5, -hh - 3, 3, bh + 3);
+      ctx.fillStyle = rivetColor;
+      ctx.beginPath(); ctx.arc(sx, -hh - 1, 1, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(sx, hh - 2, 1, 0, Math.PI * 2); ctx.fill();
+    });
+
+    // Friso horizontal da tampa
+    ctx.fillStyle = isMini ? '#bdc3c7' : '#f1c40f';
+    ctx.fillRect(-hw - 1, -hh + 3, bw + 2, 2);
+
+    // Fechadura em formato de brasão com gema
+    ctx.fillStyle = isMini ? '#95a5a6' : '#f39c12';
+    ctx.beginPath();
+    ctx.roundRect(-3.5, -hh + 2, 7, 7, 2);
+    ctx.fill();
+    ctx.strokeStyle = isMini ? '#dcdde1' : '#f1c40f';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+
+    // Gema mística no miolo da fechadura
+    ctx.fillStyle = isMini ? '#00cec9' : '#e74c3c';
+    ctx.beginPath();
+    ctx.arc(0, -hh + 5.5, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ponto de luz na gema
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-0.6, -hh + 4.9, 0.7, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.restore();
   }
 

@@ -1335,16 +1335,275 @@ html, body {
 .card-legendary { border-color: var(--gold-runic); box-shadow: 0 0 14px rgba(241, 196, 15, 0.35); }
 .card-legendary .rarity-badge { background: var(--gold-runic); color: #000; }
 
-.chest-reward-item {
-  background: rgba(241, 196, 15, 0.12);
-  border: 1px solid var(--gold-runic);
-  padding: 8px 10px;
-  border-radius: 8px;
-  margin: 6px 0;
-  font-size: clamp(11px, 1.6vw, 13px);
-  font-weight: 700;
+/* ======================================================== */
+/* SISTEMA DE UNBOXING DRAMÁTICO DO BAÚ                    */
+/* ======================================================== */
+
+.chest-modal-box {
+  width: min(92vw, 440px);
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: radial-gradient(circle at 50% 15%, #1a1e2d 0%, #0d1017 100%);
+  border: 2px solid var(--gold-runic);
+  box-shadow: 0 0 35px rgba(241, 196, 15, 0.25), inset 0 0 20px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.chest-unboxing-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.chest-anim-stage {
+  position: relative;
+  width: 90px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.chest-rays {
+  position: absolute;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(241, 196, 15, 0) 0deg,
+    rgba(241, 196, 15, 0.25) 30deg,
+    rgba(241, 196, 15, 0) 60deg,
+    rgba(241, 196, 15, 0.25) 90deg,
+    rgba(241, 196, 15, 0) 120deg,
+    rgba(241, 196, 15, 0.25) 150deg,
+    rgba(241, 196, 15, 0) 180deg,
+    rgba(241, 196, 15, 0.25) 210deg,
+    rgba(241, 196, 15, 0) 240deg,
+    rgba(241, 196, 15, 0.25) 270deg,
+    rgba(241, 196, 15, 0) 300deg,
+    rgba(241, 196, 15, 0.25) 330deg,
+    rgba(241, 196, 15, 0) 360deg
+  );
+  animation: godRaySpin 9s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes godRaySpin {
+  0% { transform: rotate(0deg) scale(0.92); }
+  50% { transform: rotate(180deg) scale(1.06); }
+  100% { transform: rotate(360deg) scale(0.92); }
+}
+
+.chest-icon-visual {
+  position: relative;
+  width: 52px;
+  height: 42px;
+  z-index: 2;
+}
+
+.chest-lid-graphic {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 52px;
+  height: 16px;
+  background: linear-gradient(180deg, #8d4b24 0%, #542d18 100%);
+  border: 2px solid #f1c40f;
+  border-radius: 8px 8px 2px 2px;
+  box-shadow: 0 0 10px rgba(241, 196, 15, 0.4);
+  transform-origin: top center;
+  animation: chestLidOpen 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes chestLidOpen {
+  0% { transform: translateY(0) rotateX(0deg); }
+  100% { transform: translateY(-12px) rotateX(-45deg) scale(1.04); }
+}
+
+.chest-base-graphic {
+  position: absolute;
+  bottom: 0;
+  left: 3px;
+  width: 46px;
+  height: 28px;
+  background: linear-gradient(180deg, #42210f 0%, #200f07 100%);
+  border: 2px solid #d35400;
+  border-top: none;
+  border-radius: 2px 2px 6px 6px;
+  box-shadow: inset 0 0 12px rgba(241, 196, 15, 0.35);
+}
+
+.chest-base-graphic::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 17px;
+  width: 8px;
+  height: 10px;
+  background: #f1c40f;
+  border-radius: 2px;
+  box-shadow: 0 0 6px #f39c12;
+}
+
+#chest-modal-title {
+  margin: 0 0 4px 0;
   color: var(--gold-runic);
+  font-size: clamp(15px, 2.4vw, 18px);
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-shadow: 0 0 10px rgba(241, 196, 15, 0.4);
+}
+
+#chest-modal-sub {
+  font-size: 11px;
+  color: #a4b0be;
+  margin: 0;
+  text-align: center;
+}
+
+.chest-rewards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin: 10px 0;
+  min-height: 80px;
+}
+
+.chest-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(18, 22, 33, 0.85);
+  border: 1px solid #3d4a63;
+  border-radius: 10px;
+  padding: 10px 12px;
+  opacity: 0;
+  transform: translateY(12px) scale(0.92);
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.chest-card.revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+.chest-card.revealed:hover {
+  transform: translateY(-2px) scale(1.01);
+}
+
+.chest-card-icon {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.chest-card-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.chest-card-info {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
   text-align: left;
+}
+
+.chest-card-title {
+  font-weight: 800;
+  font-size: 13px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chest-card-stat {
+  font-size: 10.5px;
+  color: #f1c40f;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.chest-card-desc {
+  font-size: 10px;
+  color: #a4b0be;
+  margin-top: 1px;
+  line-height: 1.25;
+}
+
+/* Card Lendária de Evolução */
+.chest-card.legendary-card {
+  border: 2px solid var(--gold-runic);
+  background: linear-gradient(135deg, rgba(241, 196, 15, 0.16) 0%, rgba(26, 30, 45, 0.95) 100%);
+  box-shadow: 0 0 20px rgba(241, 196, 15, 0.35);
+  animation: legendaryBorderGlow 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes legendaryBorderGlow {
+  0% { box-shadow: 0 0 12px rgba(241, 196, 15, 0.25); border-color: #f39c12; }
+  100% { box-shadow: 0 0 24px rgba(241, 196, 15, 0.55); border-color: #f1c40f; }
+}
+
+.chest-card.legendary-card .chest-card-title {
+  color: #f1c40f;
+}
+
+.legendary-pill {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  background: linear-gradient(90deg, #f1c40f, #e67e22);
+  color: #000;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-bottom: 2px;
+  display: inline-block;
+  align-self: flex-start;
+}
+
+#chest-claim-btn {
+  width: 100%;
+  background: linear-gradient(90deg, #f39c12, #f1c40f);
+  color: #0d1017;
+  font-weight: 900;
+  font-size: 13px;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(243, 156, 18, 0.3);
+}
+
+#chest-claim-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+  box-shadow: none;
+}
+
+#chest-claim-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(241, 196, 15, 0.6);
 }
 
 /* ======================================================== */

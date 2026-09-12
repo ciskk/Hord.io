@@ -136,6 +136,23 @@ export let gems = [];
 export let props = [];
 export let drops = [];
 export let chests = [];
+
+export function spawnChest(x, y, tier = 'BOSS') {
+  const isMini = tier === 'MINI_BOSS';
+  chests.push({
+    x,
+    y,
+    z: 0,
+    vz: isMini ? -4.5 : -5.8,
+    gravity: 0.32,
+    bounce: 0.52,
+    radius: isMini ? 15 : 18,
+    tier,
+    isResting: false,
+    sparkleTimer: 0,
+    pulseOffset: Math.random() * Math.PI * 2
+  });
+}
 export let bossTelegraphs = [];
 export let bossProjectiles = [];
 export let bossShockwaves = [];
@@ -602,8 +619,19 @@ function update(dt) {
           e.orbitalHitCd = player.evolvedOrbitals ? 8 : 16;
           playSfx('hit');
           if (isCrit) playSfx('crit');
-          addDamageText(e.x, e.y, finalDmg, isCrit, '#3498db');
-          createHitParticles(ox, oy, '#00d2d3', 2);
+
+          // Knockback Sagrado: afasta monstros para fora do raio orbital protegendo o herói
+          if (!e.isBoss && !e.isBossSubTarget) {
+            const pushAng = Math.atan2(e.y - player.y, e.x - player.x);
+            const basePush = player.evolvedOrbitals ? 5.2 : 3.5;
+            const pushForce = basePush * (player.knockbackDealt || 1.0) * (e.isElite ? 0.45 : 1.0);
+            e.x += Math.cos(pushAng) * pushForce;
+            e.y += Math.sin(pushAng) * pushForce;
+          }
+
+          const hitColor = player.evolvedOrbitals ? '#f1c40f' : '#00cec9';
+          addDamageText(e.x, e.y, finalDmg, isCrit, player.evolvedOrbitals ? '#f1c40f' : '#3498db');
+          createHitParticles(ox, oy, hitColor, player.evolvedOrbitals ? 4 : 3);
 
           if (player.slowChance > 0 && Math.random() < player.slowChance) {
             e.slowTimer = 150;
@@ -1657,7 +1685,7 @@ function update(dt) {
           return;
         }
 
-        chests.push({ x: e.x, y: e.y, radius: 16, tier: 'BOSS' });
+        spawnChest(e.x, e.y, 'BOSS');
         activeBoss = null;
         bossTelegraphs.length = 0;
         bossProjectiles.length = 0;
@@ -1691,7 +1719,7 @@ function update(dt) {
         }
 
         if (Math.random() < 0.40) {
-          chests.push({ x: e.x, y: e.y, radius: 14, tier: 'MINI_BOSS' });
+          spawnChest(e.x, e.y, 'MINI_BOSS');
         }
       } else {
         const gCfg = getGemConfig(e.xp);
@@ -1764,19 +1792,50 @@ function update(dt) {
 
   for (let i = chests.length - 1; i >= 0; i--) {
     const ch = chests[i];
-    const dx = player.x - ch.x;
-    const dy = player.y - ch.y;
-    const sumR = player.radius + ch.radius;
-    if (dx * dx + dy * dy < sumR * sumR) {
-      const tier = ch.tier || 'BOSS';
-      chests.splice(i, 1);
-      if (tier === 'BOSS') {
-        setCurrentArenaTheme('INDUSTRIAL');
-        setIsWavePaused(false);
-        resetSpawnTimer();
+
+    // Atualização de física 2.5D (arco vertical e quiques no solo)
+    if (!ch.isResting) {
+      ch.z = (ch.z || 0) + (ch.vz || 0) * dt;
+      ch.vz = (ch.vz || 0) + (ch.gravity || 0.32) * dt;
+
+      // Colisão com o solo (z >= 0)
+      if (ch.z >= 0) {
+        ch.z = 0;
+        if (Math.abs(ch.vz) > 1.1) {
+          ch.vz = -ch.vz * (ch.bounce || 0.52);
+          createHitParticles(ch.x, ch.y, ch.tier === 'MINI_BOSS' ? '#3498db' : '#f1c40f', 4);
+          playSfx('hit');
+        } else {
+          ch.vz = 0;
+          ch.isResting = true;
+          createHitParticles(ch.x, ch.y, ch.tier === 'MINI_BOSS' ? '#3498db' : '#f1c40f', 8);
+        }
       }
-      openChestModal(tier);
-      break;
+    } else {
+      // Brilhos e faíscas periódicas sutis quando assentado no solo
+      ch.sparkleTimer = (ch.sparkleTimer || 0) + dt;
+      if (ch.sparkleTimer > 35) {
+        ch.sparkleTimer = 0;
+        createHitParticles(ch.x + (Math.random() - 0.5) * 16, ch.y + (Math.random() - 0.5) * 12, ch.tier === 'MINI_BOSS' ? '#3498db' : '#f1c40f', 1);
+      }
+    }
+
+    // Coleta pelo jogador (apenas se estiver em repouso ou bem rente ao chão)
+    if (ch.isResting || Math.abs(ch.z) < 5) {
+      const dx = player.x - ch.x;
+      const dy = player.y - ch.y;
+      const sumR = player.radius + ch.radius;
+      if (dx * dx + dy * dy < sumR * sumR) {
+        const tier = ch.tier || 'BOSS';
+        chests.splice(i, 1);
+        if (tier === 'BOSS') {
+          setCurrentArenaTheme('INDUSTRIAL');
+          setIsWavePaused(false);
+          resetSpawnTimer();
+        }
+        openChestModal(tier);
+        break;
+      }
     }
   }
 

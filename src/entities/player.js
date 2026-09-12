@@ -2,6 +2,7 @@
  * src/entities/player.js
  */
 import { CHARACTERS } from '../config/characters.js';
+import { ITEMS, ITEM_CATEGORIES } from '../config/items.js';
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { inputX, inputY } from '../core/input.js';
 import { createHitParticles, addDamageText } from '../systems/combat.js';
@@ -185,8 +186,62 @@ export const player = {
   ignisDashVy: 0,
   berserkTimer: 0,
   invisTimer: 0,
-  isPhasing: false
+  isPhasing: false,
+
+  // Inventário Estruturado (ItemRegistry)
+  inventory: {
+    weapons: new Map(),
+    passives: new Map()
+  }
 };
+
+export function registerWeaponInInventory(weaponId, level = 1, extraData = {}) {
+  if (!player.inventory) {
+    player.inventory = { weapons: new Map(), passives: new Map() };
+  }
+  const existing = player.inventory.weapons.get(weaponId);
+  if (existing) {
+    existing.level = Math.max(existing.level, level);
+    Object.assign(existing, extraData);
+  } else {
+    player.inventory.weapons.set(weaponId, {
+      id: weaponId,
+      level,
+      ...extraData
+    });
+  }
+}
+
+export function registerPassiveInInventory(passiveId, stacks = 1, extraData = {}) {
+  if (!player.inventory) {
+    player.inventory = { weapons: new Map(), passives: new Map() };
+  }
+  const existing = player.inventory.passives.get(passiveId);
+  if (existing) {
+    existing.level = (existing.level || 1) + stacks;
+    Object.assign(existing, extraData);
+  } else {
+    player.inventory.passives.set(passiveId, {
+      id: passiveId,
+      level: stacks,
+      ...extraData
+    });
+  }
+}
+
+export function hasInventoryItem(itemId) {
+  if (!player.inventory) return false;
+  return player.inventory.weapons.has(itemId) || player.inventory.passives.has(itemId);
+}
+
+export function getInventoryItemLevel(itemId) {
+  if (!player.inventory) return 0;
+  const w = player.inventory.weapons.get(itemId);
+  if (w) return w.level || 1;
+  const p = player.inventory.passives.get(itemId);
+  if (p) return p.level || 1;
+  return 0;
+}
 
 export function initSkillUI() {
   const skillContainer = document.getElementById('skill-btn-container');
@@ -801,4 +856,30 @@ export function resetPlayer(heroKey) {
       cooldown: c.stats.attackCooldown
     }
   ];
+
+  // Inicialização do Inventário Estruturado (ItemRegistry)
+  player.inventory = {
+    weapons: new Map(),
+    passives: new Map()
+  };
+
+  registerWeaponInInventory(c.startingWeapon, 1, {
+    count: c.stats.projectiles || 1,
+    damageMult: 1.0,
+    timer: 0,
+    cooldown: c.stats.attackCooldown
+  });
+
+  if (c.stats.orbitals > 0) {
+    registerWeaponInInventory('orbitals', c.stats.orbitals, {
+      count: c.stats.orbitals,
+      damageMult: 1.0
+    });
+  }
+
+  if (c.stats.auraLvl > 0) {
+    registerWeaponInInventory('aura', c.stats.auraLvl, {
+      level: c.stats.auraLvl
+    });
+  }
 }

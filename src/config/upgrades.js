@@ -1,4 +1,5 @@
-import { player, selectedHeroKey } from '../entities/player.js';
+import { player, selectedHeroKey, registerWeaponInInventory, registerPassiveInInventory } from '../entities/player.js';
+import { getAvailableSynergies } from './items.js';
 
 export const upgradesPool = [
   // --- Aprimoramentos do Machado (Kragdor) ---
@@ -29,6 +30,7 @@ export const upgradesPool = [
       if (w) {
         w.count = player.axeCount;
       }
+      registerWeaponInInventory('AXE', player.axeCount);
     },
     isAvailable: () => player.weapons.some(w => w.type === 'AXE') && (player.axeCount || 1) < 4
   },
@@ -61,6 +63,7 @@ export const upgradesPool = [
         w.count += 1;
       }
       player.projectiles = (w ? w.count : 1);
+      registerWeaponInInventory('POTION', w ? w.count : 1);
     },
     isAvailable: () => player.weapons.some(w => w.type === 'POTION') && (player.weapons.find(wp => wp.type === 'POTION')?.count || 1) < 5
   },
@@ -97,6 +100,7 @@ export const upgradesPool = [
       if (w) {
         w.count += 1;
       }
+      registerWeaponInInventory('STAFF', w ? w.count : 1);
     },
     isAvailable: () => player.weapons.some(w => w.type === 'STAFF') && (player.weapons.find(wp => wp.type === 'STAFF')?.count || 1) < 5
   },
@@ -129,6 +133,7 @@ export const upgradesPool = [
         w.count += 1;
       }
       player.projectiles = (w ? w.count : 1);
+      registerWeaponInInventory('SWORD', w ? w.count : 1);
     },
     isAvailable: () => player.weapons.some(w => w.type === 'SWORD') && (player.weapons.find(wp => wp.type === 'SWORD')?.count || 1) < 5 && !player.evolvedSword
   },
@@ -166,6 +171,7 @@ export const upgradesPool = [
         w.count += 1;
         w.damageMult += 0.30;
       }
+      registerWeaponInInventory('HAMMER', w ? w.count : 1);
     },
     isAvailable: () => player.weapons.some(w => w.type === 'HAMMER') && (player.weapons.find(wp => wp.type === 'HAMMER')?.count || 1) < 4
   },
@@ -193,6 +199,7 @@ export const upgradesPool = [
     stat: "+15% Chance Lentidão",
     apply: () => {
       player.slowChance = Math.min(0.75, (player.slowChance || 0) + 0.15);
+      registerPassiveInInventory('frost_passive');
     },
     isAvailable: () => (player.slowChance || 0) < 0.70
   },
@@ -207,6 +214,7 @@ export const upgradesPool = [
       player.damagePercentBonus = (player.damagePercentBonus || 0) + 0.07;
       player.damageCardCount = (player.damageCardCount || 0) + 1;
       player.hasPowerPassive = true; 
+      registerPassiveInInventory('dmg', 1, { stacks: player.damageCardCount });
     },
     isAvailable: () => (player.damageCardCount || 0) < 4
   },
@@ -228,6 +236,7 @@ export const upgradesPool = [
       player.weapons.forEach(w => {
         w.cooldown = Math.max(10, Math.floor(w.cooldown * 0.88));
       });
+      registerPassiveInInventory('haste');
     },
     isAvailable: () => {
       // Kragdor usa machado orbital (sem cooldown). 'haste' só entra no sorteio
@@ -249,7 +258,12 @@ export const upgradesPool = [
     badge: "Passiva",
     desc: "Acelera a locomoção do herói",
     stat: "+0.45 Velocidade",
-    apply: () => { player.baseSpeed += 0.45; player.speed = player.baseSpeed; player.hasWingsPassive = true; },
+    apply: () => { 
+      player.baseSpeed += 0.45; 
+      player.speed = player.baseSpeed; 
+      player.hasWingsPassive = true; 
+      registerPassiveInInventory('wings');
+    },
     isAvailable: () => player.baseSpeed < 6.5
   },
   {
@@ -262,6 +276,7 @@ export const upgradesPool = [
     apply: () => { 
       player.critChance += 0.08; 
       player.critMult += 0.08; 
+      registerPassiveInInventory('crit');
     },
     isAvailable: () => player.critChance < 0.40
   },
@@ -272,7 +287,10 @@ export const upgradesPool = [
     badge: "Passiva",
     desc: "Aumenta o alcance de atração de gemas",
     stat: "+50 Raio de Atração",
-    apply: () => player.magnet += 50,
+    apply: () => {
+      player.magnet += 50;
+      registerPassiveInInventory('magnet');
+    },
     isAvailable: () => player.magnet < 380
   },
   {
@@ -282,7 +300,10 @@ export const upgradesPool = [
     badge: "Passiva",
     desc: "Campo de dano constante ao redor do herói",
     stat: "+1 Nível de Aura",
-    apply: () => player.auraLvl += 1,
+    apply: () => {
+      player.auraLvl += 1;
+      registerWeaponInInventory('aura', player.auraLvl);
+    },
     isAvailable: () => player.auraLvl < 5 && !player.evolvedAura
   },
   {
@@ -292,7 +313,10 @@ export const upgradesPool = [
     badge: "Passiva",
     desc: "Tomos celestiais giram destruindo oponentes",
     stat: "+1 Tomo Orbital",
-    apply: () => player.orbitals += 1,
+    apply: () => {
+      player.orbitals += 1;
+      registerWeaponInInventory('orbitals', player.orbitals);
+    },
     isAvailable: () => player.orbitals < 4 && !player.evolvedOrbitals
   },
   {
@@ -302,7 +326,12 @@ export const upgradesPool = [
     badge: "Passiva",
     desc: "Reforça a carcaça e eleva o limite de vitalidade",
     stat: "+45 HP Máximo",
-    apply: () => { player.maxHp += 45; player.hp += 45; player.hasArmorPassive = true; },
+    apply: () => { 
+      player.maxHp += 45; 
+      player.hp += 45; 
+      player.hasArmorPassive = true; 
+      registerPassiveInInventory('armor');
+    },
     isAvailable: () => true
   },
   {
@@ -361,72 +390,5 @@ export function getRandomUpgrades(count) {
 }
 
 export function checkSynergies() {
-  const evolutions = [];
-
-  // Sinergia Kael (Espada + Asas do Vento)
-  const sword = player.weapons.find(w => w.type === 'SWORD');
-  if (!player.evolvedSword && sword && sword.count >= 4 && player.hasWingsPassive) {
-    evolutions.push({
-      name: "★ Lâmina Dimensional",
-      desc: "Fusão: Lâminas Espirituais + Asas do Vento! Dispara espadas espaciais gigantes com perfuração quádrupla.",
-      apply: () => { player.evolvedSword = true; }
-    });
-  }
-
-  // Sinergia Kragdor (Machado + Poder Bruto)
-  if (!player.evolvedAxe && player.axeCount >= 3 && player.hasPowerPassive) {
-    evolutions.push({
-      name: "★ Tempestade de Aço",
-      desc: "Fusão: Machado Giratório + Poder Bruto! 6 machados velozes transladam em anel triturando a arena.",
-      apply: () => { player.evolvedAxe = true; player.axeCount = 6; player.axeSpinSpeed += 0.05; }
-    });
-  }
-
-  // Sinergia Valéria (Poção + Golpe Criogênico)
-  const potion = player.weapons.find(w => w.type === 'POTION');
-  if (!player.evolvedPotion && potion && potion.count >= 3 && (player.slowChance || 0) >= 0.15) {
-    evolutions.push({
-      name: "★ Dilúvio Biológico",
-      desc: "Fusão: Frascos Cáusticos + Golpe Criogênico! 5 frascos concentrados criam uma mega-zona tóxica congelante.",
-      apply: () => { player.evolvedPotion = true; potion.count = 5; }
-    });
-  }
-
-  // Sinergia Ignis (Cajado + Poder Bruto)
-  const staff = player.weapons.find(w => w.type === 'STAFF');
-  if (!player.evolvedStaff && staff && staff.count >= 3 && player.hasPowerPassive) {
-    evolutions.push({
-      name: "★ Cataclismo Solar",
-      desc: "Fusão: Cajado da Tormenta + Poder Bruto! Supernovas de plasma que perfuram alvos e cobrem o chão de fogo.",
-      apply: () => { player.evolvedStaff = true; staff.count = 4; }
-    });
-  }
-
-  // Sinergia Sir Roland (Martelo + Armadura Rúnica)
-  const hammer = player.weapons.find(w => w.type === 'HAMMER');
-  if (!player.evolvedHammer && hammer && hammer.count >= 3 && player.hasArmorPassive) {
-    evolutions.push({
-      name: "★ Martelo dos Titãs",
-      desc: "Fusão: Martelo Sagrado + Armadura Rúnica! Terremoto titânico em 360° com fendas incandescentes profundas.",
-      apply: () => { player.evolvedHammer = true; hammer.count = 4; }
-    });
-  }
-
-  // Sinergias Clássicas de Aura e Orbitais
-  if (!player.evolvedAura && player.auraLvl >= 5 && player.hasArmorPassive) {
-    evolutions.push({
-      name: "★ Santuário Celestial",
-      desc: "Fusão: Aura Sagrada + Armadura Rúnica! Supernova radiante que expande o raio e regenera HP.",
-      apply: () => { player.evolvedAura = true; }
-    });
-  }
-  if (!player.evolvedOrbitals && player.orbitals >= 4 && player.hasWingsPassive) {
-    evolutions.push({
-      name: "★ Vórtice do Apocalipse",
-      desc: "Fusão: Bíblias + Asas do Vento! 6 tomos supersônicos que trituram os inimigos sem intervalo.",
-      apply: () => { player.evolvedOrbitals = true; player.orbitals = 6; }
-    });
-  }
-
-  return evolutions;
+  return getAvailableSynergies(player);
 }
