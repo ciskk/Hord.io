@@ -1982,6 +1982,9 @@ function update(dt) {
   if (waveBanner) {
     if (gameState.isWavePaused && !activeBoss) {
       waveBanner.innerText = "ABRA O BAÚ PARA CONTINUAR!";
+    } else if (activeBoss) {
+      const arenaName = ARENA_PALETTES[currentArenaTheme]?.name || '';
+      waveBanner.innerText = `⚔️ ${activeBoss.name} • ${arenaName}`;
     } else {
       const arenaName = ARENA_PALETTES[currentArenaTheme]?.name;
       waveBanner.innerText = arenaName ? `${currentWave.name} • ${arenaName}` : currentWave.name;

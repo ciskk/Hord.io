@@ -8,6 +8,7 @@ import {
   acidPuddles, 
   frameCount 
 } from '../main.js';
+import { player } from '../entities/player.js';
 
 export function tileHash(gx, gy) {
   let n = Math.sin(gx * 374761393 + gy * 668265263) * 43758.5453;
@@ -109,40 +110,64 @@ export const ARENA_PALETTES = {
     accentR: 223, accentG: 230, accentB: 233 // Prata líquida
   },
   VAMPIRE: {
-    name: 'Câmara Vampírica',
-    tileA: '#320d17', tileB: '#1d050c',
-    pathA: '#42111f', pathB: '#280711',
-    detailA: '#581628', groove: '#140207',
-    fissure: '#8e1b30', crack: '#26040d',
-    mistBase: 'rgba(70, 15, 25, 0.04)', mistPuff: 'rgba(130, 25, 45, 0.04)',
-    emberR: 231, emberG: 76, emberB: 60, accentR: 255, accentG: 107, accentB: 129
+    name: 'Salão Carmesim',
+    tileA: '#631828',      // Mármore carmesim nobre
+    tileB: '#490e1b',      // Vinho imperial profundo
+    pathA: '#7b1e32',      // Lajes de banquete polidas
+    pathB: '#561220',      // Lajes alternadas
+    detailA: '#b38f4d',    // Veios de ouro imperial barroco
+    groove: '#28060e',     // Rejunte de ônix
+    fissure: '#a31b34',    // Veios de sangue puro brilhante
+    crack: '#3d0a15',      // Fissuras no mármore
+    mistBase: 'rgba(80, 15, 30, 0.035)',
+    mistPuff: 'rgba(140, 25, 50, 0.04)',
+    emberR: 255, emberG: 71, emberB: 87, // Mariposas de sangue / brasas carmesins
+    accentR: 241, accentG: 196, accentB: 15 // Ouro de cálices
   },
   MONOLITH: {
-    name: 'Terra dos Monólitos',
-    tileA: '#2c1609', tileB: '#1a0a03',
-    pathA: '#3a1d0d', pathB: '#231005',
-    detailA: '#4e2813', groove: '#120501',
-    fissure: '#e67e22', crack: '#220e04',
-    mistBase: 'rgba(55, 30, 12, 0.04)', mistPuff: 'rgba(100, 50, 20, 0.04)',
-    emberR: 230, emberG: 126, emberB: 34, accentR: 243, accentG: 156, accentB: 18
+    name: 'Caldeira Tectônica',
+    tileA: '#4c4642',      // Basalto vulcânico cinza-médio
+    tileB: '#3a3430',      // Rocha ígnea porosa
+    pathA: '#5a534e',      // Lajes de basalto polido
+    pathB: '#443e3a',      // Lajes alternadas
+    detailA: '#262220',    // Obsidiana negra
+    groove: '#d35400',     // Fendas crepitantes de magma vivo
+    fissure: '#f39c12',    // Lava incandescente
+    crack: '#e67e22',      // Fissuras sísmicas
+    mistBase: 'rgba(55, 28, 12, 0.035)',
+    mistPuff: 'rgba(125, 55, 18, 0.04)',
+    emberR: 230, emberG: 126, emberB: 34, // Fagulhas de fogo e cinzas
+    accentR: 243, accentG: 156, accentB: 18 // Calor solar de magma
   },
   REAPER: {
-    name: 'Cripta do Ceifador',
-    tileA: '#0a1f29', tileB: '#051117',
-    pathA: '#0e2937', pathB: '#071823',
-    detailA: '#153c50', groove: '#030a0f',
-    fissure: '#00cec9', crack: '#061e2b',
-    mistBase: 'rgba(12, 45, 55, 0.04)', mistPuff: 'rgba(25, 75, 90, 0.04)',
-    emberR: 0, emberG: 206, emberB: 201, accentR: 129, accentG: 236, accentB: 236
+    name: 'Necrópole Espectral',
+    tileA: '#58768a',      // Ardósia congelada azul-cinza
+    tileB: '#435d6e',      // Pedra sepulcral gélida
+    pathA: '#6b8ca2',      // Lajes de geada polida
+    pathB: '#4d697c',      // Lajes alternadas
+    detailA: '#2c404d',    // Gelo negro profundo
+    groove: '#1d2d38',     // Frestas de permafrost
+    fissure: '#00cec9',    // Fissuras de alma ciano fluorescente
+    crack: '#81ecec',      // Fissuras de gelo espectral
+    mistBase: 'rgba(22, 55, 70, 0.035)',
+    mistPuff: 'rgba(0, 206, 201, 0.04)',
+    emberR: 0, emberG: 206, emberB: 201, // Fogos-fátuos ciano
+    accentR: 223, accentG: 249, accentB: 251 // Geada pura
   },
   ABYSS: {
-    name: 'O Vazio do Abismo',
-    tileA: '#1d0930', tileB: '#0f031b',
-    pathA: '#270d40', pathB: '#150524',
-    detailA: '#38145b', groove: '#080110',
-    fissure: '#9b59b6', crack: '#1a062e',
-    mistBase: 'rgba(40, 12, 70, 0.04)', mistPuff: 'rgba(80, 25, 125, 0.04)',
-    emberR: 155, emberG: 89, emberB: 182, accentR: 224, accentG: 86, accentB: 253
+    name: 'Horizonte do Vazio',
+    tileA: '#542c70',      // Obsidiana dimensional ametista
+    tileB: '#3c1c50',      // Tecido do espaço-tempo
+    pathA: '#68368b',      // Lajes de matéria estelar
+    pathB: '#482262',      // Lajes alternadas
+    detailA: '#240f32',    // Vácuo cósmico
+    groove: '#160622',     // Singularidade gravitacional
+    fissure: '#d980fa',    // Fendas de nébula cósmica fluorescente
+    crack: '#8e44ad',      // Fissuras dimensionais
+    mistBase: 'rgba(50, 18, 75, 0.035)',
+    mistPuff: 'rgba(155, 89, 182, 0.04)',
+    emberR: 224, emberG: 86, emberB: 253, // Poeira estelar ultravioleta
+    accentR: 116, accentG: 185, accentB: 255 // Plasma cósmico estelar
   },
   CEMETERY: {
     name: 'Cemitério Noturno',
@@ -395,6 +420,14 @@ function renderArenaProps(ctx, theme, startCol, endCol, startRow, endRow, tileSi
         drawCrimsonSaltProps(ctx, c, r, tileX, tileY, h, h2, h3);
       } else if (theme === 'ECLIPSE_BASILICA') {
         drawEclipseBasilicaProps(ctx, c, r, tileX, tileY, h, h2, h3);
+      } else if (theme === 'VAMPIRE') {
+        drawVampireProps(ctx, c, r, tileX, tileY, h, h2, h3);
+      } else if (theme === 'MONOLITH') {
+        drawMonolithProps(ctx, c, r, tileX, tileY, h, h2, h3);
+      } else if (theme === 'REAPER') {
+        drawReaperProps(ctx, c, r, tileX, tileY, h, h2, h3);
+      } else if (theme === 'ABYSS') {
+        drawAbyssProps(ctx, c, r, tileX, tileY, h, h2, h3);
       } else if (theme === 'CEMETERY' || theme === 'INDUSTRIAL') {
         drawCemeteryProps(ctx, c, r, tileX, tileY, h, h2, h3);
       }
@@ -849,5 +882,585 @@ function drawCemeteryProps(ctx, c, r, tileX, tileY, h, h2, h3) {
     ctx.lineTo(gx, gy + 34);
     ctx.closePath();
     ctx.fill();
+  }
+}
+
+/**
+ * BOSS 1: SALÃO CARMESIM (Lorde Vampírico)
+ * Trono de veludo vermelho caído, sarcófagos imperiais de ônix, espelhos profanados e cálices de sangue.
+ */
+function drawVampireProps(ctx, c, r, tileX, tileY, h, h2, h3) {
+  // Monumento Macro: Trono Caído & Sarcófago Imperial Aberto
+  if (c % 9 === 0 && r % 9 === 0) {
+    const vx = tileX + 16;
+    const vy = tileY + 14;
+
+    // Sombra no mármore carmesim
+    ctx.fillStyle = 'rgba(25, 4, 8, 0.38)';
+    ctx.beginPath();
+    ctx.ellipse(vx + 38, vy + 40, 48, 18, -0.15, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Sarcófago de ônix aberto tombado
+    ctx.fillStyle = '#1c070c';
+    ctx.fillRect(vx + 2, vy + 20, 52, 22);
+    ctx.strokeStyle = '#b38f4d';
+    ctx.lineWidth = 1.4;
+    ctx.strokeRect(vx + 2, vy + 20, 52, 22);
+
+    // Forro interno acolchoado de veludo vermelho
+    ctx.fillStyle = '#780f22';
+    ctx.fillRect(vx + 6, vy + 23, 44, 16);
+
+    // Encosto do Trono gótico em asa de morcego
+    ctx.fillStyle = '#300812';
+    ctx.beginPath();
+    ctx.moveTo(vx + 36, vy + 20);
+    ctx.lineTo(vx + 24, vy - 12);
+    ctx.lineTo(vx + 38, vy - 4);
+    ctx.lineTo(vx + 52, vy - 12);
+    ctx.lineTo(vx + 44, vy + 20);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#b38f4d';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // Cálices de ouro caídos derramando sangue
+    ctx.fillStyle = '#f1c40f';
+    ctx.beginPath();
+    ctx.arc(vx + 60, vy + 32, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#9e1b32';
+    ctx.beginPath();
+    ctx.ellipse(vx + 66, vy + 34, 9, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
+
+  // Props Secundários: Espelhos de Ouro Profanados (sem reflexo)
+  if (h < 0.08) {
+    const mx = tileX + 26 + (h2 * 32);
+    const my = tileY + 22 + (h3 * 28);
+
+    ctx.fillStyle = 'rgba(25, 4, 8, 0.28)';
+    ctx.fillRect(mx - 8, my - 6, 18, 26);
+
+    // Moldura barroca de ouro
+    ctx.fillStyle = '#b38f4d';
+    ctx.fillRect(mx - 9, my - 7, 20, 28);
+    ctx.strokeStyle = '#f1c40f';
+    ctx.lineWidth = 1.2;
+    ctx.strokeRect(mx - 9, my - 7, 20, 28);
+
+    // Vidro espelhado vazio translúcido
+    ctx.fillStyle = 'rgba(220, 230, 240, 0.45)';
+    ctx.fillRect(mx - 6, my - 4, 14, 22);
+
+    // Mancha e escorrido de sangue fresco
+    ctx.fillStyle = '#9e1b32';
+    ctx.beginPath();
+    ctx.moveTo(mx - 3, my - 4);
+    ctx.lineTo(mx + 3, my + 4);
+    ctx.lineTo(mx + 5, my + 14);
+    ctx.lineTo(mx + 2, my + 14);
+    ctx.lineTo(mx - 1, my);
+    ctx.closePath();
+    ctx.fill();
+
+  } else if (h >= 0.08 && h < 0.17) {
+    // Castiçal Duplo de Bronze com Velas Negras e Chamas Carmesins
+    const cx = tileX + 32 + (h2 * 28);
+    const cy = tileY + 22 + (h3 * 28);
+    const flick = Math.sin(frameCount * 0.2 + cx) * 1.5;
+
+    ctx.fillStyle = 'rgba(25, 4, 8, 0.25)';
+    ctx.beginPath();
+    ctx.ellipse(cx + 6, cy + 26, 14, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Suporte de bronze
+    ctx.fillStyle = '#7a602f';
+    ctx.fillRect(cx + 4, cy + 12, 4, 14);
+    ctx.fillRect(cx - 2, cy + 10, 16, 3);
+
+    // 2 Velas Negras
+    [-2, 10].forEach(ox => {
+      ctx.fillStyle = '#1c0d12';
+      ctx.fillRect(cx + ox, cy + 2, 4, 9);
+
+      // Cera vermelha escorrendo
+      ctx.fillStyle = '#9e1b32';
+      ctx.fillRect(cx + ox + 1, cy + 6, 2, 5);
+
+      // Chama cor de sangue
+      ctx.fillStyle = 'rgba(255, 71, 87, 0.3)';
+      ctx.beginPath();
+      ctx.arc(cx + ox + 2, cy - 1, 6 + flick, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ff4757';
+      ctx.beginPath();
+      ctx.arc(cx + ox + 2, cy - 1, 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(cx + ox + 2, cy - 2, 1, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+  } else if (h >= 0.17 && h < 0.32) {
+    // Selo Heráldico Vampírico no Mármore
+    const sx = tileX + 24 + (h2 * 44);
+    const sy = tileY + 22 + (h3 * 44);
+
+    ctx.strokeStyle = '#b38f4d';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(sx + 10, sy + 10, 13, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#9e1b32';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(sx + 10, sy - 1);
+    ctx.lineTo(sx + 10, sy + 21);
+    ctx.moveTo(sx + 2, sy + 6);
+    ctx.lineTo(sx + 18, sy + 6);
+    ctx.stroke();
+  }
+}
+
+/**
+ * BOSS 2: CALDEIRA TECTÔNICA (Monólito Abissal)
+ * Obelisco quebrado levitando, gêiseres de magma, fendas sísmicas e fragmentos de obsidiana.
+ */
+function drawMonolithProps(ctx, c, r, tileX, tileY, h, h2, h3) {
+  // Monumento Macro: Obelisco Primordial Quebrado em Levitação
+  if ((c + 3) % 9 === 0 && (r + 3) % 9 === 0) {
+    const ox = tileX + 18;
+    const oy = tileY + 16;
+    const hover = Math.sin(frameCount * 0.08) * 3;
+
+    // Sombra do monólito no solo vulcânico
+    ctx.fillStyle = 'rgba(20, 15, 10, 0.42)';
+    ctx.beginPath();
+    ctx.ellipse(ox + 36, oy + 44, 46, 16, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Base de basalto cravada na terra
+    ctx.fillStyle = '#322d2a';
+    ctx.beginPath();
+    ctx.moveTo(ox + 12, oy + 42);
+    ctx.lineTo(ox + 26, oy + 16);
+    ctx.lineTo(ox + 46, oy + 16);
+    ctx.lineTo(ox + 60, oy + 42);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#e67e22';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Topo quebrado levitando sobre a base
+    ctx.save();
+    ctx.translate(0, hover);
+    ctx.fillStyle = '#453f3a';
+    ctx.beginPath();
+    ctx.moveTo(ox + 22, oy + 10);
+    ctx.lineTo(ox + 36, oy - 20);
+    ctx.lineTo(ox + 50, oy + 10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#f39c12';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+
+    // Glifo de fogo no núcleo
+    ctx.fillStyle = '#f39c12';
+    ctx.beginPath();
+    ctx.arc(ox + 36, oy + 2, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Fenda com magma sob a rocha
+    ctx.fillStyle = '#f39c12';
+    ctx.fillRect(ox + 24, oy + 38, 24, 4);
+    return;
+  }
+
+  // Props Secundários: Gêiseres de Fumaça e Lava
+  if (h < 0.09) {
+    const gx = tileX + 28 + (h2 * 32);
+    const gy = tileY + 24 + (h3 * 30);
+    const pulse = Math.sin(frameCount * 0.16 + gx) * 1.8;
+
+    // Cratera cônica de rocha
+    ctx.fillStyle = '#282320';
+    ctx.beginPath();
+    ctx.ellipse(gx + 4, gy + 8, 15, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#d35400';
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
+
+    // Miolo de lava crepitante
+    ctx.fillStyle = '#f39c12';
+    ctx.beginPath();
+    ctx.arc(gx + 4, gy + 7, Math.max(1, 3.5 + pulse), 0, Math.PI * 2);
+    ctx.fill();
+
+    // Pequena fagulha subindo
+    ctx.fillStyle = '#e67e22';
+    ctx.beginPath();
+    ctx.arc(gx + 4, gy - 2 - (pulse * 2), 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+  } else if (h >= 0.09 && h < 0.18) {
+    // Fragmentos de Obsidiana Pontiaguda
+    const kx = tileX + 30 + (h2 * 28);
+    const ky = tileY + 22 + (h3 * 28);
+
+    ctx.fillStyle = 'rgba(20, 10, 5, 0.35)';
+    ctx.beginPath();
+    ctx.ellipse(kx + 4, ky + 16, 12, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Lâmina de obsidiana negra
+    ctx.fillStyle = '#1c1816';
+    ctx.beginPath();
+    ctx.moveTo(kx, ky + 14);
+    ctx.lineTo(kx + 5, ky - 8);
+    ctx.lineTo(kx + 9, ky + 14);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#e67e22';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+  } else if (h >= 0.18 && h < 0.34) {
+    // Fissuras Tectônicas Sísmicas com Magma
+    const fx = tileX + 22 + (h2 * 46);
+    const fy = tileY + 22 + (h3 * 46);
+
+    ctx.strokeStyle = '#f39c12';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(fx, fy);
+    ctx.lineTo(fx + 10, fy + 8);
+    ctx.lineTo(fx + 22, fy + 4);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(fx + 2, fy + 1);
+    ctx.lineTo(fx + 10, fy + 8);
+    ctx.lineTo(fx + 20, fy + 4);
+    ctx.stroke();
+  }
+}
+
+/**
+ * BOSS 3: NECRÓPOLE ESPECTRAL (Ceifador Supremo)
+ * Portal de correntes espectrais, lanternas fúnebres de alma, gelo com mãos fantasmagóricas.
+ */
+function drawReaperProps(ctx, c, r, tileX, tileY, h, h2, h3) {
+  // Monumento Macro: Portal das Almas & Correntes Colossais
+  if ((c + 5) % 9 === 0 && (r + 2) % 9 === 0) {
+    const rx = tileX + 16;
+    const ry = tileY + 14;
+    const glow = Math.sin(frameCount * 0.12) * 2;
+
+    // Sombra fria no gelo
+    ctx.fillStyle = 'rgba(10, 30, 40, 0.35)';
+    ctx.beginPath();
+    ctx.ellipse(rx + 36, ry + 42, 46, 16, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Arco Gótico de Ferro Congelado
+    ctx.fillStyle = '#223844';
+    ctx.beginPath();
+    ctx.moveTo(rx + 12, ry + 42);
+    ctx.lineTo(rx + 16, ry + 6);
+    ctx.lineTo(rx + 36, ry - 18);
+    ctx.lineTo(rx + 56, ry + 6);
+    ctx.lineTo(rx + 60, ry + 42);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#81ecec';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+
+    // Vão do portal emitindo luz espectral de alma
+    ctx.fillStyle = 'rgba(0, 206, 201, 0.28)';
+    ctx.beginPath();
+    ctx.moveTo(rx + 22, ry + 42);
+    ctx.lineTo(rx + 24, ry + 12);
+    ctx.lineTo(rx + 36, ry - 4);
+    ctx.lineTo(rx + 48, ry + 12);
+    ctx.lineTo(rx + 50, ry + 42);
+    ctx.closePath();
+    ctx.fill();
+
+    // Correntes colossais cruzando o portal
+    ctx.strokeStyle = '#051820';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(rx + 16, ry + 14);
+    ctx.lineTo(rx + 56, ry + 36);
+    ctx.moveTo(rx + 56, ry + 14);
+    ctx.lineTo(rx + 16, ry + 36);
+    ctx.stroke();
+
+    // Chama fátua central
+    ctx.fillStyle = '#00cec9';
+    ctx.beginPath();
+    ctx.arc(rx + 36, ry + 16, 4 + glow, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(rx + 36, ry + 16, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
+
+  // Props Secundários: Lanternas de Almas em Estacas de Gelo
+  if (h < 0.09) {
+    const lx = tileX + 28 + (h2 * 32);
+    const ly = tileY + 22 + (h3 * 30);
+    const flick = Math.sin(frameCount * 0.2 + lx) * 1.6;
+
+    ctx.fillStyle = 'rgba(10, 30, 40, 0.28)';
+    ctx.beginPath();
+    ctx.ellipse(lx + 4, ly + 24, 12, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Estaca de ferro
+    ctx.fillStyle = '#1e323d';
+    ctx.fillRect(lx + 3, ly + 4, 3, 20);
+
+    // Gaiola da lanterna
+    ctx.fillStyle = '#2a4452';
+    ctx.fillRect(lx - 2, ly - 6, 13, 11);
+    ctx.strokeStyle = '#00cec9';
+    ctx.lineWidth = 1.2;
+    ctx.strokeRect(lx - 2, ly - 6, 13, 11);
+
+    // Fogo-fátuo de alma ciano
+    ctx.fillStyle = 'rgba(0, 206, 201, 0.35)';
+    ctx.beginPath();
+    ctx.arc(lx + 4.5, ly - 1, 6 + flick, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#00cec9';
+    ctx.beginPath();
+    ctx.arc(lx + 4.5, ly - 1, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(lx + 4.5, ly - 1.5, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+
+  } else if (h >= 0.09 && h < 0.17) {
+    // Lápides de Ardósia Congelada com Geada
+    const tx = tileX + 30 + (h2 * 28);
+    const ty = tileY + 22 + (h3 * 28);
+
+    ctx.fillStyle = 'rgba(10, 25, 35, 0.25)';
+    ctx.beginPath();
+    ctx.ellipse(tx + 6, ty + 20, 14, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#3c5464';
+    ctx.beginPath();
+    ctx.arc(tx + 6, ty + 6, 8, Math.PI, 0);
+    ctx.lineTo(tx + 14, ty + 20);
+    ctx.lineTo(tx - 2, ty + 20);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#dff9fb';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // Cruz espectral entalhada
+    ctx.strokeStyle = '#00cec9';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(tx + 6, ty + 2);
+    ctx.lineTo(tx + 6, ty + 14);
+    ctx.moveTo(tx + 2, ty + 6);
+    ctx.lineTo(tx + 10, ty + 6);
+    ctx.stroke();
+
+  } else if (h >= 0.17 && h < 0.33) {
+    // Fendas de Gelo com Mãos Espectrais Presas
+    const fx = tileX + 22 + (h2 * 45);
+    const fy = tileY + 22 + (h3 * 45);
+
+    ctx.strokeStyle = '#81ecec';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(fx, fy);
+    ctx.lineTo(fx + 14, fy + 12);
+    ctx.lineTo(fx + 24, fy + 8);
+    ctx.stroke();
+
+    // Silhueta translúcida de mão espectral
+    ctx.strokeStyle = 'rgba(0, 206, 201, 0.65)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(fx + 10, fy + 8);
+    ctx.lineTo(fx + 10, fy + 2);
+    ctx.moveTo(fx + 12, fy + 8);
+    ctx.lineTo(fx + 13, fy + 1);
+    ctx.moveTo(fx + 14, fy + 9);
+    ctx.lineTo(fx + 16, fy + 3);
+    ctx.stroke();
+  }
+}
+
+/**
+ * BOSS 4: HORIZONTE DO VAZIO (Soberano do Abismo - Chefe Final)
+ * Âncora dimensional rompida, olhos vivos do abismo que seguem o jogador, runas cósmicas.
+ */
+function drawAbyssProps(ctx, c, r, tileX, tileY, h, h2, h3) {
+  // Monumento Macro: A Âncora Dimensional de Singularidade Rompida
+  if ((c + 1) % 9 === 0 && (r + 5) % 9 === 0) {
+    const ax = tileX + 16;
+    const ay = tileY + 16;
+    const pulse = Math.sin(frameCount * 0.1) * 2;
+
+    // Sombra astral púrpura
+    ctx.fillStyle = 'rgba(30, 10, 45, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(ax + 36, ay + 42, 48, 16, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Haste da âncora dimensional
+    ctx.fillStyle = '#2a123a';
+    ctx.fillRect(ax + 32, ay - 14, 8, 52);
+    ctx.strokeStyle = '#d980fa';
+    ctx.lineWidth = 1.8;
+    ctx.strokeRect(ax + 32, ay - 14, 8, 52);
+
+    // Braços curvos inferiores da âncora
+    ctx.beginPath();
+    ctx.arc(ax + 36, ay + 30, 24, 0, Math.PI);
+    ctx.stroke();
+
+    // Anel orbital flutuando em perspectiva
+    ctx.strokeStyle = '#8e44ad';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.ellipse(ax + 36, ay + 8, 30, 10, 0.2, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Singularidade no centro do monumento
+    ctx.fillStyle = '#100319';
+    ctx.beginPath();
+    ctx.arc(ax + 36, ay + 8, 6 + pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    return;
+  }
+
+  // Props Secundários: Olhos Vivos do Abismo (Seguem o Jogador)
+  if (h < 0.09) {
+    const ex = tileX + 26 + (h2 * 34);
+    const ey = tileY + 24 + (h3 * 30);
+
+    // Ângulo em direção ao jogador para a pupila acompanhar a movimentação
+    const eyeTargetX = player ? player.x : camera.x + viewW / 2;
+    const eyeTargetY = player ? player.y : camera.y + viewH / 2;
+    const pAng = Math.atan2(eyeTargetY - ey, eyeTargetX - ex);
+    const pupDist = 3.2;
+    const pupX = ex + Math.cos(pAng) * pupDist;
+    const pupY = ey + Math.sin(pAng) * (pupDist * 0.6);
+
+    // Contorno do olho cósmico no piso
+    ctx.fillStyle = '#180724';
+    ctx.beginPath();
+    ctx.ellipse(ex, ey, 14, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#d980fa';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Íris fluorescente magenta
+    ctx.fillStyle = '#8e44ad';
+    ctx.beginPath();
+    ctx.arc(pupX, pupY, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Pupila vertical brilhante
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(pupX, pupY, 1.4, 3.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+  } else if (h >= 0.09 && h < 0.18) {
+    // Cristais de Matéria Escura Flutuantes
+    const cx = tileX + 30 + (h2 * 28);
+    const cy = tileY + 22 + (h3 * 28);
+    const hover = Math.sin(frameCount * 0.12 + cx) * 2.8;
+
+    ctx.fillStyle = 'rgba(25, 8, 35, 0.3)';
+    ctx.beginPath();
+    ctx.ellipse(cx + 4, cy + 18, 12, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Cristal levitando
+    ctx.save();
+    ctx.translate(0, hover);
+    ctx.fillStyle = '#2c0e3e';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + 14);
+    ctx.lineTo(cx + 4, cy - 8);
+    ctx.lineTo(cx + 9, cy + 14);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#d980fa';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(224, 86, 253, 0.5)';
+    ctx.beginPath();
+    ctx.moveTo(cx + 4, cy - 8);
+    ctx.lineTo(cx + 9, cy + 14);
+    ctx.lineTo(cx + 4, cy + 14);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+  } else if (h >= 0.18 && h < 0.33) {
+    // Runas e Constelações de Entropia Cósmica
+    const rx = tileX + 24 + (h2 * 45);
+    const ry = tileY + 24 + (h3 * 45);
+
+    ctx.strokeStyle = 'rgba(217, 128, 250, 0.6)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(rx + 10, ry + 10, 12, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Triângulo estelar inscrito
+    ctx.strokeStyle = '#8e44ad';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(rx + 10, ry - 1);
+    ctx.lineTo(rx + 19, ry + 16);
+    ctx.lineTo(rx + 1, ry + 16);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Ponto estelar brilhante
+    const blink = Math.sin(frameCount * 0.15 + rx) > 0.5;
+    if (blink) {
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(rx + 10, ry + 10, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 }
