@@ -2,24 +2,26 @@
  * src/config/enemies.js
  */
 export const ENEMY_TYPES = {
-  ZOMBIE: { name: 'Zumbi Operário', radius: 12, speed: 1.35, hp: 115, color: '#2ecc71', behavior: 'chase', damage: 9, xp: 1 },
-  BAT: { name: 'Morcego Carmesim', radius: 9, speed: 3.1, hp: 48, color: '#ff4757', behavior: 'swarm', damage: 7, xp: 1 },
-  GOLEM: { name: 'Golem de Concreto', radius: 24, speed: 0.82, hp: 490, color: '#747d8c', behavior: 'tank', damage: 24, xp: 6 },
-  STALKER: { name: 'Assassino Espectral', radius: 11, speed: 1.35, hp: 135, color: '#9b59b6', behavior: 'dash', damage: 16, xp: 3 },
-  EXPLODER: { name: 'Carniçal Ígneo', radius: 13, speed: 2.1, hp: 105, color: '#e67e22', behavior: 'kamikaze', damage: 14, xp: 2 },
-  NECRO: { name: 'Cultista das Sombras', radius: 15, speed: 0.95, hp: 210, color: '#34495e', behavior: 'summoner', damage: 14, xp: 8 },
-  SHOOTER: { name: 'Autômato Artilheiro', radius: 14, speed: 1.1, hp: 165, color: '#0984e3', behavior: 'shooter', damage: 12, xp: 4 },
-  SHIELDED: { name: 'Guardião Blindado', radius: 16, speed: 1.0, hp: 290, color: '#b2bec3', behavior: 'shielded', damage: 18, xp: 5 },
-  SPLITTER: { name: 'Parasita Divisor', radius: 15, speed: 1.4, hp: 155, color: '#00d2d3', behavior: 'splitter', damage: 11, xp: 4 },
-  SPLITTER_MINI: { name: 'Parasita Célula', radius: 9, speed: 2.2, hp: 60, color: '#48dbfb', behavior: 'chase', damage: 8, xp: 2 }
+
+  ZOMBIE: { name: 'Zumbi Operário', radius: 12, speed: 1.35, hp: 115, color: '#2ecc71', behavior: 'chase', damage: 27, xp: 1 },
+  BAT: { name: 'Morcego Carmesim', radius: 9, speed: 3.1, hp: 48, color: '#ff4757', behavior: 'swarm', damage: 21, xp: 1 },
+  GOLEM: { name: 'Golem de Concreto', radius: 24, speed: 0.82, hp: 490, color: '#747d8c', behavior: 'tank', damage: 72, xp: 6 },
+  STALKER: { name: 'Assassino Espectral', radius: 11, speed: 1.35, hp: 135, color: '#9b59b6', behavior: 'dash', damage: 48, xp: 3 },
+  EXPLODER: { name: 'Carniçal Ígneo', radius: 13, speed: 2.1, hp: 105, color: '#e67e22', behavior: 'kamikaze', damage: 42, xp: 2 },
+  NECRO: { name: 'Cultista das Sombras', radius: 15, speed: 0.95, hp: 210, color: '#34495e', behavior: 'summoner', damage: 42, xp: 8 },
+  SHOOTER: { name: 'Autômato Artilheiro', radius: 14, speed: 1.1, hp: 165, color: '#0984e3', behavior: 'shooter', damage: 36, xp: 4 },
+  SHIELDED: { name: 'Guardião Blindado', radius: 16, speed: 1.0, hp: 290, color: '#b2bec3', behavior: 'shielded', damage: 54, xp: 5 },
+  SPLITTER: { name: 'Parasita Divisor', radius: 15, speed: 1.4, hp: 155, color: '#00d2d3', behavior: 'splitter', damage: 33, xp: 4 },
+  SPLITTER_MINI: { name: 'Parasita Célula', radius: 9, speed: 2.2, hp: 60, color: '#48dbfb', behavior: 'chase', damage: 24, xp: 2 }
+
 };
 
 // Recalibração de HP da Fase 5 e Normalização de Economia de XP (Fase 6.1)
 export const BOSS_TYPES = {
-  1: { name: 'Lorde Vampírico', hp: 9500, radius: 38, speed: 1.85, color: '#8e44ad', damage: 30, xp: 450, bossId: 1 },
-  2: { name: 'Monólito Abissal', hp: 24000, radius: 48, speed: 0.95, color: '#c0392b', damage: 50, xp: 1200, bossId: 2 },
-  3: { name: 'Ceifador Supremo', hp: 42000, radius: 44, speed: 2.1, color: '#00cec9', damage: 70, xp: 2400, bossId: 3 },
-  4: { name: 'Soberano do Abismo', hp: 70000, radius: 52, speed: 1.25, color: '#8e44ad', damage: 90, xp: 0, bossId: 4, isFinalBoss: true }
+  1: { name: 'Lorde Vampírico', hp: 20000, radius: 38, speed: 1.85, color: '#8e44ad', damage: 60, xp: 450, bossId: 1 },
+  2: { name: 'Monólito Abissal', hp: 50000, radius: 48, speed: 0.95, color: '#c0392b', damage: 100, xp: 1200, bossId: 2 },
+  3: { name: 'Ceifador Supremo', hp: 100000, radius: 44, speed: 2.1, color: '#00cec9', damage: 140, xp: 2400, bossId: 3 },
+  4: { name: 'Soberano do Abismo', hp: 200000, radius: 52, speed: 1.25, color: '#8e44ad', damage: 180, xp: 0, bossId: 4, isFinalBoss: true }
 };
 
 export const MINI_BOSS_TYPES = {
