@@ -513,6 +513,13 @@ export function updateSpinningAxes(dt) {
           }
         }
 
+        let isKaelExecute = false;
+        if (selectedHeroKey === 'ROGUE' && e.maxHp && (e.hp / e.maxHp) < 0.35) {
+          const isBossTarget = isBossEntity || isSubTarget || !!e.isMiniBoss;
+          dmg *= isBossTarget ? 1.5 : 2.0;
+          isKaelExecute = true;
+        }
+
         const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
         let finalDmg = isCrit ? dmg * player.critMult : dmg;
 
@@ -546,10 +553,10 @@ export function updateSpinningAxes(dt) {
         player.axeContactCds.set(e, cdFrames);
 
         playSfx('hit');
-        if (isCrit || isMeleeAdrenaline) playSfx('crit');
+        if (isCrit || isMeleeAdrenaline || isKaelExecute) playSfx('crit');
         
-        const dmgColor = isMeleeAdrenaline ? '#f1c40f' : (isOuterZone ? '#e67e22' : '#f39c12');
-        addDamageText(seg.closestX, seg.closestY, Math.round(finalDmg), isCrit || isMeleeAdrenaline, dmgColor);
+        const dmgColor = isMeleeAdrenaline ? '#f1c40f' : (isKaelExecute ? '#00cec9' : (isOuterZone ? '#e67e22' : '#f39c12'));
+        addDamageText(seg.closestX, seg.closestY, Math.round(finalDmg), isCrit || isMeleeAdrenaline || isKaelExecute, dmgColor);
         createHitParticles(seg.closestX, seg.closestY, isOuterZone ? '#e67e22' : '#d35400', isOuterZone ? 4 : 2);
 
         // Repulsão tangencial e radial amplificada pelo peso do personagem

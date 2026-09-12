@@ -77,7 +77,7 @@ export const CHARACTERS = {
   ROGUE: {
     name: "Kael",
     title: "O Andarilho Sombrio",
-    desc: "Passiva: 1.5x de dano em oponentes com menos de 35% de vida (1.15x contra chefes).<br><b>Arma Inicial: Lâminas Espirituais</b> (Espadas astrais velozes arremessadas contra inimigos no alcance).<br><b>Poder: Bomba de Fumaça</b> (Invisibilidade, transposição de massa com empurrão atordoante e 100% de crítico por 2.0s).",
+    desc: "Passiva: 2.0x de dano em oponentes com menos de 35% de vida (1.5x contra chefes).<br><b>Arma Inicial: Lâminas Espirituais</b> (Espadas astrais velozes arremessadas contra inimigos no alcance).<br><b>Poder: Bomba de Fumaça</b> (Invisibilidade com dobro de velocidade, transposição de massa com empurrão atordoante e 100% de crítico por 2.0s).",
     color: { 
       tunic: "#1e272e", 
       tunicDark: "#0f1417", 

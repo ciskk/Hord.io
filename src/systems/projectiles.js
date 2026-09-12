@@ -48,10 +48,16 @@ export function updateProjectiles(dt) {
           if (dx * dx + dy * dy <= (puddleRadius + e.radius) ** 2) {
             const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
             let impactDmg = (b.damage || 20) * (isCrit ? player.critMult : 1.0);
+            let isKaelExecute = false;
+            if (selectedHeroKey === 'ROGUE' && e.maxHp && (e.hp / e.maxHp) < 0.35) {
+              const isBossTarget = !!(e.isBoss || e.isMiniBoss || e.isBossSubTarget);
+              impactDmg *= isBossTarget ? 1.5 : 2.0;
+              isKaelExecute = true;
+            }
             e.hp -= impactDmg;
             e.hitFlash = 4;
-            addDamageText(e.x, e.y, Math.round(impactDmg), isCrit, isCrit ? '#f1c40f' : (b.isEvolved ? '#00cec9' : '#2ecc71'));
-            createHitParticles(e.x, e.y, b.isEvolved ? '#00cec9' : '#2ecc71', 3);
+            addDamageText(e.x, e.y, Math.round(impactDmg), isCrit || isKaelExecute, isKaelExecute ? '#00cec9' : (isCrit ? '#f1c40f' : (b.isEvolved ? '#00cec9' : '#2ecc71')));
+            createHitParticles(e.x, e.y, isKaelExecute ? '#00cec9' : (b.isEvolved ? '#00cec9' : '#2ecc71'), isKaelExecute ? 5 : 3);
 
             // Repulsão explosiva radial da poção ao atingir o solo
             if (!e.isBoss && !e.isBossSubTarget) {
@@ -128,6 +134,14 @@ export function updateProjectiles(dt) {
           }
         }
 
+        // Passiva de Kael: 2.0x de dano em oponentes com menos de 35% de vida (1.5x contra chefes)
+        let isKaelExecute = false;
+        if (selectedHeroKey === 'ROGUE' && e.maxHp && (e.hp / e.maxHp) < 0.35) {
+          const isBossTarget = isBossEntity || isSubTarget || !!e.isMiniBoss;
+          finalDmg *= isBossTarget ? 1.5 : 2.0;
+          isKaelExecute = true;
+        }
+
         e.hp -= finalDmg;
         e.hitFlash = 4;
 
@@ -141,7 +155,7 @@ export function updateProjectiles(dt) {
           e.y += Math.sin(impactAngle) * totalPush;
         }
 
-        if (isCrit || isMeleeAdrenaline) {
+        if (isCrit || isMeleeAdrenaline || isKaelExecute) {
           playSfx('crit');
           triggerHaptic('light');
         } else {
@@ -151,6 +165,8 @@ export function updateProjectiles(dt) {
         let dmgTextColor = '#ffffff';
         if (isMeleeAdrenaline) {
           dmgTextColor = '#f1c40f';
+        } else if (isKaelExecute) {
+          dmgTextColor = '#00cec9';
         } else if (isCrit) {
           dmgTextColor = '#f39c12';
         } else if (b.color) {
@@ -159,8 +175,8 @@ export function updateProjectiles(dt) {
           dmgTextColor = isBossEntity ? '#e74c3c' : '#ffffff';
         }
 
-        addDamageText(e.x, e.y, Math.round(finalDmg), isCrit || isMeleeAdrenaline, dmgTextColor);
-        createHitParticles(b.x, b.y, isMeleeAdrenaline ? '#f1c40f' : (b.color || '#3498db'), isCrit ? 5 : 3);
+        addDamageText(e.x, e.y, Math.round(finalDmg), isCrit || isMeleeAdrenaline || isKaelExecute, dmgTextColor);
+        createHitParticles(b.x, b.y, isKaelExecute ? '#00cec9' : (isMeleeAdrenaline ? '#f1c40f' : (b.color || '#3498db')), isCrit || isKaelExecute ? 5 : 3);
 
         if (player.slowChance > 0 && Math.random() < player.slowChance) {
           e.slowTimer = 150;

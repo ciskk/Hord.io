@@ -260,7 +260,7 @@ export const upgradesPool = [
     stat: "+0.45 Velocidade",
     apply: () => { 
       player.baseSpeed += 0.45; 
-      player.speed = player.baseSpeed; 
+      player.speed = player.invisTimer > 0 ? player.baseSpeed * 2 : player.baseSpeed; 
       player.hasWingsPassive = true; 
       registerPassiveInInventory('wings');
     },

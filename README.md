@@ -204,10 +204,10 @@ O poder ativo funciona como um dash com imunidade e rastro de fogo.
 
 Passiva:
 
-- `1.5x` de dano contra inimigos abaixo de 35% de HP
-- `1.15x` contra chefes nessas condições
+- `2.0x` de dano contra inimigos abaixo de 35% de HP
+- `1.5x` contra chefes nessas condições
 
-A Bomba de Fumaça concede invisibilidade contra inimigos comuns e 100% de chance crítica durante 2 segundos.
+A Bomba de Fumaça concede invisibilidade (com o dobro da velocidade de movimento atual) contra inimigos comuns e 100% de chance crítica durante 2 segundos.
 
 ### Kragdor — O Bárbaro Furioso
 

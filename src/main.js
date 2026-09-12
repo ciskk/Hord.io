@@ -367,7 +367,11 @@ function update(dt) {
     if (v.life <= 0) voidVortices.splice(i, 1);
   }
 
-  player.speed = isSlowed ? player.baseSpeed * 0.65 : (insideVortex ? player.baseSpeed * 0.72 : player.baseSpeed);
+  let currentSpeed = isSlowed ? player.baseSpeed * 0.65 : (insideVortex ? player.baseSpeed * 0.72 : player.baseSpeed);
+  if (player.invisTimer > 0) {
+    currentSpeed *= 2;
+  }
+  player.speed = currentSpeed;
 
   if (player.dashDuration > 0) {
     player.dashDuration -= dt;
@@ -561,14 +565,20 @@ function update(dt) {
             if (distToBoss <= 130) currentAuraDmg *= 1.25;
             if (e.isVulnerable) currentAuraDmg *= 1.25;
           }
+          let isKaelExecute = false;
+          if (selectedHeroKey === 'ROGUE' && e.maxHp && (e.hp / e.maxHp) < 0.35) {
+            const isBossTarget = !!(e.isBoss || e.isMiniBoss || e.isBossSubTarget);
+            currentAuraDmg *= isBossTarget ? 1.5 : 2.0;
+            isKaelExecute = true;
+          }
           const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
           let finalDmg = isCrit ? currentAuraDmg * player.critMult : currentAuraDmg;
 
           e.hp -= finalDmg;
           e.hitFlash = 3;
-          if (isCrit) playSfx('crit');
-          addDamageText(e.x, e.y, finalDmg, isCrit, '#f1c40f');
-          createHitParticles(e.x, e.y, '#f1c40f', 2);
+          if (isCrit || isKaelExecute) playSfx('crit');
+          addDamageText(e.x, e.y, finalDmg, isCrit || isKaelExecute, isKaelExecute ? '#00cec9' : '#f1c40f');
+          createHitParticles(e.x, e.y, isKaelExecute ? '#00cec9' : '#f1c40f', 2);
 
           if (player.slowChance > 0 && Math.random() < player.slowChance) {
             e.slowTimer = 150;
@@ -611,6 +621,12 @@ function update(dt) {
             if (distToBoss <= 130) dmg *= 1.25;
             if (e.isVulnerable) dmg *= 1.25;
           }
+          let isKaelExecute = false;
+          if (selectedHeroKey === 'ROGUE' && e.maxHp && (e.hp / e.maxHp) < 0.35) {
+            const isBossTarget = !!(e.isBoss || e.isMiniBoss || e.isBossSubTarget);
+            dmg *= isBossTarget ? 1.5 : 2.0;
+            isKaelExecute = true;
+          }
           const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
           let finalDmg = isCrit ? dmg * player.critMult : dmg;
 
@@ -618,7 +634,7 @@ function update(dt) {
           e.hitFlash = 4;
           e.orbitalHitCd = player.evolvedOrbitals ? 8 : 16;
           playSfx('hit');
-          if (isCrit) playSfx('crit');
+          if (isCrit || isKaelExecute) playSfx('crit');
 
           // Knockback Sagrado: afasta monstros para fora do raio orbital protegendo o herói
           if (!e.isBoss && !e.isBossSubTarget) {
