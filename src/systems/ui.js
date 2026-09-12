@@ -70,7 +70,8 @@ const UPGRADE_ICONS = {
   aura: `<svg viewBox="0 0 24 24"><path fill="#f1c40f" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 16a6 6 0 1 1 6-6 6 6 0 0 1-6 6z"/></svg>`,
   orbitals: `<svg viewBox="0 0 24 24"><path fill="#9b59b6" d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H7V9h10v2zm0-4H7V5h10v2z"/></svg>`,
   armor: `<svg viewBox="0 0 24 24"><path fill="#95a5a6" d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg>`,
-  heal: `<svg viewBox="0 0 24 24"><path fill="#2ecc71" d="M19 10.5h-5.5V5h-3v5.5H5v3h5.5V19h3v-5.5H19z"/></svg>`
+  heal: `<svg viewBox="0 0 24 24"><path fill="#2ecc71" d="M19 10.5h-5.5V5h-3v5.5H5v3h5.5V19h3v-5.5H19z"/></svg>`,
+  blessing: `<svg viewBox="0 0 24 24"><path fill="#f1c40f" d="M12 2l3 7h7l-5.5 4.5 2 7-6.5-4.5-6.5 4.5 2-7L2 9h7z"/></svg>`
 };
 
 export function isBossSelectAllowed() {
@@ -254,28 +255,31 @@ function renderPauseInventory() {
 
     // Passivas acumuladas
     if (player.damageCardCount) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">⚡ Poder Bruto</span><span class="counter">+${Math.round((player.damagePercentBonus || 0) * 100)}% (x${player.damageCardCount})</span></div>`;
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">⚡ Poder Bruto</span><span class="counter">+${Math.round((player.damagePercentBonus || 0) * 100)}% (${player.damageCardCount}/4)</span></div>`;
     }
-    if (player.hasArmorPassive) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">🛡️ Armadura Rúnica</span><span class="counter">+${player.maxHp - 100} HP</span></div>`;
+    if (player.armorCardCount || player.hasArmorPassive) {
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">🛡️ Armadura Rúnica</span><span class="counter">+${(player.armorCardCount || 1) * 45} HP (${player.armorCardCount || 1}/5)</span></div>`;
     }
-    if (player.hasWingsPassive) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">🪽 Asas do Vento</span><span class="counter">+${player.speed.toFixed(1)} Vel</span></div>`;
+    if (player.wingsCardCount || player.hasWingsPassive) {
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">🪽 Asas do Vento</span><span class="counter">+${player.speed.toFixed(1)} Vel (${player.wingsCardCount || 1}/4)</span></div>`;
     }
-    if ((player.slowChance || 0) > 0) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">❄️ Golpe Criogênico</span><span class="counter">${Math.round(player.slowChance * 100)}% Lentidão</span></div>`;
+    if (player.frostCardCount || (player.slowChance || 0) > 0) {
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">❄️ Golpe Criogênico</span><span class="counter">${Math.round(player.slowChance * 100)}% Lentidão (${player.frostCardCount || 1}/4)</span></div>`;
     }
     if (player.orbitals > 0) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">📖 Bíblias Protetoras</span><span class="counter">${player.orbitals} Tomos</span></div>`;
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">📖 Bíblias Protetoras</span><span class="counter">${player.orbitals} Tomos ${player.evolvedOrbitals ? '(★ Vórtice)' : '(Máx: 6)'}</span></div>`;
     }
     if (player.auraLvl > 0) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">✨ Aura Sagrada</span><span class="counter">Nv ${player.auraLvl}</span></div>`;
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">✨ Aura Sagrada</span><span class="counter">Nv ${player.auraLvl}/5 ${player.evolvedAura ? '(★ Santuário)' : ''}</span></div>`;
     }
-    if (player.critChance > 0.05) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">🎯 Foco Letal</span><span class="counter">${Math.round(player.critChance * 100)}% Crítico</span></div>`;
+    if (player.critCardCount || player.critChance > 0.05) {
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">🎯 Foco Letal</span><span class="counter">${Math.round(player.critChance * 100)}% Crítico (${player.critCardCount || 1}/4)</span></div>`;
     }
-    if ((player.cooldownReduction || 0) > 0) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">⚡ Fúria Rápida</span><span class="counter">-${Math.round(player.cooldownReduction * 100)}% CDR</span></div>`;
+    if (player.hasteCardCount || (player.cooldownReduction || 0) > 0) {
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">⚡ Fúria Rápida</span><span class="counter">${selectedHeroKey === 'BARBARIAN' ? `+${(player.hasteCardCount || 1) * 12}% Velocidade` : `-${Math.round((player.cooldownReduction || 0) * 100)}% CDR`} (${player.hasteCardCount || 1}/3)</span></div>`;
+    }
+    if (player.magnetCardCount) {
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">🧲 Ímã Titânico</span><span class="counter">+${player.magnetCardCount * 50}px (${player.magnetCardCount}/4)</span></div>`;
     }
   }
 

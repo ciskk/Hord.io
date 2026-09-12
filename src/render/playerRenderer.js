@@ -57,8 +57,8 @@ export function drawPlayerOrbitals() {
   ctx.restore();
 
   // 2. Renderização de Cada Tomo Celestial Aberto e seus Rastros
-  const bookW = isEvolved ? 20 : 18;
-  const bookH = isEvolved ? 14 : 12;
+  const bookW = isEvolved ? 26 : 22;
+  const bookH = isEvolved ? 18 : 15;
   const halfW = bookW / 2;
   const halfH = bookH / 2;
 
@@ -79,7 +79,7 @@ export function drawPlayerOrbitals() {
         ? `rgba(241, 196, 15, ${alpha})` 
         : `rgba(0, 206, 201, ${alpha})`;
       ctx.beginPath();
-      ctx.arc(tx, ty, (isEvolved ? 5 : 3.5) * (1 - s / trailSteps), 0, Math.PI * 2);
+      ctx.arc(tx, ty, (isEvolved ? 6.5 : 4.5) * (1 - s / trailSteps), 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -88,7 +88,7 @@ export function drawPlayerOrbitals() {
     ctx.rotate(angle + Math.PI / 2);
 
     // Halo de Luz Sagrada ao redor do livro
-    const haloRadius = isEvolved ? 15 : 12;
+    const haloRadius = isEvolved ? 26 : 20;
     const haloGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, haloRadius);
     haloGrad.addColorStop(0, isEvolved ? 'rgba(241, 196, 15, 0.35)' : 'rgba(52, 152, 219, 0.30)');
     haloGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');

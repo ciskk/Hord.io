@@ -278,14 +278,14 @@ Existem aprimoramentos específicos para armas e passivas universais.
 
 - **Golpe Criogênico** — aumenta a chance de aplicar lentidão.
 - **Poder Bruto** — +7% de dano global por aquisição, até 4 aquisições.
-- **Fúria Rápida** — reduz recargas multiplicativamente, com teto de 45%.
-- **Asas do Vento** — aumenta a velocidade de movimento.
-- **Foco Letal** — aumenta chance e multiplicador crítico.
-- **Ímã Titânico** — aumenta o raio de atração de gemas.
-- **Aura Sagrada** — cria um campo de dano ao redor do jogador.
-- **Bíblias Protetoras** — adiciona tomos orbitais.
-- **Armadura Rúnica** — aumenta o HP máximo.
-- **Poção Alquímica** — recupera 65% do HP.
+- **Fúria Rápida** — reduz recargas multiplicativamente (ou acelera rotação do machado em Kragdor), até 3 aquisições.
+- **Asas do Vento** — aumenta a velocidade de movimento (+0.45 por nível), até 4 aquisições.
+- **Foco Letal** — aumenta chance (+8%) e multiplicador crítico (+0.08), até 4 aquisições.
+- **Ímã Titânico** — aumenta o raio de atração de gemas (+50px por nível), até 4 aquisições.
+- **Aura Sagrada** — cria um campo de dano ao redor do jogador, até nível 5.
+- **Bíblias Protetoras** — adiciona tomos orbitais, até 6 tomos.
+- **Armadura Rúnica** — aumenta o HP máximo (+45 HP por nível), até 5 aquisições.
+- **Poção Alquímica** — recupera 65% do HP (disponível quando ferido).
 
 Durante uma subida de nível, o jogador recebe 3 opções sorteadas entre os aprimoramentos disponíveis.
 
@@ -391,12 +391,12 @@ Resultado:
 
 Requer:
 
-- 4 tomos orbitais
+- pelo menos 5 tomos orbitais
 - Asas do Vento
 
 Resultado:
 
-- 6 tomos supersônicos
+- 8 tomos supersônicos
 - órbita contínua de alta velocidade
 
 ---

@@ -801,6 +801,12 @@ export function resetPlayer(heroKey) {
   player.baseDamage = c.stats.damage;
   player.damagePercentBonus = 0;
   player.damageCardCount = 0;
+  player.critCardCount = 0;
+  player.wingsCardCount = 0;
+  player.magnetCardCount = 0;
+  player.armorCardCount = 0;
+  player.frostCardCount = 0;
+  player.hasteCardCount = 0;
 
   player.attackCooldown = c.stats.attackCooldown;
   player.baseSpeed = c.stats.speed * meta.speedMult;

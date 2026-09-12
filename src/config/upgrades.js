@@ -1,4 +1,4 @@
-import { player, selectedHeroKey, registerWeaponInInventory, registerPassiveInInventory } from '../entities/player.js';
+import { player, selectedHeroKey, registerWeaponInInventory, registerPassiveInInventory, addPersistentGold } from '../entities/player.js';
 import { getAvailableSynergies } from './items.js';
 
 export const upgradesPool = [
@@ -15,7 +15,7 @@ export const upgradesPool = [
       const w = player.weapons.find(wp => wp.type === 'AXE');
       if (w) w.damageMult += 0.15;
     },
-    isAvailable: () => player.weapons.some(w => w.type === 'AXE') && (player.axeSpinSpeed || 0.085) < 0.26
+    isAvailable: () => !player.evolvedAxe && player.weapons.some(w => w.type === 'AXE') && (player.axeSpinSpeed || 0.085) < 0.22
   },
   {
     id: 'axe_extra',
@@ -23,7 +23,7 @@ export const upgradesPool = [
     rarity: "card-legendary",
     badge: "Machado",
     desc: "Adiciona +1 machado ao anel orbital que translada ao redor do bárbaro",
-    stat: "+1 Machado no Anel",
+    stat: "+1 Machado no Anel (Máx: 4)",
     apply: () => {
       player.axeCount = (player.axeCount || 1) + 1;
       const w = player.weapons.find(wp => wp.type === 'AXE');
@@ -32,7 +32,7 @@ export const upgradesPool = [
       }
       registerWeaponInInventory('AXE', player.axeCount);
     },
-    isAvailable: () => player.weapons.some(w => w.type === 'AXE') && (player.axeCount || 1) < 4
+    isAvailable: () => !player.evolvedAxe && player.weapons.some(w => w.type === 'AXE') && (player.axeCount || 1) < 4
   },
   {
     id: 'axe_radius',
@@ -46,7 +46,7 @@ export const upgradesPool = [
       const w = player.weapons.find(wp => wp.type === 'AXE');
       if (w) w.damageMult += 0.15;
     },
-    isAvailable: () => player.weapons.some(w => w.type === 'AXE') && (player.axeRadius || 56) < 110
+    isAvailable: () => !player.evolvedAxe && player.weapons.some(w => w.type === 'AXE') && (player.axeRadius || 56) < 110
   },
 
   // --- Aprimoramentos das Poções (Valéria) ---
@@ -56,7 +56,7 @@ export const upgradesPool = [
     rarity: "card-legendary",
     badge: "Poção",
     desc: "Arremessa +1 frasco cáustico extra rigorosamente no mesmo epicentro da poça gigante",
-    stat: "+1 Frasco Concentrado",
+    stat: "+1 Frasco Concentrado (Máx: 5)",
     apply: () => {
       const w = player.weapons.find(wp => wp.type === 'POTION');
       if (w) {
@@ -65,7 +65,7 @@ export const upgradesPool = [
       player.projectiles = (w ? w.count : 1);
       registerWeaponInInventory('POTION', w ? w.count : 1);
     },
-    isAvailable: () => player.weapons.some(w => w.type === 'POTION') && (player.weapons.find(wp => wp.type === 'POTION')?.count || 1) < 5
+    isAvailable: () => !player.evolvedPotion && player.weapons.some(w => w.type === 'POTION') && (player.weapons.find(wp => wp.type === 'POTION')?.count || 1) < 5
   },
   {
     id: 'potion_potency',
@@ -73,7 +73,7 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Poção",
     desc: "Aumenta em +15% o dano corrosivo e a área de contaminação das poças ácidas",
-    stat: "+15% Dano & Área",
+    stat: "+15% Dano & Área (Máx: 3)",
     apply: () => {
       const w = player.weapons.find(wp => wp.type === 'POTION');
       if (w) {
@@ -82,6 +82,7 @@ export const upgradesPool = [
       }
     },
     isAvailable: () => {
+      if (player.evolvedPotion) return false;
       const w = player.weapons.find(wp => wp.type === 'POTION');
       return !!w && (w.potencyCount || 0) < 3;
     }
@@ -94,7 +95,7 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Cajado",
     desc: "+1 Esfera mágica concentrada canalizada contra os alvos avistados",
-    stat: "+1 Orbe Místico",
+    stat: "+1 Orbe Místico (Máx: 5)",
     apply: () => {
       const w = player.weapons.find(wp => wp.type === 'STAFF');
       if (w) {
@@ -102,7 +103,7 @@ export const upgradesPool = [
       }
       registerWeaponInInventory('STAFF', w ? w.count : 1);
     },
-    isAvailable: () => player.weapons.some(w => w.type === 'STAFF') && (player.weapons.find(wp => wp.type === 'STAFF')?.count || 1) < 5
+    isAvailable: () => !player.evolvedStaff && player.weapons.some(w => w.type === 'STAFF') && (player.weapons.find(wp => wp.type === 'STAFF')?.count || 1) < 5
   },
   {
     id: 'staff_pierce',
@@ -110,13 +111,13 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Cajado",
     desc: "As esferas do cajado perfuram +1 inimigo e ampliam o rastro de queimadura",
-    stat: "+1 Perfuração Arcana",
+    stat: "+1 Perfuração Arcana (Máx: 3)",
     apply: () => {
       player.staffPierceBonus = (player.staffPierceBonus || 0) + 1;
       const w = player.weapons.find(wp => wp.type === 'STAFF');
       if (w) w.damageMult += 0.08;
     },
-    isAvailable: () => player.weapons.some(w => w.type === 'STAFF') && (player.staffPierceBonus || 0) < 4
+    isAvailable: () => !player.evolvedStaff && player.weapons.some(w => w.type === 'STAFF') && (player.staffPierceBonus || 0) < 3
   },
 
   // --- Aprimoramentos das Espadas (Kael) ---
@@ -126,7 +127,7 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Lâminas",
     desc: "+1 Espada espectral adicional arremessada contra oponentes avistados",
-    stat: "+1 Lâmina Espectral",
+    stat: "+1 Lâmina Espectral (Máx: 5)",
     apply: () => {
       const w = player.weapons.find(wp => wp.type === 'SWORD');
       if (w) {
@@ -135,7 +136,7 @@ export const upgradesPool = [
       player.projectiles = (w ? w.count : 1);
       registerWeaponInInventory('SWORD', w ? w.count : 1);
     },
-    isAvailable: () => player.weapons.some(w => w.type === 'SWORD') && (player.weapons.find(wp => wp.type === 'SWORD')?.count || 1) < 5 && !player.evolvedSword
+    isAvailable: () => !player.evolvedSword && player.weapons.some(w => w.type === 'SWORD') && (player.weapons.find(wp => wp.type === 'SWORD')?.count || 1) < 5
   },
   {
     id: 'sword_speed',
@@ -143,7 +144,7 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Lâminas",
     desc: "+12% de velocidade de voo e dano letal para as espadas teleguiadas",
-    stat: "+12% Voo e Dano",
+    stat: "+12% Voo e Dano (Máx: 3)",
     apply: () => {
       const w = player.weapons.find(wp => wp.type === 'SWORD');
       if (w) {
@@ -152,6 +153,7 @@ export const upgradesPool = [
       }
     },
     isAvailable: () => {
+      if (player.evolvedSword) return false;
       const w = player.weapons.find(wp => wp.type === 'SWORD');
       return !!w && (w.swordSpeedCount || 0) < 3;
     }
@@ -164,7 +166,7 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Martelo",
     desc: "Aumenta o raio do impacto sísmico 360° em +24px e amplifica o estilhaço de rochas",
-    stat: "+24px Raio Sísmico",
+    stat: "+24px Raio Sísmico (Máx: 4)",
     apply: () => {
       const w = player.weapons.find(wp => wp.type === 'HAMMER');
       if (w) {
@@ -173,7 +175,7 @@ export const upgradesPool = [
       }
       registerWeaponInInventory('HAMMER', w ? w.count : 1);
     },
-    isAvailable: () => player.weapons.some(w => w.type === 'HAMMER') && (player.weapons.find(wp => wp.type === 'HAMMER')?.count || 1) < 4
+    isAvailable: () => !player.evolvedHammer && player.weapons.some(w => w.type === 'HAMMER') && (player.weapons.find(wp => wp.type === 'HAMMER')?.count || 1) < 4
   },
   {
     id: 'hammer_impact',
@@ -181,12 +183,19 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Martelo",
     desc: "O martelo golpeia com +20% de dano de esmagamento no epicentro e fissuras frontais",
-    stat: "+20% Dano Esmagador",
+    stat: "+20% Dano Esmagador (Máx: 4)",
     apply: () => {
       const w = player.weapons.find(wp => wp.type === 'HAMMER');
-      if (w) w.damageMult += 0.20;
+      if (w) {
+        w.damageMult += 0.20;
+        w.impactCount = (w.impactCount || 0) + 1;
+      }
     },
-    isAvailable: () => player.weapons.some(w => w.type === 'HAMMER')
+    isAvailable: () => {
+      if (player.evolvedHammer) return false;
+      const w = player.weapons.find(wp => wp.type === 'HAMMER');
+      return !!w && (w.impactCount || 0) < 4;
+    }
   },
 
   // --- Passivas Universais ---
@@ -196,12 +205,13 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Passiva",
     desc: "+15% de chance de congelar e desacelerar monstros atingidos por 2.5s",
-    stat: "+15% Chance Lentidão",
+    stat: "+15% Chance Lentidão (Máx: 4)",
     apply: () => {
-      player.slowChance = Math.min(0.75, (player.slowChance || 0) + 0.15);
-      registerPassiveInInventory('frost_passive');
+      player.frostCardCount = (player.frostCardCount || 0) + 1;
+      player.slowChance = Math.min(0.60, (player.slowChance || 0) + 0.15);
+      registerPassiveInInventory('frost_passive', 1, { stacks: player.frostCardCount });
     },
-    isAvailable: () => (player.slowChance || 0) < 0.70
+    isAvailable: () => (player.frostCardCount || 0) < 4
   },
   {
     id: 'dmg',
@@ -209,7 +219,7 @@ export const upgradesPool = [
     rarity: "card-common",
     badge: "Passiva",
     desc: "Aumenta o dano global do herói em +7%",
-    stat: "+7% Dano Global",
+    stat: "+7% Dano Global (Máx: 4)",
     apply: () => { 
       player.damagePercentBonus = (player.damagePercentBonus || 0) + 0.07;
       player.damageCardCount = (player.damageCardCount || 0) + 1;
@@ -223,33 +233,24 @@ export const upgradesPool = [
     title: "Fúria Rápida",
     rarity: "card-rare",
     badge: "Passiva",
-    desc: "Reduz o tempo de recarga de todas as armas em 12% de forma multiplicativa.",
-    stat: "-12% Recarga (Teto: 45%)",
+    desc: "Reduz a recarga das armas em 12% ou acelera a rotação orbital em Kragdor",
+    stat: "-12% Recarga (Máx: 3)",
     apply: () => {
-      // Acumula a taxa teórica de redução de recarga respeitando o teto de 45%
-      player.cooldownReduction = Math.min(0.45, (player.cooldownReduction || 0) + 0.12);
-
-      // Reduz multiplicativamente o cooldown de ataque base do jogador (piso mínimo de 10 frames)
-      player.attackCooldown = Math.max(10, Math.floor(player.attackCooldown * 0.88));
-
-      // Aplica a redução percentual em cada arma ativa no inventário do jogador
-      player.weapons.forEach(w => {
-        w.cooldown = Math.max(10, Math.floor(w.cooldown * 0.88));
-      });
-      registerPassiveInInventory('haste');
-    },
-    isAvailable: () => {
-      // Kragdor usa machado orbital (sem cooldown). 'haste' só entra no sorteio
-      // se o machado ainda puder receber velocidade de órbita ('axe_speed')
+      player.hasteCardCount = (player.hasteCardCount || 0) + 1;
       if (selectedHeroKey === 'BARBARIAN') {
-        const axeSpeedOpt = upgradesPool.find(u => u.id === 'axe_speed');
-        return !!(axeSpeedOpt && axeSpeedOpt.isAvailable());
+        player.axeSpinSpeed = (player.axeSpinSpeed || 0.085) + 0.035;
+        const w = player.weapons.find(wp => wp.type === 'AXE');
+        if (w) w.damageMult += 0.12;
+      } else {
+        player.cooldownReduction = Math.min(0.36, (player.cooldownReduction || 0) + 0.12);
+        player.attackCooldown = Math.max(10, Math.floor(player.attackCooldown * 0.88));
+        player.weapons.forEach(w => {
+          w.cooldown = Math.max(10, Math.floor(w.cooldown * 0.88));
+        });
       }
-
-      const currentCDR = player.cooldownReduction || 0;
-      const hasReducibleWeapons = player.weapons.some(w => w.cooldown > 10);
-      return currentCDR < 0.45 && (player.attackCooldown > 10 || hasReducibleWeapons);
-    }
+      registerPassiveInInventory('haste', 1, { stacks: player.hasteCardCount });
+    },
+    isAvailable: () => (player.hasteCardCount || 0) < 3
   },
   {
     id: 'wings',
@@ -257,14 +258,15 @@ export const upgradesPool = [
     rarity: "card-common",
     badge: "Passiva",
     desc: "Acelera a locomoção do herói",
-    stat: "+0.45 Velocidade",
+    stat: "+0.45 Velocidade (Máx: 4)",
     apply: () => { 
+      player.wingsCardCount = (player.wingsCardCount || 0) + 1;
       player.baseSpeed += 0.45; 
       player.speed = player.invisTimer > 0 ? player.baseSpeed * 2 : player.baseSpeed; 
       player.hasWingsPassive = true; 
-      registerPassiveInInventory('wings');
+      registerPassiveInInventory('wings', 1, { stacks: player.wingsCardCount });
     },
-    isAvailable: () => player.baseSpeed < 6.5
+    isAvailable: () => (player.wingsCardCount || 0) < 4
   },
   {
     id: 'crit',
@@ -272,13 +274,14 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Passiva",
     desc: "Aumenta as chances e o multiplicador de crítico",
-    stat: "+8% Chance / +0.08 Mult",
+    stat: "+8% Chance / +0.08 Mult (Máx: 4)",
     apply: () => { 
+      player.critCardCount = (player.critCardCount || 0) + 1;
       player.critChance += 0.08; 
       player.critMult += 0.08; 
-      registerPassiveInInventory('crit');
+      registerPassiveInInventory('crit', 1, { stacks: player.critCardCount });
     },
-    isAvailable: () => player.critChance < 0.40
+    isAvailable: () => (player.critCardCount || 0) < 4
   },
   {
     id: 'magnet',
@@ -286,12 +289,13 @@ export const upgradesPool = [
     rarity: "card-common",
     badge: "Passiva",
     desc: "Aumenta o alcance de atração de gemas",
-    stat: "+50 Raio de Atração",
+    stat: "+50 Raio de Atração (Máx: 4)",
     apply: () => {
+      player.magnetCardCount = (player.magnetCardCount || 0) + 1;
       player.magnet += 50;
-      registerPassiveInInventory('magnet');
+      registerPassiveInInventory('magnet', 1, { stacks: player.magnetCardCount });
     },
-    isAvailable: () => player.magnet < 380
+    isAvailable: () => (player.magnetCardCount || 0) < 4
   },
   {
     id: 'aura',
@@ -299,7 +303,7 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Passiva",
     desc: "Campo de dano constante ao redor do herói",
-    stat: "+1 Nível de Aura",
+    stat: "+1 Nível de Aura (Máx: 5)",
     apply: () => {
       player.auraLvl += 1;
       registerWeaponInInventory('aura', player.auraLvl);
@@ -312,12 +316,12 @@ export const upgradesPool = [
     rarity: "card-rare",
     badge: "Passiva",
     desc: "Tomos celestiais giram destruindo oponentes",
-    stat: "+1 Tomo Orbital",
+    stat: "+1 Tomo Orbital (Máx: 6)",
     apply: () => {
       player.orbitals += 1;
       registerWeaponInInventory('orbitals', player.orbitals);
     },
-    isAvailable: () => player.orbitals < 4 && !player.evolvedOrbitals
+    isAvailable: () => player.orbitals < 6 && !player.evolvedOrbitals
   },
   {
     id: 'armor',
@@ -325,14 +329,15 @@ export const upgradesPool = [
     rarity: "card-common",
     badge: "Passiva",
     desc: "Reforça a carcaça e eleva o limite de vitalidade",
-    stat: "+45 HP Máximo",
+    stat: "+45 HP Máximo (Máx: 5)",
     apply: () => { 
+      player.armorCardCount = (player.armorCardCount || 0) + 1;
       player.maxHp += 45; 
       player.hp += 45; 
       player.hasArmorPassive = true; 
-      registerPassiveInInventory('armor');
+      registerPassiveInInventory('armor', 1, { stacks: player.armorCardCount });
     },
-    isAvailable: () => true
+    isAvailable: () => (player.armorCardCount || 0) < 5
   },
   {
     id: 'heal',
@@ -342,22 +347,26 @@ export const upgradesPool = [
     desc: "Recupera imediatamente parte vital das feridas",
     stat: "Cura 65% do HP",
     apply: () => player.hp = Math.min(player.maxHp, player.hp + player.maxHp * 0.65),
-    isAvailable: () => player.hp < player.maxHp
+    isAvailable: () => player.hp < player.maxHp * 0.95
   }
 ];
 
-export function getRandomUpgrades(count) {
-  const isBarbarian = (selectedHeroKey === 'BARBARIAN');
-  const axeSpeedOpt = upgradesPool.find(u => u.id === 'axe_speed');
-  const canGetAxeSpeed = isBarbarian && axeSpeedOpt && axeSpeedOpt.isAvailable();
+export const BLESSING_UPGRADE = {
+  id: 'blessing',
+  title: "Bênção da Fortuna",
+  rarity: "card-legendary",
+  badge: "Recompensa",
+  desc: "Todos os poderes conhecidos atingiram o apogeu! Recupera vitalidade e concede ouro da arena.",
+  stat: "Cura 35% HP & +40 Ouro",
+  apply: () => {
+    player.hp = Math.min(player.maxHp, player.hp + player.maxHp * 0.35);
+    addPersistentGold(40);
+  },
+  isAvailable: () => true
+};
 
-  const available = upgradesPool.filter(opt => {
-    // Se Kragdor já atingiu o teto da velocidade de órbita, descarta 'haste' do sorteio
-    if (isBarbarian && opt.id === 'haste' && !canGetAxeSpeed) {
-      return false;
-    }
-    return opt.isAvailable();
-  });
+export function getRandomUpgrades(count) {
+  const available = upgradesPool.filter(opt => opt.isAvailable());
 
   for (let i = available.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -366,24 +375,9 @@ export function getRandomUpgrades(count) {
 
   const selected = available.slice(0, count);
 
-  // Verificação exclusiva para Kragdor: substitui 'haste' por 'axe_speed'
-  if (isBarbarian) {
-    const hasteIdx = selected.findIndex(opt => opt.id === 'haste');
-    if (hasteIdx !== -1) {
-      const alreadyHasAxeSpeed = selected.some(opt => opt.id === 'axe_speed');
-      if (canGetAxeSpeed && !alreadyHasAxeSpeed) {
-        // Converte a redução de recarga em velocidade orbital do machado
-        selected[hasteIdx] = axeSpeedOpt;
-      } else {
-        // Se 'axe_speed' já estiver entre as opções da tela ou no teto, puxa outra opção válida da fila
-        const unusedOption = available.slice(count).find(opt => opt.id !== 'haste' && !selected.includes(opt));
-        if (unusedOption) {
-          selected[hasteIdx] = unusedOption;
-        } else {
-          selected.splice(hasteIdx, 1);
-        }
-      }
-    }
+  // Fallback: se o jogador já maximizou os upgrades disponíveis, completa as opções com a Bênção da Fortuna
+  while (selected.length < count) {
+    selected.push(BLESSING_UPGRADE);
   }
 
   return selected;

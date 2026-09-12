@@ -612,9 +612,10 @@ function update(dt) {
         if (e.orbitalHitCd > 0 || (e.isBoss && e.mistState === 'DASHING')) continue;
         const dx = e.x - ox;
         const dy = e.y - oy;
-        const rSum = e.radius + 12;
+        const bookRadius = player.evolvedOrbitals ? 26 : 20;
+        const rSum = e.radius + bookRadius;
         if (dx * dx + dy * dy < rSum * rSum) {
-          let dmg = player.damage * (player.evolvedOrbitals ? 1.2 : 0.75);
+          let dmg = player.damage * (player.evolvedOrbitals ? 2.3 : 1.45);
           if (e.isBoss || e.isBossSubTarget) {
             const bossRef = e.isBoss ? e : (e.parentBoss || e);
             const distToBoss = Math.hypot(player.x - bossRef.x, player.y - bossRef.y);
@@ -632,14 +633,14 @@ function update(dt) {
 
           e.hp -= finalDmg;
           e.hitFlash = 4;
-          e.orbitalHitCd = player.evolvedOrbitals ? 8 : 16;
+          e.orbitalHitCd = player.evolvedOrbitals ? 8 : 12;
           playSfx('hit');
           if (isCrit || isKaelExecute) playSfx('crit');
 
           // Knockback Sagrado: afasta monstros para fora do raio orbital protegendo o herói
           if (!e.isBoss && !e.isBossSubTarget) {
             const pushAng = Math.atan2(e.y - player.y, e.x - player.x);
-            const basePush = player.evolvedOrbitals ? 5.2 : 3.5;
+            const basePush = player.evolvedOrbitals ? 6.8 : 4.8;
             const pushForce = basePush * (player.knockbackDealt || 1.0) * (e.isElite ? 0.45 : 1.0);
             e.x += Math.cos(pushAng) * pushForce;
             e.y += Math.sin(pushAng) * pushForce;
