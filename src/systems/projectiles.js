@@ -2,7 +2,7 @@
  * src/systems/projectiles.js
  * Subsistema Balístico, Poças Ambientais e Paridade de Dano Melee (Fase 3 e 5).
  */
-import { player } from '../entities/player.js';
+import { player, selectedHeroKey } from '../entities/player.js';
 import { enemies, triggerShake } from '../main.js';
 import { addDamageText, createHitParticles } from './combat.js';
 import { playSfx, triggerHaptic } from '../core/audio.js';
@@ -120,6 +120,12 @@ export function updateProjectiles(dt) {
           if (e.isVulnerable || (bossRef && bossRef.isVulnerable)) {
             finalDmg *= 1.25;
           }
+
+          // Passiva Quebra-Pedras: Martelo Sagrado estraçalha Litocistos com dano dobrado (+100%)
+          if (b.type === 'HAMMER_SLAM' && isSubTarget) {
+            finalDmg *= 2.0;
+            isMeleeAdrenaline = true;
+          }
         }
 
         e.hp -= finalDmg;
@@ -190,14 +196,16 @@ export function updateProjectiles(dt) {
     const hitRadius = (player.radius || 14) + (eb.radius || 6);
 
     if (player.iFrames <= 0 && (pdx * pdx + pdy * pdy) < hitRadius * hitRadius) {
-      player.hp -= eb.damage;
+      let finalEbDamage = eb.damage;
+      if (selectedHeroKey === 'KNIGHT') finalEbDamage = Math.round(finalEbDamage * 0.80);
+      player.hp -= finalEbDamage;
       player.iFrames = 22;
       triggerShake(6);
       playSfx('hit');
       triggerHaptic('medium');
 
       const col = eb.color || '#e74c3c';
-      addDamageText(player.x, player.y, `-${eb.damage}`, false, col);
+      addDamageText(player.x, player.y, `-${finalEbDamage}`, false, col);
       createHitParticles(player.x, player.y, col, 5);
 
       // Knockback sofrido por projétil inimigo

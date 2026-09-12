@@ -398,9 +398,9 @@ export function triggerBossEncounter(bossId) {
     combatState: 'CHASE'
   };
 
-  initBoss(boss);
-  setActiveBoss(boss);
   enemies.push(boss);
+  setActiveBoss(boss);
+  initBoss(boss);
 
   const bossHud = document.getElementById('boss-hud');
   if (bossHud) bossHud.style.display = 'flex';

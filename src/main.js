@@ -686,14 +686,16 @@ function update(dt) {
     const sDist = Math.sqrt(sdx * sdx + sdy * sdy);
 
     if (!sw.hitPlayer && Math.abs(sDist - sw.radius) < 16 && player.iFrames <= 0) {
-      player.hp -= sw.damage;
+      let finalSwDamage = sw.damage;
+      if (selectedHeroKey === 'KNIGHT') finalSwDamage = Math.round(finalSwDamage * 0.80);
+      player.hp -= finalSwDamage;
       player.iFrames = 25;
       sw.hitPlayer = true;
       lastAttackerName = activeBoss ? activeBoss.name : "Onda de Choque Sísmica";
       triggerShake(9);
       playSfx('hit');
       const swColor = sw.color || (activeBoss && activeBoss.bossId === 3 ? '#00cec9' : '#e67e22');
-      addDamageText(player.x, player.y, `-${sw.damage}`, false, swColor);
+      addDamageText(player.x, player.y, `-${finalSwDamage}`, false, swColor);
       createHitParticles(player.x, player.y, swColor, 5);
 
       if (player.hp <= 0) {
@@ -927,6 +929,9 @@ function update(dt) {
     const e = enemies[i];
     if (e.hitFlash > 0) e.hitFlash -= dt;
     if (e.orbitalHitCd > 0) e.orbitalHitCd -= dt;
+    if (e.axeHitCd > 0) e.axeHitCd -= dt;
+
+    if (e.isBossSubTarget) continue;
 
     if (e.stunTimer > 0) {
       e.stunTimer -= dt;

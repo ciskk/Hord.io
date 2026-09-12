@@ -366,15 +366,18 @@ export function triggerHeroSkill() {
       const dy = e.y - player.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < 260) {
-        const nx = dist > 0.001 ? dx / dist : 1;
-        const ny = dist > 0.001 ? dy / dist : 0;
-        e.x += nx * 55;
-        e.y += ny * 55;
+        if (!e.isBoss && !e.isBossSubTarget) {
+          const nx = dist > 0.001 ? dx / dist : 1;
+          const ny = dist > 0.001 ? dy / dist : 0;
+          e.x += nx * 55;
+          e.y += ny * 55;
+        }
         e.stunTimer = 35;
         e.slowTimer = 240;
         e.slowFactor = 0.65;
         e.hitFlash = 6;
-        e.hp -= player.damage * 1.5;
+        const roarDmg = e.isBossSubTarget ? 300 : (player.damage * 1.5);
+        e.hp -= roarDmg;
         createHitParticles(e.x, e.y, '#d35400', 8);
       }
     }
@@ -503,6 +506,11 @@ export function updateSpinningAxes(dt) {
           if (e.isVulnerable) {
             dmg *= 1.25;
           }
+          // Passiva Quebra-Pedras: Machado de Kragdor estraçalha Litocistos com dano dobrado (+100%)
+          if (isSubTarget) {
+            dmg *= 2.0;
+            isMeleeAdrenaline = true;
+          }
         }
 
         const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
@@ -513,7 +521,7 @@ export function updateSpinningAxes(dt) {
 
         // Cura do Bárbaro Kragdor em Chefes e Hordas
         if (selectedHeroKey === 'BARBARIAN') {
-          if (isOuterZone && (e.isBoss || e.isMiniBoss)) {
+          if (isOuterZone && (e.isBoss || e.isMiniBoss || e.isBossSubTarget)) {
             if ((player.axeBossHealCd || 0) <= 0) {
               player.axeBossHealCd = 36; // 0.6s em 60 FPS
               const healAmount = Math.max(1, Math.round(player.maxHp * 0.005));

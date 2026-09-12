@@ -57,10 +57,10 @@ export function initAbyssalMonolith(boss) {
   boss.isVulnerable = false;
   boss.prevHp = boss.hp;
 
-  // Litocistos Tectônicos como Sub-Alvos Selecionáveis (Fase Normal: 3.200 HP)
+  // Litocistos Tectônicos como Sub-Alvos Selecionáveis (Fase Normal: 2.800 HP)
   boss.orbitals = [];
   boss.orbitalAngularVelocity = 0.024;
-  spawnLitocistos(boss, 3, 3200, enemies);
+  spawnLitocistos(boss, 3, 2800, enemies);
 
   // Placas Tectônicas Decorativas
   boss.floatingPlates = [
@@ -146,8 +146,8 @@ export function updateAbyssalMonolith(e, dt, context) {
       hitPlayer: false
     });
 
-    // Respawn da Fase de Fúria calibrado para 4.000 HP
-    spawnLitocistos(e, 4, 4000, enemies);
+    // Respawn da Fase de Fúria calibrado para 3.600 HP
+    spawnLitocistos(e, 4, 3600, enemies);
 
     for (let p = 0; p < 30; p++) {
       createHitParticles(e.x, e.y, '#e74c3c', 1);
@@ -264,8 +264,8 @@ export function updateAbyssalMonolith(e, dt, context) {
         for (let s = 0; s < shardCount; s++) {
           const sAng = (s * Math.PI * 2) / shardCount;
           enemyBullets.push({
-            x: e.x,
-            y: e.y,
+            x: e.x + Math.cos(sAng) * 78,
+            y: e.y + Math.sin(sAng) * 78,
             vx: Math.cos(sAng) * 4.2,
             vy: Math.sin(sAng) * 4.2,
             radius: 6.5,
@@ -396,7 +396,7 @@ function selectNextSkill(e, dist) {
   if (dist < 180) {
     e.currentSkill = 'SEISMIC_PULSE';
     e.actionState = 'WINDUP';
-    e.actionTimer = isEnraged ? 28 : 40;
+    e.actionTimer = isEnraged ? 38 : 52;
   } else if (dist > 300 && rand < 0.40) {
     e.currentSkill = 'SINGULARITY';
     e.actionState = 'WINDUP';
@@ -503,8 +503,8 @@ function executePreparedSkill(e, context) {
           for (let s = 0; s < shardCount; s++) {
             const sAng = (s * Math.PI * 2) / shardCount;
             enemyBullets.push({
-              x: e.x + Math.cos(sAng) * 22,
-              y: e.y + Math.sin(sAng) * 22,
+              x: e.x + Math.cos(sAng) * 76,
+              y: e.y + Math.sin(sAng) * 76,
               vx: Math.cos(sAng) * 3.4,
               vy: Math.sin(sAng) * 3.4,
               radius: 6.5,
@@ -977,6 +977,22 @@ export function drawAbyssalMonolith(ctx, e, frameCount) {
 
   if (isChanneling) {
     drawSingularityField(ctx, e, frameCount);
+  }
+
+  // Telegrafia de anel de impacto expansivo para o Pulso Sísmico
+  if (isWindup && e.currentSkill === 'SEISMIC_PULSE') {
+    const maxTimer = e.isEnraged ? 38 : 52;
+    const progress = Math.min(1, Math.max(0, 1 - (e.actionTimer / maxTimer)));
+    ctx.save();
+    ctx.strokeStyle = `rgba(241, 196, 15, ${0.4 + progress * 0.55})`;
+    ctx.fillStyle = `rgba(230, 126, 34, ${progress * 0.14})`;
+    ctx.lineWidth = 2.8;
+    ctx.setLineDash([10, 6]);
+    ctx.beginPath();
+    ctx.arc(0, 48 + bob, 270 * progress, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
   }
 
   if (isWindup && e.currentSkill === 'FISSURE') {
