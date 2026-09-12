@@ -309,21 +309,23 @@ export function render() {
     ctx.save();
 
     if (t.type === 'SCYTHE_CLEAVE') {
-      const arcHalf = Math.PI * 0.52;
+      const arcHalf = t.arcHalf !== undefined ? t.arcHalf : Math.PI * 0.52;
       const startAng = t.angle - arcHalf;
       const endAng = t.angle + arcHalf;
       const rgbCol = t.colorRgb || '0, 206, 201';
       const hexCol = t.color || '#00cec9';
 
-      ctx.fillStyle = `rgba(${rgbCol}, 0.12)`;
+      // 1. Área total de corte com grade rúnica sutil
+      ctx.fillStyle = `rgba(${rgbCol}, 0.14)`;
       ctx.beginPath();
       ctx.moveTo(t.x, t.y);
       ctx.arc(t.x, t.y, t.radius, startAng, endAng);
       ctx.closePath();
       ctx.fill();
 
+      // Borda total do cone
       ctx.strokeStyle = `rgba(${rgbCol}, 0.55)`;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.2;
       ctx.beginPath();
       ctx.moveTo(t.x, t.y);
       ctx.lineTo(t.x + Math.cos(startAng) * t.radius, t.y + Math.sin(startAng) * t.radius);
@@ -331,18 +333,41 @@ export function render() {
       ctx.lineTo(t.x, t.y);
       ctx.stroke();
 
-      ctx.fillStyle = `rgba(${rgbCol}, ${0.22 + progress * 0.45})`;
+      // 2. Preenchimento de carregamento de perigo
+      ctx.fillStyle = `rgba(${rgbCol}, ${0.22 + progress * 0.48})`;
       ctx.beginPath();
       ctx.moveTo(t.x, t.y);
       ctx.arc(t.x, t.y, t.radius * progress, startAng, endAng);
       ctx.closePath();
       ctx.fill();
 
-      ctx.strokeStyle = progress > 0.85 ? '#ffffff' : hexCol;
-      ctx.lineWidth = 3.5;
+      // Borda de avanço da lâmina
+      ctx.strokeStyle = progress > 0.82 ? '#ffffff' : hexCol;
+      ctx.lineWidth = progress > 0.82 ? 4.5 : 3.0;
       ctx.beginPath();
       ctx.arc(t.x, t.y, t.radius * progress, startAng, endAng);
       ctx.stroke();
+
+      // 3. Setas direcionais curvas espectrais no chão
+      const arrowArcs = [0.45, 0.72];
+      for (let rFrac of arrowArcs) {
+        const arrowR = t.radius * rFrac;
+        if (progress > 0.12) {
+          ctx.strokeStyle = progress > 0.8 ? '#ffffff' : `rgba(${rgbCol}, 0.75)`;
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(t.x, t.y, arrowR, t.angle - 0.28, t.angle + 0.28);
+          ctx.stroke();
+
+          const tipAng = t.angle + 0.28;
+          const tipX = t.x + Math.cos(tipAng) * arrowR;
+          const tipY = t.y + Math.sin(tipAng) * arrowR;
+          ctx.fillStyle = progress > 0.8 ? '#ffffff' : hexCol;
+          ctx.beginPath();
+          ctx.arc(tipX, tipY, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
     } else if (t.type === 'MIST_DASH_LANE') {
       const len = t.length || 320;
       const w = t.width || 70;
@@ -460,18 +485,21 @@ export function render() {
       ctx.stroke();
     } else {
       const isTeleport = t.type === 'VAMPIRE_TELEPORT';
-      const baseCol = isTeleport ? '#8e44ad' : '#e74c3c';
+      const isRepulsion = t.type === 'REPULSION';
+      const baseCol = isTeleport ? '#8e44ad' : (isRepulsion ? '#ff1744' : '#e74c3c');
 
-      ctx.fillStyle = isTeleport ? 'rgba(142, 68, 173, 0.12)' : 'rgba(231, 76, 60, 0.12)';
+      ctx.fillStyle = isTeleport ? 'rgba(142, 68, 173, 0.12)' : (isRepulsion ? 'rgba(255, 23, 68, 0.18)' : 'rgba(231, 76, 60, 0.12)');
       ctx.beginPath();
       ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.strokeStyle = isTeleport ? 'rgba(142, 68, 173, 0.65)' : 'rgba(231, 76, 60, 0.65)';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = isTeleport ? 'rgba(142, 68, 173, 0.65)' : (isRepulsion ? 'rgba(255, 23, 68, 0.85)' : 'rgba(231, 76, 60, 0.65)');
+      ctx.lineWidth = isRepulsion ? 2.8 : 2;
       ctx.stroke();
 
-      ctx.fillStyle = isTeleport ? `rgba(142, 68, 173, ${0.2 + progress * 0.45})` : `rgba(231, 76, 60, ${0.2 + progress * 0.45})`;
+      ctx.fillStyle = isTeleport 
+        ? `rgba(142, 68, 173, ${0.2 + progress * 0.45})` 
+        : (isRepulsion ? `rgba(255, 23, 68, ${0.25 + progress * 0.5})` : `rgba(231, 76, 60, ${0.2 + progress * 0.45})`);
       ctx.beginPath();
       ctx.arc(t.x, t.y, t.radius * progress, 0, Math.PI * 2);
       ctx.fill();
@@ -523,14 +551,25 @@ export function render() {
 
     if (bp.type === 'SOUL_SCYTHE') {
       const scytheColor = bp.color || '#00cec9';
-      ctx.strokeStyle = scytheColor;
-      ctx.lineWidth = 3.5;
+      const isRet = bp.isReturning;
+
+      // Halo pulsante de perigo e rastro espectral no retorno
+      if (isRet) {
+        ctx.strokeStyle = 'rgba(255, 71, 87, 0.45)';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(0, 0, bp.radius * 1.35, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = isRet ? '#ff4757' : scytheColor;
+      ctx.lineWidth = isRet ? 4.5 : 3.5;
       ctx.beginPath();
       ctx.arc(0, 0, bp.radius, -Math.PI * 0.4, Math.PI * 0.75);
       ctx.stroke();
 
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.6;
+      ctx.lineWidth = 1.8;
       ctx.beginPath();
       ctx.arc(0, 0, bp.radius * 0.85, -Math.PI * 0.2, Math.PI * 0.5);
       ctx.stroke();
@@ -538,9 +577,14 @@ export function render() {
       ctx.fillStyle = '#1e272e';
       ctx.fillRect(-2, -bp.radius * 0.65, 4, bp.radius * 1.3);
 
-      ctx.fillStyle = scytheColor;
+      ctx.fillStyle = isRet ? '#ff6b81' : scytheColor;
       ctx.beginPath();
-      ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+      ctx.arc(0, 0, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(0, 0, 2, 0, Math.PI * 2);
       ctx.fill();
     } else {
       ctx.strokeStyle = '#e74c3c';

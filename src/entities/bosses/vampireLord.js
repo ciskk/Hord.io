@@ -1,5 +1,7 @@
 import { playSfx, triggerHaptic } from '../../core/audio.js';
-import { acidPuddles } from '../../main.js';
+import { acidPuddles, setLastAttackerName } from '../../main.js';
+import { selectedHeroKey } from '../player.js';
+import { triggerDeath } from '../../systems/ui.js';
 
 /**
  * Inicializa propriedades exclusivas, flags mecânicas e parâmetros visuais do Lorde Vampírico.
@@ -43,6 +45,10 @@ export function initVampireLord(boss) {
   boss.floatBob = 0;
   boss.wingSpread = 1.0;
   boss.facing = 1;
+
+  // Mecânica de Repulsão Melee
+  boss.meleeContactTimer = 0;
+  boss.repulsionCooldown = 0;
 }
 
 /**
@@ -62,6 +68,13 @@ export function updateVampireLord(e, dt, context) {
     createHitParticles,
     addDamageText
   } = context;
+
+  if (e.meleeContactTimer === undefined) e.meleeContactTimer = 0;
+  if (e.repulsionCooldown === undefined) e.repulsionCooldown = 0;
+
+  if (e.repulsionCooldown > 0) {
+    e.repulsionCooldown -= dt;
+  }
 
   // 1. Orientação horizontal e postura com mira travada
   if (e.actionState === 'WINDUP') {
@@ -137,6 +150,15 @@ export function updateVampireLord(e, dt, context) {
     case 'RECOVERY': {
       e.recoveryTimer -= dt;
       e.isVulnerable = true;
+
+      // Monitora o tempo colado durante a janela de recuperação
+      const rdx = player.x - e.x;
+      const rdy = player.y - e.y;
+      if (rdx * rdx + rdy * rdy <= 140 * 140) {
+        e.meleeContactTimer = (e.meleeContactTimer || 0) + dt;
+      } else {
+        e.meleeContactTimer = Math.max(0, (e.meleeContactTimer || 0) - dt * 2);
+      }
 
       if (Math.floor(frameCount) % 6 === 0) {
         createHitParticles(
@@ -307,7 +329,13 @@ export function updateVampireLord(e, dt, context) {
       e.actionTimer -= dt;
 
       // Partículas específicas de acordo com o ataque preparado
-      if (e.currentSkill === 'PINCER_SHOT') {
+      if (e.currentSkill === 'REPULSION') {
+        if (Math.floor(frameCount) % 2 === 0) {
+          const rAng = Math.random() * Math.PI * 2;
+          const rDist = Math.random() * (e.radius * 1.3);
+          createHitParticles(e.x + Math.cos(rAng) * rDist, e.y + Math.sin(rAng) * rDist, '#ff1744', 1);
+        }
+      } else if (e.currentSkill === 'PINCER_SHOT') {
         const flankDist = 65;
         const leftX = e.x + Math.cos(e.aimAngle - Math.PI / 2) * flankDist;
         const leftY = e.y + Math.sin(e.aimAngle - Math.PI / 2) * flankDist;
@@ -346,6 +374,22 @@ export function updateVampireLord(e, dt, context) {
       const dy = player.y - e.y;
       const dist = Math.hypot(dx, dy);
 
+      // Rastreamento contínuo de curta distância
+      if (dist <= 140) {
+        e.meleeContactTimer = (e.meleeContactTimer || 0) + dt;
+        if (e.meleeContactTimer > 80 && Math.floor(frameCount) % 5 === 0) {
+          createHitParticles(e.x + (Math.random() - 0.5) * 32, e.y + (Math.random() - 0.5) * 32, '#ff1744', 1);
+        }
+      } else {
+        e.meleeContactTimer = Math.max(0, (e.meleeContactTimer || 0) - dt * 2);
+      }
+
+      // Se completou 2 segundos colado (120 frames), dispara o golpe imediatamente
+      if (e.meleeContactTimer >= 120 && (e.repulsionCooldown || 0) <= 0) {
+        triggerRepulsionSkill(e, player, bossTelegraphs);
+        return;
+      }
+
       let curSpeed = e.speed;
       if (e.slowTimer > 0) {
         e.slowTimer -= dt;
@@ -368,6 +412,33 @@ export function updateVampireLord(e, dt, context) {
   }
 }
 
+function triggerRepulsionSkill(e, player, bossTelegraphs) {
+  const isEnraged = e.isEnraged;
+  const windupDuration = isEnraged ? 18 : 23; // ~0.3s a 0.38s de telegrafia
+  const angleToPlayer = Math.atan2(player.y - e.y, player.x - e.x);
+
+  e.currentSkill = 'REPULSION';
+  e.actionState = 'WINDUP';
+  e.actionTimer = windupDuration;
+  e.aimAngle = angleToPlayer;
+  e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
+  e.isWingPrepping = true;
+
+  bossTelegraphs.push({
+    type: 'REPULSION',
+    x: e.x,
+    y: e.y,
+    radius: 155,
+    timer: windupDuration,
+    maxTimer: windupDuration,
+    damage: Math.round(e.damage * 0.055),
+    color: '#ff1744',
+    boss: e
+  });
+
+  playSfx('boss');
+}
+
 /**
  * Seleciona a próxima habilidade com base no alcance, fase e ritmo, gerando os telégrafos imediatamente no início da preparação.
  */
@@ -376,8 +447,12 @@ function selectNextSkill(e, dist, player, bossTelegraphs) {
   const rand = Math.random();
   const angleToPlayer = Math.atan2(player.y - e.y, player.x - e.x);
 
-  if (dist < 155) {
-    const cleaveDuration = isEnraged ? 32 : 44;
+  if (dist < 145) {
+    if ((e.meleeContactTimer || 0) >= 120 && (e.repulsionCooldown || 0) <= 0) {
+      triggerRepulsionSkill(e, player, bossTelegraphs);
+      return;
+    }
+    const cleaveDuration = isEnraged ? 52 : 68;
     e.currentSkill = 'CLEAVE';
     e.actionState = 'WINDUP';
     e.actionTimer = cleaveDuration;
@@ -389,11 +464,14 @@ function selectNextSkill(e, dist, player, bossTelegraphs) {
       type: 'SCYTHE_CLEAVE',
       x: e.x,
       y: e.y,
-      radius: 155,
+      radius: 135,
       angle: e.aimAngle,
+      arcHalf: Math.PI * 0.38,
       timer: cleaveDuration,
       maxTimer: cleaveDuration,
-      damage: Math.round(e.damage * 0.75),
+      damage: Math.round(e.damage * 0.55),
+      color: '#ff4757',
+      colorRgb: '255, 71, 87',
       boss: e
     });
   } else if (dist > 320 && rand < 0.35) {
@@ -458,6 +536,7 @@ function executePreparedSkill(e, context) {
     player,
     enemyBullets,
     bossTelegraphs,
+    bossShockwaves,
     triggerShake,
     createHitParticles,
     addDamageText
@@ -466,18 +545,83 @@ function executePreparedSkill(e, context) {
   const targetAngle = e.aimAngle;
 
   switch (e.currentSkill) {
+    case 'REPULSION': {
+      playSfx('boss');
+      triggerShake(13);
+      triggerHaptic('heavy');
+
+      // Choque de vento/sangue expansivo
+      if (bossShockwaves) {
+        bossShockwaves.push({
+          x: e.x,
+          y: e.y,
+          radius: 16,
+          maxRadius: 185,
+          speed: 9.0,
+          damage: 0,
+          colorRgb: '255, 23, 68',
+          hitPlayer: true
+        });
+      }
+
+      for (let p = 0; p < 28; p++) {
+        const pAng = Math.random() * Math.PI * 2;
+        const pDist = 20 + Math.random() * 120;
+        createHitParticles(e.x + Math.cos(pAng) * pDist, e.y + Math.sin(pAng) * pDist, '#ff1744', 1);
+      }
+
+      // Verificação de acerto no jogador
+      const pdx = player.x - e.x;
+      const pdy = player.y - e.y;
+      const pDist = Math.hypot(pdx, pdy);
+
+      if (pDist <= 160) {
+        // Dano puramente simbólico/leve (reduzido em 75%, ~5.5% do dano base do chefe)
+        let repulsionDmg = Math.max(2, Math.round(e.damage * 0.055));
+        if (selectedHeroKey === 'KNIGHT') {
+          repulsionDmg = Math.max(1, Math.round(repulsionDmg * 0.8));
+        }
+
+        player.hp -= repulsionDmg;
+        player.iFrames = 25;
+        playSfx('hit');
+        setLastAttackerName('Lorde Vampírico');
+        addDamageText(player.x, player.y, `-${repulsionDmg}`, false, '#ff1744');
+
+        // Knockback maciço projetando o jogador para longe
+        const pushAng = Math.atan2(pdy, pdx);
+        const knockbackImpulse = 36;
+        player.pushVx = Math.cos(pushAng) * knockbackImpulse;
+        player.pushVy = Math.sin(pushAng) * knockbackImpulse;
+        player.x += Math.cos(pushAng) * 24;
+        player.y += Math.sin(pushAng) * 24;
+
+        if (player.hp <= 0) {
+          triggerDeath();
+        }
+      }
+
+      e.isWingPrepping = false;
+      e.meleeContactTimer = 0;
+      e.repulsionCooldown = 180; // 3 segundos de recarga anti-spam
+      e.actionState = 'CHASE';
+      e.skillCooldown = e.isEnraged ? 25 : 40;
+      addDamageText(e.x, e.y - 18, "REPULSÃO!", true, '#ff1744');
+      break;
+    }
+
     case 'CLEAVE': {
       playSfx('boss');
       triggerShake(10);
       triggerHaptic('medium');
 
-      // Avanço físico sincronizado com a direção exata telegrafada
-      e.x += Math.cos(targetAngle) * 28;
-      e.y += Math.sin(targetAngle) * 28;
+      // Avanço físico suave sincronizado com a direção exata telegrafada
+      e.x += Math.cos(targetAngle) * 18;
+      e.y += Math.sin(targetAngle) * 18;
 
-      // FASE 5.4: Janela de Recuperação Pós-Golpe garantida
+      // FASE 5.4: Janela de Recuperação Pós-Golpe garantida (generosa para punição melee)
       e.actionState = 'RECOVERY';
-      e.recoveryTimer = e.isEnraged ? 50 : 70; // 0.83s a 1.16s imóvel
+      e.recoveryTimer = e.isEnraged ? 60 : 80; // 1.0s a 1.33s imóvel
       e.isVulnerable = true;
       addDamageText(e.x, e.y, "BRECHA!", false, '#f1c40f');
       break;
@@ -1242,6 +1386,20 @@ function drawClawsAndArms(ctx, bob, frameCount, isVuln, isEnraged, isWindup, isC
   ctx.fillRect(cX + 12, cY - 7.5, 2, 2);
   ctx.fillRect(cX + 15, cY - 0.5, 2, 2);
   ctx.fillRect(cX + 12, cY + 6.5, 2, 2);
+
+  // Efeito de garras flamejantes de sangue carregando o ataque em leque
+  if (isWindup) {
+    const clawGlow = (Math.sin(frameCount * 0.3) + 1) * 2;
+    ctx.fillStyle = isEnraged ? 'rgba(255, 71, 87, 0.7)' : 'rgba(231, 76, 60, 0.65)';
+    ctx.beginPath();
+    ctx.arc(cX + 16, cY, 5 + clawGlow, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(cX + 16, cY, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 /**
@@ -1297,7 +1455,7 @@ export function drawVampireLord(ctx, e, frameCount) {
   }
 
   const wingFlap = isVuln ? 0 : Math.sin(frameCount * (isEnraged ? 0.28 : 0.16)) * 14;
-  const wingSpan = isVuln ? 0.55 : (isEnraged ? 1.25 : (isChanneling ? 1.38 : (e.isWingPrepping ? 1.3 : 1.0)));
+  const wingSpan = isVuln ? 0.55 : (isEnraged ? 1.25 : (isChanneling ? 1.38 : (e.currentSkill === 'REPULSION' ? 1.45 : (e.isWingPrepping ? 1.3 : 1.0))));
 
   if (isWindup || isChanneling) {
     ctx.translate((Math.random() - 0.5) * 2.5, (Math.random() - 0.5) * 2.5);
@@ -1307,7 +1465,7 @@ export function drawVampireLord(ctx, e, frameCount) {
   drawSingleWing(ctx, 1, wingFlap, wingSpan, isVuln, isEnraged, frameCount);
 
   // Orbes de carregamento nas asas para o disparo convergente
-  if (e.isWingPrepping || (isWindup && e.currentSkill === 'PINCER_SHOT')) {
+  if ((e.isWingPrepping && e.currentSkill === 'PINCER_SHOT') || (isWindup && e.currentSkill === 'PINCER_SHOT')) {
     const orbPulse = (Math.sin(frameCount * 0.3) + 1) * 2.2;
     ctx.fillStyle = '#ff1744';
     ctx.beginPath();
@@ -1317,6 +1475,18 @@ export function drawVampireLord(ctx, e, frameCount) {
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.5;
     ctx.stroke();
+  }
+
+  // Aura de vendaval repulsor nas asas durante a preparação do Vendaval de Asas
+  if (isWindup && e.currentSkill === 'REPULSION') {
+    const repPulse = (Math.sin(frameCount * 0.4) + 1) * 3;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 23, 68, 0.8)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(0, -10 + bob, 48 + repPulse, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   // Sigilo rúnico rotativo no peito durante a canalização da espiral

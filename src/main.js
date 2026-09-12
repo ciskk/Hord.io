@@ -714,7 +714,7 @@ function update(dt) {
     tel.timer -= dt;
 
     if (tel.timer <= 0) {
-      if (tel.type === 'MIST_DASH_LANE' || tel.type === 'FUSE_INDICATOR') {
+      if (tel.type === 'MIST_DASH_LANE' || tel.type === 'FUSE_INDICATOR' || tel.type === 'REPULSION') {
         bossTelegraphs.splice(i, 1);
         continue;
       }
@@ -754,7 +754,8 @@ function update(dt) {
       if (tel.type === 'SCYTHE_CLEAVE') {
         triggerShake(14);
         playSfx('boss');
-        createHitParticles(tel.x, tel.y, '#00cec9', 16);
+        const cleaveHitColor = tel.color || '#00cec9';
+        createHitParticles(tel.x, tel.y, cleaveHitColor, 16);
 
         const cdx = player.x - tel.x;
         const cdy = player.y - tel.y;
@@ -764,13 +765,13 @@ function update(dt) {
         let angleDiff = Math.abs(playerAng - tel.angle);
         if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
 
-        if (cDist < tel.radius && angleDiff <= Math.PI * 0.52 && player.iFrames <= 0) {
+        const maxAngle = tel.arcHalf !== undefined ? tel.arcHalf : Math.PI * 0.52;
+        if (cDist < tel.radius && angleDiff <= maxAngle && player.iFrames <= 0) {
           player.hp -= tel.damage;
           player.iFrames = 28;
-          lastAttackerName = "Corte de Foice Espectral";
+          lastAttackerName = (tel.boss && tel.boss.bossId === 1) ? "Garras Vampíricas" : "Corte de Foice Espectral";
           triggerShake(12);
           playSfx('hit');
-          const cleaveHitColor = tel.color || '#00cec9';
           addDamageText(player.x, player.y, `-${tel.damage}`, true, cleaveHitColor);
           createHitParticles(tel.x, player.y, cleaveHitColor, 16);
           const bossPushDist = 28 * (player.knockbackReceived !== undefined ? player.knockbackReceived : 1.0);
@@ -892,10 +893,14 @@ function update(dt) {
       bp.vy = Math.sin(orbRetAng) * 4.6;
     } else {
       if (bp.life < bp.maxLife * 0.5) {
+        if (!bp.isReturning) {
+          bp.isReturning = true;
+          bp.damage = Math.round(bp.damage * 0.75);
+        }
         const tgt = activeBoss ? activeBoss : player;
         const retAng = Math.atan2(tgt.y - bp.y, tgt.x - bp.x);
-        bp.vx = Math.cos(retAng) * 7.5;
-        bp.vy = Math.sin(retAng) * 7.5;
+        bp.vx = Math.cos(retAng) * 4.8;
+        bp.vy = Math.sin(retAng) * 4.8;
       }
     }
 
