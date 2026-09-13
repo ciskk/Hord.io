@@ -196,7 +196,7 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
               if (player.armor > 0) playerDmgTaken = Math.max(1, playerDmgTaken - player.armor);
 
               player.hp -= playerDmgTaken;
-              player.iFrames = 25;
+              player.iFrames = 28;
               triggerShake(7);
               playSfx('hit');
               triggerHaptic('medium');

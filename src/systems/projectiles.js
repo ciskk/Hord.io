@@ -225,7 +225,7 @@ export function updateProjectiles(dt) {
       if (selectedHeroKey === 'KNIGHT') finalEbDamage = Math.round(finalEbDamage * 0.80);
       if (player.armor > 0) finalEbDamage = Math.max(1, finalEbDamage - player.armor);
       player.hp -= finalEbDamage;
-      player.iFrames = 22;
+      player.iFrames = 24;
       triggerShake(6);
       playSfx('hit');
       triggerHaptic('medium');

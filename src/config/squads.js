@@ -82,6 +82,19 @@ export const SQUAD_TYPES = {
       { type: 'STALKER', offsetForward: -32, offsetLateral: -36 },
       { type: 'STALKER', offsetForward: -32, offsetLateral: 36 }
     ]
+  },
+
+  // 6. Patrulha de Reconhecimento (Onda 1): Pressão inicial de zumbis sem Stalkers imediatos
+  HORDE_SCOUT: {
+    key: 'HORDE_SCOUT',
+    name: 'Patrulha de Reconhecimento',
+    members: [
+      { type: 'ZOMBIE',  offsetForward: 28, offsetLateral: -18 },
+      { type: 'ZOMBIE',  offsetForward: 28, offsetLateral: 18 },
+      { type: 'ZOMBIE',  offsetForward: 10, offsetLateral: -32 },
+      { type: 'ZOMBIE',  offsetForward: 10, offsetLateral: 32 },
+      { type: 'ZOMBIE',  offsetForward: -8, offsetLateral: 0 }
+    ]
   }
 };
 

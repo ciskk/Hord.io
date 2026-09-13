@@ -121,10 +121,10 @@ export function getCurrentWave(seconds) {
     return {
       index: 1,
       name: "Onda 1: Reconhecimento",
-      allowedSquads: ['HORDE_RUSH'],
+      allowedSquads: ['HORDE_SCOUT'],
       types: ['ZOMBIE'],
       clusterSize: [4, 6],
-      rate: 96,
+      rate: 110,
       eliteChance: 0
     };
   } else if (seconds < 55) {
