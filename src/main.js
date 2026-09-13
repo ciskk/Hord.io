@@ -2048,6 +2048,22 @@ function update(dt) {
   const hpVal = document.getElementById('hp-val');
   if (hpVal) hpVal.innerText = Math.max(0, Math.ceil(player.hp));
 
+  const hpMaxVal = document.getElementById('hp-max-val');
+  if (hpMaxVal) hpMaxVal.innerText = player.maxHp;
+
+  const hpPct = Math.max(0, Math.min(100, Math.round((player.hp / player.maxHp) * 100)));
+  const hpPctVal = document.getElementById('hp-pct-val');
+  if (hpPctVal) hpPctVal.innerText = `${hpPct}%`;
+
+  const hpContainer = document.getElementById('hp-container');
+  if (hpContainer) {
+    if (hpPct <= 30 && player.hp > 0) {
+      hpContainer.classList.add('critical');
+    } else {
+      hpContainer.classList.remove('critical');
+    }
+  }
+
   const hpFill = document.getElementById('hp-fill');
   if (hpFill) hpFill.style.width = `${Math.max(0, (player.hp / player.maxHp) * 100)}%`;
 
@@ -2059,6 +2075,16 @@ function update(dt) {
 
   const killsVal = document.getElementById('kills-val');
   if (killsVal) killsVal.innerText = gameState.kills;
+
+  const xpVal = document.getElementById('xp-val');
+  if (xpVal) xpVal.innerText = Math.floor(player.xp);
+
+  const xpNextVal = document.getElementById('xp-next-val');
+  if (xpNextVal) xpNextVal.innerText = player.nextXp;
+
+  const xpPct = Math.min(100, Math.round((player.xp / player.nextXp) * 100));
+  const xpPctVal = document.getElementById('xp-pct-val');
+  if (xpPctVal) xpPctVal.innerText = `${xpPct}%`;
 
   const xpFill = document.getElementById('xp-fill');
   if (xpFill) xpFill.style.width = `${Math.min(100, (player.xp / player.nextXp) * 100)}%`;

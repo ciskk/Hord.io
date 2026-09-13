@@ -26,41 +26,105 @@
 <div id="blood-screen-filter"></div>
 <div id="freeze-overlay"></div>
 
-<!-- HUD de Combate em Alta Fidelidade -->
+<!-- HUD de Combate em Alta Fidelidade (Grim Cyber-Gothic) -->
 <div id="hud">
-  <div class="hud-row">
-    <div class="hud-badge hp-badge">
-      <span>HP: <span id="hp-val">120</span></span>
-    </div>
-    <span id="timer-val" class="hud-timer">00:00</span>
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <div class="hud-badge gold-badge">
-        <span>🪙 <span id="gold-val">0</span></span>
+  <!-- Barra de Topo: Meta e Cronologia de Combate -->
+  <div class="hud-top-bar">
+    <div class="hud-meta-group left">
+      <div class="hud-badge kills-badge" title="Inimigos abatidos">
+        <span class="hud-icon">💀</span>
+        <span class="hud-num" id="kills-val">0</span>
       </div>
-      <button id="pause-btn" class="hud-btn" style="width: 34px; height: 34px; padding: 0;" aria-label="Pausar Batalha">⏸</button>
+      <div class="hud-badge gold-badge" title="Ouro acumulado">
+        <span class="hud-icon">🪙</span>
+        <span class="hud-num" id="gold-val">0</span>
+      </div>
+    </div>
+
+    <!-- Centro: Cronômetro e Pílula Fixa de Onda (Sem sobreposição) -->
+    <div class="hud-center-chronicle">
+      <span id="timer-val" class="hud-timer">00:00</span>
+      <div class="hud-wave-pill" title="Horda em andamento">
+        <span class="wave-icon">⚔️</span>
+        <span id="wave-banner">Onda 1: Reconhecimento</span>
+      </div>
+    </div>
+
+    <div class="hud-meta-group right">
+      <button id="pause-btn" class="hud-btn pause-hud-btn" aria-label="Pausar Batalha" title="Pausar">⏸</button>
     </div>
   </div>
 
-  <!-- Barra de Vida com Camada Fantasma (Ghost Bar Decay) -->
-  <div class="bar-bg hp-bar-container">
-    <div id="hp-ghost-fill"></div>
-    <div id="hp-fill"></div>
-  </div>
-  
-  <div class="hud-row">
-    <div class="hud-badge lvl-badge">
-      <span>NV <span id="lvl-val">1</span> | ABATES: <span id="kills-val">0</span></span>
+  <!-- BLOCO 1: Barra de Vida (Frasco Vital de Sangue / Gothic Blood Vial) -->
+  <div class="hud-vial-block hp-block" id="hp-container">
+    <div class="vial-header">
+      <div class="vial-label">
+        <span class="vial-rune-icon hp-icon">🩸</span>
+        <span class="vial-title">VITALIDADE</span>
+      </div>
+      <div class="vial-readout">
+        <span id="hp-val">120</span><span class="vial-denom"> / <span id="hp-max-val">120</span></span>
+        <span id="hp-pct-val" class="vial-pct">100%</span>
+      </div>
     </div>
-    <span id="wave-banner">Onda 1: Reconhecimento</span>
+    <div class="bar-bezel hp-bezel bar-bg hp-bar-container">
+      <div id="hp-ghost-fill"></div>
+      <div id="hp-fill">
+        <div class="fill-spark hp-spark"></div>
+      </div>
+      <div class="bar-glass-gloss"></div>
+      <div class="bar-pips-layer">
+        <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+        <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+        <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+      </div>
+    </div>
   </div>
-  <div class="bar-bg"><div id="xp-fill"></div></div>
 
+  <!-- BLOCO 2: Barra de Experiência (Astrolábio Cósmico / Astral Aether Bar) -->
+  <div class="hud-vial-block xp-block">
+    <div class="vial-header">
+      <div class="vial-label">
+        <span class="lvl-crest-badge">
+          <span class="crest-label">NV</span>
+          <span id="lvl-val" class="crest-num">1</span>
+        </span>
+        <span class="vial-title xp-title">ÉTER DE ALMAS</span>
+      </div>
+      <div class="vial-readout xp-readout">
+        <span id="xp-val">0</span><span class="vial-denom"> / <span id="xp-next-val">20</span></span>
+        <span id="xp-pct-val" class="vial-pct xp-pct">0%</span>
+      </div>
+    </div>
+    <div class="bar-bezel xp-bezel bar-bg">
+      <div id="xp-fill">
+        <div class="fill-spark xp-spark"></div>
+        <div class="xp-shimmer-wave"></div>
+      </div>
+      <div class="bar-glass-gloss"></div>
+      <div class="bar-pips-layer xp-pips">
+        <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+        <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+        <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HUD do Chefe (Ativado em Batalha de Boss) -->
   <div id="boss-hud">
-    <div class="hud-row" style="color:#e056fd; font-size:11px;">
-      <span id="boss-name">CHEFE</span>
-      <span id="boss-hp-val">100%</span>
+    <div class="boss-hud-header">
+      <div class="boss-name-group">
+        <span class="boss-skull-icon">👑</span>
+        <span id="boss-name">CHEFE</span>
+      </div>
+      <span id="boss-hp-val" class="boss-pct">100%</span>
     </div>
-    <div class="bar-bg"><div id="boss-hp-fill"></div></div>
+    <div class="bar-bezel boss-bezel bar-bg">
+      <div id="boss-hp-fill">
+        <div class="fill-spark boss-spark"></div>
+      </div>
+      <div class="bar-glass-gloss"></div>
+    </div>
   </div>
 </div>
 

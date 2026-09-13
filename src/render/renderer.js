@@ -1150,19 +1150,20 @@ export function render() {
       alpha = Math.max(0, (1 - progress) / 0.18);
     }
 
-    const bannerW = Math.min(520, viewW * 0.85);
-    const bannerH = 54;
+    const bannerW = Math.min(540, viewW * 0.88);
+    const bannerH = 50;
     const bx = (viewW - bannerW) / 2;
-    const by = 88;
+    // Reposicionamento: colocado em 148px+ para nunca sobrepor o HUD ou a pílula de onda permanente
+    const by = Math.max(148, Math.floor((viewH || 800) * 0.16));
 
     ctx.save();
     ctx.globalAlpha = alpha;
 
-    // Fundo do Banner Gótico Sombrio
+    // Fundo do Banner Gótico Sombrio com bordas translúcidas
     const bgGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
     bgGrad.addColorStop(0, 'rgba(10, 12, 16, 0)');
-    bgGrad.addColorStop(0.2, 'rgba(15, 20, 28, 0.88)');
-    bgGrad.addColorStop(0.8, 'rgba(15, 20, 28, 0.88)');
+    bgGrad.addColorStop(0.18, 'rgba(14, 18, 28, 0.92)');
+    bgGrad.addColorStop(0.82, 'rgba(14, 18, 28, 0.92)');
     bgGrad.addColorStop(1, 'rgba(10, 12, 16, 0)');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(bx, by, bannerW, bannerH);
@@ -1170,11 +1171,12 @@ export function render() {
     // Linhas de friso douradas superior e inferior
     const borderGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
     borderGrad.addColorStop(0, 'rgba(241, 196, 15, 0)');
-    borderGrad.addColorStop(0.3, 'rgba(241, 196, 15, 0.85)');
-    borderGrad.addColorStop(0.7, 'rgba(241, 196, 15, 0.85)');
+    borderGrad.addColorStop(0.25, 'rgba(241, 196, 15, 0.85)');
+    borderGrad.addColorStop(0.5, 'rgba(255, 234, 167, 1)');
+    borderGrad.addColorStop(0.75, 'rgba(241, 196, 15, 0.85)');
     borderGrad.addColorStop(1, 'rgba(241, 196, 15, 0)');
     ctx.strokeStyle = borderGrad;
-    ctx.lineWidth = 1.8;
+    ctx.lineWidth = 1.6;
     ctx.beginPath();
     ctx.moveTo(bx, by);
     ctx.lineTo(bx + bannerW, by);
@@ -1186,19 +1188,19 @@ export function render() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    // Rótulo Principal
-    ctx.font = 'bold 20px "Cinzel", "Cinzel Decorative", Georgia, serif';
+    // Rótulo Principal da Horda
+    ctx.font = 'bold 19px "Cinzel", "Cinzel Decorative", Georgia, serif';
     ctx.fillStyle = '#f1c40f';
     ctx.shadowColor = 'rgba(241, 196, 15, 0.65)';
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 12;
     const waveTitle = (waveAnnouncement.name || '').toUpperCase();
-    ctx.fillText(waveTitle, viewW / 2, by + 22);
+    ctx.fillText(`⚜ ${waveTitle} ⚜`, viewW / 2, by + 20);
 
     // Subtítulo descritivo
-    ctx.font = 'italic 12px sans-serif';
+    ctx.font = 'italic 11px sans-serif';
     ctx.fillStyle = '#dfe4ea';
     ctx.shadowBlur = 0;
-    ctx.fillText("Sobreviva à maré crescente de horrores", viewW / 2, by + 42);
+    ctx.fillText("Sobreviva à maré crescente de horrores", viewW / 2, by + 38);
 
     ctx.restore();
   }

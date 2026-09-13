@@ -117,70 +117,255 @@ html, body {
 }
 
 /* ======================================================== */
-/* HUD DE COMBATE EM ALTA FIDELIDADE                        */
+/* ======================================================== */
+/* HUD DE COMBATE EM ALTA FIDELIDADE: GRIM CYBER-GOTHIC     */
 /* ======================================================== */
 
 #hud {
   position: fixed;
-  top: max(env(safe-area-inset-top, 10px), 12px);
-  left: max(env(safe-area-inset-left, 12px), 12px);
-  right: max(env(safe-area-inset-right, 12px), 12px);
+  top: max(env(safe-area-inset-top, 8px), 10px);
+  left: max(env(safe-area-inset-left, 10px), 12px);
+  right: max(env(safe-area-inset-right, 10px), 12px);
   pointer-events: none;
   color: #fff;
-  font-size: clamp(11px, 1.8vw, 13px);
-  font-weight: 700;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-.hud-row {
+/* 1. Barra de Topo: Meta e Indicadores de Combate */
+.hud-top-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
+  position: relative;
+  min-height: 34px;
+}
+
+.hud-meta-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-meta-group.left {
+  flex: 1;
+  justify-content: flex-start;
+}
+
+.hud-meta-group.right {
+  flex: 1;
+  justify-content: flex-end;
 }
 
 .hud-badge {
   background: rgba(14, 18, 28, 0.88);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
-  padding: 3px 8px;
-  display: flex;
+  padding: 4px 10px;
+  display: inline-flex;
   align-items: center;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  font-family: var(--font-body);
+  font-size: clamp(11px, 1.4vw, 12px);
+  font-weight: 700;
   letter-spacing: 0.5px;
 }
 
-.hp-badge { border-color: rgba(231, 76, 60, 0.5); }
-.gold-badge { border-color: rgba(241, 196, 15, 0.5); color: var(--gold-runic); }
-.lvl-badge { border-color: rgba(0, 206, 201, 0.5); }
+.kills-badge {
+  border-color: rgba(231, 76, 60, 0.4);
+}
+.kills-badge .hud-num {
+  color: #ff7675;
+  font-weight: 800;
+}
+
+.gold-badge {
+  border-color: rgba(241, 196, 15, 0.45);
+}
+.gold-badge .hud-num {
+  color: var(--gold-runic);
+  font-weight: 800;
+}
+
+.pause-hud-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 14px;
+}
+
+/* Centro: Cronômetro e Pílula Fixa de Onda */
+.hud-center-chronicle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
 
 .hud-timer {
   font-family: var(--font-heading);
-  font-size: clamp(13px, 2vw, 16px);
+  font-size: clamp(15px, 2.2vw, 18px);
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: #f5f6fa;
+  text-shadow: 0 0 12px rgba(241, 196, 15, 0.4), 0 2px 4px rgba(0,0,0,0.9);
+  line-height: 1;
+}
+
+.hud-wave-pill {
+  background: rgba(12, 16, 26, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(241, 196, 15, 0.45);
+  border-radius: 12px;
+  padding: 2px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7), 0 0 10px rgba(241, 196, 15, 0.15);
+}
+
+.hud-wave-pill .wave-icon {
+  font-size: 11px;
+}
+
+#wave-banner {
+  color: var(--gold-runic);
+  font-family: var(--font-heading);
+  font-size: clamp(10px, 1.4vw, 11px);
   font-weight: 800;
   letter-spacing: 1px;
-  color: #f1f2f6;
-  text-shadow: 0 0 10px rgba(255,255,255,0.3);
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.bar-bg {
+/* 2. Container Modular de Barras Vitais */
+.hud-vial-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.vial-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.vial-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vial-rune-icon {
+  font-size: 12px;
+  filter: drop-shadow(0 0 4px rgba(231, 76, 60, 0.6));
+}
+
+.vial-title {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #bdc3c7;
+  text-transform: uppercase;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+.xp-title {
+  color: #74b9ff;
+  letter-spacing: 1.2px;
+}
+
+.vial-readout {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.vial-denom {
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 600;
+  font-size: 10px;
+}
+
+.vial-pct {
+  color: #ff7675;
+  font-weight: 700;
+  font-size: 10px;
+  margin-left: 5px;
+}
+
+.xp-pct {
+  color: #00cec9;
+}
+
+/* Medalhão de Nível */
+.lvl-crest-badge {
+  background: linear-gradient(135deg, rgba(241, 196, 15, 0.3), rgba(15, 20, 32, 0.9));
+  border: 1px solid var(--gold-runic);
+  border-radius: 4px;
+  padding: 1px 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  box-shadow: 0 0 6px rgba(241, 196, 15, 0.4);
+}
+
+.crest-label {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--gold-runic);
+}
+
+.crest-num {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 900;
+  color: #fff;
+}
+
+/* 3. A Moldura e Chanfro das Barras (Bar Bezel) */
+.bar-bezel {
+  position: relative;
   width: 100%;
-  height: 8px;
-  background: rgba(0, 0, 0, 0.85);
-  border: 1px solid #2a3148;
   border-radius: 4px;
   overflow: hidden;
-  margin-bottom: 6px;
-  position: relative;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.8), inset 0 2px 4px rgba(0,0,0,0.9);
 }
 
-.hp-bar-container {
-  height: 10px;
-  border-color: rgba(231, 76, 60, 0.4);
+/* Compatibilidade retroativa com .bar-bg e .hp-bar-container */
+.bar-bg {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Barra de Vida (Vitalidade Gótica) */
+.hp-bezel {
+  height: 15px;
+  background: linear-gradient(180deg, #100303 0%, #080101 100%);
+  border: 1.5px solid #4a1414;
+  box-shadow: 0 0 10px rgba(231, 76, 60, 0.15), inset 0 2px 4px rgba(0,0,0,0.9);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 #hp-ghost-fill {
@@ -189,49 +374,187 @@ html, body {
   top: 0;
   height: 100%;
   width: 100%;
-  background: #f39c12;
-  box-shadow: 0 0 8px rgba(243, 156, 18, 0.5);
+  background: linear-gradient(90deg, #d35400, #f39c12);
+  box-shadow: 0 0 10px rgba(243, 156, 18, 0.6);
   transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1);
   z-index: 1;
 }
 
 #hp-fill {
-  position: relative;
-  width: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
   height: 100%;
-  background: linear-gradient(90deg, #c0392b, #e74c3c);
-  box-shadow: 0 0 8px rgba(231, 76, 60, 0.7);
+  width: 100%;
+  background: linear-gradient(180deg, #ff7675 0%, #d63031 32%, #b71515 70%, #6e0808 100%);
+  box-shadow: 0 0 10px rgba(231, 76, 60, 0.7);
   transition: width 0.08s ease;
   z-index: 2;
 }
 
+/* Estado de Alerta Crítico de Vida (< 30%) */
+.hp-block.critical .hp-bezel {
+  animation: criticalHpPulse 0.9s infinite ease-in-out;
+}
+
+@keyframes criticalHpPulse {
+  0%, 100% {
+    border-color: #ff4757;
+    box-shadow: 0 0 12px rgba(231, 76, 60, 0.8), inset 0 0 6px rgba(231, 76, 60, 0.4);
+  }
+  50% {
+    border-color: #ff6b81;
+    box-shadow: 0 0 22px rgba(255, 71, 87, 1), inset 0 0 10px rgba(255, 71, 87, 0.7);
+  }
+}
+
+/* Barra de Experiência (Astrolábio Arcano) */
+.xp-bezel {
+  height: 12px;
+  background: linear-gradient(180deg, #030a12 0%, #01050a 100%);
+  border: 1.5px solid #16324a;
+  box-shadow: 0 0 10px rgba(0, 206, 201, 0.15), inset 0 2px 4px rgba(0,0,0,0.9);
+}
+
 #xp-fill {
-  width: 0%;
+  position: absolute;
+  left: 0;
+  top: 0;
   height: 100%;
-  background: linear-gradient(90deg, #0984e3, #00cec9);
-  box-shadow: 0 0 8px rgba(0, 206, 201, 0.6);
-  transition: width 0.12s ease;
+  width: 0%;
+  background: linear-gradient(90deg, #134e5e 0%, #0984e3 35%, #00cec9 80%, #74b9ff 100%);
+  box-shadow: 0 0 12px rgba(0, 206, 201, 0.7);
+  transition: width 0.12s cubic-bezier(0.2, 0.8, 0.25, 1);
+  z-index: 2;
+  overflow: hidden;
+}
+
+/* Onda de Cintilação Cósmica (Aether Shimmer) */
+.xp-shimmer-wave {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.35) 50%, transparent 100%);
+  animation: aetherShimmer 2.4s infinite linear;
+}
+
+@keyframes aetherShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Fagulha / Cabeça de Cometa na Ponta de Avanço */
+.fill-spark {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #fff;
+  z-index: 3;
+}
+
+.hp-spark {
+  box-shadow: 0 0 8px 2px #ff7675;
+}
+
+.xp-spark {
+  box-shadow: 0 0 8px 2px #81ecec;
+}
+
+/* Camada de Reflexo Vítreo */
+.bar-glass-gloss {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  height: 42%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.03) 80%, transparent 100%);
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* Marcadores de Segmento Rúnicos (10 Pips a cada 10%) */
+.bar-pips-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: space-evenly;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.bar-pips-layer .pip {
+  width: 1px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.xp-pips .pip {
+  border-left-color: rgba(0, 206, 201, 0.18);
+}
+
+/* Boss HUD Refinado */
+#boss-hud {
+  display: none;
+  margin-top: 4px;
+}
+
+.boss-hud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2px;
+  margin-bottom: 2px;
+}
+
+.boss-name-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.boss-skull-icon {
+  font-size: 12px;
+}
+
+#boss-name {
+  color: #e056fd;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 8px rgba(224, 86, 253, 0.6);
+}
+
+.boss-pct {
+  color: #e056fd;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.boss-bezel {
+  height: 13px;
+  background: #0f0514;
+  border: 1.5px solid #57206d;
+  box-shadow: 0 0 10px rgba(155, 89, 182, 0.25), inset 0 2px 4px rgba(0,0,0,0.9);
 }
 
 #boss-hp-fill {
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, #8e44ad, #e056fd);
+  background: linear-gradient(90deg, #5b1d7d, #8e44ad 40%, #e056fd 100%);
   box-shadow: 0 0 10px rgba(224, 86, 253, 0.65);
   transition: width 0.05s linear;
+  position: relative;
 }
 
-#wave-banner {
-  color: var(--gold-runic);
-  font-family: var(--font-heading);
-  font-size: clamp(10px, 1.6vw, 12px);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-#boss-hud {
-  display: none;
-  margin-top: 4px;
+.boss-spark {
+  box-shadow: 0 0 8px 2px #e056fd;
 }
 
 /* Botões da HUD */
