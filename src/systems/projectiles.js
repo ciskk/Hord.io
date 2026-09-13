@@ -89,7 +89,7 @@ export function updateProjectiles(dt) {
           isEvolved: !!b.isEvolved
         });
         playSfx('acid');
-        createHitParticles(b.x, b.y, b.isEvolved ? '#00cec9' : '#2ecc71', 4); // Quantidade drástica reduzida (14 -> 4)
+        createHitParticles(b.x, b.y, b.isEvolved ? '#d6a2e8' : '#9b59b6', 6);
         triggerShake(3);
       }
       bullets.splice(i, 1);
@@ -282,9 +282,27 @@ export function updateAcidPuddles(dt) {
           if (p.isAlchemist) {
             e.slowTimer = Math.max(e.slowTimer || 0, 40);
             e.slowFactor = p.isEvolved ? 0.65 : 0.45;
-            if (Math.random() < 0.02 * dt) { // Frequência de partículas de lentidão bem mais sutil e espaçada
-              createHitParticles(e.x, e.y, p.isEvolved ? '#00cec9' : '#2ecc71', 1);
+            if (Math.random() < 0.02 * dt) {
+              createHitParticles(e.x, e.y, p.isEvolved ? '#d6a2e8' : '#a29bfe', 1);
             }
+          }
+        }
+      }
+    }
+
+    // Regeneração de vida da Valéria ao permanecer sobre as próprias poças de veneno violetas
+    if (p.isAlchemist && selectedHeroKey === 'ALCHEMIST') {
+      const pdx = player.x - p.x;
+      const pdy = player.y - p.y;
+      if ((pdx * pdx + pdy * pdy) < (p.radius + player.radius) ** 2) {
+        p.healTickTimer = (p.healTickTimer || 0) + dt;
+        if (p.healTickTimer >= 22) { // a cada ~0.36s (~2.7 HP por segundo)
+          p.healTickTimer = 0;
+          if (player.hp < player.maxHp) {
+            const healAmount = p.isEvolved ? 2 : 1;
+            player.hp = Math.min(player.maxHp, player.hp + healAmount);
+            addDamageText(player.x, player.y, `+${healAmount}`, false, '#a29bfe');
+            createHitParticles(player.x, player.y, '#d6a2e8', 2);
           }
         }
       }

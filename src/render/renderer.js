@@ -273,6 +273,10 @@ export function render() {
     if (p.isFire) {
       ctx.fillStyle = '#e67e22';
       ctx.strokeStyle = '#e74c3c';
+    } else if (p.isAlchemist) {
+      // Poça de veneno da Valéria: ROXA / Violeta Alquímica (diferenciada de venenos de mobs)
+      ctx.fillStyle = p.isEvolved ? '#a29bfe' : '#8e44ad';
+      ctx.strokeStyle = p.isEvolved ? '#d6a2e8' : '#9b59b6';
     } else if (p.isEvolved) {
       ctx.fillStyle = '#00cec9';
       ctx.strokeStyle = '#81ecec';
@@ -293,16 +297,16 @@ export function render() {
       const bDist = r * 0.52;
       const bx = p.x + Math.cos(bAng) * bDist;
       const by = p.y + Math.sin(bAng) * bDist;
-      ctx.fillStyle = p.isFire ? '#f39c12' : (p.isEvolved ? '#e0ffff' : '#a8e6cf');
+      ctx.fillStyle = p.isFire ? '#f39c12' : (p.isAlchemist ? (p.isEvolved ? '#e056fd' : '#d6a2e8') : (p.isEvolved ? '#e0ffff' : '#a8e6cf'));
       ctx.beginPath();
       ctx.arc(bx, by, Math.max(0.5, (2.2 + Math.sin(frameCount * 0.2 + b) * 1.2) * shrinkFactor), 0, Math.PI * 2);
       ctx.fill();
     }
 
     if (p.isAlchemist) {
-      // Anel cáustico efervescente interno
-      ctx.strokeStyle = p.isEvolved ? 'rgba(129, 236, 236, 0.55)' : 'rgba(85, 239, 196, 0.55)';
-      ctx.lineWidth = 1.0;
+      // Anel cáustico efervescente interno em tom violeta
+      ctx.strokeStyle = p.isEvolved ? 'rgba(214, 162, 232, 0.70)' : 'rgba(155, 89, 182, 0.70)';
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
       ctx.arc(p.x, p.y, Math.max(1, r * 0.78), 0, Math.PI * 2);
       ctx.stroke();
@@ -921,7 +925,7 @@ export function render() {
         for (let t = 0; t < b.trail.length; t++) {
           const pt = b.trail[t];
           const tAlpha = (1 - t / b.trail.length) * 0.40;
-          ctx.fillStyle = b.isEvolved ? `rgba(129, 236, 236, ${tAlpha})` : `rgba(85, 239, 196, ${tAlpha})`;
+          ctx.fillStyle = b.isEvolved ? `rgba(162, 155, 254, ${tAlpha})` : `rgba(155, 89, 182, ${tAlpha})`;
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, (b.radius * 0.65) * (1 - t / b.trail.length * 0.5), 0, Math.PI * 2);
           ctx.fill();
@@ -932,11 +936,11 @@ export function render() {
       ctx.translate(b.x, b.y);
       ctx.rotate(b.angle || 0);
 
-      const acidCol = b.isEvolved ? '#00cec9' : '#2ecc71';
+      const acidCol = b.isEvolved ? '#a29bfe' : '#9b59b6';
       const r = b.radius || 8;
 
-      // Halo luminoso do reagente químico volátil
-      ctx.fillStyle = b.isEvolved ? 'rgba(0, 206, 201, 0.28)' : 'rgba(46, 204, 113, 0.28)';
+      // Halo luminoso do reagente químico volátil violeta
+      ctx.fillStyle = b.isEvolved ? 'rgba(162, 155, 254, 0.32)' : 'rgba(155, 89, 182, 0.32)';
       ctx.beginPath();
       ctx.arc(0, 0, r + 4, 0, Math.PI * 2);
       ctx.fill();

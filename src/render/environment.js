@@ -986,11 +986,20 @@ export function renderEnvironment(ctx) {
 
   acidPuddles.forEach(p => {
     const pulse = Math.sin(frameCount * 0.15) * 3;
-    ctx.fillStyle = p.isFire ? 'rgba(230, 126, 34, 0.35)' : 'rgba(46, 204, 113, 0.28)';
+    if (p.isFire) {
+      ctx.fillStyle = 'rgba(230, 126, 34, 0.35)';
+      ctx.strokeStyle = '#e67e22';
+    } else if (p.isAlchemist) {
+      // Brilho volumétrico violeta/roxo para as poças da Valéria
+      ctx.fillStyle = p.isEvolved ? 'rgba(162, 155, 254, 0.35)' : 'rgba(142, 68, 173, 0.35)';
+      ctx.strokeStyle = p.isEvolved ? 'rgba(214, 162, 232, 0.75)' : 'rgba(155, 89, 182, 0.75)';
+    } else {
+      ctx.fillStyle = 'rgba(46, 204, 113, 0.28)';
+      ctx.strokeStyle = 'rgba(46, 204, 113, 0.7)';
+    }
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.radius + pulse, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = p.isFire ? '#e67e22' : 'rgba(46, 204, 113, 0.7)';
     ctx.lineWidth = 2;
     ctx.stroke();
   });

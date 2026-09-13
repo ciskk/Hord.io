@@ -42,6 +42,7 @@ import { spawnSquad, spawnMobCluster, spawnProp } from './entities/enemies.js';
 import { ENEMY_TYPES } from './config/enemies.js';
 import { 
   getCurrentWave, 
+  getEffectiveHordeSeconds,
   checkBossSchedule, 
   resetBossSchedule,
   resetBossesDefeated, 
@@ -297,7 +298,8 @@ export function resetGame() {
 function update(dt) {
   frameCount += dt;
   const seconds = Math.floor(frameCount / 60);
-  const currentWave = getCurrentWave(seconds);
+  const hordeSeconds = getEffectiveHordeSeconds(seconds);
+  const currentWave = getCurrentWave(hordeSeconds);
 
   // Gatilho de Anúncio Cinematográfico de Transição de Onda
   if (!activeBoss && currentWave && currentWave.index !== lastAnnouncedWaveIndex) {
@@ -2022,7 +2024,8 @@ function update(dt) {
         chests.splice(i, 1);
         if (tier === 'BOSS') {
           const waveSeconds = Math.floor(frameCount / 60);
-          const currentWave = getCurrentWave(waveSeconds);
+          const hordeSeconds = getEffectiveHordeSeconds(waveSeconds);
+          const currentWave = getCurrentWave(hordeSeconds);
           transitionToArenaTheme(getWaveArenaTheme(currentWave.index), 120);
           setIsWavePaused(false);
           resetSpawnTimer();

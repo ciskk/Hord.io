@@ -222,8 +222,8 @@ export const CHARACTERS = {
     difficulty: 2,
     lore: "Erudita dos venenos arcanos e ácidos mutagênicos. Domina a criação de compostos voláteis que derretem armaduras e desaceleram as feras.",
     passive: {
-      name: "Miasma Pegajoso",
-      desc: "Poças ácidas permanecem mais tempo ativas no solo e infligem lentidão severa aos inimigos que as atravessam."
+      name: "Miasma Regenerativo & Pegajoso",
+      desc: "Poças químicas violetas regeneram a vida de Valéria continuamente enquanto ela permanecer sobre elas, duram mais tempo ativas e infligem lentidão severa aos inimigos."
     },
     weapon: {
       name: "Frascos Cáusticos",
@@ -235,7 +235,7 @@ export const CHARACTERS = {
       cooldown: "6.5s",
       desc: "Detona uma explosão radial de 6 frascos corrosivos simultâneos banhando todo o entorno em vitríolo letal."
     },
-    desc: "Passiva: Poças ácidas duram mais e causam lentidão.<br><b>Arma Inicial: Frascos Cáusticos</b> (Super alcance com predição de movimento; bombardeia com antecedência a rota do alvo com poças gigantes concentradas no mesmo local).<br><b>Poder: Reagente Volátil</b> (Explosão radial de 6 frascos corrosivos).",
+    desc: "Passiva: Poças violetas curam Valéria continuamente, duram mais e causam lentidão severa.<br><b>Arma Inicial: Frascos Cáusticos</b> (Bombardeio químico concentrado de longo alcance).<br><b>Poder: Reagente Volátil</b> (Explosão radial de 6 frascos corrosivos).",
     color: { 
       armor: "#1b2a22", 
       coat: "#112920",
@@ -257,12 +257,12 @@ export const CHARACTERS = {
       eyeGlow: "#00ffcc",
       lens: "#00ffcc",
       mask: "#242d34",
-      acid: "#2ecc71",
-      acidGlow: "#55efc4",
-      acidEvolved: "#00cec9",
+      acid: "#9b59b6",
+      acidGlow: "#d6a2e8",
+      acidEvolved: "#a29bfe",
       reagentPurple: "#9b59b6",
       reagentAmber: "#f39c12",
-      cape: "#2ecc71"
+      cape: "#8e44ad"
     },
     startingWeapon: "POTION",
     stats: { 

@@ -60,7 +60,7 @@ import {
   frameCount
 } from '../main.js';
 import { transitionToArenaTheme, getWaveArenaTheme } from '../render/environment.js';
-import { getCurrentWave } from '../systems/waves.js';
+import { getCurrentWave, getEffectiveHordeSeconds } from '../systems/waves.js';
 
 // Biblioteca de Glifos Vetoriais Leves para Cartas de Poder
 const UPGRADE_ICONS = {
@@ -520,7 +520,8 @@ export function openChestModal(tier = 'BOSS') {
 
           if (!activeBoss) {
             const waveSeconds = Math.floor(frameCount / 60);
-            const currentWave = getCurrentWave(waveSeconds);
+            const hordeSeconds = getEffectiveHordeSeconds(waveSeconds);
+            const currentWave = getCurrentWave(hordeSeconds);
             transitionToArenaTheme(getWaveArenaTheme(currentWave.index), 90);
             setIsWavePaused(false);
             resetSpawnTimer();

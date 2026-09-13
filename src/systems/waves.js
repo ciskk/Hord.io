@@ -17,6 +17,8 @@ export let nextBossSpawnTime = BOSS_QUEUE[0].delay;
 export let firstBossKilled = false;
 export let bossFightStartTime = 0;
 
+export let totalBossFightDuration = 0;
+
 export function setFirstBossKilled(val) {
   firstBossKilled = val;
 }
@@ -26,6 +28,7 @@ export function resetBossSchedule() {
   nextBossSpawnTime = BOSS_QUEUE.length > 0 ? BOSS_QUEUE[0].delay : 60;
   firstBossKilled = false;
   bossFightStartTime = 0;
+  totalBossFightDuration = 0;
 }
 
 export const resetBossesDefeated = resetBossSchedule;
@@ -33,6 +36,8 @@ export const resetBossesDefeated = resetBossSchedule;
 export function onBossDefeated(deathSeconds) {
   // Desloca o cronograma dos minibosses pendentes com base no tempo de duração da luta
   const bossDuration = Math.max(0, deathSeconds - bossFightStartTime);
+  totalBossFightDuration += bossDuration;
+
   for (let i = 0; i < miniBossSchedule.length; i++) {
     if (!miniBossSchedule[i].spawned) {
       miniBossSchedule[i].time += bossDuration;
@@ -47,6 +52,19 @@ export function onBossDefeated(deathSeconds) {
     currentBossIndex = nextIndex;
     nextBossSpawnTime = Infinity;
   }
+}
+
+/**
+ * Retorna os segundos líquidos decorridos da horda,
+ * descontando o tempo gasto em batalhas ativas contra chefes.
+ * @param {number} currentSeconds Segundos absolutos da partida.
+ * @returns {number} Segundos efetivos de horda.
+ */
+export function getEffectiveHordeSeconds(currentSeconds) {
+  if (activeBoss !== null) {
+    return Math.max(0, bossFightStartTime - totalBossFightDuration);
+  }
+  return Math.max(0, currentSeconds - totalBossFightDuration);
 }
 
 export const miniBossSchedule = [
