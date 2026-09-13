@@ -118,10 +118,11 @@ export function resolveWorldPhysics(player, enemies, dt) {
         const isAttacking = e.combatState === 'WINDUP' || e.combatState === 'STRIKE';
 
         if (isAttacking) {
-          e.x -= nx * (overlap * 0.15);
-          e.y -= ny * (overlap * 0.15);
-          player.x += nx * (overlap * 0.85);
-          player.y += ny * (overlap * 0.85);
+          // Redução de 75% da força de contra-empurrão sofrida pelo jogador (de 85% para 21%)
+          e.x -= nx * (overlap * 0.79);
+          e.y -= ny * (overlap * 0.79);
+          player.x += nx * (overlap * 0.21);
+          player.y += ny * (overlap * 0.21);
         } else {
           // Monstro em perseguição, recuperação ou atordoamento:
           // Aplica deslocamento radial acentuado e dispersão tangencial lateral (abrir caminho)

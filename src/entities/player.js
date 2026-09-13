@@ -847,7 +847,7 @@ export function fireWeapons() {
     const inRange = [];
     for (let i = 0; i < enemies.length; i++) {
       const e = enemies[i];
-      if (e.hp <= 0) continue;
+      if (e.hp <= 0 || (e.isBossSubTarget && !e.active)) continue;
       const dx = e.x - player.x;
       const dy = e.y - player.y;
       const dSq = dx * dx + dy * dy;
@@ -933,12 +933,21 @@ export function fireWeapons() {
       const dist = Math.sqrt(rawDx * rawDx + rawDy * rawDy);
       const flightFrames = Math.max(18, Math.min(42, Math.floor(dist / 7.2)));
 
-      const angleToPlayer = Math.atan2(player.y - closestEnemy.y, player.x - closestEnemy.x);
-      const enemyCurSpeed = closestEnemy.speed * (closestEnemy.slowTimer > 0 ? (1 - (closestEnemy.slowFactor || 0.5)) : 1.0);
+      // Se o alvo for Chefe, Sub-alvo (Litocisto/Lanterna) ou estiver sem velocidade/vulnerável:
+      // Mirar diretamente no centro do alvo, evitando jogar o frasco no chão vazio ou gerar NaN.
+      const isBossOrSub = !!(closestEnemy.isBoss || closestEnemy.isMiniBoss || closestEnemy.isBossSubTarget);
+      const isStationaryOrSpecial = isBossOrSub || !closestEnemy.speed || closestEnemy.isVulnerable;
       
-      const leadDist = Math.min(enemyCurSpeed * flightFrames * 0.88, dist * 0.75);
-      const targetX = closestEnemy.x + Math.cos(angleToPlayer) * leadDist;
-      const targetY = closestEnemy.y + Math.sin(angleToPlayer) * leadDist;
+      let targetX = closestEnemy.x;
+      let targetY = closestEnemy.y;
+
+      if (!isStationaryOrSpecial) {
+        const angleToPlayer = Math.atan2(player.y - closestEnemy.y, player.x - closestEnemy.x);
+        const enemyCurSpeed = closestEnemy.speed * (closestEnemy.slowTimer > 0 ? (1 - (closestEnemy.slowFactor || 0.5)) : 1.0);
+        const leadDist = Math.min(enemyCurSpeed * flightFrames * 0.88, dist * 0.75);
+        targetX += Math.cos(angleToPlayer) * leadDist;
+        targetY += Math.sin(angleToPlayer) * leadDist;
+      }
 
       const dx = targetX - player.x;
       const dy = targetY - player.y;
