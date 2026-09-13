@@ -1085,19 +1085,22 @@ function drawMajesticSpawnIntro(ctx, e, frameCount) {
 
   // Selo Abissal no Solo aumentando gradualmente de intensidade
   ctx.save();
-  const groundPulse = Math.sin(frameCount * 0.12) * 6;
+  const groundPulse = Math.sin(frameCount * 0.12) * 6 * progress;
   const groundRot = frameCount * 0.025;
+  const rx = Math.max(0.1, R * 1.8 * progress + groundPulse);
+  const ry = Math.max(0.1, (R * 0.6 * progress) + groundPulse * 0.35);
+
   ctx.strokeStyle = `rgba(0, 206, 201, ${0.2 + progress * 0.6})`;
   ctx.lineWidth = 2 + progress * 2;
   ctx.beginPath();
-  ctx.ellipse(0, R * 0.95, R * 1.8 * progress + groundPulse, (R * 0.6 * progress) + groundPulse * 0.35, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, R * 0.95, rx, ry, 0, 0, Math.PI * 2);
   ctx.stroke();
 
   const glyphCount = 12;
   for (let g = 0; g < glyphCount; g++) {
     const ga = groundRot + (g * Math.PI * 2) / glyphCount;
-    const gx = Math.cos(ga) * (R * 1.8 * progress + groundPulse);
-    const gy = R * 0.95 + Math.sin(ga) * (R * 0.6 * progress + groundPulse * 0.35);
+    const gx = Math.cos(ga) * rx;
+    const gy = R * 0.95 + Math.sin(ga) * ry;
     ctx.fillStyle = g % 2 === 0 ? '#00cec9' : '#e84393';
     ctx.fillRect(gx - 2, gy - 2, 4, 4);
   }
