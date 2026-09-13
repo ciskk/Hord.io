@@ -112,7 +112,7 @@ export const gameState = {
 };
 
 export let frameCount = 0;
-export let spawnTimer = 0;
+export let spawnTimer = 999;
 export let screenShake = 0;
 export let freezeTimer = 0;
 export let currentArenaTheme = 'IVORY_OSSUARY';
@@ -135,7 +135,7 @@ let ghostHp = 120;
 let ghostHpTimer = 0;
 
 export function setLastTime(t) { lastTime = t; }
-export function resetSpawnTimer() { spawnTimer = 0; }
+export function resetSpawnTimer() { spawnTimer = 999; }
 export function setCurrentArenaTheme(theme) { currentArenaTheme = theme; }
 export function setIsWavePaused(val) { gameState.isWavePaused = val; }
 export function triggerShake(intensity) { screenShake = Math.max(screenShake, intensity); }
@@ -246,7 +246,7 @@ export function resetGame() {
   gameState.isWavePaused = false;
   gameState.kills = 0;
   frameCount = 0;
-  spawnTimer = 0;
+  spawnTimer = 999;
   screenShake = 0;
   freezeTimer = 0;
   gameState.isDead = false;

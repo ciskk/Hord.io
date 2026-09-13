@@ -27,21 +27,44 @@ import { transitionToArenaTheme } from '../render/environment.js';
 export const MAX_ENEMIES = 150;
 
 /**
- * Retorna uma coordenada fora da tela de visão do jogador.
+ * Retorna uma coordenada na borda imediatamente externa à visão do jogador (perímetro retangular).
+ * Garante que os inimigos surjam logo fora da tela em qualquer direção (horizontal, vertical ou diagonal),
+ * eliminando o atraso de viagem causado pelo cálculo de hipotenusa circular.
  * @param {number} minDist Distância mínima adicional além da borda da tela.
  * @param {number} maxDist Distância máxima adicional além da borda da tela.
  * @returns {{ x: number, y: number }}
  */
-function getOffscreenSpawnPoint(minDist = 80, maxDist = 180) {
+function getOffscreenSpawnPoint(minDist = 50, maxDist = 80) {
   const halfW = (viewW || 1200) / 2;
   const halfH = (viewH || 800) / 2;
-  const screenRadius = Math.hypot(halfW, halfH);
-  const dist = screenRadius + minDist + Math.random() * (maxDist - minDist);
-  const ang = Math.random() * Math.PI * 2;
-  return {
-    x: player.x + Math.cos(ang) * dist,
-    y: player.y + Math.sin(ang) * dist
-  };
+  const margin = minDist + Math.random() * (maxDist - minDist);
+  const w = halfW + margin;
+  const h = halfH + margin;
+
+  const perimH = w * 2;
+  const perimV = h * 2;
+  const roll = Math.random() * (perimH * 2 + perimV * 2);
+
+  let x, y;
+  if (roll < perimH) {
+    // Borda Superior
+    x = player.x - w + Math.random() * (2 * w);
+    y = player.y - h;
+  } else if (roll < perimH * 2) {
+    // Borda Inferior
+    x = player.x - w + Math.random() * (2 * w);
+    y = player.y + h;
+  } else if (roll < perimH * 2 + perimV) {
+    // Borda Esquerda
+    x = player.x - w;
+    y = player.y - h + Math.random() * (2 * h);
+  } else {
+    // Borda Direita
+    x = player.x + w;
+    y = player.y - h + Math.random() * (2 * h);
+  }
+
+  return { x, y };
 }
 
 /**
@@ -203,7 +226,7 @@ export function spawnMobCluster(typeKey, count, eliteChance = 0) {
   const minutes = frameCount / 3600;
   const scaleFactor = 1.0 + (minutes * 0.28);
   const scaledHp = Math.round(def.hp * scaleFactor);
-  const pt = getOffscreenSpawnPoint(60, 140);
+  const pt = getOffscreenSpawnPoint(45, 75);
 
   for (let i = 0; i < count; i++) {
     if (enemies.length >= MAX_ENEMIES) {
@@ -212,7 +235,7 @@ export function spawnMobCluster(typeKey, count, eliteChance = 0) {
     }
 
     const isElite = Math.random() < eliteChance;
-    const spreadR = Math.random() * 45;
+    const spreadR = Math.random() * 32;
     const spreadA = Math.random() * Math.PI * 2;
     const mx = pt.x + Math.cos(spreadA) * spreadR;
     const my = pt.y + Math.sin(spreadA) * spreadR;
@@ -233,7 +256,7 @@ export function spawnSquad(squadKey, eliteChance = 0) {
     return;
   }
 
-  const center = getOffscreenSpawnPoint(70, 160);
+  const center = getOffscreenSpawnPoint(50, 80);
   const angleToPlayer = Math.atan2(player.y - center.y, player.x - center.x);
   const cosA = Math.cos(angleToPlayer);
   const sinA = Math.sin(angleToPlayer);
@@ -274,7 +297,7 @@ export function spawnMiniBoss(miniBossType) {
   const minutes = frameCount / 3600;
   const scaleFactor = 1.0 + (minutes * 0.28);
   const hp = Math.round(def.hp * scaleFactor);
-  const pt = getOffscreenSpawnPoint(100, 200);
+  const pt = getOffscreenSpawnPoint(60, 90);
 
   const miniBoss = {
     x: pt.x,
