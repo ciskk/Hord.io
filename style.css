@@ -1660,6 +1660,120 @@ html, body {
 }
 
 /* ======================================================== */
+/* BENTO BOX TÁTICO DO HERÓI (DESKTOP & BASE)              */
+/* ======================================================== */
+
+.bento-tactical-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+
+.bento-card {
+  background: linear-gradient(135deg, rgba(20, 26, 42, 0.85), rgba(12, 16, 26, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+}
+
+.bento-card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.bento-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+
+.bento-type-tag {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.bento-spec-badge {
+  font-size: 8.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid;
+}
+
+.bento-cd-badge {
+  color: #00cec9;
+  border-color: rgba(0, 206, 201, 0.4);
+  background: rgba(0, 206, 201, 0.1);
+}
+
+.bento-card-title {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bento-card-desc {
+  font-size: 9.5px;
+  color: #cbd5e1;
+  line-height: 1.35;
+}
+
+.bento-card-passive {
+  grid-column: span 2;
+  background: linear-gradient(135deg, rgba(24, 30, 48, 0.9), rgba(14, 18, 30, 0.95));
+}
+
+.bento-inline-title {
+  font-family: var(--font-heading);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.bento-stats-container {
+  grid-column: span 2;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.bento-attr-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 8px;
+  font-weight: 800;
+  color: #8c94a8;
+  text-align: center;
+}
+
+.bento-attr-item .segmented-meter {
+  width: 100%;
+}
+
+.desktop-only-lore {
+  display: block;
+}
+
+/* ======================================================== */
 /* NOVO ASTROLÁBIO DAS ALMAS (ÁRVORE DE HABILIDADES)        */
 /* ======================================================== */
 
@@ -2833,25 +2947,26 @@ html, body {
     font-size: 9px;
   }
 
-  /* 2. Altar dos Condenados: Layout Exclusivo Mobile (Floating Bottom Deck) */
+  /* 2. Altar dos Condenados: Layout Exclusivo Mobile (Clean Full-Bleed Bento Deck) */
   #char-modal {
-    align-items: flex-end;
-    padding: 0 10px 12px;
-    background: rgba(5, 7, 12, 0.78);
-    backdrop-filter: blur(8px);
+    align-items: center;
+    justify-content: center;
+    padding: 8px 6px;
+    background: rgba(4, 6, 10, 0.88);
+    backdrop-filter: blur(12px);
   }
 
   .modal-box-altar {
-    max-width: min(95vw, 440px);
+    max-width: min(96vw, 420px);
     width: 100%;
     min-height: 0;
-    max-height: 88dvh;
+    max-height: 94dvh;
     height: auto;
-    border-radius: 20px;
-    padding: 10px 12px 10px;
-    background: linear-gradient(180deg, #131929 0%, #090c14 100%);
-    border: 1.5px solid rgba(255, 255, 255, 0.14);
-    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(0, 0, 0, 0.8);
+    border-radius: 18px;
+    padding: 8px 10px 8px;
+    background: linear-gradient(180deg, #101524 0%, #080b12 100%);
+    border: 1.2px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.95), 0 0 25px rgba(0, 0, 0, 0.8);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -2859,11 +2974,11 @@ html, body {
 
   .modal-box-altar .modal-header {
     padding-bottom: 4px;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
   }
 
   .modal-box-altar .modal-header-title {
-    font-size: 13.5px;
+    font-size: 13px;
     letter-spacing: 0.8px;
   }
 
@@ -2872,7 +2987,7 @@ html, body {
   }
 
   .char-modal-header-actions {
-    gap: 8px;
+    gap: 6px;
   }
 
   .char-souls-counter {
@@ -2880,16 +2995,22 @@ html, body {
     font-size: 10px;
   }
 
+  #open-talents-btn {
+    padding: 3px 8px;
+    font-size: 10px;
+    height: 28px;
+  }
+
   .char-altar-layout {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-top: 2px;
+    gap: 4px;
+    margin-top: 1px;
     overflow: hidden;
     flex-grow: 1;
   }
 
-  /* 2.1 Carrossel Superior de Pedestais (Miniaturas Touch) */
+  /* 2.1 Carrossel de Heróis (Ribbon Táctil Ergonômico com Ícone e Nome) */
   .char-pedestals-col {
     display: flex;
     flex-direction: row;
@@ -2901,6 +3022,7 @@ html, body {
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
     flex-shrink: 0;
+    justify-content: center;
   }
 
   .char-pedestals-col::-webkit-scrollbar {
@@ -2909,81 +3031,101 @@ html, body {
 
   .char-pedestal-btn {
     flex: 0 0 auto;
-    min-width: 44px;
-    padding: 3px;
-    gap: 0;
+    min-width: 54px;
+    padding: 3px 6px;
+    gap: 2px;
     border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    background: rgba(18, 23, 36, 0.85);
+    background: rgba(16, 21, 34, 0.85);
     border: 1.2px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .char-pedestal-btn .char-pedestal-info,
-  .char-pedestal-btn .char-pedestal-role-mini,
-  .char-pedestal-btn .pedestal-active-glow {
-    display: none;
+    transition: all 0.15s ease;
   }
 
   .char-pedestal-emblem {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    border-width: 1.5px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border-width: 1px;
   }
 
   .char-pedestal-emblem svg {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
+  }
+
+  .char-pedestal-btn .char-pedestal-info {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .char-pedestal-btn .char-pedestal-title,
+  .char-pedestal-btn .char-pedestal-role-mini,
+  .char-pedestal-btn .pedestal-active-glow {
+    display: none !important;
+  }
+
+  .char-pedestal-btn .char-pedestal-name {
+    font-size: 8.5px;
+    font-weight: 800;
+    color: #94a3b8;
+    letter-spacing: 0.3px;
   }
 
   .char-pedestal-btn.active {
-    background: rgba(36, 48, 76, 0.95);
+    background: rgba(32, 42, 68, 0.95);
     border-color: var(--btn-theme-color, var(--gold-runic));
-    transform: scale(1.08);
-    box-shadow: 0 0 14px var(--btn-theme-color, var(--gold-runic));
+    transform: scale(1.05);
+    box-shadow: 0 0 12px var(--btn-theme-color, var(--gold-runic));
   }
 
-  /* 2.2 Palco Central Compacto com Setas e Swipe */
+  .char-pedestal-btn.active .char-pedestal-name {
+    color: var(--btn-theme-color, var(--gold-runic));
+  }
+
+  /* 2.2 Palco Central Compacto: SEM controles de depuração no mobile */
   .char-stage-col {
-    padding: 4px 6px;
-    border-radius: 12px;
-    gap: 3px;
-    background: radial-gradient(circle at center, #111726 0%, #070910 85%);
-    border: 1.2px solid #232d45;
+    padding: 3px 6px;
+    border-radius: 10px;
+    gap: 2px;
+    background: radial-gradient(circle at center, #101625 0%, #06080e 85%);
+    border: 1px solid #1f273c;
     flex-shrink: 0;
   }
 
   .char-stage-badge {
-    font-size: 9px;
+    font-size: 8.5px;
     letter-spacing: 1px;
-    padding: 1px 8px;
+    padding: 1px 7px;
   }
 
   .char-stage-viewport {
-    min-height: 165px;
-    height: 165px;
+    min-height: 135px;
+    height: 135px;
     position: relative;
     width: 100%;
     overflow: hidden;
   }
 
   #char-preview-canvas {
-    max-height: 165px;
-    min-height: 165px;
+    max-height: 135px;
+    min-height: 135px;
     height: 100% !important;
     width: 100% !important;
     display: block;
     object-fit: contain;
-    box-sizing: border-box;
   }
 
   .stage-nav-arrow {
     display: flex !important;
-    width: 28px;
-    height: 28px;
-    font-size: 18px;
-    background: rgba(10, 13, 22, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    width: 26px;
+    height: 26px;
+    font-size: 16px;
+    background: rgba(10, 13, 22, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   .stage-nav-prev { left: 4px; }
@@ -2994,32 +3136,23 @@ html, body {
     bottom: 2px;
   }
 
+  /* Remove botões de girar e posturas no mobile para despoluir completamente */
   .char-stage-controls {
-    padding-top: 2px;
-    gap: 4px;
+    display: none !important;
   }
 
-  .stage-ctrl-btn {
-    padding: 3px 6px;
-    font-size: 9px;
-  }
-
-  .stage-pose-btn {
-    padding: 2px 5px;
-    font-size: 8.5px;
-  }
-
-  /* 2.3 Grimório Tático com Abas sem Scroll */
+  /* 2.3 Grimório Tático: Bento Box Mobile sem scroll */
   .char-vitral-showcase {
     padding: 6px 8px 4px;
-    border-radius: 12px;
+    border-radius: 10px;
     max-height: none;
     overflow: visible;
     flex-grow: 1;
     display: flex;
     flex-direction: column;
     box-shadow: none;
-    border: 1px solid #232d45;
+    border: 1px solid #1f273c;
+    background: rgba(10, 13, 22, 0.85);
   }
 
   .showcase-header-v2 {
@@ -3027,7 +3160,7 @@ html, body {
   }
 
   .showcase-title-row {
-    margin-bottom: 2px;
+    margin-bottom: 1px;
   }
 
   .showcase-archetype-pill {
@@ -3036,207 +3169,211 @@ html, body {
   }
 
   .showcase-name-v2 {
-    font-size: 16px;
+    font-size: 15px;
     margin: 0;
+    line-height: 1.15;
   }
 
   .showcase-role-tag {
     font-size: 8.5px;
+    color: #8c94a8;
   }
 
-  /* Abas Rápidas Mobile */
-  .mobile-tab-nav {
-    display: flex !important;
-    gap: 6px;
-    width: 100%;
-    margin: 4px 0 5px 0;
-  }
-
-  .mobile-tab-btn {
-    flex: 1;
-    padding: 4px 4px;
-    font-size: 10px;
-    font-weight: 800;
-    border-radius: 6px;
-    background: rgba(16, 21, 34, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #94a3b8;
-    cursor: pointer;
-    font-family: var(--font-heading);
-    transition: all 0.15s ease;
-  }
-
-  .mobile-tab-btn.active {
-    background: rgba(36, 48, 76, 0.95);
-    border-color: var(--showcase-color, var(--gold-runic));
-    color: #fff;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-  }
-
-  .showcase-tab-content-wrapper {
+  /* Bento Grid Mobile */
+  .bento-tactical-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin-top: 3px;
+    margin-bottom: 4px;
     flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
   }
 
-  .showcase-cards-container {
-    display: none !important;
-    flex-direction: column;
-    gap: 4px;
-    margin-bottom: 2px;
+  .bento-card {
+    padding: 5px 6px;
+    border-radius: 8px;
+    background: rgba(16, 21, 35, 0.9);
   }
 
-  .showcase-cards-container.mobile-active {
-    display: flex !important;
+  .bento-type-tag {
+    font-size: 7.5px;
   }
 
-  .showcase-radar-container {
-    display: none !important;
-    flex-direction: column;
-    gap: 4px;
+  .bento-spec-badge {
+    font-size: 7.5px;
+    padding: 0 4px;
   }
 
-  .showcase-radar-container.mobile-active {
-    display: flex !important;
+  .bento-card-title {
+    font-size: 10.5px;
+    margin-bottom: 1px;
   }
 
-  .tactical-card {
+  .bento-card-desc {
+    font-size: 8.5px;
+    line-height: 1.25;
+    color: #94a3b8;
+  }
+
+  .bento-card-passive {
+    padding: 4px 6px;
+  }
+
+  .bento-inline-title {
+    font-size: 9.5px;
+  }
+
+  .bento-stats-container {
     padding: 3px 6px;
-    border-radius: 6px;
+    gap: 4px;
   }
 
-  .card-top-tag {
+  .bento-attr-item {
     font-size: 7px;
   }
 
-  .card-title-text {
-    font-size: 10px;
-    margin: 0;
-  }
-
-  .card-desc-text {
-    font-size: 8.5px;
-    line-height: 1.25;
-  }
-
-  .showcase-lore-quote {
-    font-size: 9px;
-    line-height: 1.3;
-    padding: 3px 6px;
-    margin: 1px 0 4px 0;
-  }
-
-  .showcase-radar-bars {
-    padding: 4px 6px;
-    margin-bottom: 2px;
-    gap: 3px;
-  }
-
-  .attr-row {
-    font-size: 8px;
-  }
-
-  .segment-cell {
+  .bento-attr-item .segmented-meter {
     height: 4px;
   }
 
-  /* Botão Fixo de Invocação */
+  .bento-attr-item .segment-cell {
+    height: 4px;
+  }
+
+  .desktop-only-lore {
+    display: none !important;
+  }
+
+  /* Botão Fixo de Despertar de Polegar */
   .btn-summon-hero {
-    padding: 8px 12px !important;
+    padding: 9px 12px !important;
     font-size: 11.5px !important;
     letter-spacing: 0.8px;
-    margin-top: 4px;
+    margin-top: 3px;
     border-radius: 8px;
     flex-shrink: 0;
   }
 
-  #open-talents-btn {
-    padding: 3px 6px;
-    font-size: 9.5px;
-    height: 26px;
+  /* ======================================================== */
+  /* 3. Astrolábio de Talentos (Pilar Celestial & Touch 52px)  */
+  /* ======================================================== */
+  .astrolabe-modal {
+    max-width: min(96vw, 420px);
+    max-height: 94dvh;
+    padding: 8px 10px;
+    border-radius: 18px;
   }
 
-  /* 3. Astrolábio de Talentos */
+  .astrolabe-modal .modal-header {
+    padding-bottom: 4px;
+    margin-bottom: 2px;
+  }
+
+  .astrolabe-modal .modal-header-title {
+    font-size: 13px;
+  }
+
+  .astrolabe-modal .modal-header-sub {
+    font-size: 8px;
+  }
+
   .astrolabe-header-actions {
     gap: 4px;
   }
 
   .astrolabe-header-btn {
-    padding: 4px 8px !important;
+    padding: 3px 6px !important;
     font-size: 9.5px !important;
+    border-radius: 6px;
   }
 
   #close-talents-btn {
-    padding: 4px 8px !important;
+    padding: 3px 8px !important;
     font-size: 9.5px !important;
+    border-radius: 6px;
   }
 
+  /* Abas de Constelação Mobile: 3 Colunas Perfeitas */
   .astrolabe-constellation-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 4px;
-    margin: 2px 0 6px 0;
+    margin: 2px 0 4px 0;
   }
 
   .constellation-tab {
-    padding: 3px 8px;
-    font-size: 9px;
-    gap: 4px;
+    padding: 4px 4px;
+    font-size: 9.5px;
+    font-weight: 700;
+    justify-content: center;
+    border-radius: 8px;
+    gap: 3px;
+  }
+
+  .constellation-tab[data-constellation="all"] {
+    display: none !important;
   }
 
   .tab-glow-dot {
-    font-size: 10px;
+    font-size: 9.5px;
   }
 
+  .tab-prog-badge {
+    font-size: 8px;
+    opacity: 0.85;
+    font-family: monospace;
+  }
+
+  /* Viewport do Astrolábio no Mobile */
   .astrolabe-viewport {
-    height: clamp(210px, 36vh, 290px);
-    margin: 4px 0;
-    border-radius: 10px;
+    height: clamp(230px, 40vh, 310px);
+    margin: 3px 0;
+    border-radius: 12px;
+    background: radial-gradient(circle at center, #0e1322 0%, #05070d 90%);
+    border: 1px solid #1f273c;
   }
 
+  /* Esconde o núcleo central no mobile para evitar sobreposição nos nós */
   .astrolabe-core {
-    width: 68px;
-    height: 68px;
+    display: none !important;
   }
 
-  .core-rings {
-    inset: -6px;
-  }
-
-  .core-label {
-    font-size: 7px;
-  }
-
-  .core-val {
-    font-size: 10px;
-  }
-
+  /* Nós Celestes no Mobile: 48px com ícone de 22px (Toque Preciso) */
   .astrolabe-node {
-    width: 38px;
-    height: 38px;
-    border-width: 1.5px;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    border-width: 1.8px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
   }
 
   .astrolabe-node.node-keystone {
-    width: 44px;
-    height: 44px;
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    border-width: 2px;
   }
 
   .node-svg-icon {
-    width: 17px;
-    height: 17px;
+    width: 22px;
+    height: 22px;
   }
 
   .node-lvl-pip {
-    font-size: 6.5px;
+    font-size: 8.5px;
+    font-weight: 800;
     margin-top: 1px;
   }
 
+  /* Painel de Forja Fixo Inferior no Mobile */
   .talent-forge-drawer {
-    padding: 8px 10px;
-    gap: 6px;
+    padding: 6px 8px;
+    gap: 4px;
     flex-direction: column;
     align-items: stretch;
-    border-radius: 8px;
+    border-radius: 10px;
+    background: rgba(14, 18, 30, 0.95);
+    border: 1px solid #232d44;
   }
 
   .forge-left {
@@ -3245,23 +3382,26 @@ html, body {
 
   .forge-header-tags {
     gap: 4px;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
   }
 
   .forge-constellation-badge,
   .forge-tier-badge {
     font-size: 8px;
     padding: 1px 5px;
+    border-radius: 4px;
   }
 
   .forge-node-name {
-    font-size: 12px;
+    font-size: 12.5px;
+    font-weight: 800;
   }
 
   .forge-node-desc {
     font-size: 9px;
     line-height: 1.25;
     margin-top: 1px;
+    color: #94a3b8;
   }
 
   .forge-node-lore {
@@ -3272,16 +3412,20 @@ html, body {
     flex-direction: column;
     width: 100%;
     min-width: 0;
-    gap: 5px;
-    margin-top: 2px;
+    gap: 4px;
+    margin-top: 1px;
   }
 
   .forge-stat-comparison {
     padding: 4px 8px;
+    background: rgba(8, 10, 18, 0.75);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
   }
 
   .comparison-row {
-    font-size: 9.5px;
+    font-size: 10.5px;
+    font-weight: 700;
   }
 
   .comp-label {
@@ -3294,15 +3438,19 @@ html, body {
   }
 
   .forge-buy-btn {
-    padding: 6px 10px !important;
-    font-size: 10px !important;
+    padding: 8px 12px !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
     width: 100% !important;
+    border-radius: 8px !important;
+    letter-spacing: 0.4px;
   }
 
   /* Resumo de Bênçãos Mobile */
   .blessings-summary-drawer {
-    padding: 10px 12px;
+    padding: 8px 10px;
     max-height: 88%;
+    border-radius: 12px;
   }
 
   .blessings-drawer-title {
@@ -3311,16 +3459,16 @@ html, body {
 
   .blessings-summary-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 5px;
+    gap: 4px;
   }
 
   .blessing-stat-card {
-    padding: 5px 7px;
-    gap: 5px;
+    padding: 4px 6px;
+    gap: 4px;
   }
 
   .blessing-icon {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .blessing-label {
@@ -3328,7 +3476,7 @@ html, body {
   }
 
   .blessing-val {
-    font-size: 10px;
+    font-size: 9.5px;
   }
 
   /* 4. Cartas de Tarô de Upgrade */
@@ -3492,30 +3640,38 @@ html, body {
 /* Ajustes finos para telas ultra-estreitas (< 400px, ex: iPhone SE / Galaxy Mini) */
 @media (max-width: 400px) {
   .char-pedestal-btn {
-    min-width: 110px;
-    padding: 5px 6px;
-    gap: 6px;
+    min-width: 48px;
+    padding: 2px 4px;
+    gap: 1px;
   }
 
   .char-pedestal-name {
-    font-size: 10px;
+    font-size: 8px;
   }
 
   .modal-header-title {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .astrolabe-viewport {
-    height: clamp(190px, 32vh, 250px);
-  }
-
-  .astrolabe-core {
-    width: 64px;
-    height: 64px;
+    height: clamp(210px, 38vh, 270px);
   }
 
   .astrolabe-node {
-    width: 35px;
-    height: 35px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .astrolabe-node.node-keystone {
+    width: 48px;
+    height: 48px;
+  }
+
+  .bento-card-title {
+    font-size: 10px;
+  }
+
+  .bento-card-desc {
+    font-size: 8px;
   }
 }

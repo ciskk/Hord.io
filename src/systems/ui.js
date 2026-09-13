@@ -868,79 +868,55 @@ export function openCharacterSelect() {
         <div class="showcase-role-tag">Função: <b>${char.role || 'Guerreiro'}</b></div>
       </div>
 
-      <!-- Abas Rápidas de Alternância no Mobile (Ocultas no Desktop via CSS) -->
-      <div class="mobile-tab-nav" id="mobile-char-tabs">
-        <button class="mobile-tab-btn ${activeMobileTab === 'skills' ? 'active' : ''}" data-tab="skills">
-          ⚔ Habilidades
-        </button>
-        <button class="mobile-tab-btn ${activeMobileTab === 'stats' ? 'active' : ''}" data-tab="stats">
-          📊 Atributos & Lore
-        </button>
+      <!-- Bento Box Tático (Sem abas ocultas, tudo visível com clareza instantânea) -->
+      <div class="bento-tactical-grid">
+        <!-- Card 1: Arma Inicial -->
+        <div class="bento-card bento-card-weapon">
+          <div class="bento-card-top">
+            <span class="bento-type-tag">⚔️ ARMA INICIAL</span>
+            <span class="bento-spec-badge" style="color: ${profile.themeColor}; border-color: ${profile.themeColor}55;">${char.weapon?.type || profile.weaponName}</span>
+          </div>
+          <div class="bento-card-title" style="color: ${profile.themeColor};">${char.weapon?.name || profile.weaponName}</div>
+          <div class="bento-card-desc">${char.weapon?.desc || ''}</div>
+        </div>
+
+        <!-- Card 2: Poder Ancestral -->
+        <div class="bento-card bento-card-skill">
+          <div class="bento-card-top">
+            <span class="bento-type-tag">⚡ PODER ANCESTRAL</span>
+            <span class="bento-spec-badge bento-cd-badge">⏱ ${char.skill?.cooldown || '7s'}</span>
+          </div>
+          <div class="bento-card-title" style="color: ${profile.themeColor};">${char.skill?.name || 'Habilidade'}</div>
+          <div class="bento-card-desc">${char.skill?.desc || ''}</div>
+        </div>
+
+        <!-- Card 3: Bênção Passiva -->
+        <div class="bento-card bento-card-passive" style="border-color: ${profile.themeColor}35;">
+          <div class="bento-card-top">
+            <span class="bento-type-tag">🛡️ BÊNÇÃO PASSIVA</span>
+            <span class="bento-inline-title" style="color: ${profile.themeColor};">${char.passive?.name || 'Aura'}</span>
+          </div>
+          <div class="bento-card-desc">${char.passive?.desc || ''}</div>
+        </div>
+
+        <!-- Mini-Métricas de Biometria -->
+        <div class="bento-stats-container">
+          <div class="bento-attr-item"><span>DANO</span>${renderSegments(profile.levels.dano)}</div>
+          <div class="bento-attr-item"><span>ÁREA</span>${renderSegments(profile.levels.area)}</div>
+          <div class="bento-attr-item"><span>VEL</span>${renderSegments(profile.levels.vel)}</div>
+          <div class="bento-attr-item"><span>RES</span>${renderSegments(profile.levels.res)}</div>
+        </div>
       </div>
 
-      <div class="showcase-tab-content-wrapper">
-        <!-- Conteúdo 1: Cards Táticos (Habilidades & Armas) -->
-        <div class="showcase-cards-container ${activeMobileTab === 'skills' ? 'mobile-active' : ''}">
-          <!-- Card: Bênção Passiva -->
-          <div class="tactical-card passive-card">
-            <div class="card-top-tag">
-              <span class="card-type-icon">🛡</span>
-              <span>BÊNÇÃO PASSIVA</span>
-            </div>
-            <div class="card-title-text" style="color: ${profile.themeColor};">${char.passive?.name || 'Aura Sagrada'}</div>
-            <div class="card-desc-text">${char.passive?.desc || ''}</div>
-          </div>
-
-          <!-- Card: Arma Inicial -->
-          <div class="tactical-card weapon-card">
-            <div class="card-top-tag">
-              <span class="card-type-icon">⚔</span>
-              <span>ARMA INICIAL · ${char.weapon?.type || profile.weaponName}</span>
-            </div>
-            <div class="card-title-text" style="color: ${profile.themeColor};">${char.weapon?.name || profile.weaponName}</div>
-            <div class="card-desc-text">${char.weapon?.desc || ''}</div>
-          </div>
-
-          <!-- Card: Poder Ancestral -->
-          <div class="tactical-card skill-card">
-            <div class="card-top-tag">
-              <span class="card-type-icon">⚡</span>
-              <span>PODER ANCESTRAL · Recarga: ${char.skill?.cooldown || '7s'}</span>
-            </div>
-            <div class="card-title-text" style="color: ${profile.themeColor};">${char.skill?.name || 'Habilidade'}</div>
-            <div class="card-desc-text">${char.skill?.desc || ''}</div>
-          </div>
-        </div>
-
-        <!-- Conteúdo 2: Biometria & Citação de Lore -->
-        <div class="showcase-radar-container ${activeMobileTab === 'stats' ? 'mobile-active' : ''}">
-          <div class="showcase-lore-quote">
-            “${char.lore || ''}”
-          </div>
-
-          <div class="showcase-radar-bars">
-            <div class="attr-row"><span>PODER DE IMPACTO</span>${renderSegments(profile.levels.dano)}</div>
-            <div class="attr-row"><span>CONTROLE DE ÁREA</span>${renderSegments(profile.levels.area)}</div>
-            <div class="attr-row"><span>AGILIDADE & ESQUIVA</span>${renderSegments(profile.levels.vel)}</div>
-            <div class="attr-row"><span>RESISTÊNCIA</span>${renderSegments(profile.levels.res)}</div>
-          </div>
-        </div>
+      <!-- Citação de Lore (Desktop) -->
+      <div class="showcase-lore-quote desktop-only-lore">
+        “${char.lore || ''}”
       </div>
 
       <button class="card-btn btn-summon-hero" id="confirm-hero-btn">
         ⚡ DESPERTAR NA ARENA ⚡
       </button>
     `;
-
-    // Alternância de Abas Mobile
-    const tabBtns = showcaseContainer.querySelectorAll('.mobile-tab-btn');
-    tabBtns.forEach(tBtn => {
-      tBtn.onclick = () => {
-        activeMobileTab = tBtn.getAttribute('data-tab');
-        try { playSfx('card_hover'); } catch(e) {}
-        renderShowcase(heroKey);
-      };
-    });
 
     const confirmBtn = document.getElementById('confirm-hero-btn');
     if (confirmBtn) {
@@ -1219,6 +1195,29 @@ const ASTROLABE_NODE_COORDS = {
   transmute:{ x: 89, y: 77, parentId: 'xp' }
 };
 
+// Coordenadas Mobile: Pilares Celestes Verticais Ergonômicos (Toque Amplo & Sem Embolamento)
+const ASTROLABE_MOBILE_COORDS = {
+  // Guerra (Pilar de 4 nós)
+  damage:   { x: 50, y: 76, parentId: null },
+  crit:     { x: 26, y: 46, parentId: 'damage' },
+  cooldown: { x: 74, y: 46, parentId: 'damage' },
+  execute:  { x: 50, y: 16, parentId: 'crit' },
+
+  // Égide (Pilar de 5 nós)
+  hp:       { x: 50, y: 78, parentId: null },
+  armor:    { x: 26, y: 50, parentId: 'hp' },
+  speed:    { x: 74, y: 50, parentId: 'hp' },
+  regen:    { x: 26, y: 22, parentId: 'armor' },
+  phoenix:  { x: 74, y: 18, parentId: 'speed' },
+
+  // Destino (Pilar de 5 nós)
+  magnet:   { x: 50, y: 78, parentId: null },
+  gold:     { x: 26, y: 50, parentId: 'magnet' },
+  xp:       { x: 74, y: 50, parentId: 'magnet' },
+  reroll:   { x: 26, y: 22, parentId: 'gold' },
+  transmute:{ x: 74, y: 18, parentId: 'xp' }
+};
+
 let selectedAstrolabeNodeId = 'damage';
 let activeConstellationFilter = 'all'; // 'all' | 'guerra' | 'egide' | 'destino'
 
@@ -1235,11 +1234,20 @@ export function openTalentsModal() {
   if (blessingsDrawer) blessingsDrawer.style.display = 'none';
   if (!modal || !nodesContainer) return;
 
+  const isMobile = isMobileScreen();
+  modal.classList.toggle('is-mobile-device', isMobile);
+
+  if (isMobile && (activeConstellationFilter === 'all' || !activeConstellationFilter)) {
+    activeConstellationFilter = 'guerra';
+  }
+
   // Configuração das Abas de Constelação
   const tabBtns = modal.querySelectorAll('.constellation-tab');
   tabBtns.forEach(btn => {
+    const cTarget = btn.getAttribute('data-constellation');
+    btn.classList.toggle('active', cTarget === activeConstellationFilter);
+
     btn.onclick = () => {
-      const cTarget = btn.getAttribute('data-constellation');
       activeConstellationFilter = cTarget;
       try { playSfx('card_hover'); } catch(e) {}
       triggerHaptic('light');
@@ -1259,26 +1267,58 @@ export function openTalentsModal() {
     nodesContainer.innerHTML = '';
 
     const levels = getMetaLevels();
+    const isMobileNow = isMobileScreen();
+    const coordsMap = isMobileNow ? ASTROLABE_MOBILE_COORDS : ASTROLABE_NODE_COORDS;
     const centerX = 50;
     const centerY = 50;
+
+    // Se for mobile, focar na constelação ativa para manter o pilar despoluído e legível
+    const talentsToRender = (isMobileNow && activeConstellationFilter !== 'all')
+      ? META_TALENTS.filter(t => t.constellation === activeConstellationFilter)
+      : META_TALENTS;
+
+    // Atualiza badges numéricas das abas com contagem de níveis investidos
+    tabBtns.forEach(btn => {
+      const c = btn.getAttribute('data-constellation');
+      if (c && c !== 'all') {
+        const cTalents = META_TALENTS.filter(t => t.constellation === c);
+        const spent = cTalents.reduce((acc, t) => acc + (levels[t.id] || 0), 0);
+        const max = cTalents.reduce((acc, t) => acc + t.maxLvl, 0);
+        const countSpan = btn.querySelector('.tab-prog-badge');
+        if (countSpan) {
+          countSpan.innerText = `(${spent}/${max})`;
+        }
+      }
+    });
 
     // 1. Renderização das linhas de filamento SVG interconectadas
     if (filamentsSvg) {
       filamentsSvg.innerHTML = '';
-      META_TALENTS.forEach(t => {
-        const coords = ASTROLABE_NODE_COORDS[t.id];
+      talentsToRender.forEach(t => {
+        const coords = coordsMap[t.id];
         if (!coords) return;
 
         let startX = centerX;
         let startY = centerY;
-        if (coords.parentId && ASTROLABE_NODE_COORDS[coords.parentId]) {
-          startX = ASTROLABE_NODE_COORDS[coords.parentId].x;
-          startY = ASTROLABE_NODE_COORDS[coords.parentId].y;
+
+        if (isMobileNow) {
+          if (coords.parentId && coordsMap[coords.parentId]) {
+            startX = coordsMap[coords.parentId].x;
+            startY = coordsMap[coords.parentId].y;
+          } else {
+            startX = 50;
+            startY = 96;
+          }
+        } else {
+          if (coords.parentId && coordsMap[coords.parentId]) {
+            startX = coordsMap[coords.parentId].x;
+            startY = coordsMap[coords.parentId].y;
+          }
         }
 
         const targetLvl = levels[t.id] || 0;
         const parentLvl = coords.parentId ? (levels[coords.parentId] || 0) : 1;
-        const isDimmed = activeConstellationFilter !== 'all' && t.constellation !== activeConstellationFilter;
+        const isDimmed = !isMobileNow && activeConstellationFilter !== 'all' && t.constellation !== activeConstellationFilter;
 
         let lineClass = 'filament-line';
         if (targetLvl > 0) lineClass += ' active';
@@ -1299,13 +1339,13 @@ export function openTalentsModal() {
     }
 
     // 2. Renderização dos Nós Estelares Interativos
-    META_TALENTS.forEach(t => {
-      const coords = ASTROLABE_NODE_COORDS[t.id] || { x: 50, y: 50 };
+    talentsToRender.forEach(t => {
+      const coords = coordsMap[t.id] || { x: 50, y: 50 };
       const curLvl = levels[t.id] || 0;
       const isMax = curLvl >= t.maxLvl;
       const parentLvl = coords.parentId ? (levels[coords.parentId] || 0) : 1;
       const isLocked = parentLvl < 1;
-      const isDimmed = activeConstellationFilter !== 'all' && t.constellation !== activeConstellationFilter;
+      const isDimmed = !isMobileNow && activeConstellationFilter !== 'all' && t.constellation !== activeConstellationFilter;
       const runeSvg = TALENT_RUNES_SVG[t.id] || TALENT_RUNES_SVG.damage;
 
       const node = document.createElement('div');
