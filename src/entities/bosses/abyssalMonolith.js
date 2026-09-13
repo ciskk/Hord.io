@@ -376,8 +376,8 @@ export function updateAbyssalMonolith(e, dt, context) {
       const pdy = e.y - player.y;
       const pDist = Math.hypot(pdx, pdy);
 
-      if (pDist > 45 && pDist < 420) {
-        const pullForce = (e.isEnraged ? 0.90 : 0.75) * dt;
+      if (pDist > 45 && pDist < 780) {
+        const pullForce = (e.isEnraged ? 0.95 : 0.80) * dt;
         player.x += (pdx / pDist) * pullForce;
         player.y += (pdy / pDist) * pullForce;
       }
@@ -385,7 +385,7 @@ export function updateAbyssalMonolith(e, dt, context) {
       if (Math.floor(frameCount) % 2 === 0) {
         triggerShake(1.2);
         const pAngle = Math.random() * Math.PI * 2;
-        const spawnDist = 120 + Math.random() * 260;
+        const spawnDist = 180 + Math.random() * 520;
         createHitParticles(
           e.x + Math.cos(pAngle) * spawnDist,
           e.y + Math.sin(pAngle) * spawnDist,
@@ -409,7 +409,7 @@ export function updateAbyssalMonolith(e, dt, context) {
         e.aimAngle = Math.atan2(player.y - e.y, player.x - e.x);
       }
       if (Math.floor(frameCount) % 3 === 0) {
-        const stepDist = 40 + Math.random() * 160;
+        const stepDist = 40 + Math.random() * 320;
         createHitParticles(e.x + Math.cos(e.aimAngle) * stepDist, e.y + Math.sin(e.aimAngle) * stepDist, '#e67e22', 1);
       }
       if (e.actionTimer <= 0) {
@@ -582,19 +582,19 @@ function selectNextSkill(e, dist) {
     } else if (rand < 0.80) {
       e.currentSkill = 'EPICENTER_SURGE';
       e.actionState = 'WINDUP_EPICENTER';
-      e.actionTimer = isP3 ? 42 : (isEnraged ? 48 : 56);
+      e.actionTimer = isP3 ? 84 : (isEnraged ? 96 : 112);
     } else {
       e.currentSkill = 'PLATE_WHIRL';
       e.actionState = 'WINDUP_WHIRL';
       e.actionTimer = isP3 ? 28 : (isEnraged ? 32 : 38);
     }
   }
-  // Em alcance Médio (190px a 320px):
-  else if (dist <= 320) {
+  // Em alcance Médio (190px a 450px):
+  else if (dist <= 450) {
     if (rand < 0.40 && e.lastUsedSkill !== 'EPICENTER_SURGE') {
       e.currentSkill = 'EPICENTER_SURGE';
       e.actionState = 'WINDUP_EPICENTER';
-      e.actionTimer = isP3 ? 42 : (isEnraged ? 48 : 56);
+      e.actionTimer = isP3 ? 84 : (isEnraged ? 96 : 112);
     } else if (rand < 0.70) {
       e.currentSkill = 'VOLCANIC_FISSURE';
       e.actionState = 'WINDUP_FISSURE';
@@ -605,7 +605,7 @@ function selectNextSkill(e, dist) {
       e.actionTimer = isP3 ? 24 : (isEnraged ? 28 : 36);
     }
   }
-  // Em Longa Distância (> 320px):
+  // Em Longa Distância (> 450px):
   else {
     if ((isEnraged || isP3) && rand < 0.45 && e.lastUsedSkill !== 'MAGMA_SIPHON') {
       e.currentSkill = 'MAGMA_SIPHON';
@@ -688,14 +688,14 @@ function executeTectonicSlam(e, context) {
     }
   }
 
-  // Na Fase 2/3: solta 3 fendas em leque para frente
+  // Na Fase 2/3: solta 3 fendas em leque para frente (alcance dobrado)
   if (e.isEnraged || e.isPhase3) {
     const fCount = 3;
     const fSpread = 0.34;
     for (let f = 0; f < fCount; f++) {
       const fAng = e.aimAngle + (f - 1) * fSpread;
-      for (let n = 1; n <= 3; n++) {
-        const nodeDist = impactDist + n * 48;
+      for (let n = 1; n <= 6; n++) {
+        const nodeDist = impactDist + n * 50;
         const nx = e.x + Math.cos(fAng) * nodeDist;
         const ny = e.y + Math.sin(fAng) * nodeDist;
 
@@ -709,8 +709,8 @@ function executeTectonicSlam(e, context) {
           nodeIndex: n,
           angle: fAng,
           radius: 26,
-          timer: 18 + n * 6,
-          maxTimer: 18 + n * 6,
+          timer: 16 + n * 5,
+          maxTimer: 16 + n * 5,
           damage: Math.round(e.damage * 0.38)
         });
       }
@@ -744,7 +744,7 @@ function executeEpicenterEruption(e, context) {
   // Avaliação de Dano no Epicentro (< 115px)
   const pDist = Math.hypot(player.x - e.x, player.y - e.y);
   if (pDist < 115 && player.iFrames <= 0) {
-    let epicenterDmg = e.isPhase3 ? 75 : (e.isEnraged ? 70 : 65);
+    let epicenterDmg = e.isPhase3 ? 38 : (e.isEnraged ? 35 : 33);
     if (selectedHeroKey === 'KNIGHT') epicenterDmg = Math.round(epicenterDmg * 0.80);
 
     player.hp -= epicenterDmg;
@@ -761,15 +761,15 @@ function executeEpicenterEruption(e, context) {
     }
   }
 
-  // Transita para a propagação da onda externa (45 frames de tempo de aviso)
+  // Transita para a propagação da onda externa (90 frames de tempo de aviso)
   e.actionState = 'PROPAGATING_SURGE';
-  e.actionTimer = e.isPhase3 ? 32 : (e.isEnraged ? 38 : 45);
+  e.actionTimer = e.isPhase3 ? 64 : (e.isEnraged ? 76 : 90);
 }
 
 /**
  * SKILL 2 (PASSO 2): ONDA EXTERNA DE BASALTO
  * O solo sob o chefe já esfriou e está seguro!
- * O anel externo (145px a 245px) detona agora, causando 55 de dano.
+ * O anel externo (145px a 245px) detona agora, causando dano reduzido pela metade.
  */
 function executeOuterSurge(e, context) {
   const { player, triggerShake, createHitParticles, addDamageText } = context;
@@ -789,7 +789,7 @@ function executeOuterSurge(e, context) {
   // Avaliação de Dano no Anel Externo (140 a 245px)
   const pDist = Math.hypot(player.x - e.x, player.y - e.y);
   if (pDist >= 140 && pDist <= 245 && player.iFrames <= 0) {
-    let surgeDmg = e.isPhase3 ? 62 : (e.isEnraged ? 58 : 52);
+    let surgeDmg = e.isPhase3 ? 31 : (e.isEnraged ? 29 : 26);
     if (selectedHeroKey === 'KNIGHT') surgeDmg = Math.round(surgeDmg * 0.80);
 
     player.hp -= surgeDmg;
@@ -877,11 +877,11 @@ function executeMagmaSiphonRelease(e, context) {
           enemyBullets.push({
             x: e.x + Math.cos(sAng) * 65,
             y: e.y + Math.sin(sAng) * 65,
-            vx: Math.cos(sAng) * (3.2 + w * 0.35),
-            vy: Math.sin(sAng) * (3.2 + w * 0.35),
+            vx: Math.cos(sAng) * (3.8 + w * 0.4),
+            vy: Math.sin(sAng) * (3.8 + w * 0.4),
             radius: 6.5,
             damage: 26,
-            life: 110,
+            life: 200, // Alcance 2x: viaja até ~840px através de toda a arena
             color: '#e67e22'
           });
         }
@@ -895,6 +895,7 @@ function executeMagmaSiphonRelease(e, context) {
 
 /**
  * SKILL 5: FENDAS VULCÂNICAS (VOLCANIC FISSURE)
+ * Sequência de círculos explosivos em leque com alcance dobrado (525px).
  */
 function executeVolcanicFissure(e, context) {
   const { player, bossTelegraphs, triggerShake } = context;
@@ -911,9 +912,9 @@ function executeVolcanicFissure(e, context) {
 
   for (let l = 0; l < lineCount; l++) {
     const lineAng = startAngle + (l * step);
-    const nodeCount = 4;
+    const nodeCount = 7; // Dobrado de 4 para 7 nós consecutivos
     for (let n = 1; n <= nodeCount; n++) {
-      const distNode = n * 65;
+      const distNode = n * 75; // Alcance estendido 2x: atinge até 525px (antes 260px)
       const nodeX = e.x + Math.cos(lineAng) * distNode;
       const nodeY = e.y + Math.sin(lineAng) * distNode;
 
@@ -926,9 +927,9 @@ function executeVolcanicFissure(e, context) {
         lineIndex: l,
         nodeIndex: n,
         angle: lineAng,
-        radius: 28,
-        timer: 26 + n * 7,
-        maxTimer: 26 + n * 7,
+        radius: 30,
+        timer: 24 + n * 6,
+        maxTimer: 24 + n * 6,
         damage: 42
       });
     }
@@ -940,6 +941,7 @@ function executeVolcanicFissure(e, context) {
 
 /**
  * SKILL 6: ARTILHARIA DE BASALTO (BASALT BARRAGE)
+ * Chuva de meteoros vulcânicos com área e dispersão 2x maiores.
  */
 function executeBasaltBarrage(e, context) {
   const { player, bossTelegraphs, triggerShake } = context;
@@ -947,10 +949,10 @@ function executeBasaltBarrage(e, context) {
   playSfx('shoot');
   triggerShake(6);
 
-  const impactCount = e.isPhase3 ? 5 : (e.isEnraged ? 4 : 3);
+  const impactCount = e.isPhase3 ? 6 : (e.isEnraged ? 5 : 4);
   for (let m = 0; m < impactCount; m++) {
     const offsetAng = (m * Math.PI * 2) / impactCount + Math.random() * 0.4;
-    const offsetDist = 55 + Math.random() * 85;
+    const offsetDist = 75 + Math.random() * 175; // Alcance de dispersão ampliado para até 250px
     const targetX = player.x + Math.cos(offsetAng) * offsetDist;
     const targetY = player.y + Math.sin(offsetAng) * offsetDist;
 
@@ -958,7 +960,7 @@ function executeBasaltBarrage(e, context) {
       type: 'FALLING_ROCK',
       x: targetX,
       y: targetY,
-      radius: 42,
+      radius: 44,
       timer: 36 + m * 7,
       maxTimer: 36 + m * 7,
       damage: 48
@@ -1089,7 +1091,7 @@ function drawTelegraphsAndZones(ctx, e, frameCount) {
 
   // 2. Telegrafia do EPICENTRO (Solo sob o chefe rachando)
   if (e.actionState === 'WINDUP_EPICENTER') {
-    const maxTimer = e.isPhase3 ? 42 : (e.isEnraged ? 48 : 56);
+    const maxTimer = e.isPhase3 ? 84 : (e.isEnraged ? 96 : 112);
     const progress = Math.min(1, Math.max(0, 1 - (e.actionTimer / maxTimer)));
     const coreR = 115;
 
@@ -1130,7 +1132,7 @@ function drawTelegraphsAndZones(ctx, e, frameCount) {
 
   // 3. Telegrafia da ONDA EXTERNA (O centro já explodiu e é SEGURO; o anel externo vai estourar!)
   if (e.actionState === 'PROPAGATING_SURGE') {
-    const maxTimer = e.isPhase3 ? 32 : (e.isEnraged ? 38 : 45);
+    const maxTimer = e.isPhase3 ? 64 : (e.isEnraged ? 76 : 90);
     const progress = Math.min(1, Math.max(0, 1 - (e.actionTimer / maxTimer)));
 
     ctx.save();

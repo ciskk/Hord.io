@@ -139,6 +139,8 @@ export function initAbyssSovereign(boss) {
   boss.stateTimer = 0;
   boss.introDuration = 220;
   boss.introTimer = 220;
+  boss.titleTimer = 440; // Duração 2x maior na tela (~7.3 segundos a 60 FPS)
+  boss.titleMaxTimer = 440;
   boss.transitionTimer = 0;
 
   boss.lastHp = boss.hp;
@@ -708,6 +710,11 @@ export function updateAbyssSovereign(e, dt, context) {
   updateAnchors(e, dt, context);
   updateEventHorizon(e, dt, context);
   updateSingularityPhysics(e, dt, context);
+
+  // Decrementa o tempo de exibição do banner de tela do chefe
+  if (e.titleTimer > 0) {
+    e.titleTimer -= dt;
+  }
 
   // Regeneração dinâmica de vida pelas Âncoras Cósmicas (1% por segundo por âncora viva; se as 3 vivas = 3% por segundo)
   const activeAnchorCount = e.anchors ? e.anchors.filter(a => a.active && a.hp > 0).length : 0;
@@ -1476,48 +1483,64 @@ function drawMajesticSpawnIntro(ctx, e, frameCount) {
 
     ctx.restore();
   }
+}
 
-  // ==========================================
-  // GRANDE BANNER CINEMATOGRÁFICO DE TELA (APOCALIPSE IMINENTE)
-  // ==========================================
+/**
+ * Renderiza o Grande Título Cinematográfico do Chefe Final em tela inteira.
+ * Tema Vermelho Carmesim Apocalíptico com proporções responsivas para telas verticais (mobile/portrait).
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Object} e Entidade do Soberano do Abismo
+ * @param {number} frameCount
+ */
+function drawCinematicScreenTitle(ctx, e, frameCount) {
+  const maxT = e.titleMaxTimer || 440;
+  const titleProgress = 1 - Math.max(0, e.titleTimer / maxT);
+
+  // Transição suave de entrada e saída (dura 2x mais na tela: ~7.3s total)
+  let bannerAlpha = 1.0;
+  if (titleProgress < 0.08) {
+    bannerAlpha = titleProgress / 0.08;
+  } else if (titleProgress > 0.80) {
+    bannerAlpha = Math.max(0, (1 - titleProgress) / 0.20);
+  }
+
   ctx.save();
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  let bannerAlpha = 1.0;
-  if (progress < 0.12) {
-    bannerAlpha = progress / 0.12;
-  } else if (progress > 0.84) {
-    bannerAlpha = Math.max(0, (1 - progress) / 0.16);
-  }
   ctx.globalAlpha = bannerAlpha;
 
-  const screenW = viewW || 1280;
-  const screenH = viewH || 800;
-  const bannerW = Math.min(920, screenW * 0.94);
-  const bannerH = 105;
-  const bx = (screenW - bannerW) / 2;
-  const by = Math.max(110, Math.floor(screenH * 0.15));
+  const screenW = viewW || (typeof window !== 'undefined' ? window.innerWidth : 1280);
+  const screenH = viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
+  const isVertical = screenH > screenW || screenW < 640;
 
-  // 1. Fundo Cósmico Profundo com Gradiente Translúcido
+  // Em telas verticais (smartphones/portrait):
+  // O banner é compacto (altura 58px) e posicionado logo abaixo do HUD superior para não cobrir a ação.
+  // Em telas horizontais (desktop):
+  // O banner é majestoso, imponente e amplo (altura 94px).
+  const bannerW = isVertical ? Math.min(380, screenW * 0.94) : Math.min(880, screenW * 0.90);
+  const bannerH = isVertical ? 58 : 94;
+  const bx = (screenW - bannerW) / 2;
+  const by = isVertical ? Math.max(74, Math.floor(screenH * 0.095)) : Math.max(105, Math.floor(screenH * 0.14));
+
+  // 1. Fundo Cósmico Carmesim Profundo com Gradiente Translúcido
   const bgGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
-  bgGrad.addColorStop(0, 'rgba(4, 1, 12, 0)');
-  bgGrad.addColorStop(0.14, 'rgba(6, 2, 18, 0.95)');
-  bgGrad.addColorStop(0.5, 'rgba(16, 4, 32, 0.98)');
-  bgGrad.addColorStop(0.86, 'rgba(6, 2, 18, 0.95)');
-  bgGrad.addColorStop(1, 'rgba(4, 1, 12, 0)');
+  bgGrad.addColorStop(0, 'rgba(15, 0, 4, 0)');
+  bgGrad.addColorStop(0.15, 'rgba(28, 2, 8, 0.95)');
+  bgGrad.addColorStop(0.5, 'rgba(52, 4, 14, 0.98)');
+  bgGrad.addColorStop(0.85, 'rgba(28, 2, 8, 0.95)');
+  bgGrad.addColorStop(1, 'rgba(15, 0, 4, 0)');
   ctx.fillStyle = bgGrad;
   ctx.fillRect(bx, by, bannerW, bannerH);
 
-  // 2. Frisos de Neon Superior e Inferior com Gradiente Ciano/Magenta
+  // 2. Frisos de Neon Vermelho Carmesim Superior e Inferior
   const borderGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
-  borderGrad.addColorStop(0, 'rgba(0, 206, 201, 0)');
-  borderGrad.addColorStop(0.2, 'rgba(0, 206, 201, 0.9)');
-  borderGrad.addColorStop(0.5, 'rgba(232, 67, 147, 1)');
-  borderGrad.addColorStop(0.8, 'rgba(0, 206, 201, 0.9)');
-  borderGrad.addColorStop(1, 'rgba(0, 206, 201, 0)');
+  borderGrad.addColorStop(0, 'rgba(255, 23, 68, 0)');
+  borderGrad.addColorStop(0.2, 'rgba(255, 23, 68, 0.95)');
+  borderGrad.addColorStop(0.5, 'rgba(255, 107, 129, 1)');
+  borderGrad.addColorStop(0.8, 'rgba(255, 23, 68, 0.95)');
+  borderGrad.addColorStop(1, 'rgba(255, 23, 68, 0)');
 
   ctx.strokeStyle = borderGrad;
-  ctx.lineWidth = 2.6;
+  ctx.lineWidth = isVertical ? 2.0 : 2.6;
   ctx.beginPath();
   ctx.moveTo(bx, by);
   ctx.lineTo(bx + bannerW, by);
@@ -1525,50 +1548,77 @@ function drawMajesticSpawnIntro(ctx, e, frameCount) {
   ctx.lineTo(bx + bannerW, by + bannerH);
   ctx.stroke();
 
-  // Frisos internos finos de alta tecnologia dimensional
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+  // Frisos internos finos
+  ctx.strokeStyle = 'rgba(255, 150, 160, 0.35)';
   ctx.lineWidth = 1;
+  const padX = isVertical ? 24 : 45;
   ctx.beginPath();
-  ctx.moveTo(bx + 45, by + 4);
-  ctx.lineTo(bx + bannerW - 45, by + 4);
-  ctx.moveTo(bx + 45, by + bannerH - 4);
-  ctx.lineTo(bx + bannerW - 45, by + bannerH - 4);
+  ctx.moveTo(bx + padX, by + 3);
+  ctx.lineTo(bx + bannerW - padX, by + 3);
+  ctx.moveTo(bx + padX, by + bannerH - 3);
+  ctx.lineTo(bx + bannerW - padX, by + bannerH - 3);
   ctx.stroke();
 
-  // 3. Cantoneiras Geométricas Góticas
-  const cornerSize = 16;
-  ctx.fillStyle = '#00cec9';
-  ctx.fillRect(bx + 35, by - 2, cornerSize, 4);
-  ctx.fillRect(bx + bannerW - 35 - cornerSize, by - 2, cornerSize, 4);
-  ctx.fillStyle = '#e84393';
-  ctx.fillRect(bx + 35, by + bannerH - 2, cornerSize, 4);
-  ctx.fillRect(bx + bannerW - 35 - cornerSize, by + bannerH - 2, cornerSize, 4);
+  // 3. Cantoneiras Geométricas Rubras
+  const cornerSize = isVertical ? 10 : 16;
+  ctx.fillStyle = '#ff1744';
+  ctx.fillRect(bx + padX * 0.7, by - 1.5, cornerSize, 3);
+  ctx.fillRect(bx + bannerW - padX * 0.7 - cornerSize, by - 1.5, cornerSize, 3);
+  ctx.fillStyle = '#b71540';
+  ctx.fillRect(bx + padX * 0.7, by + bannerH - 1.5, cornerSize, 3);
+  ctx.fillRect(bx + bannerW - padX * 0.7 - cornerSize, by + bannerH - 1.5, cornerSize, 3);
 
   // 4. Textos do Banner
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // Tag Superior de Alerta Máximo
-  ctx.font = 'bold 12px monospace';
-  ctx.fillStyle = '#e84393';
-  ctx.shadowColor = 'rgba(232, 67, 147, 0.85)';
-  ctx.shadowBlur = 8;
-  ctx.fillText("[ ALERTA DE CATACLISMA // AMEAÇA EXISTENCIAL ]", screenW / 2, by + 23);
+  const pulseGlow = 12 + Math.sin(frameCount * 0.14) * 6;
 
-  // Título Principal Ameaçador
-  const pulseGlow = 16 + Math.sin(frameCount * 0.12) * 8;
-  ctx.font = 'bold 31px "Cinzel", "Cinzel Decorative", Georgia, serif';
-  ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0, 206, 201, 0.95)';
-  ctx.shadowBlur = pulseGlow;
-  ctx.fillText("❖ SOBERANO DO ABISMO ❖", screenW / 2, by + 54);
+  if (isVertical) {
+    // --- LAYOUT PARA TELAS VERTICAIS (Compacto & Legível) ---
+    // Tag Superior
+    ctx.font = 'bold 9px monospace';
+    ctx.fillStyle = '#ff6b81';
+    ctx.shadowColor = 'rgba(255, 23, 68, 0.85)';
+    ctx.shadowBlur = 6;
+    ctx.fillText("[ ALERTA DE CATACLISMA ]", screenW / 2, by + 13);
 
-  // Subtítulo Místico
-  ctx.font = 'italic 13px "Cinzel", Georgia, serif';
-  ctx.fillStyle = '#dfe4ea';
-  ctx.shadowColor = 'rgba(162, 155, 254, 0.6)';
-  ctx.shadowBlur = 4;
-  ctx.fillText("✦ O DEVORADOR DAS ERAS E SENHOR DO VÁZIO PRIMORDIAL ✦", screenW / 2, by + 81);
+    // Título Central
+    ctx.font = 'bold 17px "Cinzel", "Cinzel Decorative", Georgia, serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(255, 23, 68, 0.95)';
+    ctx.shadowBlur = pulseGlow;
+    ctx.fillText("❖ SOBERANO DO ABISMO ❖", screenW / 2, by + 31);
+
+    // Subtítulo
+    ctx.font = 'italic 10px "Cinzel", Georgia, serif';
+    ctx.fillStyle = '#ffd1d1';
+    ctx.shadowColor = 'rgba(183, 21, 64, 0.7)';
+    ctx.shadowBlur = 3;
+    ctx.fillText("✦ SENHOR DO VÁZIO PRIMORDIAL ✦", screenW / 2, by + 46);
+  } else {
+    // --- LAYOUT PARA TELAS HORIZONTAIS (Majestoso & Completo) ---
+    // Tag Superior
+    ctx.font = 'bold 11px monospace';
+    ctx.fillStyle = '#ff4d4d';
+    ctx.shadowColor = 'rgba(255, 23, 68, 0.85)';
+    ctx.shadowBlur = 8;
+    ctx.fillText("[ ALERTA DE CATACLISMA // AMEAÇA EXISTENCIAL ]", screenW / 2, by + 20);
+
+    // Título Central
+    ctx.font = 'bold 28px "Cinzel", "Cinzel Decorative", Georgia, serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(255, 23, 68, 0.95)';
+    ctx.shadowBlur = pulseGlow;
+    ctx.fillText("❖ SOBERANO DO ABISMO ❖", screenW / 2, by + 48);
+
+    // Subtítulo
+    ctx.font = 'italic 12px "Cinzel", Georgia, serif';
+    ctx.fillStyle = '#ffd1d1';
+    ctx.shadowColor = 'rgba(183, 21, 64, 0.7)';
+    ctx.shadowBlur = 4;
+    ctx.fillText("✦ O DEVORADOR DAS ERAS E SENHOR DO VÁZIO PRIMORDIAL ✦", screenW / 2, by + 74);
+  }
 
   ctx.restore();
 }
@@ -1576,8 +1626,7 @@ function drawMajesticSpawnIntro(ctx, e, frameCount) {
 export function drawAbyssSovereign(ctx, e, frameCount) {
   if (e.actionState === SOVEREIGN_STATES.SPAWN_INTRO) {
     drawMajesticSpawnIntro(ctx, e, frameCount);
-    return;
-  }
+  } else {
 
   const R = e.radius;
   const isStaggered = e.actionState === SOVEREIGN_STATES.RECOVERY_STAGGER;
@@ -2166,5 +2215,11 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1;
     ctx.strokeRect(-barW / 2, -R - 18, barW, barH);
+  }
+  }
+
+  // 14. Grande Banner Cinematográfico de Tela (Tema Vermelho, 2x Duração e Responsivo para Telas Verticais)
+  if (e.titleTimer > 0) {
+    drawCinematicScreenTitle(ctx, e, frameCount);
   }
 }
