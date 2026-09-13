@@ -151,14 +151,14 @@ export function updateProjectiles(dt) {
         e.hp -= finalDmg;
         e.hitFlash = 4;
 
-        // Knockback desferido nos monstros: Pesados dobram a força; Elites resistem 50%; Chefes são imunes
-        if (!e.isBoss && !e.isBossSubTarget) {
+        // Knockback Suave: Elites resistem 50%; Chefes e Mini-Chefes resistem 80% (0.20x); Sub-alvos são imunes
+        if (!e.isBossSubTarget) {
           const impactAngle = b.angle !== undefined ? b.angle : Math.atan2(b.vy || 0, b.vx || 0);
           const baseWeaponPush = (b.type === 'HAMMER_SLAM' ? 14.0 : (b.type === 'STAFF' ? 6.0 : 4.5));
-          const eliteResist = e.isElite ? 0.5 : 1.0;
-          const totalPush = baseWeaponPush * (player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0) * eliteResist;
-          e.x += Math.cos(impactAngle) * totalPush;
-          e.y += Math.sin(impactAngle) * totalPush;
+          const bossResist = (e.isBoss || e.isMiniBoss) ? 0.20 : (e.isElite ? 0.50 : 1.0);
+          const totalPush = baseWeaponPush * (player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0) * bossResist;
+          e.pushVx = (e.pushVx || 0) + Math.cos(impactAngle) * totalPush;
+          e.pushVy = (e.pushVy || 0) + Math.sin(impactAngle) * totalPush;
         }
 
         if (isCrit || isMeleeAdrenaline || isKaelExecute) {

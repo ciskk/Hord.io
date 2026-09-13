@@ -200,6 +200,67 @@ function isSynergyIngredient(optId) {
   return checkIsSynergyIngredient(optId, player);
 }
 
+export let pendingLevelUps = 0;
+export let bossRewardContext = null;
+
+export function setBossRewardContext(bossName, bossId) {
+  bossRewardContext = {
+    bossName: bossName || 'Chefe Supremo',
+    bossId: bossId || 1,
+    totalCount: 0,
+    chosenCount: 0
+  };
+}
+
+export function ensureBossUpgradeCount(minCount) {
+  if (bossRewardContext && bossRewardContext.totalCount < minCount) {
+    const diff = minCount - bossRewardContext.totalCount;
+    for (let k = 0; k < diff; k++) {
+      levelUp();
+    }
+  }
+}
+
+export function resetUpgradeQueue() {
+  pendingLevelUps = 0;
+  bossRewardContext = null;
+  const bossBanner = document.getElementById('boss-reward-banner');
+  if (bossBanner) bossBanner.style.display = 'none';
+}
+
+function updateUpgradeModalHeader() {
+  const bossBanner = document.getElementById('boss-reward-banner');
+  const bossTitle = document.getElementById('boss-reward-title');
+  const bossCounter = document.getElementById('boss-reward-counter');
+  const levelBadge = document.querySelector('.modal-box-tarot .level-up-badge');
+  const headerSub = document.querySelector('.modal-box-tarot .modal-header-sub');
+
+  if (bossRewardContext && bossRewardContext.totalCount > 0) {
+    if (bossBanner) {
+      bossBanner.style.display = 'flex';
+      if (bossTitle) bossTitle.innerText = `VITÓRIA CONTRA ${bossRewardContext.bossName.toUpperCase()}!`;
+      if (bossCounter) {
+        const currentChoice = bossRewardContext.chosenCount + 1;
+        const total = Math.max(bossRewardContext.totalCount, bossRewardContext.chosenCount + pendingLevelUps);
+        const remaining = Math.max(0, pendingLevelUps - 1);
+        bossCounter.innerHTML = `<span style="color:#f1c40f; font-weight:800;">+${total} UPGRADES CONQUISTADOS</span> &bull; Escolhendo Bênção <b>${currentChoice} de ${total}</b>${remaining > 0 ? ` (${remaining} restante${remaining > 1 ? 's' : ''})` : ' (Última Bênção)'}`;
+      }
+    }
+    if (levelBadge) levelBadge.style.display = 'none';
+    if (headerSub) headerSub.innerText = "Recompensa mística concedida pela derrota do colosso";
+  } else {
+    if (bossBanner) bossBanner.style.display = 'none';
+    if (levelBadge) levelBadge.style.display = 'inline-block';
+    if (headerSub) {
+      if (pendingLevelUps > 1) {
+        headerSub.innerHTML = `Invoque uma bênção arcana para remodelar o combate &bull; <b style="color:#f1c40f;">${pendingLevelUps} bênçãos na fila</b>`;
+      } else {
+        headerSub.innerText = "Invoque uma bênção arcana para remodelar o combate";
+      }
+    }
+  }
+}
+
 function renderUpgradeCards() {
   const modal = document.getElementById('upgrade-modal');
   const container = document.getElementById('upgrade-list');
@@ -230,9 +291,23 @@ function renderUpgradeCards() {
     card.onclick = () => {
       playSfx('card_select');
       opt.apply();
-      modal.style.display = 'none';
-      gameState.isPaused = false;
-      setLastTime(performance.now());
+      pendingLevelUps--;
+
+      if (bossRewardContext) {
+        bossRewardContext.chosenCount++;
+      }
+
+      if (pendingLevelUps > 0) {
+        updateUpgradeModalHeader();
+        renderUpgradeCards();
+      } else {
+        pendingLevelUps = 0;
+        bossRewardContext = null;
+        updateUpgradeModalHeader();
+        modal.style.display = 'none';
+        gameState.isPaused = false;
+        setLastTime(performance.now());
+      }
     };
 
     container.appendChild(card);
@@ -256,11 +331,22 @@ function renderUpgradeCards() {
 }
 
 export function levelUp() {
+  pendingLevelUps++;
+  if (bossRewardContext) {
+    bossRewardContext.totalCount++;
+  }
+
+  const upgradeModal = document.getElementById('upgrade-modal');
+  if (upgradeModal && upgradeModal.style.display === 'flex') {
+    updateUpgradeModalHeader();
+    return;
+  }
+
   playSfx('level');
   gameState.isPaused = true;
   resetInput();
+  updateUpgradeModalHeader();
   renderUpgradeCards();
-  const upgradeModal = document.getElementById('upgrade-modal');
   if (upgradeModal) upgradeModal.style.display = 'flex';
 }
 

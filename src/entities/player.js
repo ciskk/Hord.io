@@ -601,11 +601,14 @@ export function triggerHeroSkill() {
       const dy = e.y - player.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < 260) {
-        if (!e.isBoss && !e.isBossSubTarget) {
+        if (!e.isBossSubTarget) {
           const nx = dist > 0.001 ? dx / dist : 1;
           const ny = dist > 0.001 ? dy / dist : 0;
-          e.x += nx * 55;
-          e.y += ny * 55;
+          const bossResist = (e.isBoss || e.isMiniBoss) ? 0.20 : 1.0;
+          // Redução de 40% (de 55 para 33) e impulso suave no vetor cinético
+          const roarPush = 33 * bossResist;
+          e.pushVx = (e.pushVx || 0) + nx * roarPush;
+          e.pushVy = (e.pushVy || 0) + ny * roarPush;
         }
         e.stunTimer = 35;
         e.slowTimer = 240;
@@ -799,18 +802,21 @@ export function updateSpinningAxes(dt) {
         addDamageText(seg.closestX, seg.closestY, Math.round(finalDmg), isCrit || isMeleeAdrenaline || isKaelExecute, dmgColor);
         createHitParticles(seg.closestX, seg.closestY, isOuterZone ? '#e67e22' : '#d35400', isOuterZone ? 4 : 2);
 
-        // Repulsão tangencial e radial amplificada pelo peso do personagem
-        const kbMult = player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0;
-        if (isOuterZone) {
-          const tanAng = angle + Math.PI * 0.5;
-          const pushForce = (player.evolvedAxe ? 12 : 7) * (player.berserkTimer > 0 ? 1.6 : 1.0) * kbMult;
-          e.x += Math.cos(tanAng) * pushForce;
-          e.y += Math.sin(tanAng) * pushForce;
-        } else {
-          const radAng = Math.atan2(e.y - player.y, e.x - player.x);
-          const pushForce = (player.evolvedAxe ? 16 : 11) * (player.berserkTimer > 0 ? 1.5 : 1.0) * kbMult;
-          e.x += Math.cos(radAng) * pushForce;
-          e.y += Math.sin(radAng) * pushForce;
+        // Repulsão tangencial e radial suave amplificada pelo peso do personagem
+        if (!e.isBossSubTarget) {
+          const kbMult = player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0;
+          const bossResist = (e.isBoss || e.isMiniBoss) ? 0.20 : (e.isElite ? 0.50 : 1.0);
+          if (isOuterZone) {
+            const tanAng = angle + Math.PI * 0.5;
+            const pushForce = (player.evolvedAxe ? 12 : 7) * (player.berserkTimer > 0 ? 1.6 : 1.0) * kbMult * bossResist;
+            e.pushVx = (e.pushVx || 0) + Math.cos(tanAng) * pushForce;
+            e.pushVy = (e.pushVy || 0) + Math.sin(tanAng) * pushForce;
+          } else {
+            const radAng = Math.atan2(e.y - player.y, e.x - player.x);
+            const pushForce = (player.evolvedAxe ? 16 : 11) * (player.berserkTimer > 0 ? 1.5 : 1.0) * kbMult * bossResist;
+            e.pushVx = (e.pushVx || 0) + Math.cos(radAng) * pushForce;
+            e.pushVy = (e.pushVy || 0) + Math.sin(radAng) * pushForce;
+          }
         }
 
         if (player.slowChance > 0 && Math.random() < player.slowChance) {

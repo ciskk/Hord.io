@@ -51,7 +51,16 @@ import {
   resetMiniBossSchedule,
   setFirstBossKilled 
 } from './systems/waves.js';
-import { initUI, openCharacterSelect, triggerDeath, triggerVictory, openChestModal } from './systems/ui.js';
+import { 
+  initUI, 
+  openCharacterSelect, 
+  triggerDeath, 
+  triggerVictory, 
+  openChestModal,
+  setBossRewardContext,
+  ensureBossUpgradeCount,
+  resetUpgradeQueue
+} from './systems/ui.js';
 import { render } from './render/renderer.js';
 import { transitionToArenaTheme, getWaveArenaTheme, resetEnvironment, ARENA_PALETTES } from './render/environment.js';
 import { playSfx, triggerHaptic, resetDeathAudioFilter } from './core/audio.js';
@@ -242,6 +251,7 @@ export function resetGame() {
 
   resetBossSchedule();
   resetMiniBossSchedule();
+  resetUpgradeQueue();
   currentArenaTheme = 'IVORY_OSSUARY';
   resetEnvironment();
   gameState.isWavePaused = false;
@@ -736,13 +746,14 @@ function update(dt) {
           playSfx('hit');
           if (isCrit || isKaelExecute) playSfx('crit');
 
-          // Knockback Sagrado: afasta monstros para fora do raio orbital protegendo o herói
-          if (!e.isBoss && !e.isBossSubTarget) {
+          // Knockback Sagrado Suave: afasta monstros com vetor cinético; chefes e mini-chefes resistem 80% (0.20x)
+          if (!e.isBossSubTarget) {
             const pushAng = Math.atan2(e.y - player.y, e.x - player.x);
             const basePush = player.evolvedOrbitals ? 6.8 : 4.8;
-            const pushForce = basePush * (player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0) * (e.isElite ? 0.45 : 1.0);
-            e.x += Math.cos(pushAng) * pushForce;
-            e.y += Math.sin(pushAng) * pushForce;
+            const bossResist = (e.isBoss || e.isMiniBoss) ? 0.20 : (e.isElite ? 0.45 : 1.0);
+            const pushForce = basePush * (player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0) * bossResist;
+            e.pushVx = (e.pushVx || 0) + Math.cos(pushAng) * pushForce;
+            e.pushVy = (e.pushVy || 0) + Math.sin(pushAng) * pushForce;
           }
 
           const hitColor = player.evolvedOrbitals ? '#f1c40f' : '#00cec9';
@@ -1186,6 +1197,17 @@ function update(dt) {
 
     if (e.isBossSubTarget) continue;
 
+    // Integração Cinética de Knockback Suave (Impulso com Fricção Exponencial)
+    if (e.pushVx || e.pushVy) {
+      e.x += (e.pushVx || 0) * dt;
+      e.y += (e.pushVy || 0) * dt;
+      const kbFriction = Math.pow(0.82, dt);
+      e.pushVx = (e.pushVx || 0) * kbFriction;
+      e.pushVy = (e.pushVy || 0) * kbFriction;
+      if (Math.abs(e.pushVx) < 0.05) e.pushVx = 0;
+      if (Math.abs(e.pushVy) < 0.05) e.pushVy = 0;
+    }
+
     if (e.stunTimer > 0) {
       e.stunTimer -= dt;
       continue;
@@ -1204,6 +1226,12 @@ function update(dt) {
         e.slowTimer -= dt;
         const maxSlow = e.isBoss ? 0.18 : (e.slowFactor || 0.5);
         curSpeed *= (1 - maxSlow);
+      }
+
+      // Micro Stagger / Hit-Stun: amortece o avanço próprio do inimigo enquanto sofre impulso forte de recuo
+      const pushSpeed = Math.hypot(e.pushVx || 0, e.pushVy || 0);
+      if (pushSpeed > 1.8) {
+        curSpeed *= 0.25;
       }
 
       if (e.combatState === 'WINDUP') curSpeed *= 0.15;
@@ -1908,29 +1936,18 @@ function update(dt) {
         if (e.bossId === 1) setFirstBossKilled(true);
         
         const bossXp = e.xp || 400;
-        gems.push({
-          x: e.x,
-          y: e.y,
-          radius: 12,
-          color: '#e056fd',
-          value: Math.floor(bossXp * 0.65),
-          isSuper: true,
-          forcedPull: true,
-          pulseOffset: 0
-        });
+        
+        // Registra o contexto de vitória contra o chefe para exibição destacada na tela de bênçãos
+        setBossRewardContext(e.name, e.bossId);
+        addXP(bossXp);
+        
+        // Garante no mínimo 2 upgrades para o 1º chefe e 3 para os chefes avançados
+        const minBossUpgrades = (e.bossId === 1) ? 2 : 3;
+        ensureBossUpgradeCount(minBossUpgrades);
 
         for (let k = 0; k < 4; k++) {
           const bAngle = (k * Math.PI * 2) / 4;
-          gems.push({
-            x: e.x + Math.cos(bAngle) * 36,
-            y: e.y + Math.sin(bAngle) * 36,
-            radius: 9,
-            color: '#e056fd',
-            value: Math.floor(bossXp * 0.09),
-            isSuper: true,
-            forcedPull: true,
-            pulseOffset: k
-          });
+          createHitParticles(e.x + Math.cos(bAngle) * 36, e.y + Math.sin(bAngle) * 36, '#e056fd', 8);
         }
 
         const bossGold = 120 * (e.bossId || 1);
