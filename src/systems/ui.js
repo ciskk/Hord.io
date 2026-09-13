@@ -15,7 +15,7 @@ import {
   triggerHeroSurge 
 } from '../render/characterPreview.js';
 import { BOSS_TYPES } from '../config/enemies.js';
-import { getRandomUpgrades, checkSynergies } from '../config/upgrades.js';
+import { getRandomUpgrades, checkSynergies, grant50Upgrades } from '../config/upgrades.js';
 import { checkIsSynergyIngredient, getSynergyTrackerList } from '../config/items.js';
 import { triggerBossEncounter } from '../entities/enemies.js';
 import { 
@@ -103,6 +103,7 @@ export function isBossSelectAllowed() {
 export function openBossSelectModal() {
   const modal = document.getElementById('boss-select-modal');
   if (!modal) return;
+  renderBossSelectModal();
   modal.style.display = 'flex';
   playSfx('level');
 }
@@ -112,7 +113,7 @@ export function closeBossSelectModal() {
   if (modal) modal.style.display = 'none';
 }
 
-export function launchBossTest(bossId) {
+export function launchBossTest(bossId, grantLevels = false) {
   closeBossSelectModal();
 
   const charModal = document.getElementById('char-modal');
@@ -126,6 +127,10 @@ export function launchBossTest(bossId) {
     if (pauseModal) pauseModal.style.display = 'none';
     gameState.isPaused = false;
     setLastTime(performance.now());
+  }
+
+  if (grantLevels) {
+    grant50Upgrades();
   }
 
   setActiveBoss(null);
@@ -142,33 +147,49 @@ export function renderBossSelectModal() {
 
   Object.keys(BOSS_TYPES).forEach(id => {
     const boss = BOSS_TYPES[id];
-    const btn = document.createElement('button');
-    btn.className = 'card-btn';
-    btn.style.margin = '3px 0';
-    btn.style.padding = '8px 12px';
-    btn.style.display = 'flex';
-    btn.style.justifyContent = 'space-between';
-    btn.style.alignItems = 'center';
-    btn.style.borderLeft = `4px solid ${boss.color || '#e056fd'}`;
-    btn.style.background = '#1a1e2d';
-    btn.style.textAlign = 'left';
+    const card = document.createElement('div');
+    card.className = 'boss-dev-card';
+    card.style.borderLeftColor = boss.color || '#e056fd';
 
-    btn.innerHTML = `
-      <div>
-        <div style="font-weight: bold; color: #fff; font-size: 12px;">${boss.name}</div>
-        <div style="font-size: 10px; color: #8890a6;">
-          Boss #${id} • HP: ${boss.hp.toLocaleString('pt-BR')} • Dano: ${boss.damage}${boss.isFinalBoss ? ' • <b style="color:#e74c3c">FINAL</b>' : ''}
-        </div>
+    const info = document.createElement('div');
+    info.className = 'boss-dev-info';
+    info.innerHTML = `
+      <div class="boss-dev-name">${boss.name}</div>
+      <div class="boss-dev-meta">
+        Boss #${id} • HP: ${boss.hp.toLocaleString('pt-BR')} • Dano: ${boss.damage}${boss.isFinalBoss ? ' • <b style="color:#e74c3c">FINAL</b>' : ''}
       </div>
-      <span style="color: #e056fd; font-size: 11px; font-weight: bold;">TESTAR ➔</span>
     `;
 
-    btn.onclick = (e) => {
+    const actions = document.createElement('div');
+    actions.className = 'boss-dev-actions';
+
+    const normalBtn = document.createElement('button');
+    normalBtn.className = 'boss-dev-btn-normal';
+    normalBtn.type = 'button';
+    normalBtn.title = 'Testar no nível atual / nível 1';
+    normalBtn.innerText = '⚔️ Normal';
+    normalBtn.onclick = (e) => {
       e.stopPropagation();
-      launchBossTest(Number(id));
+      launchBossTest(Number(id), false);
     };
 
-    container.appendChild(btn);
+    const boostBtn = document.createElement('button');
+    boostBtn.className = 'boss-dev-btn-boost';
+    boostBtn.type = 'button';
+    boostBtn.title = 'Receber 50 upgrades aleatórios e evoluções imediatas';
+    boostBtn.innerText = '⚡ +50 Níveis';
+    boostBtn.onclick = (e) => {
+      e.stopPropagation();
+      launchBossTest(Number(id), true);
+    };
+
+    actions.appendChild(normalBtn);
+    actions.appendChild(boostBtn);
+
+    card.appendChild(info);
+    card.appendChild(actions);
+
+    container.appendChild(card);
   });
 }
 

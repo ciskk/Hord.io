@@ -380,3 +380,43 @@ export function getRandomUpgrades(count) {
 export function checkSynergies() {
   return getAvailableSynergies(player);
 }
+
+/**
+ * Concede 50 níveis e upgrades aleatórios imediatos ao herói (Ferramenta Dev W+5).
+ * Ativa automaticamente evoluções de armas/sinergias e restaura vida cheia.
+ */
+export function grant50Upgrades() {
+  const targetLevels = 50;
+
+  for (let i = 0; i < targetLevels; i++) {
+    // 1. Aplica qualquer sinergia/fusão disponível
+    const synergies = checkSynergies();
+    if (synergies && synergies.length > 0) {
+      synergies[0].apply();
+    }
+
+    // 2. Coleta os upgrades disponíveis no momento
+    const available = upgradesPool.filter(opt => opt.isAvailable());
+    if (available.length > 0) {
+      const randIdx = Math.floor(Math.random() * available.length);
+      available[randIdx].apply();
+    } else {
+      BLESSING_UPGRADE.apply();
+    }
+
+    player.level++;
+  }
+
+  // 3. Aplica quaisquer sinergias pendentes que foram desbloqueadas
+  const finalSynergies = checkSynergies();
+  if (finalSynergies && finalSynergies.length > 0) {
+    finalSynergies.forEach(syn => syn.apply());
+  }
+
+  // 4. Recalcula curva de XP para o novo nível
+  player.nextXp = 12 + (player.level * 7) + Math.floor(Math.pow(player.level, 1.28));
+  player.xp = 0;
+
+  // 5. Restaura vida máxima total do herói
+  player.hp = player.maxHp;
+}

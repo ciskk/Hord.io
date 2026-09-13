@@ -2517,6 +2517,122 @@ html, body {
   transform: scale(0.98);
 }
 
+/* ======================================================== */
+/* MODAL DE DESENVOLVEDOR (W + 5) - SELEÇÃO DE BOSSES       */
+/* ======================================================== */
+
+.boss-dev-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #1a1e2d;
+  border-left: 4px solid #e056fd;
+  border-radius: 6px;
+  margin: 3px 0;
+  gap: 8px;
+  box-sizing: border-box;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.boss-dev-card:hover {
+  background: #20263a;
+}
+
+.boss-dev-info {
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+}
+
+.boss-dev-name {
+  font-weight: 800;
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.boss-dev-meta {
+  font-size: 10px;
+  color: #8890a6;
+  margin-top: 2px;
+  line-height: 1.2;
+}
+
+.boss-dev-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.boss-dev-btn-normal,
+.boss-dev-btn-boost {
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  line-height: 1;
+  transition: transform 0.1s ease, filter 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.boss-dev-btn-normal {
+  background: #2c334d;
+  color: #cbd5e1;
+  border: 1px solid #475569;
+}
+
+.boss-dev-btn-normal:hover {
+  background: #3a4466;
+  border-color: #94a3b8;
+  color: #fff;
+}
+
+.boss-dev-btn-normal:active {
+  transform: scale(0.95);
+}
+
+.boss-dev-btn-boost {
+  background: linear-gradient(135deg, #7c3aed, #c026d3);
+  color: #ffffff;
+  border: 1px solid #e056fd;
+  box-shadow: 0 0 10px rgba(224, 86, 253, 0.4);
+}
+
+.boss-dev-btn-boost:hover {
+  filter: brightness(1.18);
+  box-shadow: 0 0 14px rgba(224, 86, 253, 0.7);
+}
+
+.boss-dev-btn-boost:active {
+  transform: scale(0.95);
+}
+
+@media (max-width: 420px) {
+  .boss-dev-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .boss-dev-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .boss-dev-btn-normal,
+  .boss-dev-btn-boost {
+    flex: 1;
+    padding: 7px 8px;
+    font-size: 10.5px;
+  }
+}
+
 /* Cards de Upgrades Antigos (Retrocompatibilidade) */
 .upgrade-card {
   width: 100%;
