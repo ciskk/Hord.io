@@ -122,15 +122,15 @@ export function updateAbyssSovereign(e, dt, context) {
   if (e.idleBlend === undefined) e.idleBlend = 0.0;
 
   if (e.actionState === SOVEREIGN_STATES.IDLE) {
-    const isWakingUp = (e.idleTimer !== undefined && e.idleTimer <= 12);
+    const isWakingUp = (e.idleTimer !== undefined && e.idleTimer <= 6);
     if (isWakingUp) {
       e.eyeAnimState = 'OPENING';
-      e.eyeAperture = Math.min(1.0, e.eyeAperture + 0.10 * dt);
-      e.idleBlend = Math.max(0.0, e.idleBlend - 0.08 * dt);
+      e.eyeAperture = Math.min(1.0, e.eyeAperture + 0.20 * dt);
+      e.idleBlend = Math.max(0.0, e.idleBlend - 0.16 * dt);
     } else {
       e.eyeAnimState = 'CLOSING';
-      e.eyeAperture = Math.max(0.0, e.eyeAperture - 0.18 * dt);
-      e.idleBlend = Math.min(1.0, e.idleBlend + 0.15 * dt);
+      e.eyeAperture = Math.max(0.0, e.eyeAperture - 0.36 * dt);
+      e.idleBlend = Math.min(1.0, e.idleBlend + 0.30 * dt);
       if (e.eyeAperture === 0) e.eyeAnimState = 'CLOSED';
     }
   } else {
@@ -291,7 +291,7 @@ export function updateAbyssSovereign(e, dt, context) {
 
       if (e.introTimer <= 0) {
         e.actionState = SOVEREIGN_STATES.IDLE;
-        e.idleTimer = 85;
+        e.idleTimer = 42;
         e.isTargetable = true;
         e.stateTimer = 0;
 
@@ -391,7 +391,7 @@ export function updateAbyssSovereign(e, dt, context) {
         }
         e.actionState = SOVEREIGN_STATES.IDLE;
         e.stateTimer = 0;
-        e.idleTimer = 75;
+        e.idleTimer = 37;
       }
       break;
     }
@@ -682,7 +682,7 @@ export function updateAbyssSovereign(e, dt, context) {
         } else {
           e.actionState = SOVEREIGN_STATES.IDLE;
           e.stateTimer = 0;
-          e.idleTimer = e.phase === 3 ? 65 : (e.phase === 2 ? 75 : 85);
+          e.idleTimer = e.phase === 3 ? 32 : (e.phase === 2 ? 37 : 42);
         }
       }
       break;
@@ -728,7 +728,7 @@ export function updateAbyssSovereign(e, dt, context) {
 
         e.actionState = SOVEREIGN_STATES.IDLE;
         e.stateTimer = 0;
-        e.idleTimer = e.phase === 3 ? 60 : (e.phase === 2 ? 70 : 80);
+        e.idleTimer = e.phase === 3 ? 30 : (e.phase === 2 ? 35 : 40);
       }
       break;
     }
@@ -751,7 +751,7 @@ export function updateAbyssSovereign(e, dt, context) {
         e.isStaggered = false;
         e.actionState = SOVEREIGN_STATES.IDLE;
         e.stateTimer = 0;
-        e.idleTimer = 80;
+        e.idleTimer = 40;
         addDamageText(e.x, e.y - e.radius - 12, "ESTABILIZADO!", true, '#8e44ad');
       }
       break;

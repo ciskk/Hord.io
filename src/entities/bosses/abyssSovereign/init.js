@@ -69,8 +69,12 @@ export function initAbyssSovereign(boss) {
   boss.cleaveAngle = 0;
   boss.cleaveLocked = false;
 
+  if (!boss.damage || boss.damage < 225) {
+    boss.damage = 225;
+  }
+
   boss.idleTimer = 0;
-  boss.idleDuration = 80;
+  boss.idleDuration = 40; // Reduzido pela metade (80 -> 40 frames)
   boss.idleBlend = 0;
   boss.eyeAperture = 1.0;
   boss.eyeAnimState = 'OPEN';

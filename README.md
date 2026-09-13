@@ -42,17 +42,17 @@ Cada sobrevivente possui arquétipo, arma inicial e habilidade ativa com atribut
 
 | Sobrevivente | Título / Arquétipo | Arma Inicial | Habilidade Ativa | Estilo Tático |
 |---|---|---|---|---|
-| **Sir Roland** | O Paladino | Martelo Sagrado | Investida Sagrada | Tanque retaliador: reflete dano e anula projéteis em área. |
-| **Ignis** | A Piromante | Cajado da Tormenta | Passo Ígneo | DPS de dano contínuo: críticos incendeiam o solo e dash com rastro de fogo. |
-| **Kael** | O Andarilho Sombrio | Lâminas Espirituais | Bomba de Fumaça | Assassino crítico: dobra o dano em inimigos feridos e fumaça com 100% de crítico. |
-| **Kragdor** | O Bárbaro Furioso | Machado Giratório | Rugido Ancestral | Lutador sustentável: rotação orbital destrutiva, roubo de vida e atordoamento. |
-| **Valéria** | A Alquimista Cáustica | Frascos Cáusticos | Reagente Volátil | Controle de multidão: poças ácidas com predição balística e lentidão massiva. |
+| **Sir Roland** | O Paladino | Martelo Sagrado | Investida Sagrada | Tanque retaliador: reduz 20% do dano corpo a corpo recebido e reflete 50% de volta aos agressores. |
+| **Ignis** | A Piromante | Cajado da Tormenta | Passo Ígneo | DPS de artilharia ígnea: acertos críticos aplicam combustão residual contínua que drena vida ao longo do tempo. |
+| **Kael** | O Andarilho Sombrio | Lâminas Espirituais | Manto de Fumaça | Assassino crítico: desfere 2.0x de dano em oponentes com <35% de vida (1.5x contra chefes/elites) e invisibilidade com 100% de crítico. |
+| **Kragdor** | O Bárbaro Furioso | Machado Giratório | Rugido Ancestral | Lutador sustentável: rotação orbital destrutiva, roubo de vida (0.5% em chefes/elites) e atordoamento em área. |
+| **Valéria** | A Alquimista Cáustica | Frascos Cáusticos | Reagente Volátil | Controle de multidão: poças ácidas que curam Valéria continuamente enquanto estiver sobre elas e lentidão massiva aos inimigos. |
 
 ---
 
 ## 🌟 Fusões e Evoluções Lendárias
 
-Ao maximizar o nível de uma arma e possuir a passiva correspondente, baús de chefes e elites podem liberar **Evoluções Lendárias**:
+Ao elevar uma arma ao nível de requisito necessário e possuir a passiva correspondente, baús de chefes e elites podem liberar **Evoluções Lendárias**:
 
 | Evolução Lendária | Receita (Arma + Passiva) | Efeito de Combate |
 |---|---|---|
@@ -72,28 +72,44 @@ O jogo progride através de 10 ondas de hordas, 16 tipos de minibosses com mecâ
 
 | Chefe | Arena Temática | Mecânicas e Fases Principais |
 |---|---|---|
-| **Lorde Vampírico** | *Panteão de Sangue* | Telegrafias de foice, investida em névoa espectral, enxames e explosão hemática. |
-| **Monólito Abissal** | *Ruínas Megalíticas* | Litocistos Tectônicos orbitais destrutíveis, fissuras de choque e pulso gravitacional. |
-| **Ceifador Supremo** | *Cripta Espectral* | Lanternas de Almas com elo etéreo, cortes duplos e vórtice colhedor de espíritos. |
-| **Soberano do Abismo** | *Plataforma Cósmica 2.5D* | **3 fases de combate**, introdução majestosa, barreira física de contenção com FX, horizonte de eventos, âncoras dimensionais e colapsos de estabilidade. |
+| **Lorde Vampírico** | *Salão Carmesim* | Telegrafias de foice, investida em névoa espectral, enxames, explosão hemática e repulsão melee. |
+| **Monólito Abissal** | *Caldeira Tectônica* | Litocistos Tectônicos orbitais destrutíveis, fontes termais de cura (+25 HP), esmagamento frontal pesado, erupção do epicentro, onda de fendas e vórtice da caldeira. |
+| **Ceifador Supremo** | *Necrópole Espectral* | Lanternas de Almas com elo etéreo e colapso de 6.0s, cortes duplos, foices de almas, teleporte com aviso holográfico (Blink) e vórtice colhedor. |
+| **Soberano do Abismo** | *Horizonte do Vazio* | **3 fases de combate**, introdução majestosa, barreira física de contenção com FX, horizonte de eventos, âncoras dimensionais e colapsos de estabilidade. |
 
 ---
 
 ## 🏛️ Meta-Progressão Permanente
 
-Todo o ouro obtido nos abates é salvo no `localStorage` do navegador para fortalecer seus sobreviventes entre as partidas:
-- **Vitalidade Rúnica**: +3% HP máximo por nível.
-- **Passos Ligeiros**: +2% Velocidade por nível.
-- **Poder Ancestral**: +5% Dano global por nível.
-- **Destino Favorável**: +1 Reroll de melhorias por nível.
-- **Ímã do Vazio**: +15 Raio de atração de gemas por nível.
-- *Função de Reset com Reembolso Integral de 100% do ouro investido.*
+Todo o ouro e almas obtidos nos abates é salvo no `localStorage` do navegador para fortalecer seus sobreviventes entre as partidas através de uma **Árvore Astral de Talentos com 3 Constelações**:
+
+### ⚔️ Constelação da Guerra (Ofensiva & Letalidade)
+- **Poder Ancestral**: +5% Dano global por nível (até 10 níveis).
+- **Precisão Letal**: +2% Chance de acerto crítico por nível (até 5 níveis).
+- **Vontade Incansável**: -2% Tempo de recarga de armas e habilidades por nível (até 5 níveis).
+- **Fúria Executora**: +8% Dano contra inimigos com menos de 30% de HP por nível (até 5 níveis).
+
+### 🛡️ Constelação da Égide (Sobrevivência & Baluarte)
+- **Vitalidade Rúnica**: +4% Vida máxima por nível (até 10 níveis).
+- **Carapaça Blindada**: -1 Dano sofrido direto absoluto por nível (até 5 níveis).
+- **Passos Ligeiros**: +2.5% Velocidade de movimento por nível (até 6 níveis).
+- **Bênção Vital**: +0.5 HP/s Regeneração contínua por nível (até 5 níveis).
+- **★ Renascimento da Fênix (Keystone)**: Sobrevive a 1 golpe fatal por partida, restaura 35% de vida e repele a horda com explosão solar.
+
+### 🔮 Constelação do Destino (Alquimia & Meta-Riqueza)
+- **Ímã do Vazio**: +20px Raio de atração de gemas e ouro por nível (até 8 níveis).
+- **Cobiça Espectral**: +5% Ouro e almas recolhidos na arena por nível (até 8 níveis).
+- **Sabedoria Arcana**: +4% Ganho de XP por nível (acelera cartas de Tarô, até 5 níveis).
+- **Destino Favorável**: +1 Reroll de cartas de Tarô por partida por nível (até 3 níveis).
+- **★ Transmutação Cósmica (Keystone)**: 25% de chance de baús de chefes concederem dádiva dupla.
+
+> *Inclui botão de Reset com Reembolso Integral de 100% do ouro investido na árvore.*
 
 ---
 
 ## 🏗️ Arquitetura do Repositório
 
-Organização modular baseada em responsabilidade única:
+Organização modular baseada em responsabilidade única e arquitetura desacoplada de chefes:
 
 ```text
 Hord.io/
@@ -105,8 +121,8 @@ Hord.io/
     │
     ├── config/                 # Catálogos de dados e balanceamento
     │   ├── characters.js       # Atributos, armas e passivas dos 5 sobreviventes
-    │   ├── enemies.js          # Configuração de monstros, elites e minibosses
-    │   ├── items.js            # Registro único de armas, passivas e sinergias
+    │   ├── enemies.js          # Configuração de monstros, elites, minibosses e chefes
+    │   ├── items.js            # Registro único de armas, passivas e matriz de sinergias
     │   ├── squads.js           # Formações táticas pré-definidas de hordas
     │   └── upgrades.js         # Lógica de seleção e sorteio ponderado de cartas
     │
@@ -117,14 +133,18 @@ Hord.io/
     │   └── spatialGrid.js      # Spatial Hash Grid 2D para alto desempenho
     │
     ├── entities/               # Lógica de entidades de jogo
-    │   ├── player.js           # Estado do herói, XP, atributos e upgrades
+    │   ├── player.js           # Estado do herói, XP, atributos, árvore de talentos e upgrades
     │   ├── enemies.js          # Spawner de hordas, grupos e minibosses
-    │   └── bosses/             # Máquinas de estado e inteligência dos chefes
-    │       ├── bossRegistry.js
-    │       ├── vampireLord.js
-    │       ├── abyssalMonolith.js
-    │       ├── supremeReaper.js
-    │       └── abyssSovereign.js
+    │   └── bosses/             # Arquitetura modular de chefes e registro central
+    │       ├── bossRegistry.js # Despacho e registro unificado dos 4 chefes
+    │       ├── vampireLord/    # Módulo desacoplado do Lorde Vampírico (Boss 1)
+    │       ├── vampireLord.js  # Fachada de compatibilidade
+    │       ├── abyssalMonolith/ # Módulo desacoplado do Monólito Abissal (Boss 2)
+    │       ├── abyssalMonolith.js # Fachada de compatibilidade
+    │       ├── supremeReaper/  # Módulo desacoplado do Ceifador Supremo (Boss 3)
+    │       ├── supremeReaper.js # Fachada de compatibilidade
+    │       ├── abyssSovereign/ # Módulo desacoplado do Soberano do Abismo (Boss 4)
+    │       └── abyssSovereign.js # Fachada de compatibilidade
     │
     ├── render/                 # Pipeline gráfico em Canvas 2D
     │   ├── characterPreview.js # Desenho procedural dos heróis no menu
