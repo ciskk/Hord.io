@@ -359,6 +359,50 @@ export function renderSurrealAbyssArena(ctx) {
     ctx.restore();
   }
 
+  // Obeliscos Orbitais Flutuantes no Vácuo Infinito com Filamentos de Energia
+  const orbitalObelisks = 6;
+  for (let ob = 0; ob < orbitalObelisks; ob++) {
+    const obAngle = (ob * Math.PI * 2) / orbitalObelisks + frameCount * 0.0015;
+    const obDist = R + 480 + (ob % 3) * 60;
+    const obX = cx + Math.cos(obAngle) * obDist;
+    const obY = cy + Math.sin(obAngle) * obDist;
+
+    ctx.save();
+    ctx.translate(obX, obY);
+    ctx.rotate(obAngle + Math.PI / 2);
+
+    // Agulha de Basalto Cósmico
+    ctx.fillStyle = '#06020c';
+    ctx.strokeStyle = ob % 2 === 0 ? 'rgba(0, 206, 201, 0.6)' : 'rgba(232, 67, 147, 0.6)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(0, -32);
+    ctx.lineTo(8, 0);
+    ctx.lineTo(5, 32);
+    ctx.lineTo(-5, 32);
+    ctx.lineTo(-8, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Runa interna brilhante
+    ctx.fillStyle = ob % 2 === 0 ? '#00cec9' : '#e84393';
+    ctx.beginPath();
+    ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Filamento de plasma sutil conectando obeliscos vizinhos
+    const nextObAngle = ((ob + 1) * Math.PI * 2) / orbitalObelisks + frameCount * 0.0015;
+    const nextDist = R + 480 + ((ob + 1) % 3) * 60;
+    ctx.strokeStyle = ob % 2 === 0 ? 'rgba(0, 206, 201, 0.18)' : 'rgba(232, 67, 147, 0.15)';
+    ctx.lineWidth = 1.0;
+    ctx.beginPath();
+    ctx.moveTo(obX, obY);
+    ctx.lineTo(cx + Math.cos(nextObAngle) * nextDist, cy + Math.sin(nextObAngle) * nextDist);
+    ctx.stroke();
+  }
+
   // Olhos Cósmicos Colossais observando silenciosamente
   const cosmicEyes = [
     { angle: -0.85, dist: R + 340, size: 48 },
@@ -457,6 +501,23 @@ export function renderSurrealAbyssArena(ctx) {
     }
   }
 
+  // Tentáculos Etéreos do Abismo ondulando no precipício
+  const tendrilCount = 8;
+  for (let t = 0; t < tendrilCount; t++) {
+    const tAngle = (t * Math.PI * 2) / tendrilCount + 0.2;
+    const baseTx = cx + Math.cos(tAngle) * R;
+    const baseTy = cy + Math.sin(tAngle) * R + cliffDepth;
+    const tWave = Math.sin(frameCount * 0.04 + t * 1.5) * 12;
+    const tLen = 35 + Math.cos(frameCount * 0.03 + t) * 15;
+
+    ctx.strokeStyle = t % 2 === 0 ? 'rgba(108, 92, 231, 0.35)' : 'rgba(232, 67, 147, 0.3)';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(baseTx, baseTy);
+    ctx.quadraticCurveTo(baseTx + tWave, baseTy + tLen * 0.5, baseTx + tWave * 1.6, baseTy + tLen);
+    ctx.stroke();
+  }
+
   // ==========================================
   // CAMADA 3: PISO DE ESPELHO DE OBSIDIANA (CLIPPED)
   // ==========================================
@@ -499,6 +560,74 @@ export function renderSurrealAbyssArena(ctx) {
     ctx.lineTo(cx + Math.cos(sAngle) * (R * 0.98), cy + Math.sin(sAngle) * (R * 0.98));
     ctx.stroke();
   }
+
+  // 12 Canais Rúnicos de Condução de Plasma (do Vórtice Central aos 12 Monólitos)
+  const pulseOffset = (frameCount * 1.2) % (R * 0.72);
+  for (let m = 0; m < 12; m++) {
+    const mAngle = (m * Math.PI * 2) / 12;
+    const startDist = R * 0.26;
+    const endDist = R * 0.96;
+    const sx = cx + Math.cos(mAngle) * startDist;
+    const sy = cy + Math.sin(mAngle) * startDist;
+    const ex = cx + Math.cos(mAngle) * endDist;
+    const ey = cy + Math.sin(mAngle) * endDist;
+
+    // Canaleta gravada
+    ctx.strokeStyle = (phase === 3) ? 'rgba(0, 206, 201, 0.22)' : 'rgba(232, 67, 147, 0.18)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(ex, ey);
+    ctx.stroke();
+
+    // Pulso luminoso de plasma correndo ao longo do canal
+    const curPulseDist = startDist + pulseOffset;
+    if (curPulseDist < endDist) {
+      const px = cx + Math.cos(mAngle) * curPulseDist;
+      const py = cy + Math.sin(mAngle) * curPulseDist;
+      ctx.fillStyle = (phase === 3) ? '#00cec9' : '#e84393';
+      ctx.beginPath();
+      ctx.arc(px, py, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Teias de Constelações Astrais Gravadas na Obsidiana (12 Nós Estelares)
+  const constellCount = 12;
+  const cNodes = [];
+  for (let cn = 0; cn < constellCount; cn++) {
+    const ca = (cn * Math.PI * 2) / constellCount + frameCount * 0.0015;
+    const cd = R * (0.38 + ((cn * 7) % 5) * 0.08);
+    cNodes.push({ x: cx + Math.cos(ca) * cd, y: cy + Math.sin(ca) * cd });
+  }
+  ctx.strokeStyle = 'rgba(162, 155, 254, 0.12)';
+  ctx.lineWidth = 0.9;
+  ctx.beginPath();
+  for (let cn = 0; cn < constellCount; cn++) {
+    const n1 = cNodes[cn];
+    const n2 = cNodes[(cn + 3) % constellCount];
+    ctx.moveTo(n1.x, n1.y);
+    ctx.lineTo(n2.x, n2.y);
+  }
+  ctx.stroke();
+
+  for (let cn = 0; cn < constellCount; cn++) {
+    const n = cNodes[cn];
+    const nPulse = Math.sin(frameCount * 0.06 + cn) * 0.4 + 0.6;
+    ctx.fillStyle = cn % 2 === 0 ? `rgba(0, 206, 201, ${0.6 * nPulse})` : `rgba(232, 67, 147, ${0.5 * nPulse})`;
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Ondulações de Lente Gravitacional (Distorção do Horizonte de Eventos)
+  const waveRadius = ((frameCount * 0.6) % (R * 0.85));
+  const waveAlpha = Math.max(0, 0.25 * (1 - waveRadius / (R * 0.85)));
+  ctx.strokeStyle = (phase === 3) ? `rgba(0, 206, 201, ${waveAlpha})` : `rgba(224, 86, 253, ${waveAlpha})`;
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.arc(cx, cy, waveRadius, 0, Math.PI * 2);
+  ctx.stroke();
 
   // --- RELÓGIO ASTRONÔMICO DE ENTROPIA ---
   // Anel 1: Externo Rúnico (0.84 * R) rotacionando anti-horário

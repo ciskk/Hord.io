@@ -544,6 +544,122 @@ export function render() {
         ctx.arc(gx, gy, 3, 0, Math.PI * 2);
         ctx.stroke();
       }
+    } else if (t.type === 'DIMENSIONAL_CLEAVE') {
+      // Telegrafia da Fratura Dimensional: Lâminas Geométricas de Vácuo Cortando a Arena
+      const halfLen = (t.length || 1300) * 0.5;
+      const w = t.width || 34;
+      const cosA = Math.cos(t.angle);
+      const sinA = Math.sin(t.angle);
+
+      ctx.save();
+      ctx.translate(t.x, t.y);
+      ctx.rotate(t.angle);
+
+      // 1. Corredor de perigo translúcido
+      const corridorAlpha = 0.10 + progress * 0.22;
+      ctx.fillStyle = `rgba(0, 206, 201, ${corridorAlpha})`;
+      ctx.fillRect(-halfLen, -w * 0.5, halfLen * 2, w);
+
+      // Bordas do corredor
+      ctx.strokeStyle = `rgba(232, 67, 147, ${0.35 + progress * 0.45})`;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.moveTo(-halfLen, -w * 0.5);
+      ctx.lineTo(halfLen, -w * 0.5);
+      ctx.moveTo(-halfLen, w * 0.5);
+      ctx.lineTo(halfLen, w * 0.5);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 2. Fissura Central de Navalha com Brilho Cósmico
+      const coreAlpha = 0.4 + progress * 0.6;
+      ctx.strokeStyle = progress > 0.85 ? '#ffffff' : `rgba(0, 206, 201, ${coreAlpha})`;
+      ctx.lineWidth = progress > 0.85 ? 4.0 : 2.0;
+      ctx.beginPath();
+      ctx.moveTo(-halfLen * progress, 0);
+      ctx.lineTo(halfLen * progress, 0);
+      ctx.stroke();
+
+      // 3. Glifos e micro-fissuras estelares ao longo do corte
+      const runeStep = 75;
+      const runeCount = Math.floor((halfLen * 2) / runeStep);
+      for (let r = 0; r <= runeCount; r++) {
+        const rx = -halfLen + r * runeStep;
+        if (Math.abs(rx) <= halfLen * progress) {
+          ctx.fillStyle = r % 2 === 0 ? '#00cec9' : '#e84393';
+          ctx.beginPath();
+          ctx.arc(rx, 0, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Pequenas pontas de agulha ortogonais
+          ctx.strokeStyle = progress > 0.85 ? '#ffffff' : 'rgba(232, 67, 147, 0.7)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(rx, -4);
+          ctx.lineTo(rx, 4);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    } else if (t.type === 'ASTRAL_METEOR_SEAL') {
+      // Selo Rúnico de Queda de Meteoro Cósmico
+      // 1. Círculo Externo com anel de alerta
+      ctx.fillStyle = `rgba(30, 2, 40, ${0.22 + progress * 0.32})`;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = `rgba(232, 67, 147, ${0.45 + progress * 0.5})`;
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Mira nos 4 eixos
+      const crossSize = 10;
+      ctx.strokeStyle = progress > 0.85 ? '#ffffff' : '#00cec9';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(t.x - t.radius - crossSize, t.y); ctx.lineTo(t.x - t.radius + crossSize, t.y);
+      ctx.moveTo(t.x + t.radius - crossSize, t.y); ctx.lineTo(t.x + t.radius + crossSize, t.y);
+      ctx.moveTo(t.x, t.y - t.radius - crossSize); ctx.lineTo(t.x, t.y - t.radius + crossSize);
+      ctx.moveTo(t.x, t.y + t.radius - crossSize); ctx.lineTo(t.x, t.y + t.radius + crossSize);
+      ctx.stroke();
+
+      // 2. Preenchimento de avanço do meteoro
+      const curR = t.radius * progress;
+      const sealGrad = ctx.createRadialGradient(t.x, t.y, 2, t.x, t.y, Math.max(3, curR));
+      sealGrad.addColorStop(0, '#ffffff');
+      sealGrad.addColorStop(0.3, '#e84393');
+      sealGrad.addColorStop(0.7, '#8e44ad');
+      sealGrad.addColorStop(1, 'rgba(0, 206, 201, 0.15)');
+      ctx.fillStyle = sealGrad;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, curR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Borda de detonação
+      ctx.strokeStyle = progress > 0.85 ? '#ffffff' : '#e84393';
+      ctx.lineWidth = progress > 0.85 ? 3.5 : 2.0;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, curR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Rotação estelar interna
+      const starRot = frameCount * 0.08;
+      ctx.strokeStyle = progress > 0.85 ? '#ffffff' : 'rgba(0, 206, 201, 0.7)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      for (let s = 0; s < 6; s++) {
+        const sa = starRot + (s * Math.PI / 3);
+        const sx = t.x + Math.cos(sa) * (t.radius * 0.5);
+        const sy = t.y + Math.sin(sa) * (t.radius * 0.5);
+        if (s === 0) ctx.moveTo(sx, sy);
+        else ctx.lineTo(sx, sy);
+      }
+      ctx.closePath();
+      ctx.stroke();
     } else {
       const isTeleport = t.type === 'VAMPIRE_TELEPORT';
       const isRepulsion = t.type === 'REPULSION';

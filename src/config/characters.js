@@ -278,7 +278,7 @@ export const CHARACTERS = {
       critChance: 0.20, 
       skillCooldownMax: 400,
       knockbackReceived: 1.0,
-      knockbackDealt: 4.0
+      knockbackDealt: 0.0
     }
   }
 };

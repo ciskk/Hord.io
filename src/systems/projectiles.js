@@ -45,7 +45,7 @@ export function updateProjectiles(dt) {
         // Impacto do ataque ao atingir o solo (dano de impacto 40% menor já calculado em b.damage)
         for (let j = 0; j < enemies.length; j++) {
           const e = enemies[j];
-          if (e.hp <= 0) continue;
+          if (e.hp <= 0 || (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false))) continue;
           const dx = e.x - b.x;
           const dy = e.y - b.y;
           if (dx * dx + dy * dy <= (puddleRadius + e.radius) ** 2) {
@@ -68,13 +68,7 @@ export function updateProjectiles(dt) {
             addDamageText(e.x, e.y, Math.round(impactDmg), isCrit || isKaelExecute, isKaelExecute ? '#00cec9' : (isCrit ? '#f1c40f' : (b.isEvolved ? '#00cec9' : '#2ecc71')));
             createHitParticles(e.x, e.y, isKaelExecute ? '#00cec9' : (b.isEvolved ? '#00cec9' : '#2ecc71'), isKaelExecute ? 5 : 3);
 
-            // Repulsão explosiva radial da poção ao atingir o solo
-            if (!e.isBoss && !e.isBossSubTarget) {
-              const pushAng = Math.atan2(e.y - b.y, e.x - b.x);
-              const pushPower = 5.0 * (player.knockbackDealt || 1.0) * (e.isElite ? 0.5 : 1.0);
-              e.x += Math.cos(pushAng) * pushPower;
-              e.y += Math.sin(pushAng) * pushPower;
-            }
+            // Ataques e poções da Valéria não causam knockback para manter os inimigos concentrados dentro do veneno
           }
         }
 
@@ -104,7 +98,7 @@ export function updateProjectiles(dt) {
     for (let j = 0; j < enemies.length; j++) {
       const e = enemies[j];
       if (e.hp <= 0) continue;
-      if (e.isBoss && e.mistState === 'DASHING') continue;
+      if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
 
       const dx = e.x - b.x;
       const dy = e.y - b.y;

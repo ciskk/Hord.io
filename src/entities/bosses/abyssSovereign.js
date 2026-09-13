@@ -137,9 +137,10 @@ export function initAbyssSovereign(boss) {
   boss.hasTriggeredPhase3 = false;
   boss.actionState = SOVEREIGN_STATES.SPAWN_INTRO;
   boss.stateTimer = 0;
-  boss.introDuration = 220;
-  boss.introTimer = 220;
-  boss.titleTimer = 440; // Duração 2x maior na tela (~7.3 segundos a 60 FPS)
+  boss.introDuration = 440; // Duração 2x maior na tela (~7.33 segundos a 60 FPS)
+  boss.introTimer = 440;
+  boss.isTargetable = false; // Bloqueia mira e auto-fire durante a animação de entrada
+  boss.titleTimer = 440;
   boss.titleMaxTimer = 440;
   boss.transitionTimer = 0;
 
@@ -349,9 +350,9 @@ function spawnAbyssalHomingBarrage(boss, player) {
 function prepareNextAttack(boss, context) {
   const { player } = context;
 
-  const skillsPhase1 = ['VOID_CRUCIFIX', 'RELATIVISTIC_SALVO', 'ABYSSAL_RIFTS'];
-  const skillsPhase2 = ['VOID_CRUCIFIX', 'RELATIVISTIC_SALVO', 'ABYSSAL_RIFTS', 'VOID_WARP', 'SINGULARITY_IMPLOSION'];
-  const skillsPhase3 = ['VOID_CRUCIFIX', 'RELATIVISTIC_SALVO', 'ABYSSAL_RIFTS', 'VOID_WARP', 'SINGULARITY_IMPLOSION'];
+  const skillsPhase1 = ['VOID_CRUCIFIX', 'RELATIVISTIC_SALVO', 'ABYSSAL_RIFTS', 'DIMENSIONAL_CLEAVE'];
+  const skillsPhase2 = ['VOID_CRUCIFIX', 'RELATIVISTIC_SALVO', 'ABYSSAL_RIFTS', 'DIMENSIONAL_CLEAVE', 'COSMIC_SUPERNOVA', 'VOID_WARP', 'SINGULARITY_IMPLOSION'];
+  const skillsPhase3 = ['VOID_CRUCIFIX', 'RELATIVISTIC_SALVO', 'ABYSSAL_RIFTS', 'DIMENSIONAL_CLEAVE', 'COSMIC_SUPERNOVA', 'ASTRAL_BARRAGE', 'VOID_WARP', 'SINGULARITY_IMPLOSION'];
 
   const available = boss.phase === 1 ? skillsPhase1 : (boss.phase === 2 ? skillsPhase2 : skillsPhase3);
   boss.currentSkill = available[boss.skillCycleIndex % available.length];
@@ -384,6 +385,53 @@ function prepareNextAttack(boss, context) {
     case 'ABYSSAL_RIFTS': {
       boss.windupTimer = 44;
       boss.windupMax = 44;
+      playSfx('charge');
+      break;
+    }
+
+    case 'DIMENSIONAL_CLEAVE': {
+      boss.windupTimer = boss.phase === 3 ? 40 : 48;
+      boss.windupMax = boss.windupTimer;
+      playSfx('charge');
+      const centerAng = Math.atan2(player.y - (boss.arenaCenterY || boss.y), player.x - (boss.arenaCenterX || boss.x));
+      const cuts = boss.phase === 3 ? 4 : 3;
+      for (let l = 0; l < cuts; l++) {
+        const ang = centerAng + (l - (cuts - 1) / 2) * (Math.PI / cuts);
+        bossTelegraphs.push({
+          type: 'DIMENSIONAL_CLEAVE',
+          x: boss.arenaCenterX || boss.x,
+          y: boss.arenaCenterY || boss.y,
+          angle: ang,
+          length: (boss.arenaRadius || 620) * 2,
+          width: 34,
+          timer: boss.windupTimer,
+          maxTimer: boss.windupTimer,
+          damage: Math.round(boss.damage * 0.38)
+        });
+      }
+      break;
+    }
+
+    case 'COSMIC_SUPERNOVA': {
+      boss.windupTimer = 58;
+      boss.windupMax = 58;
+      boss.supernovaOrbs = [];
+      const orbCount = boss.phase === 3 ? 10 : 8;
+      for (let o = 0; o < orbCount; o++) {
+        boss.supernovaOrbs.push({
+          baseAngle: (o * Math.PI * 2) / orbCount,
+          dist: 360
+        });
+      }
+      playSfx('singularity');
+      break;
+    }
+
+    case 'ASTRAL_BARRAGE': {
+      boss.windupTimer = 38;
+      boss.windupMax = 38;
+      boss.astralMeteorTimer = 0;
+      boss.astralMeteorsLeft = 7;
       playSfx('charge');
       break;
     }
@@ -451,6 +499,49 @@ function startSkillCast(boss, context) {
       if (context && context.player) {
         spawnAbyssalHomingBarrage(boss, context.player);
       }
+      break;
+    case 'DIMENSIONAL_CLEAVE':
+      boss.castDuration = 25;
+      playSfx('boss');
+      break;
+    case 'COSMIC_SUPERNOVA': {
+      boss.castDuration = 35;
+      context.triggerShake(20);
+      triggerHaptic('heavy');
+      playSfx('boss');
+      playSfx('singularity');
+      bossShockwaves.push({
+        x: boss.x,
+        y: boss.y,
+        radius: 20,
+        maxRadius: (boss.arenaRadius || 620) * 0.92,
+        speed: 7.2,
+        damage: Math.round(boss.damage * 0.40),
+        hitPlayer: false,
+        colorRgb: '224, 86, 253'
+      });
+      const beamCount = boss.phase === 3 ? 10 : 8;
+      const baseBeamAng = Math.random() * Math.PI;
+      for (let b = 0; b < beamCount; b++) {
+        const bAng = baseBeamAng + (b * Math.PI * 2) / beamCount;
+        enemyBullets.push({
+          x: boss.x,
+          y: boss.y,
+          vx: Math.cos(bAng) * 5.8,
+          vy: Math.sin(bAng) * 5.8,
+          radius: 7.0,
+          damage: Math.round(boss.damage * 0.26),
+          life: 120
+        });
+      }
+      boss.supernovaOrbs = [];
+      break;
+    }
+    case 'ASTRAL_BARRAGE':
+      boss.castDuration = 80;
+      boss.astralMeteorTimer = 0;
+      boss.astralMeteorsLeft = 7;
+      playSfx('boss');
       break;
     case 'SINGULARITY_IMPLOSION':
       boss.castDuration = 20;
@@ -784,12 +875,13 @@ export function updateAbyssSovereign(e, dt, context) {
 
   switch (e.actionState) {
     case SOVEREIGN_STATES.SPAWN_INTRO: {
-      const introMax = e.introDuration || 220;
+      const introMax = e.introDuration || 440;
       e.introTimer -= dt;
       const progress = Math.min(1.0, Math.max(0, 1 - (e.introTimer / introMax)));
 
-      // Imunidade total a dano durante a introdução cinematográfica
+      // Imunidade total a dano e bloqueio de mira/auto-fire durante a introdução cinematográfica
       e.isVulnerable = false;
+      e.isTargetable = false;
 
       // Preenchimento cinematográfico dramático da barra de HP no HUD (0% a 100%)
       const hpPercent = Math.min(100, Math.round(progress * 100));
@@ -798,31 +890,45 @@ export function updateAbyssSovereign(e, dt, context) {
       const bossHpVal = document.getElementById('boss-hp-val');
       if (bossHpVal) bossHpVal.innerText = `${hpPercent}%`;
 
-      // ATO 1 (0.00 -> 0.32): O Rasgo da Realidade / Fenda Gravitacional
-      if (progress < 0.32) {
+      // ATO 1 (0.00 -> 0.25): O Rasgo da Realidade / Vácuo Gravitacional
+      if (progress < 0.25) {
         if (Math.floor(frameCount) % 4 === 0) {
-          triggerShake(1.2 + progress * 8);
+          triggerShake(1.2 + progress * 6);
           // Partículas cósmicas sendo tragadas para o ponto de rasgo dimensional
           const pAngle = Math.random() * Math.PI * 2;
-          const pDist = 90 + Math.random() * 150;
+          const pDist = 120 + Math.random() * 160;
           createHitParticles(
             e.x + Math.cos(pAngle) * pDist,
             e.y + Math.sin(pAngle) * pDist,
-            progress > 0.16 ? '#00cec9' : '#e84393',
+            progress > 0.12 ? '#00cec9' : '#e84393',
             2
           );
         }
-        if (Math.floor(e.introTimer) === 205) {
+        if (Math.floor(e.introTimer) === 410) {
           playSfx('charge');
         }
       } 
-      // ATO 2 (0.32 -> 0.72): A Manifestação Cósmica / Asas e Halos
-      else if (progress < 0.72) {
+      // ATO 2 (0.25 -> 0.55): A Fenda Primordial e Relâmpagos do Vazio
+      else if (progress < 0.55) {
+        if (Math.floor(frameCount) % 3 === 0) {
+          triggerShake(2.0 + Math.sin(progress * 10) * 2);
+          const pAngle = Math.random() * Math.PI * 2;
+          const pDist = 40 + Math.random() * 80;
+          createHitParticles(e.x + Math.cos(pAngle) * pDist, e.y + Math.sin(pAngle) * pDist, '#81ecec', 2);
+          createHitParticles(e.x, e.y, '#ffffff', 1);
+        }
+        if (Math.floor(e.introTimer) === 270) {
+          playSfx('warp');
+          triggerHaptic('medium');
+        }
+      } 
+      // ATO 3 (0.55 -> 0.85): A Manifestação Cósmica / Asas e Halos
+      else if (progress < 0.85) {
         e.hoverAngle += 0.05 * dt;
         e.y += Math.sin(e.hoverAngle) * 0.3 * dt;
 
         if (Math.floor(frameCount) % 3 === 0) {
-          triggerShake(2.5 + Math.sin(progress * 10) * 2);
+          triggerShake(2.8 + Math.sin(progress * 12) * 2);
           createHitParticles(
             e.x + (Math.random() - 0.5) * e.radius * 2,
             e.y + (Math.random() - 0.5) * e.radius * 2,
@@ -832,18 +938,18 @@ export function updateAbyssSovereign(e, dt, context) {
           createHitParticles(
             e.x + (Math.random() - 0.5) * e.radius * 2,
             e.y + (Math.random() - 0.5) * e.radius * 2,
-            '#ffffff',
+            '#e84393',
             1
           );
         }
 
         // Som de sincronização dos halos celestes
-        if (Math.floor(e.introTimer) === 135) {
-          playSfx('warp');
+        if (Math.floor(e.introTimer) === 130) {
+          playSfx('forcefield');
           triggerHaptic('medium');
         }
       } 
-      // ATO 3 (0.72 -> 1.00): O Despertar da Singularidade
+      // ATO 4 (0.85 -> 1.00): O Despertar da Singularidade e Pilar Primordial
       else {
         e.hoverAngle += 0.07 * dt;
         e.y += Math.sin(e.hoverAngle) * 0.4 * dt;
@@ -852,16 +958,18 @@ export function updateAbyssSovereign(e, dt, context) {
           triggerShake(4.5);
           createHitParticles(e.x, e.y, '#ffffff', 3);
           createHitParticles(e.x, e.y, '#00cec9', 2);
+          createHitParticles(e.x, e.y, '#e84393', 2);
         }
 
-        if (Math.floor(e.introTimer) === 45) {
-          playSfx('forcefield');
+        if (Math.floor(e.introTimer) === 50) {
+          playSfx('singularity');
         }
       }
 
       // Clímax e Transição para o Combate
       if (e.introTimer <= 0) {
         e.actionState = SOVEREIGN_STATES.HOVER_CHASE;
+        e.isTargetable = true; // Auto-fire e miras desbloqueados!
         e.stateTimer = 0;
         e.attackCooldown = 55;
 
@@ -960,6 +1068,15 @@ export function updateAbyssSovereign(e, dt, context) {
       if (e.currentSkill === 'VOID_CRUCIFIX') {
         const aimRot = (e.phase === 3 ? 0.009 : 0.006) * e.beamDir;
         e.beamAngle += aimRot * dt;
+      } else if (e.currentSkill === 'COSMIC_SUPERNOVA' && e.supernovaOrbs) {
+        const ratio = 1 - (e.windupTimer / e.windupMax);
+        const curR = 360 * (1 - ratio);
+        for (let o = 0; o < e.supernovaOrbs.length; o++) {
+          e.supernovaOrbs[o].dist = curR;
+        }
+        if (Math.floor(frameCount) % 3 === 0) {
+          triggerShake(1.5 + ratio * 4);
+        }
       } else if (e.currentSkill === 'SINGULARITY_IMPLOSION') {
         const ratio = 1 - (e.windupTimer / e.windupMax);
         e.implosionRadius = e.implosionMaxRadius * (1 - ratio);
@@ -1063,6 +1180,43 @@ export function updateAbyssSovereign(e, dt, context) {
           });
 
           playSfx('shoot');
+        }
+      } else if (e.currentSkill === 'ASTRAL_BARRAGE') {
+        e.astralMeteorTimer = (e.astralMeteorTimer || 0) + dt;
+        if (e.astralMeteorTimer >= 10 && e.astralMeteorsLeft > 0) {
+          e.astralMeteorTimer = 0;
+          e.astralMeteorsLeft--;
+
+          let targetX = player.x;
+          let targetY = player.y;
+          if (e.astralMeteorsLeft < 6) {
+            const pAng = Math.random() * Math.PI * 2;
+            const pDist = 30 + Math.random() * 90;
+            targetX += Math.cos(pAng) * pDist;
+            targetY += Math.sin(pAng) * pDist;
+          }
+
+          if (e.arenaCenterX !== undefined && e.arenaRadius) {
+            const adx = targetX - e.arenaCenterX;
+            const ady = targetY - e.arenaCenterY;
+            const aDist = Math.hypot(adx, ady) || 1;
+            const maxD = e.arenaRadius - 30;
+            if (aDist > maxD) {
+              targetX = e.arenaCenterX + (adx / aDist) * maxD;
+              targetY = e.arenaCenterY + (ady / aDist) * maxD;
+            }
+          }
+
+          bossTelegraphs.push({
+            type: 'ASTRAL_METEOR_SEAL',
+            x: targetX,
+            y: targetY,
+            radius: 65,
+            timer: 36,
+            maxTimer: 36,
+            damage: Math.round(e.damage * 0.36)
+          });
+          playSfx('charge');
         }
       } else if (e.currentSkill === 'SINGULARITY_IMPLOSION' && e.stateTimer < dt * 2) {
         triggerShake(16);
@@ -1211,18 +1365,18 @@ function drawMajesticSpawnIntro(ctx, e, frameCount) {
   ctx.restore();
 
   // ==========================================
-  // ATO 1: O RASGO DA REALIDADE (0.00 <= progress < 0.32)
+  // ATO 1: O RASGO DA REALIDADE (0.00 <= progress < 0.25)
   // ==========================================
-  if (progress < 0.32) {
-    const act1Prog = progress / 0.32;
-    const riftH = 130 * act1Prog;
-    const riftW = 8 + Math.sin(frameCount * 0.3) * 5;
+  if (progress < 0.25) {
+    const act1Prog = progress / 0.25;
+    const riftH = 150 * act1Prog;
+    const riftW = 8 + Math.sin(frameCount * 0.3) * 6;
 
     ctx.save();
-    const riftGlow = ctx.createRadialGradient(0, 0, 4, 0, 0, riftH * 0.85);
-    riftGlow.addColorStop(0, 'rgba(0, 206, 201, 0.75)');
-    riftGlow.addColorStop(0.4, 'rgba(232, 67, 147, 0.45)');
-    riftGlow.addColorStop(0.8, 'rgba(108, 92, 231, 0.2)');
+    const riftGlow = ctx.createRadialGradient(0, 0, 4, 0, 0, Math.max(10, riftH * 0.9));
+    riftGlow.addColorStop(0, 'rgba(0, 206, 201, 0.85)');
+    riftGlow.addColorStop(0.4, 'rgba(232, 67, 147, 0.55)');
+    riftGlow.addColorStop(0.8, 'rgba(108, 92, 231, 0.25)');
     riftGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = riftGlow;
     ctx.beginPath();
@@ -1232,51 +1386,81 @@ function drawMajesticSpawnIntro(ctx, e, frameCount) {
     // Núcleo do rasgo dimensional
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.ellipse(0, 0, riftW * 0.65, riftH * 0.9, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, riftW * 0.7, riftH * 0.9, 0, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = '#020005';
     ctx.beginPath();
-    ctx.ellipse(0, 0, riftW * 0.25, riftH * 0.8, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, riftW * 0.3, riftH * 0.8, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Raios de sucção gravitacional
-    const suctionRays = 8;
+    // Raios de sucção gravitacional espiral
+    const suctionRays = 10;
     for (let s = 0; s < suctionRays; s++) {
-      const sAngle = (s * Math.PI * 2) / suctionRays + frameCount * 0.05;
-      const rayLen = (1 - ((frameCount * 3 + s * 20) % 80) / 80) * 120;
+      const sAngle = (s * Math.PI * 2) / suctionRays + frameCount * 0.04;
+      const rayLen = (1 - ((frameCount * 2.5 + s * 16) % 80) / 80) * 140;
       const sx = Math.cos(sAngle) * rayLen;
       const sy = Math.sin(sAngle) * rayLen;
-      ctx.strokeStyle = s % 2 === 0 ? 'rgba(0, 206, 201, 0.65)' : 'rgba(232, 67, 147, 0.65)';
-      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = s % 2 === 0 ? 'rgba(0, 206, 201, 0.7)' : 'rgba(232, 67, 147, 0.7)';
+      ctx.lineWidth = 1.8;
       ctx.beginPath();
       ctx.moveTo(sx, sy);
-      ctx.lineTo(sx * 0.2, sy * 0.2);
-      ctx.stroke();
-    }
-
-    // Arcos elétricos caóticos da fenda
-    ctx.strokeStyle = '#81ecec';
-    ctx.lineWidth = 1.4;
-    for (let eArc = 0; eArc < 3; eArc++) {
-      const arcY = (Math.sin(frameCount * 0.4 + eArc * 3) * riftH * 0.5);
-      const arcW = (Math.sin(frameCount * 0.5 + eArc) * 35);
-      ctx.beginPath();
-      ctx.moveTo(0, arcY);
-      ctx.lineTo(arcW * 0.5, arcY + 8);
-      ctx.lineTo(arcW, arcY - 4);
+      ctx.lineTo(sx * 0.15, sy * 0.15);
       ctx.stroke();
     }
     ctx.restore();
   }
 
   // ==========================================
-  // ATO 2: A MANIFESTAÇÃO CÓSMICA (0.32 <= progress < 0.72)
+  // ATO 2: A FENDA PRIMORDIAL E RELÂMPAGOS DO VAZIO (0.25 <= progress < 0.55)
   // ==========================================
-  else if (progress < 0.72) {
-    const act2Prog = (progress - 0.32) / 0.40;
-    const curScale = 0.25 + act2Prog * 0.80;
-    const alpha = Math.min(1.0, 0.3 + act2Prog * 0.7);
+  else if (progress < 0.55) {
+    const act2Prog = (progress - 0.25) / 0.30;
+    const riftH = 150 + act2Prog * 70;
+    const riftW = 14 + Math.sin(frameCount * 0.35) * 8;
+
+    ctx.save();
+    // Fenda estelar profunda
+    const fendaGlow = ctx.createRadialGradient(0, 0, 10, 0, 0, riftH);
+    fendaGlow.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+    fendaGlow.addColorStop(0.3, 'rgba(0, 206, 201, 0.7)');
+    fendaGlow.addColorStop(0.7, 'rgba(232, 67, 147, 0.4)');
+    fendaGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = fendaGlow;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, riftW * 4, riftH, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Relâmpagos de matéria escura cortando a fenda
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.0;
+    for (let l = 0; l < 4; l++) {
+      const lY = (Math.sin(frameCount * 0.4 + l * 2) * riftH * 0.6);
+      const lW = (Math.sin(frameCount * 0.5 + l * 1.5) * 50);
+      ctx.beginPath();
+      ctx.moveTo(0, lY);
+      ctx.lineTo(lW * 0.4, lY + 10);
+      ctx.lineTo(lW, lY - 6);
+      ctx.stroke();
+    }
+
+    // Primeiro Halo Celestial engrenando
+    ctx.strokeStyle = 'rgba(0, 206, 201, 0.6)';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 0.7, -frameCount * 0.05, Math.PI * 2 * act2Prog - frameCount * 0.05);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  // ==========================================
+  // ATO 3: A MANIFESTAÇÃO CÓSMICA E DESABROCHAR DAS ASAS (0.55 <= progress < 0.85)
+  // ==========================================
+  else if (progress < 0.85) {
+    const act3Prog = (progress - 0.55) / 0.30;
+    const curScale = 0.35 + act3Prog * 0.70;
+    const alpha = Math.min(1.0, 0.4 + act3Prog * 0.6);
 
     ctx.save();
     ctx.scale(curScale, curScale);
@@ -1294,20 +1478,17 @@ function drawMajesticSpawnIntro(ctx, e, frameCount) {
     ctx.strokeStyle = '#00cec9';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.arc(0, 0, R * 0.7, -frameCount * 0.05, Math.PI * 2 * act2Prog - frameCount * 0.05);
+    ctx.arc(0, 0, R * 0.7, -frameCount * 0.05, Math.PI * 2 - frameCount * 0.05);
     ctx.stroke();
 
-    if (act2Prog > 0.3) {
-      const h2Prog = (act2Prog - 0.3) / 0.7;
-      ctx.strokeStyle = '#e84393';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(0, 0, R * 1.1, frameCount * 0.04, Math.PI * 2 * h2Prog + frameCount * 0.04);
-      ctx.stroke();
-    }
+    ctx.strokeStyle = '#e84393';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 1.1, frameCount * 0.04, Math.PI * 2 * act3Prog + frameCount * 0.04);
+    ctx.stroke();
 
-    if (act2Prog > 0.6) {
-      const h3Prog = (act2Prog - 0.6) / 0.4;
+    if (act3Prog > 0.4) {
+      const h3Prog = (act3Prog - 0.4) / 0.6;
       ctx.strokeStyle = '#a29bfe';
       ctx.lineWidth = 1.8;
       ctx.beginPath();
@@ -1315,12 +1496,12 @@ function drawMajesticSpawnIntro(ctx, e, frameCount) {
       ctx.stroke();
     }
 
-    // 2. Os 6 Apêndices / Asas de Matéria Escura desabrochando em espiral
-    const wingBloom = Math.min(1.0, act2Prog * 1.2);
+    // 2. As 6 Asas de Matéria Escura desabrochando em espiral com rastro estelar
+    const wingBloom = Math.min(1.0, act3Prog * 1.25);
     const armCount = 6;
     for (let arm = 0; arm < armCount; arm++) {
       const baseAng = (arm * Math.PI * 2) / armCount + frameCount * 0.02;
-      const wingLength = (R * 1.5) * wingBloom;
+      const wingLength = (R * 1.55) * wingBloom;
       ctx.strokeStyle = arm % 2 === 0 ? '#00cec9' : '#e84393';
       ctx.lineWidth = 3.5;
       ctx.beginPath();
@@ -1334,7 +1515,7 @@ function drawMajesticSpawnIntro(ctx, e, frameCount) {
 
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(endX, endY, 3.5 * wingBloom, 0, Math.PI * 2);
+      ctx.arc(endX, endY, 3.8 * wingBloom, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -1356,138 +1537,138 @@ function drawMajesticSpawnIntro(ctx, e, frameCount) {
     // Olho central abrindo
     ctx.fillStyle = '#00cec9';
     ctx.beginPath();
-    ctx.ellipse(0, -R * 0.15, 8 * act2Prog, 14 * act2Prog, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -R * 0.15, 8 * act3Prog, 14 * act3Prog, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(0, -R * 0.15, 3.5 * act2Prog, 0, Math.PI * 2);
+    ctx.arc(0, -R * 0.15, 3.5 * act3Prog, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
   }
 
   // ==========================================
-  // ATO 3: O DESPERTAR DA SINGULARIDADE (0.72 <= progress <= 1.00)
+  // ATO 4: O DESPERTAR DA SINGULARIDADE E PILAR PRIMORDIAL (0.85 <= progress <= 1.00)
   // ==========================================
   else {
-    const act3Prog = (progress - 0.72) / 0.28;
-  ctx.save();
+    const act4Prog = (progress - 0.85) / 0.15;
+    ctx.save();
 
-  const bossPulse = 1.0 + Math.sin(frameCount * 0.15) * 0.04;
-  ctx.scale(bossPulse, bossPulse);
+    const bossPulse = 1.0 + Math.sin(frameCount * 0.15) * 0.04;
+    ctx.scale(bossPulse, bossPulse);
 
-  // 1. Raio Primordial disparado verticalmente do Olho para o Espaço
-  const beamW = 14 + Math.sin(frameCount * 0.4) * 6 + act3Prog * 14;
-  const beamH = 900;
-  const beamGrad = ctx.createLinearGradient(0, -R * 0.2, 0, -beamH);
-  beamGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
-  beamGrad.addColorStop(0.2, 'rgba(0, 206, 201, 0.85)');
-  beamGrad.addColorStop(0.7, 'rgba(108, 92, 231, 0.4)');
-  beamGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  ctx.fillStyle = beamGrad;
-  ctx.fillRect(-beamW * 0.5, -beamH, beamW, beamH);
+    // 1. Raio Primordial disparado verticalmente do Olho para o Espaço
+    const beamW = 16 + Math.sin(frameCount * 0.4) * 8 + act4Prog * 18;
+    const beamH = 900;
+    const beamGrad = ctx.createLinearGradient(0, -R * 0.2, 0, -beamH);
+    beamGrad.addColorStop(0, 'rgba(255, 255, 255, 0.98)');
+    beamGrad.addColorStop(0.2, 'rgba(0, 206, 201, 0.9)');
+    beamGrad.addColorStop(0.7, 'rgba(108, 92, 231, 0.45)');
+    beamGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = beamGrad;
+    ctx.fillRect(-beamW * 0.5, -beamH, beamW, beamH);
 
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(-2, -beamH, 4, beamH);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-3, -beamH, 6, beamH);
 
-  // 2. Halos Celestes com rotação acelerada
-  ctx.strokeStyle = 'rgba(0, 206, 201, 0.75)';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(0, 0, R * 0.75, 0, Math.PI * 2);
-  ctx.stroke();
-
-  ctx.strokeStyle = 'rgba(232, 67, 147, 0.65)';
-  ctx.lineWidth = 2.4;
-  ctx.beginPath();
-  ctx.arc(0, 0, R * 1.15, 0, Math.PI * 2);
-  ctx.stroke();
-
-  ctx.strokeStyle = 'rgba(162, 155, 254, 0.65)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(0, 0, R * 1.5, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // 3. As 6 Asas / Tentáculos em postura de guerra
-  for (let arm = 0; arm < 6; arm++) {
-    const baseAng = (arm * Math.PI * 2) / 6 + Math.sin(frameCount * 0.08 + arm) * 0.12;
-    const wLen = R * 1.65;
-    ctx.strokeStyle = arm % 2 === 0 ? '#00cec9' : '#e84393';
-    ctx.lineWidth = 4;
+    // 2. Halos Celestes com rotação acelerada
+    ctx.strokeStyle = 'rgba(0, 206, 201, 0.85)';
+    ctx.lineWidth = 3.2;
     ctx.beginPath();
-    ctx.moveTo(0, 0);
-    const cpX = Math.cos(baseAng + 0.45) * (wLen * 0.55);
-    const cpY = Math.sin(baseAng + 0.45) * (wLen * 0.55);
-    const eX = Math.cos(baseAng) * wLen;
-    const eY = Math.sin(baseAng) * wLen;
-    ctx.quadraticCurveTo(cpX, cpY, eX, eY);
+    ctx.arc(0, 0, R * 0.75, 0, Math.PI * 2);
     ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(232, 67, 147, 0.75)';
+    ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 1.15, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(162, 155, 254, 0.75)';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(0, 0, R * 1.5, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 3. As 6 Asas / Tentáculos em postura de guerra
+    for (let arm = 0; arm < 6; arm++) {
+      const baseAng = (arm * Math.PI * 2) / 6 + Math.sin(frameCount * 0.08 + arm) * 0.12;
+      const wLen = R * 1.65;
+      ctx.strokeStyle = arm % 2 === 0 ? '#00cec9' : '#e84393';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      const cpX = Math.cos(baseAng + 0.45) * (wLen * 0.55);
+      const cpY = Math.sin(baseAng + 0.45) * (wLen * 0.55);
+      const eX = Math.cos(baseAng) * wLen;
+      const eY = Math.sin(baseAng) * wLen;
+      ctx.quadraticCurveTo(cpX, cpY, eX, eY);
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(eX, eY, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 4. Manto Real e Coroa Abissal
+    ctx.fillStyle = '#06010c';
+    ctx.beginPath();
+    ctx.moveTo(0, -R * 0.95);
+    ctx.lineTo(R * 0.65, -R * 0.25);
+    ctx.lineTo(R * 0.5, R * 0.85);
+    ctx.lineTo(0, R * 1.05);
+    ctx.lineTo(-R * 0.5, R * 0.85);
+    ctx.lineTo(-R * 0.65, -R * 0.25);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#00cec9';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Coroa de Espinhos da Singularidade
+    ctx.fillStyle = '#00cec9';
+    for (let c = -3; c <= 3; c++) {
+      const cAng = (c * 0.22);
+      const cxP = Math.sin(cAng) * (R * 0.7);
+      const cyP = -R * 0.85 - Math.cos(cAng) * 16;
+      ctx.beginPath();
+      ctx.moveTo(cxP - 3, -R * 0.75);
+      ctx.lineTo(cxP, cyP);
+      ctx.lineTo(cxP + 3, -R * 0.75);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Olho Primordial Central em fúria estelar
+    ctx.fillStyle = '#00cec9';
+    ctx.beginPath();
+    ctx.ellipse(0, -R * 0.2, 12, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
 
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(eX, eY, 4.5, 0, Math.PI * 2);
+    ctx.arc(0, -R * 0.2, 5.5, 0, Math.PI * 2);
     ctx.fill();
-  }
 
-  // 4. Manto Real e Coroa Abissal
-  ctx.fillStyle = '#06010c';
-  ctx.beginPath();
-  ctx.moveTo(0, -R * 0.95);
-  ctx.lineTo(R * 0.65, -R * 0.25);
-  ctx.lineTo(R * 0.5, R * 0.85);
-  ctx.lineTo(0, R * 1.05);
-  ctx.lineTo(-R * 0.5, R * 0.85);
-  ctx.lineTo(-R * 0.65, -R * 0.25);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = '#00cec9';
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
-
-  // Coroa de Espinhos da Singularidade
-  ctx.fillStyle = '#00cec9';
-  for (let c = -3; c <= 3; c++) {
-    const cAng = (c * 0.22);
-    const cxP = Math.sin(cAng) * (R * 0.7);
-    const cyP = -R * 0.85 - Math.cos(cAng) * 16;
-    ctx.beginPath();
-    ctx.moveTo(cxP - 3, -R * 0.75);
-    ctx.lineTo(cxP, cyP);
-    ctx.lineTo(cxP + 3, -R * 0.75);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  // Olho Primordial Central em fúria estelar
-  ctx.fillStyle = '#00cec9';
-  ctx.beginPath();
-  ctx.ellipse(0, -R * 0.2, 12, 18, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  ctx.arc(0, -R * 0.2, 5.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Ondas de choque em anéis pré-explosão
-  if (act3Prog > 0.6) {
-    const ringExpand = ((act3Prog - 0.6) / 0.4) * (R * 2.8);
-    const ringAlpha = 1 - ((act3Prog - 0.6) / 0.4);
-    ctx.strokeStyle = `rgba(0, 206, 201, ${ringAlpha})`;
-    ctx.lineWidth = 3.5;
-    ctx.beginPath();
-    ctx.arc(0, 0, ringExpand, 0, Math.PI * 2);
-    ctx.stroke();
-  }
+    // Ondas de choque em anéis pré-explosão
+    if (act4Prog > 0.4) {
+      const ringExpand = ((act4Prog - 0.4) / 0.6) * (R * 3.2);
+      const ringAlpha = 1 - ((act4Prog - 0.4) / 0.6);
+      ctx.strokeStyle = `rgba(0, 206, 201, ${ringAlpha})`;
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, ringExpand, 0, Math.PI * 2);
+      ctx.stroke();
+    }
 
     ctx.restore();
   }
 }
 
 /**
- * Renderiza o Grande Título Cinematográfico do Chefe Final em tela inteira.
- * Tema Vermelho Carmesim Apocalíptico com proporções responsivas para telas verticais (mobile/portrait).
+ * Renderiza o Banner Cinematográfico Apocalíptico de Entrada do Soberano do Abismo.
+ * Posicionado no centro da tela, flutuando diretamente acima do herói (horizontal e vertical).
  * @param {CanvasRenderingContext2D} ctx
  * @param {Object} e Entidade do Soberano do Abismo
  * @param {number} frameCount
@@ -1512,14 +1693,12 @@ function drawCinematicScreenTitle(ctx, e, frameCount) {
   const screenH = viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
   const isVertical = screenH > screenW || screenW < 640;
 
-  // Em telas verticais (smartphones/portrait):
-  // O banner é compacto (altura 58px) e posicionado logo abaixo do HUD superior para não cobrir a ação.
-  // Em telas horizontais (desktop):
-  // O banner é majestoso, imponente e amplo (altura 94px).
+  // Em telas verticais (smartphones) e horizontais (desktop):
+  // O banner é centralizado horizontalmente e posicionado flutuando diretamente acima do personagem
   const bannerW = isVertical ? Math.min(380, screenW * 0.94) : Math.min(880, screenW * 0.90);
   const bannerH = isVertical ? 58 : 94;
   const bx = (screenW - bannerW) / 2;
-  const by = isVertical ? Math.max(74, Math.floor(screenH * 0.095)) : Math.max(105, Math.floor(screenH * 0.14));
+  const by = Math.round((screenH / 2) - bannerH - (isVertical ? 45 : 65));
 
   // 1. Fundo Cósmico Carmesim Profundo com Gradiente Translúcido
   const bgGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
@@ -2202,6 +2381,60 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
   ctx.arc(0, 0, 2, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
+
+  // Orbes e Constelações da Supernova da Entropia
+  if (e.supernovaOrbs && e.supernovaOrbs.length > 0) {
+    ctx.save();
+    const orbCount = e.supernovaOrbs.length;
+    const orbRot = frameCount * 0.03;
+    const orbPts = [];
+    for (let o = 0; o < orbCount; o++) {
+      const oDef = e.supernovaOrbs[o];
+      const oAng = oDef.baseAngle + orbRot;
+      const ox = Math.cos(oAng) * oDef.dist;
+      const oy = Math.sin(oAng) * oDef.dist;
+      orbPts.push({ x: ox, y: oy });
+    }
+
+    // Linhas de constelação estelar
+    ctx.strokeStyle = 'rgba(224, 86, 253, 0.45)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    for (let o = 0; o < orbCount; o++) {
+      const p1 = orbPts[o];
+      const p2 = orbPts[(o + 1) % orbCount];
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+    }
+    ctx.stroke();
+
+    // Linhas radiais ao núcleo do Soberano
+    ctx.strokeStyle = 'rgba(0, 206, 201, 0.25)';
+    ctx.lineWidth = 1.0;
+    ctx.beginPath();
+    for (let o = 0; o < orbCount; o++) {
+      ctx.moveTo(0, 0);
+      ctx.lineTo(orbPts[o].x, orbPts[o].y);
+    }
+    ctx.stroke();
+
+    // Orbes estelares individuais
+    for (let o = 0; o < orbCount; o++) {
+      const pt = orbPts[o];
+      const oPulse = 5 + Math.sin(frameCount * 0.2 + o) * 2;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = (o % 2 === 0) ? '#00cec9' : '#e84393';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, oPulse, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 
   // 13. Barra de Estabilidade Dimensional
   if ((isWindup || isCasting) && e.staggerGauge > 0) {

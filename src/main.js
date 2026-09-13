@@ -446,7 +446,7 @@ function update(dt) {
 
     for (let i = 0; i < enemies.length; i++) {
       const e = enemies[i];
-      if (e.isBoss && e.mistState === 'DASHING') continue;
+      if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
 
       const dSq = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
       if (dSq < (player.radius + e.radius + 20) ** 2) {
@@ -519,7 +519,7 @@ function update(dt) {
 
     for (let i = 0; i < enemies.length; i++) {
       const e = enemies[i];
-      if (e.isBoss && e.mistState === 'DASHING') continue;
+      if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
 
       const dSq = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
       if (dSq < (player.radius + e.radius + 18) ** 2) {
@@ -652,7 +652,7 @@ function update(dt) {
 
       for (let i = 0; i < enemies.length; i++) {
         const e = enemies[i];
-        if (e.isBoss && e.mistState === 'DASHING') continue;
+        if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
 
         const dx = e.x - player.x;
         const dy = e.y - player.y;
@@ -708,7 +708,7 @@ function update(dt) {
 
       for (let i = 0; i < enemies.length; i++) {
         const e = enemies[i];
-        if (e.orbitalHitCd > 0 || (e.isBoss && e.mistState === 'DASHING')) continue;
+        if (e.orbitalHitCd > 0 || (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false))) continue;
         const dx = e.x - ox;
         const dy = e.y - oy;
         const bookRadius = player.evolvedOrbitals ? 26 : 20;
@@ -740,7 +740,7 @@ function update(dt) {
           if (!e.isBoss && !e.isBossSubTarget) {
             const pushAng = Math.atan2(e.y - player.y, e.x - player.x);
             const basePush = player.evolvedOrbitals ? 6.8 : 4.8;
-            const pushForce = basePush * (player.knockbackDealt || 1.0) * (e.isElite ? 0.45 : 1.0);
+            const pushForce = basePush * (player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0) * (e.isElite ? 0.45 : 1.0);
             e.x += Math.cos(pushAng) * pushForce;
             e.y += Math.sin(pushAng) * pushForce;
           }
@@ -856,6 +856,82 @@ function update(dt) {
           triggerShake(10);
           playSfx('hit');
           addDamageText(player.x, player.y, `-${tel.damage}`, false, '#8e44ad');
+
+          if (player.hp <= 0) {
+            player.hp = 0;
+            triggerDeath();
+            return;
+          }
+        }
+        bossTelegraphs.splice(i, 1);
+        continue;
+      }
+
+      if (tel.type === 'DIMENSIONAL_CLEAVE') {
+        const cosA = Math.cos(tel.angle);
+        const sinA = Math.sin(tel.angle);
+        const pdx = player.x - tel.x;
+        const pdy = player.y - tel.y;
+        const proj = pdx * cosA + pdy * sinA;
+        const perpDist = Math.abs(-pdx * sinA + pdy * cosA);
+        const halfLen = (tel.length || 1300) * 0.5;
+
+        triggerShake(14);
+        playSfx('warp');
+        triggerHaptic('heavy');
+        const sparkX = tel.x + cosA * Math.max(-halfLen, Math.min(halfLen, proj));
+        const sparkY = tel.y + sinA * Math.max(-halfLen, Math.min(halfLen, proj));
+        createHitParticles(sparkX, sparkY, '#00cec9', 16);
+        createHitParticles(sparkX, sparkY, '#e84393', 14);
+        createHitParticles(sparkX, sparkY, '#ffffff', 8);
+
+        if (Math.abs(proj) <= halfLen && perpDist <= (tel.width || 34) && player.iFrames <= 0) {
+          player.hp -= tel.damage;
+          player.iFrames = 26;
+          lastAttackerName = "Fratura Dimensional";
+          triggerShake(14);
+          playSfx('hit');
+          triggerHaptic('heavy');
+          addDamageText(player.x, player.y, `-${tel.damage}`, false, '#00cec9');
+
+          if (player.hp <= 0) {
+            player.hp = 0;
+            triggerDeath();
+            return;
+          }
+        }
+        bossTelegraphs.splice(i, 1);
+        continue;
+      }
+
+      if (tel.type === 'ASTRAL_METEOR_SEAL') {
+        triggerShake(14);
+        playSfx('boss');
+        playSfx('singularity');
+        createHitParticles(tel.x, tel.y, '#e84393', 18);
+        createHitParticles(tel.x, tel.y, '#00cec9', 16);
+        createHitParticles(tel.x, tel.y, '#ffffff', 10);
+
+        bossShockwaves.push({
+          x: tel.x,
+          y: tel.y,
+          radius: 12,
+          maxRadius: tel.radius || 65,
+          speed: 5.5,
+          damage: Math.round(tel.damage * 0.35),
+          hitPlayer: false,
+          colorRgb: '232, 67, 147'
+        });
+
+        const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
+        if (dSq < (tel.radius * tel.radius) && player.iFrames <= 0) {
+          player.hp -= tel.damage;
+          player.iFrames = 25;
+          lastAttackerName = "Meteoro do Vazio";
+          triggerShake(12);
+          playSfx('hit');
+          triggerHaptic('heavy');
+          addDamageText(player.x, player.y, `-${tel.damage}`, false, '#e84393');
 
           if (player.hp <= 0) {
             player.hp = 0;

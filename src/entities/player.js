@@ -596,6 +596,7 @@ export function triggerHeroSkill() {
 
     for (let i = 0; i < enemies.length; i++) {
       const e = enemies[i];
+      if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
       const dx = e.x - player.x;
       const dy = e.y - player.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
@@ -716,7 +717,7 @@ export function updateSpinningAxes(dt) {
 
     for (let k = 0; k < nearbyIndices.length; k++) {
       const e = enemies[nearbyIndices[k]];
-      if (!e || player.axeContactCds.has(e)) continue;
+      if (!e || player.axeContactCds.has(e) || (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false))) continue;
 
       const seg = distToSegment(e.x, e.y, player.x, player.y, ax, ay);
       const rSum = e.radius + hitRadius;
@@ -799,7 +800,7 @@ export function updateSpinningAxes(dt) {
         createHitParticles(seg.closestX, seg.closestY, isOuterZone ? '#e67e22' : '#d35400', isOuterZone ? 4 : 2);
 
         // Repulsão tangencial e radial amplificada pelo peso do personagem
-        const kbMult = player.knockbackDealt || 1.0;
+        const kbMult = player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0;
         if (isOuterZone) {
           const tanAng = angle + Math.PI * 0.5;
           const pushForce = (player.evolvedAxe ? 12 : 7) * (player.berserkTimer > 0 ? 1.6 : 1.0) * kbMult;
@@ -847,7 +848,7 @@ export function fireWeapons() {
     const inRange = [];
     for (let i = 0; i < enemies.length; i++) {
       const e = enemies[i];
-      if (e.hp <= 0 || (e.isBossSubTarget && !e.active)) continue;
+      if (e.hp <= 0 || (e.isBossSubTarget && !e.active) || (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) || e.isTargetable === false) continue;
       const dx = e.x - player.x;
       const dy = e.y - player.y;
       const dSq = dx * dx + dy * dy;
