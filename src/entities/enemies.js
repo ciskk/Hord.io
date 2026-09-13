@@ -411,17 +411,23 @@ export function triggerBossEncounter(bossId) {
 
   const bossHpFill = document.getElementById('boss-hp-fill');
   if (bossHpFill) {
-    bossHpFill.style.width = '100%';
+    bossHpFill.style.width = boss.bossId === 4 ? '0%' : '100%';
     bossHpFill.style.background = '';
     bossHpFill.style.boxShadow = '';
   }
 
   const bossHpVal = document.getElementById('boss-hp-val');
-  if (bossHpVal) bossHpVal.innerText = '100%';
+  if (bossHpVal) bossHpVal.innerText = boss.bossId === 4 ? '0%' : '100%';
 
-  playSfx('boss');
-  triggerShake(16);
-  triggerHaptic('heavy');
+  if (boss.bossId !== 4) {
+    playSfx('boss');
+    triggerShake(16);
+    triggerHaptic('heavy');
+  } else {
+    playSfx('warp');
+    triggerShake(6);
+    triggerHaptic('medium');
+  }
 
   return boss;
 }
