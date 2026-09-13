@@ -962,6 +962,45 @@ function update(dt) {
         continue;
       }
 
+      if (tel.type === 'ABYSSAL_VOID_RIFT') {
+        triggerShake(8);
+        playSfx('singularity');
+        triggerHaptic('medium');
+        createHitParticles(tel.x, tel.y, '#00cec9', 18);
+        createHitParticles(tel.x, tel.y, '#e84393', 14);
+        createHitParticles(tel.x, tel.y, '#ffffff', 8);
+
+        bossShockwaves.push({
+          x: tel.x,
+          y: tel.y,
+          radius: 8,
+          maxRadius: (tel.radius || 52) + 14,
+          speed: 6.0,
+          damage: Math.round(tel.damage * 0.35),
+          hitPlayer: false,
+          colorRgb: '0, 206, 201'
+        });
+
+        const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
+        if (dSq < tel.radius * tel.radius && player.iFrames <= 0) {
+          player.hp -= tel.damage;
+          player.iFrames = 24;
+          lastAttackerName = "Bombardeio Abissal";
+          triggerShake(12);
+          playSfx('hit');
+          triggerHaptic('heavy');
+          addDamageText(player.x, player.y, `-${tel.damage}`, false, '#00cec9');
+
+          if (player.hp <= 0) {
+            player.hp = 0;
+            triggerDeath();
+            return;
+          }
+        }
+        bossTelegraphs.splice(i, 1);
+        continue;
+      }
+
       triggerShake(12);
       playSfx('boss');
       createHitParticles(tel.x, tel.y, '#e74c3c', 14);

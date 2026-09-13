@@ -493,6 +493,53 @@ export function render() {
       ctx.lineTo(t.x, t.y + 4);
       ctx.lineTo(t.x + 8, t.y - 2);
       ctx.stroke();
+    } else if (t.type === 'ABYSSAL_VOID_RIFT') {
+      // Telegrafia Cósmica do Bombardeio Abissal
+      // 1. Círculo Externo com glifos pulsantes e anel de alerta
+      ctx.fillStyle = `rgba(14, 2, 24, ${0.25 + progress * 0.35})`;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = `rgba(0, 206, 201, ${0.4 + progress * 0.45})`;
+      ctx.lineWidth = 2.0;
+      ctx.setLineDash([6, 5]);
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 2. Preenchimento de carregamento de perigo em expansão
+      const curR = t.radius * progress;
+      const riftGrad = ctx.createRadialGradient(t.x, t.y, 2, t.x, t.y, Math.max(3, curR));
+      riftGrad.addColorStop(0, '#ffffff');
+      riftGrad.addColorStop(0.35, '#00cec9');
+      riftGrad.addColorStop(0.75, 'rgba(232, 67, 147, 0.7)');
+      riftGrad.addColorStop(1, 'rgba(142, 68, 173, 0.1)');
+      ctx.fillStyle = riftGrad;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, curR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Borda de detonação
+      ctx.strokeStyle = progress > 0.85 ? '#ffffff' : '#00cec9';
+      ctx.lineWidth = progress > 0.85 ? 3.5 : 2.2;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, curR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 3. Glifos e runas rotativas cósmicas
+      const rot = frameCount * 0.06;
+      ctx.strokeStyle = progress > 0.8 ? '#ffffff' : 'rgba(232, 67, 147, 0.8)';
+      ctx.lineWidth = 1.5;
+      for (let g = 0; g < 4; g++) {
+        const ga = rot + (g * Math.PI * 0.5);
+        const gx = t.x + Math.cos(ga) * (t.radius * 0.65);
+        const gy = t.y + Math.sin(ga) * (t.radius * 0.65);
+        ctx.beginPath();
+        ctx.arc(gx, gy, 3, 0, Math.PI * 2);
+        ctx.stroke();
+      }
     } else {
       const isTeleport = t.type === 'VAMPIRE_TELEPORT';
       const isRepulsion = t.type === 'REPULSION';

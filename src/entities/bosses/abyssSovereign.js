@@ -9,7 +9,10 @@ import {
   enemyBullets, 
   bossTelegraphs, 
   bossShockwaves, 
-  enemies 
+  enemies,
+  dpr,
+  viewW,
+  viewH
 } from '../../main.js';
 
 export const SOVEREIGN_STATES = Object.freeze({
@@ -41,6 +44,25 @@ function updateDelayedActions(boss, dt) {
         item.action();
       }
     }
+  }
+}
+
+/**
+ * Restringe rigidamente a posição do Soberano para nunca ultrapassar as bordas da arena.
+ * @param {Object} boss
+ */
+export function clampBossToArena(boss) {
+  if (!boss || boss.arenaCenterX === undefined || boss.arenaCenterY === undefined || !boss.arenaRadius) return;
+  const bdx = boss.x - boss.arenaCenterX;
+  const bdy = boss.y - boss.arenaCenterY;
+  const bDist = Math.hypot(bdx, bdy) || 1;
+  const maxBossDist = Math.max(0, boss.arenaRadius - (boss.radius || 40) - 20);
+
+  if (bDist > maxBossDist) {
+    boss.x = boss.arenaCenterX + (bdx / bDist) * maxBossDist;
+    boss.y = boss.arenaCenterY + (bdy / bDist) * maxBossDist;
+    if (boss.vx) boss.vx = 0;
+    if (boss.vy) boss.vy = 0;
   }
 }
 
@@ -255,33 +277,70 @@ function triggerStabilityBreak(boss, context) {
   addDamageText(boss.x, boss.y - boss.radius - 22, "COLAPSO DE ESTABILIDADE!", true, '#f1c40f');
 }
 
-function spawnConstellationRifts(boss, player) {
-  const nodeCount = boss.phase === 3 ? 6 : (boss.phase === 2 ? 5 : 4);
-  const spreadDist = 130;
-  let prevX = boss.x;
-  let prevY = boss.y;
+/**
+ * Dispara uma sequência de fendas de vácuo perseguidoras (Bombardeio Abissal).
+ * O primeiro nó mira exatamente sob os pés do jogador; os seguintes antecipam o vetor de movimento.
+ * @param {Object} boss
+ * @param {Object} player
+ */
+function spawnAbyssalHomingBarrage(boss, player) {
+  const nodeCount = boss.phase === 3 ? 7 : (boss.phase === 2 ? 6 : 5);
+  const interval = 9; // Intervalo de 9 frames entre cada fenda lançada
 
   for (let i = 0; i < nodeCount; i++) {
-    const angle = (i * Math.PI * 2) / nodeCount + (Math.random() - 0.5) * 0.4;
-    const dist = spreadDist + (Math.random() - 0.5) * 40;
-    const nodeX = player.x + Math.cos(angle) * dist;
-    const nodeY = player.y + Math.sin(angle) * dist;
+    scheduleDelayedAction(boss, i * interval, () => {
+      if (boss.hp <= 0) return;
 
-    bossTelegraphs.push({
-      type: 'FISSURE_NODE',
-      x: nodeX,
-      y: nodeY,
-      originX: prevX,
-      originY: prevY,
-      radius: 42,
-      timer: 55 + i * 8,
-      maxTimer: 55 + i * 8,
-      damage: Math.round(boss.damage * 0.32),
-      nodeIndex: i
+      // 1º nó atinge diretamente a posição atual; nós subsequentes realizam predição de movimento
+      const pvx = player.vx || 0;
+      const pvy = player.vy || 0;
+      const isMoving = Math.hypot(pvx, pvy) > 0.4;
+
+      let targetX = player.x;
+      let targetY = player.y;
+
+      if (i > 0 && isMoving) {
+        const lead = 8 + i * 2;
+        targetX += pvx * lead;
+        targetY += pvy * lead;
+
+        // Desvios laterais em leque para punir círculos fechados
+        if (i % 2 === 1) {
+          const perpX = -pvy;
+          const perpY = pvx;
+          const pLen = Math.hypot(perpX, perpY) || 1;
+          const offset = (i % 4 === 1 ? 1 : -1) * 20;
+          targetX += (perpX / pLen) * offset;
+          targetY += (perpY / pLen) * offset;
+        }
+      }
+
+      // Clamping estrito dentro dos limites da arena
+      if (boss.arenaCenterX !== undefined && boss.arenaCenterY !== undefined && boss.arenaRadius) {
+        const adx = targetX - boss.arenaCenterX;
+        const ady = targetY - boss.arenaCenterY;
+        const aDist = Math.hypot(adx, ady) || 1;
+        const maxDist = boss.arenaRadius - 32;
+        if (aDist > maxDist) {
+          targetX = boss.arenaCenterX + (adx / aDist) * maxDist;
+          targetY = boss.arenaCenterY + (ady / aDist) * maxDist;
+        }
+      }
+
+      bossTelegraphs.push({
+        type: 'ABYSSAL_VOID_RIFT',
+        x: targetX,
+        y: targetY,
+        radius: 52,
+        timer: 32,
+        maxTimer: 32,
+        damage: Math.round(boss.damage * 0.36),
+        nodeIndex: i
+      });
+
+      playSfx('warp');
+      triggerHaptic('light');
     });
-
-    prevX = nodeX;
-    prevY = nodeY;
   }
 }
 
@@ -323,8 +382,7 @@ function prepareNextAttack(boss, context) {
     case 'ABYSSAL_RIFTS': {
       boss.windupTimer = 44;
       boss.windupMax = 44;
-      spawnConstellationRifts(boss, player);
-      playSfx('boss');
+      playSfx('charge');
       break;
     }
 
@@ -336,8 +394,22 @@ function prepareNextAttack(boss, context) {
       boss.warpStartY = boss.y;
 
       const leadFactor = player.isMoving ? 26 : 0;
-      boss.warpTargetX = player.x + (player.facing || 1) * leadFactor + (Math.random() - 0.5) * 40;
-      boss.warpTargetY = player.y + (Math.random() - 0.5) * 40;
+      let targetX = player.x + (player.facing || 1) * leadFactor + (Math.random() - 0.5) * 40;
+      let targetY = player.y + (Math.random() - 0.5) * 40;
+
+      // Clamping rígido do destino do teleporte dentro da arena
+      if (boss.arenaCenterX !== undefined && boss.arenaCenterY !== undefined && boss.arenaRadius) {
+        const wdx = targetX - boss.arenaCenterX;
+        const wdy = targetY - boss.arenaCenterY;
+        const wDist = Math.hypot(wdx, wdy) || 1;
+        const maxWarpDist = Math.max(0, boss.arenaRadius - (boss.radius || 40) - 35);
+        if (wDist > maxWarpDist) {
+          targetX = boss.arenaCenterX + (wdx / wDist) * maxWarpDist;
+          targetY = boss.arenaCenterY + (wdy / wDist) * maxWarpDist;
+        }
+      }
+      boss.warpTargetX = targetX;
+      boss.warpTargetY = targetY;
       playSfx('warp');
       break;
     }
@@ -359,7 +431,7 @@ function prepareNextAttack(boss, context) {
   }
 }
 
-function startSkillCast(boss) {
+function startSkillCast(boss, context) {
   boss.actionState = SOVEREIGN_STATES.CASTING;
   boss.stateTimer = 0;
 
@@ -372,7 +444,11 @@ function startSkillCast(boss) {
       boss.castDuration = boss.phase === 3 ? 120 : 95;
       break;
     case 'ABYSSAL_RIFTS':
-      boss.castDuration = 35;
+      boss.castDuration = 65;
+      playSfx('boss');
+      if (context && context.player) {
+        spawnAbyssalHomingBarrage(boss, context.player);
+      }
       break;
     case 'SINGULARITY_IMPLOSION':
       boss.castDuration = 20;
@@ -633,6 +709,24 @@ export function updateAbyssSovereign(e, dt, context) {
   updateEventHorizon(e, dt, context);
   updateSingularityPhysics(e, dt, context);
 
+  // Regeneração dinâmica de vida pelas Âncoras Cósmicas (1% por segundo por âncora viva; se as 3 vivas = 3% por segundo)
+  const activeAnchorCount = e.anchors ? e.anchors.filter(a => a.active && a.hp > 0).length : 0;
+  if (activeAnchorCount > 0 && e.hp > 0 && e.actionState !== SOVEREIGN_STATES.SPAWN_INTRO) {
+    const healRatePerSec = 0.01 * activeAnchorCount;
+    const healPerFrame = (e.maxHp * healRatePerSec / 60) * dt;
+    e.hp = Math.min(e.maxHp, e.hp + healPerFrame);
+
+    if (e.healPulseTimer === undefined) e.healPulseTimer = 0;
+    e.healPulseTimer += dt;
+    if (e.healPulseTimer >= 60) {
+      e.healPulseTimer = 0;
+      if (e.hp < e.maxHp) {
+        addDamageText(e.x, e.y - e.radius - 24, `+${activeAnchorCount}% HP`, false, '#2ecc71');
+        createHitParticles(e.x, e.y, '#2ecc71', 6);
+      }
+    }
+  }
+
   if (e.lastHp === undefined) e.lastHp = e.hp;
   const rawDmgReceived = Math.max(0, e.lastHp - e.hp);
 
@@ -788,7 +882,7 @@ export function updateAbyssSovereign(e, dt, context) {
         addDamageText(e.x, e.y - e.radius - 42, "O FIM DOS TEMPOS COMEÇOU", false, '#e84393');
 
         // Spawna as âncoras abissais
-        spawnRiftAnchors(e, 2, 5000);
+        spawnRiftAnchors(e, 3, 5000);
       }
       break;
     }
@@ -885,7 +979,7 @@ export function updateAbyssSovereign(e, dt, context) {
       }
 
       if (e.windupTimer <= 0) {
-        startSkillCast(e);
+        startSkillCast(e, context);
       }
       break;
     }
@@ -910,7 +1004,7 @@ export function updateAbyssSovereign(e, dt, context) {
         const rotSpeed = (e.phase === 3 ? 0.028 : (e.phase === 2 ? 0.022 : 0.016)) * e.beamDir;
         e.beamAngle += rotSpeed * dt;
 
-        const beamLength = 650;
+        const beamLength = 1300;
         for (let arm = 0; arm < armCount; arm++) {
           const bAng = e.beamAngle + (arm * (Math.PI * 2 / armCount));
           const bx = Math.cos(bAng);
@@ -1072,6 +1166,9 @@ export function updateAbyssSovereign(e, dt, context) {
       break;
     }
   }
+
+  // Garante que o chefe permaneça estritamente contido dentro da arena
+  clampBossToArena(e);
 }
 
 /**
@@ -1164,13 +1261,12 @@ function drawMajesticSpawnIntro(ctx, e, frameCount) {
       ctx.stroke();
     }
     ctx.restore();
-    return;
   }
 
   // ==========================================
   // ATO 2: A MANIFESTAÇÃO CÓSMICA (0.32 <= progress < 0.72)
   // ==========================================
-  if (progress < 0.72) {
+  else if (progress < 0.72) {
     const act2Prog = (progress - 0.32) / 0.40;
     const curScale = 0.25 + act2Prog * 0.80;
     const alpha = Math.min(1.0, 0.3 + act2Prog * 0.7);
@@ -1261,13 +1357,13 @@ function drawMajesticSpawnIntro(ctx, e, frameCount) {
     ctx.fill();
 
     ctx.restore();
-    return;
   }
 
   // ==========================================
   // ATO 3: O DESPERTAR DA SINGULARIDADE (0.72 <= progress <= 1.00)
   // ==========================================
-  const act3Prog = (progress - 0.72) / 0.28;
+  else {
+    const act3Prog = (progress - 0.72) / 0.28;
   ctx.save();
 
   const bossPulse = 1.0 + Math.sin(frameCount * 0.15) * 0.04;
@@ -1377,6 +1473,102 @@ function drawMajesticSpawnIntro(ctx, e, frameCount) {
     ctx.arc(0, 0, ringExpand, 0, Math.PI * 2);
     ctx.stroke();
   }
+
+    ctx.restore();
+  }
+
+  // ==========================================
+  // GRANDE BANNER CINEMATOGRÁFICO DE TELA (APOCALIPSE IMINENTE)
+  // ==========================================
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  let bannerAlpha = 1.0;
+  if (progress < 0.12) {
+    bannerAlpha = progress / 0.12;
+  } else if (progress > 0.84) {
+    bannerAlpha = Math.max(0, (1 - progress) / 0.16);
+  }
+  ctx.globalAlpha = bannerAlpha;
+
+  const screenW = viewW || 1280;
+  const screenH = viewH || 800;
+  const bannerW = Math.min(920, screenW * 0.94);
+  const bannerH = 105;
+  const bx = (screenW - bannerW) / 2;
+  const by = Math.max(110, Math.floor(screenH * 0.15));
+
+  // 1. Fundo Cósmico Profundo com Gradiente Translúcido
+  const bgGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
+  bgGrad.addColorStop(0, 'rgba(4, 1, 12, 0)');
+  bgGrad.addColorStop(0.14, 'rgba(6, 2, 18, 0.95)');
+  bgGrad.addColorStop(0.5, 'rgba(16, 4, 32, 0.98)');
+  bgGrad.addColorStop(0.86, 'rgba(6, 2, 18, 0.95)');
+  bgGrad.addColorStop(1, 'rgba(4, 1, 12, 0)');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(bx, by, bannerW, bannerH);
+
+  // 2. Frisos de Neon Superior e Inferior com Gradiente Ciano/Magenta
+  const borderGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
+  borderGrad.addColorStop(0, 'rgba(0, 206, 201, 0)');
+  borderGrad.addColorStop(0.2, 'rgba(0, 206, 201, 0.9)');
+  borderGrad.addColorStop(0.5, 'rgba(232, 67, 147, 1)');
+  borderGrad.addColorStop(0.8, 'rgba(0, 206, 201, 0.9)');
+  borderGrad.addColorStop(1, 'rgba(0, 206, 201, 0)');
+
+  ctx.strokeStyle = borderGrad;
+  ctx.lineWidth = 2.6;
+  ctx.beginPath();
+  ctx.moveTo(bx, by);
+  ctx.lineTo(bx + bannerW, by);
+  ctx.moveTo(bx, by + bannerH);
+  ctx.lineTo(bx + bannerW, by + bannerH);
+  ctx.stroke();
+
+  // Frisos internos finos de alta tecnologia dimensional
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(bx + 45, by + 4);
+  ctx.lineTo(bx + bannerW - 45, by + 4);
+  ctx.moveTo(bx + 45, by + bannerH - 4);
+  ctx.lineTo(bx + bannerW - 45, by + bannerH - 4);
+  ctx.stroke();
+
+  // 3. Cantoneiras Geométricas Góticas
+  const cornerSize = 16;
+  ctx.fillStyle = '#00cec9';
+  ctx.fillRect(bx + 35, by - 2, cornerSize, 4);
+  ctx.fillRect(bx + bannerW - 35 - cornerSize, by - 2, cornerSize, 4);
+  ctx.fillStyle = '#e84393';
+  ctx.fillRect(bx + 35, by + bannerH - 2, cornerSize, 4);
+  ctx.fillRect(bx + bannerW - 35 - cornerSize, by + bannerH - 2, cornerSize, 4);
+
+  // 4. Textos do Banner
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Tag Superior de Alerta Máximo
+  ctx.font = 'bold 12px monospace';
+  ctx.fillStyle = '#e84393';
+  ctx.shadowColor = 'rgba(232, 67, 147, 0.85)';
+  ctx.shadowBlur = 8;
+  ctx.fillText("[ ALERTA DE CATACLISMA // AMEAÇA EXISTENCIAL ]", screenW / 2, by + 23);
+
+  // Título Principal Ameaçador
+  const pulseGlow = 16 + Math.sin(frameCount * 0.12) * 8;
+  ctx.font = 'bold 31px "Cinzel", "Cinzel Decorative", Georgia, serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0, 206, 201, 0.95)';
+  ctx.shadowBlur = pulseGlow;
+  ctx.fillText("❖ SOBERANO DO ABISMO ❖", screenW / 2, by + 54);
+
+  // Subtítulo Místico
+  ctx.font = 'italic 13px "Cinzel", Georgia, serif';
+  ctx.fillStyle = '#dfe4ea';
+  ctx.shadowColor = 'rgba(162, 155, 254, 0.6)';
+  ctx.shadowBlur = 4;
+  ctx.fillText("✦ O DEVORADOR DAS ERAS E SENHOR DO VÁZIO PRIMORDIAL ✦", screenW / 2, by + 81);
 
   ctx.restore();
 }
@@ -1514,7 +1706,7 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
       const rayAng = (e.beamAngle + (arm * (Math.PI * 2 / armCount))) * e.facing;
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.lineTo(Math.cos(rayAng) * 650, Math.sin(rayAng) * 650);
+      ctx.lineTo(Math.cos(rayAng) * 1300, Math.sin(rayAng) * 1300);
       ctx.stroke();
     }
     ctx.setLineDash([]);
@@ -1528,8 +1720,8 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
 
     for (let arm = 0; arm < armCount; arm++) {
       const rayAng = (e.beamAngle + (arm * (Math.PI * 2 / armCount))) * e.facing;
-      const rx = Math.cos(rayAng) * 650;
-      const ry = Math.sin(rayAng) * 650;
+      const rx = Math.cos(rayAng) * 1300;
+      const ry = Math.sin(rayAng) * 1300;
 
       ctx.strokeStyle = e.phase === 3 ? 'rgba(0, 206, 201, 0.45)' : 'rgba(232, 67, 147, 0.45)';
       ctx.lineWidth = 14;
