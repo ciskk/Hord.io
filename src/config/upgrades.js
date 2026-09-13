@@ -233,24 +233,18 @@ export const upgradesPool = [
     title: "Fúria Rápida",
     rarity: "card-rare",
     badge: "Passiva",
-    desc: "Reduz a recarga das armas em 12% ou acelera a rotação orbital em Kragdor",
+    desc: "Reduz o tempo de recarga de todas as armas em 12%",
     stat: "-12% Recarga (Máx: 3)",
     apply: () => {
       player.hasteCardCount = (player.hasteCardCount || 0) + 1;
-      if (selectedHeroKey === 'BARBARIAN') {
-        player.axeSpinSpeed = (player.axeSpinSpeed || 0.085) + 0.035;
-        const w = player.weapons.find(wp => wp.type === 'AXE');
-        if (w) w.damageMult += 0.12;
-      } else {
-        player.cooldownReduction = Math.min(0.36, (player.cooldownReduction || 0) + 0.12);
-        player.attackCooldown = Math.max(10, Math.floor(player.attackCooldown * 0.88));
-        player.weapons.forEach(w => {
-          w.cooldown = Math.max(10, Math.floor(w.cooldown * 0.88));
-        });
-      }
+      player.cooldownReduction = Math.min(0.36, (player.cooldownReduction || 0) + 0.12);
+      player.attackCooldown = Math.max(10, Math.floor(player.attackCooldown * 0.88));
+      player.weapons.forEach(w => {
+        w.cooldown = Math.max(10, Math.floor(w.cooldown * 0.88));
+      });
       registerPassiveInInventory('haste', 1, { stacks: player.hasteCardCount });
     },
-    isAvailable: () => (player.hasteCardCount || 0) < 3
+    isAvailable: () => selectedHeroKey !== 'BARBARIAN' && (player.hasteCardCount || 0) < 3
   },
   {
     id: 'wings',

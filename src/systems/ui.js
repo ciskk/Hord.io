@@ -290,7 +290,7 @@ function renderPauseInventory() {
       buildList.innerHTML += `<div class="build-item-badge"><span class="name">🎯 Foco Letal</span><span class="counter">${Math.round(player.critChance * 100)}% Crítico (${player.critCardCount || 1}/4)</span></div>`;
     }
     if (player.hasteCardCount || (player.cooldownReduction || 0) > 0) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">⚡ Fúria Rápida</span><span class="counter">${selectedHeroKey === 'BARBARIAN' ? `+${(player.hasteCardCount || 1) * 12}% Velocidade` : `-${Math.round((player.cooldownReduction || 0) * 100)}% CDR`} (${player.hasteCardCount || 1}/3)</span></div>`;
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">⚡ Fúria Rápida</span><span class="counter">-${Math.round((player.cooldownReduction || 0) * 100)}% CDR (${player.hasteCardCount || 1}/3)</span></div>`;
     }
     if (player.magnetCardCount) {
       buildList.innerHTML += `<div class="build-item-badge"><span class="name">🧲 Ímã Titânico</span><span class="counter">+${player.magnetCardCount * 50}px (${player.magnetCardCount}/4)</span></div>`;
