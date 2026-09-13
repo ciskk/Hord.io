@@ -939,7 +939,7 @@ function update(dt) {
 
       if (tel.type === 'FISSURE_NODE') {
         triggerShake(5);
-        if (tel.nodeIndex === 1 || tel.nodeIndex === 4 || tel.nodeIndex === 7) playSfx('hit');
+        if (tel.nodeIndex === 1 || tel.nodeIndex === 4 || tel.nodeIndex === 7 || tel.nodeIndex === 10 || tel.nodeIndex === 13) playSfx('hit');
         createHitParticles(tel.x, tel.y, '#d35400', 8);
         createHitParticles(tel.x, tel.y, '#f39c12', 5);
 
