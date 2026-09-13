@@ -60,6 +60,9 @@ export function updateProjectiles(dt) {
             if (player.executeBonus > 0 && e.maxHp && (e.hp / e.maxHp) < 0.30) {
               impactDmg *= (1 + player.executeBonus);
             }
+            if (e.baseType === 'LITOCISTO') {
+              impactDmg *= 4.0;
+            }
             e.hp -= impactDmg;
             e.hitFlash = 4;
             addDamageText(e.x, e.y, Math.round(impactDmg), isCrit || isKaelExecute, isKaelExecute ? '#00cec9' : (isCrit ? '#f1c40f' : (b.isEvolved ? '#00cec9' : '#2ecc71')));
@@ -269,7 +272,10 @@ export function updateAcidPuddles(dt) {
         const dy = e.y - p.y;
         if (dx * dx + dy * dy < (p.radius + e.radius) ** 2) {
           // 2: Dano contínuo da área envenenada reduzido em 20% (* 0.80)
-          const dotDmg = (p.isAlchemist ? ((p.damage || 18) * 0.08 * 0.80) : 0.55) * dt;
+          let dotDmg = (p.isAlchemist ? ((p.damage || 18) * 0.08 * 0.80) : 0.55) * dt;
+          if (p.isAlchemist && e.baseType === 'LITOCISTO') {
+            dotDmg *= 4.0;
+          }
           e.hp -= dotDmg;
           e.hitFlash = Math.max(e.hitFlash || 0, 1);
 

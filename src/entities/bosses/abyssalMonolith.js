@@ -951,10 +951,17 @@ function executeBasaltBarrage(e, context) {
 
   const impactCount = e.isPhase3 ? 7 : (e.isEnraged ? 6 : 5);
   for (let m = 0; m < impactCount; m++) {
-    const offsetAng = (m * Math.PI * 2) / impactCount + Math.random() * 0.4;
-    const offsetDist = 100 + Math.random() * 380; // Alcance de dispersão ampliado para até ~480px (dobrado)
-    const targetX = player.x + Math.cos(offsetAng) * offsetDist;
-    const targetY = player.y + Math.sin(offsetAng) * offsetDist;
+    let targetX, targetY;
+    if (m === 0) {
+      // Pelo menos 1 meteoro direcionado diretamente na posição do jogador
+      targetX = player.x;
+      targetY = player.y;
+    } else {
+      const offsetAng = (m * Math.PI * 2) / impactCount + Math.random() * 0.4;
+      const offsetDist = 50 + Math.random() * 300;
+      targetX = player.x + Math.cos(offsetAng) * offsetDist;
+      targetY = player.y + Math.sin(offsetAng) * offsetDist;
+    }
 
     bossTelegraphs.push({
       type: 'FALLING_ROCK',
