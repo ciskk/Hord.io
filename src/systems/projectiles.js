@@ -29,6 +29,9 @@ export function updateProjectiles(dt) {
     if (b.type === 'POTION' && b.gravity) {
       b.vy = (b.vy || 0) + b.gravity * dt;
       b.angle = (b.angle || 0) + 0.18 * dt;
+      if (!b.trail) b.trail = [];
+      b.trail.unshift({ x: b.x, y: b.y });
+      if (b.trail.length > 5) b.trail.pop();
     }
 
     b.x += (b.vx || 0) * dt;

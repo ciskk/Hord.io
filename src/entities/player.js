@@ -632,6 +632,8 @@ export function triggerHeroSkill() {
     playSfx('acid');
     triggerHaptic('medium');
     createHitParticles(player.x, player.y, '#2ecc71', 20);
+    player.potionThrowTimer = 24;
+    player.alchemistSkillTimer = 40;
 
     const flaskCount = 6;
     const flightFrames = 26;
@@ -924,6 +926,7 @@ export function fireWeapons() {
       }
     } else if (w.type === 'POTION') {
       playSfx('acid');
+      player.potionThrowTimer = 16;
       
       const rawDx = closestEnemy.x - player.x;
       const rawDy = closestEnemy.y - player.y;
@@ -1098,6 +1101,8 @@ export function resetPlayer(heroKey) {
   player.isMoving = false;
   player.staffPierceBonus = 0;
   player.staffCastTimer = 0;
+  player.potionThrowTimer = 0;
+  player.alchemistSkillTimer = 0;
 
   player.axeAngle = 0;
   player.axeSpinSpeed = 0.085;

@@ -497,8 +497,19 @@ function drawAtmosphericParticles(c, x, y, colors) {
     c.beginPath();
 
     if (currentHeroKey === 'ALCHEMIST') {
-      // Bolhas com aro translúcido
-      c.arc(x + p.x, y + p.y, p.size, 0, Math.PI * 2);
+      // Bolhas químicas iridescent com aro translúcido e reflexo especular
+      c.arc(x + p.x, y + p.y, p.size * 1.2, 0, Math.PI * 2);
+      c.fillStyle = colors.secondary;
+      c.globalAlpha = Math.max(0, p.alpha * 0.35);
+      c.fill();
+      c.strokeStyle = colors.primary;
+      c.lineWidth = 0.9;
+      c.globalAlpha = Math.max(0, p.alpha * 0.75);
+      c.stroke();
+      // Ponto de luz da bolha
+      c.fillStyle = '#ffffff';
+      c.beginPath();
+      c.arc(x + p.x - p.size * 0.35, y + p.y - p.size * 0.35, p.size * 0.35, 0, Math.PI * 2);
       c.fill();
     } else if (currentHeroKey === 'MAGE') {
       // Brasas pontiagudas
@@ -572,6 +583,11 @@ function drawHeroInstance(c, x, y, colors, isCompact = false) {
 
     isCasting: isCombat && currentHeroKey === 'MAGE',
     staffCastTimer: isSkill && currentHeroKey === 'MAGE' ? 40 : 0,
+
+    isThrowing: isCombat && currentHeroKey === 'ALCHEMIST',
+    isAlchemistSkill: isSkill && currentHeroKey === 'ALCHEMIST',
+    isAlchemistCombat: isCombat && currentHeroKey === 'ALCHEMIST',
+    alchemistSkillTimer: isSkill && currentHeroKey === 'ALCHEMIST' ? 60 : 0,
 
     fluidColor: isSkill ? '#00cec9' : '#2ecc71',
     evolvedPotion: isSkill

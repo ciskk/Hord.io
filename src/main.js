@@ -305,6 +305,8 @@ function update(dt) {
   if (player.iFrames > 0) player.iFrames = Math.max(0, player.iFrames - dt);
   if (player.skillCd > 0) player.skillCd = Math.max(0, player.skillCd - dt);
   if (player.staffCastTimer > 0) player.staffCastTimer = Math.max(0, player.staffCastTimer - dt);
+  if (player.potionThrowTimer > 0) player.potionThrowTimer = Math.max(0, player.potionThrowTimer - dt);
+  if (player.alchemistSkillTimer > 0) player.alchemistSkillTimer = Math.max(0, player.alchemistSkillTimer - dt);
 
   if (player.invisTimer > 0) {
     player.invisTimer = Math.max(0, player.invisTimer - dt);
@@ -320,10 +322,17 @@ function update(dt) {
     }
   }
 
-  if (selectedHeroKey === 'ALCHEMIST' && player.isMoving && Math.floor(frameCount) % 54 === 0) {
-    const ventX = player.x - player.facing * 7;
-    const ventY = player.y - 12;
-    createHitParticles(ventX, ventY, player.evolvedPotion ? '#00cec9' : '#9b59b6', 1);
+  if (selectedHeroKey === 'ALCHEMIST') {
+    // Escape de vapor contínuo da retorta dorsal (mais intenso ao mover ou usar habilidade)
+    const ventFrequency = (player.alchemistSkillTimer > 0) ? 3 : (player.isMoving ? 14 : 34);
+    if (Math.floor(frameCount) % ventFrequency === 0) {
+      const ventX = player.x - player.facing * 9;
+      const ventY = player.y - 14;
+      const pColor = (player.alchemistSkillTimer > 0)
+        ? (player.evolvedPotion ? '#81ecec' : '#55efc4')
+        : (player.evolvedPotion ? '#00cec9' : '#2ecc71');
+      createHitParticles(ventX, ventY, pColor, (player.alchemistSkillTimer > 0) ? 3 : 1);
+    }
   }
 
   let isSlowed = false;

@@ -297,6 +297,15 @@ export function render() {
       ctx.arc(bx, by, Math.max(0.5, (2.2 + Math.sin(frameCount * 0.2 + b) * 1.2) * shrinkFactor), 0, Math.PI * 2);
       ctx.fill();
     }
+
+    if (p.isAlchemist) {
+      // Anel cáustico efervescente interno
+      ctx.strokeStyle = p.isEvolved ? 'rgba(129, 236, 236, 0.55)' : 'rgba(85, 239, 196, 0.55)';
+      ctx.lineWidth = 1.0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, Math.max(1, r * 0.78), 0, Math.PI * 2);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -859,22 +868,66 @@ export function render() {
     }
 
     if (b.type === 'POTION') {
+      // Rastro de vapor e gotículas cáusticas em arco
+      if (b.trail && b.trail.length > 0) {
+        for (let t = 0; t < b.trail.length; t++) {
+          const pt = b.trail[t];
+          const tAlpha = (1 - t / b.trail.length) * 0.40;
+          ctx.fillStyle = b.isEvolved ? `rgba(129, 236, 236, ${tAlpha})` : `rgba(85, 239, 196, ${tAlpha})`;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, (b.radius * 0.65) * (1 - t / b.trail.length * 0.5), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
       ctx.save();
       ctx.translate(b.x, b.y);
       ctx.rotate(b.angle || 0);
-      ctx.fillStyle = '#d35400';
-      ctx.fillRect(-2.5, -9, 5, 3);
-      ctx.fillStyle = b.isEvolved ? '#00cec9' : '#2ecc71';
+
+      const acidCol = b.isEvolved ? '#00cec9' : '#2ecc71';
+      const r = b.radius || 8;
+
+      // Halo luminoso do reagente químico volátil
+      ctx.fillStyle = b.isEvolved ? 'rgba(0, 206, 201, 0.28)' : 'rgba(46, 204, 113, 0.28)';
       ctx.beginPath();
-      ctx.arc(0, 0, b.radius, 0, Math.PI * 2);
+      ctx.arc(0, 0, r + 4, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
+
+      // Vidro exterior do frasco de laboratório (formato cônico / retorta)
+      ctx.fillStyle = 'rgba(235, 255, 248, 0.82)';
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.35, -r * 0.95);
+      ctx.lineTo(r * 0.35, -r * 0.95);
+      ctx.lineTo(r * 0.35, -r * 0.35);
+      ctx.quadraticCurveTo(r * 0.95, -r * 0.05, r * 0.95, r * 0.35);
+      ctx.arc(0, r * 0.35, r * 0.95, 0, Math.PI);
+      ctx.quadraticCurveTo(-r * 0.95, -r * 0.05, -r * 0.35, -r * 0.35);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.lineWidth = 1.2;
       ctx.stroke();
-      ctx.fillStyle = '#ffffff';
+
+      // Líquido Ácido Fluorescente preenchendo a base
+      ctx.fillStyle = acidCol;
       ctx.beginPath();
-      ctx.arc(-2, -2, 2, 0, Math.PI * 2);
+      ctx.arc(0, r * 0.35, r * 0.78, 0.15, Math.PI - 0.15);
+      ctx.closePath();
       ctx.fill();
+
+      // Gargalo de latão e rolha de cortiça
+      ctx.fillStyle = '#d4a373';
+      ctx.fillRect(-r * 0.42, -r * 0.85, r * 0.84, 2);
+      ctx.fillStyle = '#8b5a2b';
+      ctx.fillRect(-r * 0.32, -r * 1.3, r * 0.64, r * 0.5);
+
+      // Reflexo especular no bojo do vidro
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.0;
+      ctx.beginPath();
+      ctx.arc(0, r * 0.35, r * 0.6, -Math.PI * 0.7, -Math.PI * 0.3);
+      ctx.stroke();
+
       ctx.restore();
       continue;
     }

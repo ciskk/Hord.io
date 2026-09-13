@@ -699,10 +699,14 @@ const HERO_EMBLEMS_SVG = {
   `,
   ALCHEMIST: `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M10 2h4"/>
-      <path d="M12 2v6l-6.5 11.5A2 2 0 0 0 7.2 22h9.6a2 2 0 0 0 1.7-2.5L12 8"/>
-      <path d="M8 15c2-1 6-1 8 0" stroke-opacity="0.6"/>
-      <circle cx="12" cy="18" r="1.5" fill="currentColor"/>
+      <path d="M9 3h6"/>
+      <line x1="10" y1="3" x2="10" y2="7"/>
+      <line x1="14" y1="3" x2="14" y2="7"/>
+      <path d="M10 7L5 18a2.5 2.5 0 0 0 2.2 3.5h9.6a2.5 2.5 0 0 0 2.2-3.5L14 7"/>
+      <path d="M7 15c2.5-1.2 7.5-1.2 10 0" stroke-opacity="0.8"/>
+      <circle cx="10" cy="18" r="1.2" fill="currentColor"/>
+      <circle cx="14.5" cy="16.5" r="0.8" fill="currentColor"/>
+      <circle cx="12" cy="13.5" r="0.9" fill="currentColor"/>
     </svg>
   `
 };
