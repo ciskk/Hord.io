@@ -31,7 +31,8 @@ import {
   dyingEnemies,
   particles,
   damageTexts,
-  frameCount
+  frameCount,
+  waveAnnouncement
 } from '../main.js';
 
 // Reexportações para assegurar total retrocompatibilidade
@@ -971,13 +972,81 @@ export function render() {
   for (let i = 0; i < enemyBullets.length; i++) {
     const eb = enemyBullets[i];
     if (eb.x < viewLeft || eb.x > viewRight || eb.y < viewTop || eb.y > viewBottom) continue;
-    ctx.fillStyle = '#ff7675';
-    ctx.beginPath();
-    ctx.arc(eb.x, eb.y, eb.radius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#d63031';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+
+    const bType = eb.bulletType || 'DEFAULT';
+    ctx.save();
+    ctx.translate(eb.x, eb.y);
+
+    if (bType === 'TECH') {
+      const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
+      ctx.rotate(bAng);
+      // Rastro de Plasma
+      ctx.fillStyle = 'rgba(0, 206, 201, 0.45)';
+      ctx.fillRect(-12, -2.5, 16, 5);
+      // Núcleo Energético
+      ctx.fillStyle = '#00cec9';
+      ctx.fillRect(-8, -1.8, 12, 3.6);
+      // Centro Incandescente
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-2, -1, 7, 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(4, -1.5, 3, 3);
+    } else if (bType === 'FIRE_SHRAPNEL') {
+      ctx.rotate(frameCount * 0.18 + eb.x);
+      // Rastro de fumaça cinzenta
+      ctx.fillStyle = 'rgba(45, 52, 54, 0.4)';
+      ctx.beginPath();
+      ctx.arc(-8, 0, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      // Fragmento de Brasa Incandescente
+      ctx.fillStyle = '#d35400';
+      ctx.beginPath();
+      ctx.moveTo(-5, -4);
+      ctx.lineTo(5, -2);
+      ctx.lineTo(3, 5);
+      ctx.lineTo(-4, 3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#f1c40f';
+      ctx.beginPath();
+      ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-1, -1, 2, 2);
+    } else if (bType === 'CHAOS') {
+      const cPulse = Math.sin(frameCount * 0.25) * 1.5;
+      // Halo do Caos Pulsante
+      ctx.fillStyle = 'rgba(142, 68, 173, 0.55)';
+      ctx.beginPath();
+      ctx.arc(0, 0, eb.radius + 2.5 + cPulse, 0, Math.PI * 2);
+      ctx.fill();
+      // Núcleo Abissal
+      ctx.fillStyle = '#090810';
+      ctx.beginPath();
+      ctx.arc(0, 0, eb.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#e74c3c';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      // Fagulho Orbital
+      const fAng = frameCount * 0.15;
+      ctx.fillStyle = '#ff7675';
+      ctx.fillRect(Math.cos(fAng) * (eb.radius + 1) - 1.5, Math.sin(fAng) * (eb.radius + 1) - 1.5, 3, 3);
+    } else {
+      // Projétil Padrão Polido (Ruby Shard)
+      ctx.fillStyle = '#ff7675';
+      ctx.beginPath();
+      ctx.arc(0, 0, eb.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#d63031';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-eb.radius * 0.35, -eb.radius * 0.35, Math.max(1, eb.radius * 0.3), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   for (let i = 0; i < dyingEnemies.length; i++) {
@@ -1023,6 +1092,116 @@ export function render() {
   }
 
   ctx.restore();
+
+  // 1. Radar Periférico de Minibosses Fora de Tela (Offscreen Threat Radar)
+  for (let i = 0; i < enemies.length; i++) {
+    const mb = enemies[i];
+    if (!mb || !mb.isMiniBoss || mb.hp <= 0) continue;
+
+    const sx = mb.x - camera.x;
+    const sy = mb.y - camera.y;
+    const pad = 42;
+    const isOffscreen = sx < pad || sx > viewW - pad || sy < pad || sy > viewH - pad;
+
+    if (isOffscreen) {
+      const centerX = viewW / 2;
+      const centerY = viewH / 2;
+      const angle = Math.atan2(sy - centerY, sx - centerX);
+      const clampX = Math.max(pad, Math.min(viewW - pad, sx));
+      const clampY = Math.max(pad, Math.min(viewH - pad, sy));
+      const pulse = Math.sin(frameCount * 0.2) * 3;
+      const arrowColor = mb.color || '#f39c12';
+
+      ctx.save();
+      ctx.translate(clampX, clampY);
+      ctx.rotate(angle);
+
+      // Seta indicadora de ameaça com pulso
+      ctx.fillStyle = arrowColor;
+      ctx.beginPath();
+      ctx.moveTo(10 + pulse, 0);
+      ctx.lineTo(-8, -9);
+      ctx.lineTo(-4, 0);
+      ctx.lineTo(-8, 9);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Ponto de alerta
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-1, 0, 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // 2. Banner Cinematográfico de Transição de Onda (In-Game Wave Announcement)
+  if (waveAnnouncement && waveAnnouncement.timer > 0) {
+    const maxT = waveAnnouncement.maxTimer || 180;
+    const progress = 1 - (waveAnnouncement.timer / maxT);
+    let alpha = 1.0;
+    if (progress < 0.15) {
+      alpha = progress / 0.15;
+    } else if (progress > 0.82) {
+      alpha = Math.max(0, (1 - progress) / 0.18);
+    }
+
+    const bannerW = Math.min(520, viewW * 0.85);
+    const bannerH = 54;
+    const bx = (viewW - bannerW) / 2;
+    const by = 88;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    // Fundo do Banner Gótico Sombrio
+    const bgGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
+    bgGrad.addColorStop(0, 'rgba(10, 12, 16, 0)');
+    bgGrad.addColorStop(0.2, 'rgba(15, 20, 28, 0.88)');
+    bgGrad.addColorStop(0.8, 'rgba(15, 20, 28, 0.88)');
+    bgGrad.addColorStop(1, 'rgba(10, 12, 16, 0)');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(bx, by, bannerW, bannerH);
+
+    // Linhas de friso douradas superior e inferior
+    const borderGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
+    borderGrad.addColorStop(0, 'rgba(241, 196, 15, 0)');
+    borderGrad.addColorStop(0.3, 'rgba(241, 196, 15, 0.85)');
+    borderGrad.addColorStop(0.7, 'rgba(241, 196, 15, 0.85)');
+    borderGrad.addColorStop(1, 'rgba(241, 196, 15, 0)');
+    ctx.strokeStyle = borderGrad;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(bx, by);
+    ctx.lineTo(bx + bannerW, by);
+    ctx.moveTo(bx, by + bannerH);
+    ctx.lineTo(bx + bannerW, by + bannerH);
+    ctx.stroke();
+
+    // Texto Centralizado
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Rótulo Principal
+    ctx.font = 'bold 20px "Cinzel", "Cinzel Decorative", Georgia, serif';
+    ctx.fillStyle = '#f1c40f';
+    ctx.shadowColor = 'rgba(241, 196, 15, 0.65)';
+    ctx.shadowBlur = 10;
+    const waveTitle = (waveAnnouncement.name || '').toUpperCase();
+    ctx.fillText(waveTitle, viewW / 2, by + 22);
+
+    // Subtítulo descritivo
+    ctx.font = 'italic 12px sans-serif';
+    ctx.fillStyle = '#dfe4ea';
+    ctx.shadowBlur = 0;
+    ctx.fillText("Sobreviva à maré crescente de horrores", viewW / 2, by + 42);
+
+    ctx.restore();
+  }
 
   if (stick.active) {
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';

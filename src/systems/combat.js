@@ -161,14 +161,12 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
           e.attackTimer = e.attackWindupFrames;
           e.attackAngle = Math.atan2(dy, dx);
           e.facing = dx >= 0 ? 1 : -1;
-          e.hitFlash = 1;
         }
         break;
       }
 
       case 'WINDUP': {
         e.attackTimer -= dt;
-        e.hitFlash = Math.max(e.hitFlash || 0, 1);
 
         if (e.attackTimer <= 0) {
           e.combatState = 'STRIKE';

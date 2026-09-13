@@ -54,11 +54,37 @@ export function drawEnemyShape(e) {
     let aColor = '#00d2d3';
     if (e.eliteMod === 'HASTE') aColor = '#f1c40f';
     if (e.eliteMod === 'TOXIC') aColor = '#2ecc71';
+    if (e.eliteMod === 'FROST') aColor = '#74b9ff';
     ctx.strokeStyle = aColor;
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(0, 0, e.radius + 6 + auraPulse, 0, Math.PI * 2);
     ctx.stroke();
+
+    if (e.eliteMod === 'FROST') {
+      ctx.fillStyle = 'rgba(116, 185, 255, 0.85)';
+      for (let cr = 0; cr < 3; cr++) {
+        const crA = frameCount * 0.04 + cr * (Math.PI * 2 / 3);
+        const crX = Math.cos(crA) * (e.radius + 7);
+        const crY = Math.sin(crA) * (e.radius + 7);
+        ctx.beginPath();
+        ctx.moveTo(crX, crY - 5);
+        ctx.lineTo(crX + 3.5, crY);
+        ctx.lineTo(crX, crY + 5);
+        ctx.lineTo(crX - 3.5, crY);
+        ctx.closePath();
+        ctx.fill();
+      }
+    } else if (e.eliteMod === 'TOXIC') {
+      ctx.fillStyle = 'rgba(46, 204, 113, 0.75)';
+      for (let tb = 0; tb < 3; tb++) {
+        const tbA = frameCount * 0.05 + tb * 2.1;
+        const tbDist = e.radius + 6 + Math.sin(frameCount * 0.12 + tb) * 3;
+        ctx.beginPath();
+        ctx.arc(Math.cos(tbA) * tbDist, Math.sin(tbA) * tbDist, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
   }
 
   if (e.isMiniBoss) {
@@ -87,6 +113,29 @@ export function drawEnemyShape(e) {
   } else if (e.isMiniBoss) {
     drawMiniBossShape(e);
   } else {
+    // 1. Sombra Elíptica Projetada no Solo (Drop Shadow 2.5D)
+    const isFlying = e.baseType === 'BAT' || e.baseType === 'NECRO';
+    const shadowBob = e.baseType === 'BAT' ? Math.sin(frameCount * 0.42) * 2 : 0;
+    const shadowY = e.radius * (isFlying ? 0.95 : 0.8) + shadowBob;
+    const shadowRx = Math.max(4, e.radius * (isFlying ? 0.7 : 0.85) - shadowBob * 0.5);
+    const shadowRy = shadowRx * 0.38;
+    ctx.fillStyle = isFlying ? 'rgba(0, 0, 0, 0.22)' : 'rgba(0, 0, 0, 0.38)';
+    ctx.beginPath();
+    ctx.ellipse(0, shadowY, shadowRx, shadowRy, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 2. Telegrafia Melee no Solo (WINDUP Threat Arc)
+    if (e.combatState === 'WINDUP') {
+      const windupRatio = 1 - (e.attackTimer / (e.attackWindupFrames || 20));
+      ctx.save();
+      ctx.strokeStyle = `rgba(255, 71, 87, ${0.45 + windupRatio * 0.45})`;
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.arc(0, shadowY, e.radius + 5 + (1 - windupRatio) * 6, -Math.PI * 0.38, Math.PI * 0.38);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     const isHit = e.hitFlash > 0;
     const baseCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : e.color);
 
@@ -249,8 +298,8 @@ export function drawEnemyShape(e) {
       const armWindup = e.combatState === 'WINDUP';
       const armStrike = e.combatState === 'STRIKE';
       const baseReach = isAttacking ? R_m * 1.05 : R_m * 0.72;
-      const reach1 = baseReach + (armStrike ? 4 : 0);
-      const reach2 = baseReach * 0.75 + (armStrike ? 3 : 0);
+      const reach1 = baseReach + (armStrike ? 6 : (armWindup ? -3 : 0));
+      const reach2 = baseReach * 0.75 + (armStrike ? 4 : (armWindup ? -2 : 0));
       const lift1 = armWindup ? -R_m * 0.45 : (walk * 2.2);
       const lift2 = armWindup ? -R_m * 0.30 : (-walk * 1.8);
 
@@ -273,17 +322,45 @@ export function drawEnemyShape(e) {
       // Mão e garras pontiagudas afiadas
       ctx.fillStyle = '#1e272e';
       ctx.fillRect(R_m * 0.05 + reach1, -R_m * 0.22 + lift1 - 1, 3.2, 5.2);
-      ctx.fillStyle = '#dfe4ea';
+      ctx.fillStyle = armWindup ? '#ff4757' : '#dfe4ea';
       ctx.fillRect(R_m * 0.05 + reach1 + 2.5, -R_m * 0.22 + lift1, 1.5, 1.5);
       ctx.fillRect(R_m * 0.05 + reach1 + 2.5, -R_m * 0.22 + lift1 + 2.5, 1.5, 1.5);
 
+      // Efeito Visual de Golpe: Rastro em Arco de Garras (Claw Swipe Ribbon)
+      if (armStrike) {
+        ctx.save();
+        const clawGrad = ctx.createLinearGradient(R_m * 0.6, -R_m * 0.7, R_m * 1.6, R_m * 0.7);
+        clawGrad.addColorStop(0, 'rgba(255, 71, 87, 0.9)');
+        clawGrad.addColorStop(0.45, 'rgba(255, 255, 255, 0.95)');
+        clawGrad.addColorStop(1, 'rgba(255, 71, 87, 0)');
+        ctx.strokeStyle = clawGrad;
+        ctx.lineWidth = 2.8;
+        ctx.beginPath();
+        ctx.arc(R_m * 0.3, 0, R_m * 1.25, -Math.PI * 0.38, Math.PI * 0.38);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(255, 234, 167, 0.8)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(R_m * 0.35, 0, R_m * 1.4, -Math.PI * 0.28, Math.PI * 0.28);
+        ctx.stroke();
+        ctx.restore();
+      }
+
     } else if (e.baseType === 'BAT') {
       const R_m = e.radius;
-      const wingCycle = Math.sin(frameCount * 0.42);
-      const wingY = wingCycle * 7.5;
+      const isBatWindup = e.combatState === 'WINDUP';
+      const isBatStrike = e.combatState === 'STRIKE';
+      const wingCycle = Math.sin(frameCount * (isBatStrike ? 0.65 : 0.42));
+      const wingY = wingCycle * (isBatWindup ? 4 : 7.5);
       const batBody = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#2d3436');
       const membrane = isHit ? '#ffffff' : '#c0392b';
 
+      if (isBatWindup) {
+        ctx.rotate(0.2); // Inclinação predadora de rasante
+      }
+
+      // Membrana das Asas
       ctx.fillStyle = membrane;
       ctx.beginPath();
       ctx.moveTo(-R_m * 0.2, 0);
@@ -298,6 +375,20 @@ export function drawEnemyShape(e) {
       ctx.quadraticCurveTo(R_m * 1.0, R_m * 0.1 + wingY * 0.5, R_m * 0.3, R_m * 0.4);
       ctx.closePath();
       ctx.fill();
+
+      // Nervuras das Asas (Detalhe Anatômico Gótico)
+      ctx.strokeStyle = isHit ? '#ffffff' : '#8b0000';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-R_m * 0.4, 0);
+      ctx.lineTo(-R_m * 1.1, -R_m * 0.4 + wingY * 0.7);
+      ctx.moveTo(-R_m * 0.3, R_m * 0.2);
+      ctx.lineTo(-R_m * 0.8, -R_m * 0.1 + wingY * 0.4);
+      ctx.moveTo(R_m * 0.4, 0);
+      ctx.lineTo(R_m * 1.1, -R_m * 0.4 + wingY * 0.7);
+      ctx.moveTo(R_m * 0.3, R_m * 0.2);
+      ctx.lineTo(R_m * 0.8, -R_m * 0.1 + wingY * 0.4);
+      ctx.stroke();
 
       ctx.strokeStyle = batBody;
       ctx.lineWidth = 1.5;
@@ -322,13 +413,35 @@ export function drawEnemyShape(e) {
       ctx.lineTo(R_m * 0.15, -R_m * 0.6);
       ctx.fill();
 
-      ctx.fillStyle = '#ff1744';
-      ctx.fillRect(-R_m * 0.25, -R_m * 0.3, 2, 2.5);
-      ctx.fillRect(R_m * 0.05, -R_m * 0.3, 2, 2.5);
+      // Olhos com brilho carmesim pulsante
+      const batEyeGlow = (isBatWindup || isBatStrike) ? '#ffffff' : '#ff1744';
+      ctx.fillStyle = batEyeGlow;
+      ctx.fillRect(-R_m * 0.25, -R_m * 0.3, 2.2, 2.5);
+      ctx.fillRect(R_m * 0.05, -R_m * 0.3, 2.2, 2.5);
+
+      // Ondas de Guincho Ultrassônico no STRIKE
+      if (isBatStrike) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 71, 87, 0.85)';
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.arc(R_m * 0.6, 0, R_m * 0.7, -0.65, 0.65);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(R_m * 0.95, 0, R_m * 1.05, -0.55, 0.55);
+        ctx.stroke();
+        ctx.restore();
+      }
 
     } else if (e.baseType === 'SHIELDED') {
       const R_m = e.radius;
       const walk = Math.sin(frameCount * 0.14) * 2;
+      const isShieldWindup = e.combatState === 'WINDUP';
+      const isShieldStrike = e.combatState === 'STRIKE';
+      const spearReach = isShieldStrike ? (R_m * 1.6) : (isShieldWindup ? (R_m * 0.45) : (R_m * 0.85));
+
       const plateCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#4b6584');
       const metalDark = isHit ? '#ffffff' : '#2f3542';
       const shieldGold = isHit ? '#ffffff' : '#f1c40f';
@@ -341,15 +454,44 @@ export function drawEnemyShape(e) {
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      ctx.fillStyle = '#ff4757';
+      // Fresta de visão
+      ctx.fillStyle = isShieldWindup ? '#f1c40f' : '#ff4757';
       ctx.fillRect(-R_m * 0.1, -2 + walk, 4, 2.5);
 
-      ctx.strokeStyle = '#dfe4ea';
+      // Haste da Lança Dinâmica
+      ctx.strokeStyle = isHit ? '#ffffff' : '#dfe4ea';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.moveTo(-R_m * 0.2, -R_m * 0.3 + walk);
-      ctx.lineTo(R_m * 0.85, -R_m * 0.65 + walk);
+      ctx.moveTo(-R_m * 0.35, -R_m * 0.25 + walk);
+      ctx.lineTo(spearReach, -R_m * 0.65 + walk);
       ctx.stroke();
+
+      // Ponta Afiada da Lança com Ponta de Aço e Brilho
+      ctx.fillStyle = isShieldStrike ? '#ffffff' : '#bdc3c7';
+      ctx.beginPath();
+      ctx.moveTo(spearReach + 7, -R_m * 0.65 + walk);
+      ctx.lineTo(spearReach - 3, -R_m * 0.75 + walk);
+      ctx.lineTo(spearReach - 3, -R_m * 0.55 + walk);
+      ctx.closePath();
+      ctx.fill();
+
+      // Efeito de Estocada Perfurante no STRIKE
+      if (isShieldStrike) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(spearReach + 4, -R_m * 0.65 + walk);
+        ctx.lineTo(spearReach + 16, -R_m * 0.65 + walk);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(241, 196, 15, 0.8)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(spearReach + 10, -R_m * 0.65 + walk, 5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
 
       const shX = R_m * 0.15;
       const shY = -R_m * 0.9 + walk;
@@ -366,18 +508,27 @@ export function drawEnemyShape(e) {
       ctx.fillRect(shX + shW * 0.35, shY + 3, 3, shH - 6);
       ctx.fillRect(shX + 2, shY + shH * 0.45, shW - 4, 3);
       
+      // Rebites Prateados
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(shX + 2, shY + 2, 2, 2);
       ctx.fillRect(shX + shW - 4, shY + 2, 2, 2);
       ctx.fillRect(shX + 2, shY + shH - 4, 2, 2);
       ctx.fillRect(shX + shW - 4, shY + shH - 4, 2, 2);
+
+      // Friso Metálico Reflexivo na Borda Superior
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.fillRect(shX + 2, shY + 1, shW - 4, 1.5);
     } else if (e.baseType === 'GOLEM') {
       const R_m = e.radius;
+      const isGolemWindup = e.combatState === 'WINDUP';
+      const isGolemStrike = e.combatState === 'STRIKE';
+      const missingHpRatio = Math.max(0, 1 - (e.hp / (e.maxHp || 1)));
+
       const stoneDark = isHit ? '#ffffff' : '#2d3436';
       const stoneMid = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#4b6584');
       const stoneLight = isHit ? '#ffffff' : '#778ca3';
-      const runeGlow = isHit ? '#ffffff' : '#f39c12';
-      const lavaColor = isHit ? '#ffffff' : '#e74c3c';
+      const runeGlow = isHit ? '#ffffff' : (missingHpRatio > 0.5 ? '#ff4757' : '#f39c12');
+      const lavaColor = isHit ? '#ffffff' : (missingHpRatio > 0.5 ? '#ffffff' : '#e74c3c');
 
       const stepCycle = Math.sin(frameCount * 0.1);
       ctx.fillStyle = stoneDark;
@@ -413,9 +564,10 @@ export function drawEnemyShape(e) {
       ctx.closePath();
       ctx.fill();
 
+      // Fissuras de Lava Tectônica (Intensificam conforme o Golem perde HP)
       const crackPulse = (Math.sin(frameCount * 0.12) + 1) * 0.5;
       ctx.strokeStyle = crackPulse > 0.4 ? runeGlow : lavaColor;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2 + missingHpRatio * 2.5;
       ctx.beginPath();
       ctx.moveTo(-R_m * 0.1, -R_m * 0.3);
       ctx.lineTo(R_m * 0.15, -R_m * 0.05);
@@ -426,6 +578,18 @@ export function drawEnemyShape(e) {
       ctx.moveTo(R_m * 0.15, -R_m * 0.05);
       ctx.lineTo(R_m * 0.4, 0);
       ctx.stroke();
+
+      if (missingHpRatio > 0.4) {
+        // Fraturas adicionais de dano severo
+        ctx.strokeStyle = '#f1c40f';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(-R_m * 0.5, -R_m * 0.1);
+        ctx.lineTo(-R_m * 0.2, R_m * 0.1);
+        ctx.moveTo(R_m * 0.2, R_m * 0.1);
+        ctx.lineTo(R_m * 0.6, R_m * 0.3);
+        ctx.stroke();
+      }
 
       ctx.fillStyle = stoneDark;
       ctx.beginPath();
@@ -439,37 +603,93 @@ export function drawEnemyShape(e) {
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      ctx.fillStyle = runeGlow;
+      ctx.fillStyle = isGolemWindup ? '#ff4757' : runeGlow;
       ctx.fillRect(-R_m * 0.2, -R_m * 0.55, R_m * 0.4, 3.5);
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(-R_m * 0.05, -R_m * 0.55, R_m * 0.15, 3.5);
 
+      // Punhos de Pedra Dinâmicos Reativos ao Combate
       const fistBob = Math.sin(frameCount * 0.1) * (R_m * 0.25);
+      const f1Y = isGolemWindup ? (-R_m * 0.6) : (isGolemStrike ? (R_m * 0.45) : (fistBob + 2));
+      const f1X = isGolemWindup ? (-R_m * 0.4) : (isGolemStrike ? (R_m * 1.0) : (-R_m * 1.05));
+      const f2Y = isGolemWindup ? (-R_m * 0.5) : (isGolemStrike ? (R_m * 0.45) : (-fistBob + 2));
+      const f2X = isGolemWindup ? (R_m * 0.6) : (isGolemStrike ? (R_m * 1.2) : (R_m * 1.05));
+
       ctx.fillStyle = stoneMid;
       ctx.strokeStyle = stoneDark;
       ctx.lineWidth = 2;
 
       ctx.beginPath();
-      ctx.arc(-R_m * 1.05, fistBob + 2, R_m * 0.38, 0, Math.PI * 2);
+      ctx.arc(f1X, f1Y, R_m * 0.38, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.arc(R_m * 1.05, -fistBob + 2, R_m * 0.38, 0, Math.PI * 2);
+      ctx.arc(f2X, f2Y, R_m * 0.38, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+
+      // Impacto Sísmico de Golpe no STRIKE
+      if (isGolemStrike) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(230, 126, 34, 0.9)';
+        ctx.lineWidth = 3.2;
+        ctx.beginPath();
+        ctx.ellipse(R_m * 1.1, R_m * 0.5, R_m * 0.85, R_m * 0.35, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(243, 156, 18, 0.4)';
+        ctx.fill();
+
+        // Estilhaços de pedra do solo
+        ctx.fillStyle = '#778ca3';
+        for (let sp = 0; sp < 4; sp++) {
+          const spA = sp * (Math.PI / 2) + frameCount * 0.2;
+          ctx.fillRect(R_m * 1.1 + Math.cos(spA) * 16 - 2, R_m * 0.5 + Math.sin(spA) * 8 - 2, 4, 4);
+        }
+        ctx.restore();
+      }
+
     } else if (e.baseType === 'EXPLODER') {
       const R_m = e.radius;
+      const isFuse = e.fuseState === 'FUSE';
+      const fuseRatio = isFuse ? Math.min(1, Math.max(0, 1 - (e.fuseTimer || 0) / 36)) : 0;
       const distToPlayer = Math.hypot(e.x - player.x, e.y - player.y);
       const urgency = Math.min(1, Math.max(0, 1 - distToPlayer / 260));
-      const pulseSpeed = 0.12 + urgency * 0.35;
-      const pustulePulse = Math.sin(frameCount * pulseSpeed) * (2.5 + urgency * 4);
+      const pulseSpeed = 0.12 + (isFuse ? 0.45 : urgency * 0.35);
+      const pustulePulse = Math.sin(frameCount * pulseSpeed) * (2.5 + (isFuse ? 6 : urgency * 4));
       const heatPhase = (Math.sin(frameCount * pulseSpeed) + 1) * 0.5;
 
       const fleshColor = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#4a2810');
       const fleshDark = isHit ? '#ffffff' : '#2c1508';
-      const pustuleOuter = isHit ? '#ffffff' : (heatPhase > 0.4 ? '#e67e22' : '#c0392b');
-      const pustuleInner = isHit ? '#ffffff' : (heatPhase > 0.6 ? '#f1c40f' : '#e67e22');
+
+      // Superaquecimento Dinâmico da Pústula de Pólvora/Carne
+      let pustuleOuter = '#c0392b';
+      let pustuleInner = '#e67e22';
+      let coreSpark = '#ffffff';
+
+      if (isFuse) {
+        if (fuseRatio > 0.75) {
+          pustuleOuter = '#ffffff';
+          pustuleInner = '#f1c40f';
+          coreSpark = '#ffffff';
+        } else if (fuseRatio > 0.4) {
+          pustuleOuter = '#f1c40f';
+          pustuleInner = '#e67e22';
+          coreSpark = '#ffffff';
+        } else {
+          pustuleOuter = '#e67e22';
+          pustuleInner = '#c0392b';
+        }
+      } else if (heatPhase > 0.4) {
+        pustuleOuter = '#e67e22';
+        pustuleInner = heatPhase > 0.6 ? '#f1c40f' : '#e67e22';
+      }
+
+      if (isHit) {
+        pustuleOuter = '#ffffff';
+        pustuleInner = '#ffffff';
+      }
 
       const legWalk = Math.sin(frameCount * 0.25) * 6;
       ctx.strokeStyle = fleshDark;
@@ -485,7 +705,7 @@ export function drawEnemyShape(e) {
       ctx.lineTo(R_m * 0.3 - legWalk, R_m * 0.95);
       ctx.stroke();
 
-      const pustuleR = (R_m * 0.75) + pustulePulse;
+      const pustuleR = (R_m * (isFuse ? 0.95 : 0.75)) + pustulePulse;
       ctx.fillStyle = pustuleOuter;
       ctx.beginPath();
       ctx.arc(-R_m * 0.45, -R_m * 0.4, pustuleR, 0, Math.PI * 2);
@@ -494,14 +714,18 @@ export function drawEnemyShape(e) {
       ctx.beginPath();
       ctx.arc(-R_m * 0.45, -R_m * 0.4, pustuleR * 0.65, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = coreSpark;
       ctx.beginPath();
       ctx.arc(-R_m * 0.55, -R_m * 0.5, pustuleR * 0.25, 0, Math.PI * 2);
       ctx.fill();
 
-      if (Math.floor(frameCount + e.x) % 3 === 0) {
-        ctx.fillStyle = '#f39c12';
-        ctx.fillRect(-R_m * 1.3 - Math.random() * 6, -R_m * 0.4 + (Math.random() - 0.5) * 12, 2.5, 2.5);
+      // Faíscas de Pavio Aceso durante a contagem
+      if (isFuse || Math.floor(frameCount + e.x) % 3 === 0) {
+        const sparkCount = isFuse ? 3 : 1;
+        for (let sk = 0; sk < sparkCount; sk++) {
+          ctx.fillStyle = Math.random() < 0.5 ? '#f1c40f' : '#ffffff';
+          ctx.fillRect(-R_m * 1.3 - Math.random() * 8, -R_m * 0.4 + (Math.random() - 0.5) * 16, 2.5, 2.5);
+        }
       }
 
       ctx.fillStyle = fleshColor;
@@ -518,7 +742,7 @@ export function drawEnemyShape(e) {
       ctx.arc(R_m * 0.6, -R_m * 0.1, R_m * 0.35, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = '#f1c40f';
+      ctx.fillStyle = isFuse ? '#ffffff' : '#f1c40f';
       ctx.fillRect(R_m * 0.7, -R_m * 0.2, 3, 2.5);
       ctx.fillStyle = '#e74c3c';
       ctx.fillRect(R_m * 0.65, 0, 4, 2);
@@ -611,7 +835,44 @@ export function drawEnemyShape(e) {
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      if (summonRatio > 0.4) {
+      if (summonRatio > 0.35) {
+        // Círculo Rúnico de Invocação Necromântica no Solo
+        ctx.save();
+        const circlePulse = Math.sin(frameCount * 0.2) * 1.5;
+        const cX = R_m * 1.2;
+        const cY = R_m * 0.85 + hover;
+        ctx.strokeStyle = `rgba(155, 89, 182, ${0.4 + summonRatio * 0.55})`;
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.ellipse(cX, cY, R_m * 1.0 + circlePulse, R_m * 0.45 + circlePulse * 0.4, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Pentagrama / Glifos Arcanos em Rotação
+        const rotGlyph = frameCount * 0.05;
+        ctx.strokeStyle = `rgba(0, 206, 201, ${0.35 + summonRatio * 0.5})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        for (let g = 0; g < 4; g++) {
+          const ga = rotGlyph + g * (Math.PI / 2);
+          const gx = cX + Math.cos(ga) * (R_m * 0.85);
+          const gy = cY + Math.sin(ga) * (R_m * 0.38);
+          if (g === 0) ctx.moveTo(gx, gy);
+          else ctx.lineTo(gx, gy);
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        // Raio de Canalização Mística entre o Cajado e o Solo
+        if (summonRatio > 0.7) {
+          ctx.strokeStyle = '#fd79a8';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(staffX, staffTopY - 6);
+          ctx.lineTo(cX, cY - 4);
+          ctx.stroke();
+        }
+        ctx.restore();
+
         ctx.strokeStyle = isHit ? '#ffffff' : '#fd79a8';
         ctx.lineWidth = 1.2;
         ctx.beginPath();
@@ -684,24 +945,51 @@ export function drawEnemyShape(e) {
       ctx.fillRect(R_m * 0.4 + recoilX, -R_m * 0.85, R_m * 0.65, 3.5);
       ctx.fillRect(R_m * 0.4 + recoilX, -R_m * 0.65, R_m * 0.65, 3.5);
 
+      // Linha Laser Telegrafada de Mira Pré-Disparo
+      if (e.shootTimer > 115) {
+        const laserAlpha = Math.min(0.85, (e.shootTimer - 115) / 38);
+        ctx.save();
+        ctx.strokeStyle = `rgba(255, 71, 87, ${laserAlpha})`;
+        ctx.lineWidth = 1.4;
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        ctx.moveTo(R_m * 1.05 + recoilX, -R_m * 0.75);
+        ctx.lineTo(R_m * 3.8, -R_m * 0.75);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
       if (e.shootTimer > 85) {
         ctx.fillStyle = '#ff7675';
         ctx.fillRect(R_m * 1.05 + recoilX, -R_m * 0.85, 3, 3.5);
         ctx.fillRect(R_m * 1.05 + recoilX, -R_m * 0.65, 3, 3.5);
       }
+
+      // Clarão Estelar de Disparo no Cano (Muzzle Flash)
+      if (e.shootTimer > 146) {
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(R_m * 1.1 + recoilX, -R_m * 0.85, 5, 5);
+        ctx.fillStyle = '#00cec9';
+        ctx.fillRect(R_m * 1.25 + recoilX, -R_m * 0.80, 4, 4);
+        ctx.restore();
+      }
+
     } else if (e.baseType === 'STALKER') {
       const R_m = e.radius;
       const isAiming = e.dashState === 'aim';
       const isDashing = e.dashState === 'dashing';
+      const isStalkerStrike = e.combatState === 'STRIKE';
 
       const stalkerColor = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#4834d4');
       const mistColor = isHit ? '#ffffff' : '#686de0';
       const maskColor = isHit ? '#ffffff' : '#130f40';
-      const eyeColor = isHit ? '#ffffff' : '#f9ca24';
+      const eyeColor = isAiming ? '#ff3838' : (isHit ? '#ffffff' : '#f9ca24');
       const bladeColor = isAiming ? '#e74c3c' : (isDashing ? '#f1c40f' : '#dff9fb');
 
       if (isDashing) {
-        ctx.fillStyle = 'rgba(72, 52, 212, 0.35)';
+        ctx.fillStyle = 'rgba(72, 52, 212, 0.4)';
         ctx.beginPath();
         ctx.ellipse(-R_m * 1.1, 0, R_m * 0.8, R_m * 0.4, 0, 0, Math.PI * 2);
         ctx.fill();
@@ -772,9 +1060,26 @@ export function drawEnemyShape(e) {
         ctx.quadraticCurveTo(R_m * 0.5, R_m * 0.7, R_m * 0.95, -R_m * 0.25);
         ctx.stroke();
       }
+
+      // Efeito de Corte em Cruz (Cross-Slash) no STRIKE
+      if (isStalkerStrike) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 234, 167, 0.95)';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(R_m * 0.4, -R_m * 0.8);
+        ctx.lineTo(R_m * 1.4, R_m * 0.8);
+        ctx.moveTo(R_m * 0.4, R_m * 0.8);
+        ctx.lineTo(R_m * 1.4, -R_m * 0.8);
+        ctx.stroke();
+        ctx.restore();
+      }
+
     } else if (e.baseType === 'SPLITTER' || e.baseType === 'SPLITTER_MINI') {
       const R_m = e.radius;
       const isMini = e.baseType === 'SPLITTER_MINI';
+      const isSplitterStrike = e.combatState === 'STRIKE';
+      const isSplitterWindup = e.combatState === 'WINDUP';
       const legPairs = isMini ? 2 : 3;
 
       const shellDark = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#006266');
@@ -835,7 +1140,7 @@ export function drawEnemyShape(e) {
       ctx.fillRect(0, -R_m * 0.4, 3, R_m * 0.8);
       ctx.fillRect(R_m * 0.25, -R_m * 0.35, 3, R_m * 0.7);
 
-      const pinch = Math.sin(frameCount * 0.2) * 2.5;
+      const pinch = isSplitterWindup ? 5.5 : (Math.sin(frameCount * 0.2) * 2.5);
       ctx.fillStyle = mandColor;
 
       ctx.beginPath();
@@ -855,6 +1160,21 @@ export function drawEnemyShape(e) {
       ctx.fillStyle = '#ff3838';
       ctx.fillRect(R_m * 0.4, -R_m * 0.25, 3, 2.5);
       ctx.fillRect(R_m * 0.4, R_m * 0.12, 3, 2.5);
+
+      // Mordida Cáustica e Gotas de Ácido no STRIKE
+      if (isSplitterStrike) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(0, 210, 211, 0.9)';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.arc(R_m * 0.7, 0, R_m * 0.65, -0.65, 0.65);
+        ctx.stroke();
+
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(R_m * 1.05, -3, 3, 3);
+        ctx.fillRect(R_m * 1.15, 2, 2.5, 2.5);
+        ctx.restore();
+      }
     } else {
       ctx.fillStyle = baseCol;
       ctx.beginPath();
@@ -1028,12 +1348,22 @@ export function drawDyingEnemyShape(de) {
     }
     case 'SPLITTER':
     case 'SPLITTER_MINI': {
-      const burst = t < 0.3 ? (1 + t * 0.9) : Math.max(0.05, 1.27 - (t - 0.3) * 1.8);
+      const burst = t < 0.3 ? (1 + t * 1.4) : Math.max(0.05, 1.42 - (t - 0.3) * 1.8);
       ctx.scale(burst, burst);
       ctx.fillStyle = '#006266';
       ctx.beginPath();
       ctx.ellipse(0, 0, R * 0.65, R * 0.5, 0, 0, Math.PI * 2);
       ctx.fill();
+
+      // Ruptura do Abdômen e Respingos de Lodo Ácido
+      ctx.fillStyle = '#00d2d3';
+      for (let sl = 0; sl < 4; sl++) {
+        const sa = sl * (Math.PI / 2) + t * 2;
+        const sDist = R * (0.6 + t * 1.2);
+        ctx.beginPath();
+        ctx.arc(Math.cos(sa) * sDist, Math.sin(sa) * sDist, Math.max(1, 3.5 * (1 - t)), 0, Math.PI * 2);
+        ctx.fill();
+      }
       break;
     }
     default: {

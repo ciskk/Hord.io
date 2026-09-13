@@ -122,6 +122,15 @@ export let lastTime = performance.now();
 export let lastAttackerName = '';
 export function setLastAttackerName(name) { lastAttackerName = name; }
 
+// Banner Cinematográfico de Transição de Ondas
+export const waveAnnouncement = {
+  name: '',
+  index: 0,
+  timer: 0,
+  maxTimer: 180
+};
+export let lastAnnouncedWaveIndex = 0;
+
 let ghostHp = 120;
 let ghostHpTimer = 0;
 
@@ -247,6 +256,10 @@ export function resetGame() {
 
   // Reset de Variáveis Visuais e Grim Cyber-Gothic
   lastAttackerName = '';
+  waveAnnouncement.timer = 0;
+  waveAnnouncement.index = 0;
+  waveAnnouncement.name = '';
+  lastAnnouncedWaveIndex = 0;
   ghostHp = player.maxHp;
   ghostHpTimer = 0;
   resetDeathAudioFilter();
@@ -271,6 +284,9 @@ export function resetGame() {
   hideEl('char-modal');
   hideEl('boss-select-modal');
 
+  const bossHud = document.getElementById('boss-hud');
+  if (bossHud) bossHud.style.display = 'none';
+
   const bossHpFill = document.getElementById('boss-hp-fill');
   if (bossHpFill) {
     bossHpFill.style.background = '';
@@ -282,6 +298,19 @@ function update(dt) {
   frameCount += dt;
   const seconds = Math.floor(frameCount / 60);
   const currentWave = getCurrentWave(seconds);
+
+  // Gatilho de Anúncio Cinematográfico de Transição de Onda
+  if (!activeBoss && currentWave && currentWave.index !== lastAnnouncedWaveIndex) {
+    lastAnnouncedWaveIndex = currentWave.index;
+    waveAnnouncement.name = currentWave.name;
+    waveAnnouncement.index = currentWave.index;
+    waveAnnouncement.timer = 180;
+    waveAnnouncement.maxTimer = 180;
+    triggerShake(4);
+  }
+  if (waveAnnouncement.timer > 0) {
+    waveAnnouncement.timer -= dt;
+  }
 
   // Transição suave de arena a cada 3 ondas (1-3 Ossário, 4-6 Sal Carmesim, 7-9 Basílica)
   if (!activeBoss) {
@@ -1111,8 +1140,10 @@ function update(dt) {
                 vy: Math.sin(angle) * 5.0,
                 radius: 6, 
                 damage: 13, 
-                life: 95
+                life: 95,
+                bulletType: 'TECH'
               });
+              createHitParticles(e.x + Math.cos(angle) * 16, e.y + Math.sin(angle) * 16, '#00cec9', 4);
             } else {
               e.shootTimer = 154 - 30;
             }
@@ -1132,7 +1163,6 @@ function update(dt) {
             e.dashAngle = angle;
           }
         } else if (e.dashState === 'aim') {
-          e.hitFlash = 1;
           if (e.dashTimer > 20) {
             e.dashState = 'dashing';
             e.dashTimer = 0;
@@ -1230,7 +1260,6 @@ function update(dt) {
             e.dashAngle = Math.atan2(backY - e.y, backX - e.x);
           }
         } else if (e.dashState === 'aim') {
-          e.hitFlash = 1;
           curSpeed = e.speed * 0.25;
           e.x += Math.cos(e.dashAngle) * curSpeed * dt;
           e.y += Math.sin(e.dashAngle) * curSpeed * dt;
@@ -1367,7 +1396,6 @@ function update(dt) {
           e.x += Math.cos(angle) * curSpeed * dt;
           e.y += Math.sin(angle) * curSpeed * dt;
         } else if (e.blinkTimer < 130) {
-          e.hitFlash = 1;
           if (Math.floor(frameCount) % 4 === 0) createHitParticles(e.x, e.y, '#a29bfe', 2);
         } else {
           e.blinkTimer = 0;
@@ -1434,7 +1462,8 @@ function update(dt) {
                 vy: Math.sin(sOffset) * 3.6,
                 radius: 5,
                 damage: Math.round(e.damage * 0.35),
-                life: 85
+                life: 85,
+                bulletType: 'CHAOS'
               });
             }
           }
@@ -1661,7 +1690,8 @@ function update(dt) {
               vy: Math.sin(bAng) * 4.0,
               radius: 5,
               damage: Math.round(e.damage * 0.35),
-              life: 80
+              life: 80,
+              bulletType: 'FIRE_SHRAPNEL'
             });
           }
         } else {
