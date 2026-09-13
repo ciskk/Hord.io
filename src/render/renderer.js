@@ -706,17 +706,61 @@ export function render() {
     ctx.restore();
   }
 
-  // Renderização visual das ondas de choque em expansão
+  // Renderização volumétrica das ondas de choque em expansão
   for (let i = 0; i < bossShockwaves.length; i++) {
     const sw = bossShockwaves[i];
     const alpha = Math.max(0, 1 - sw.radius / sw.maxRadius);
+    if (alpha <= 0.01) continue;
+
     ctx.save();
     const swColor = sw.colorRgb || (activeBoss && activeBoss.bossId === 3 ? '0, 206, 201' : '230, 126, 34');
-    ctx.strokeStyle = `rgba(${swColor}, ${alpha * 0.85})`;
-    ctx.lineWidth = 3.5;
+
+    // 1. Corpo volumétrico translúcido da onda (camada externa com dispersão de luz)
+    ctx.strokeStyle = `rgba(${swColor}, ${alpha * 0.24})`;
+    ctx.lineWidth = 14;
     ctx.beginPath();
     ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
     ctx.stroke();
+
+    // 2. Camada intermediária saturada e nítida
+    ctx.strokeStyle = `rgba(${swColor}, ${alpha * 0.78})`;
+    ctx.lineWidth = 4.8;
+    ctx.beginPath();
+    ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 3. Crista frontal superaquecida de luz branca (marcação exata da hitbox)
+    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.95})`;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 4. Fagulhas estelares projetadas na crista da onda para leitura visual imediata
+    if (sw.radius > 20 && alpha > 0.2) {
+      const sparkCount = 8;
+      const timeOffset = (frameCount || 0) * 0.04;
+      ctx.fillStyle = '#ffffff';
+      for (let s = 0; s < sparkCount; s++) {
+        const sAng = (s * Math.PI * 2) / sparkCount + timeOffset;
+        const sparkX = sw.x + Math.cos(sAng) * sw.radius;
+        const sparkY = sw.y + Math.sin(sAng) * sw.radius;
+
+        ctx.beginPath();
+        ctx.arc(sparkX, sparkY, 2.0 * alpha, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rastro curto radial
+        const trailLen = 7 * alpha;
+        ctx.strokeStyle = `rgba(${swColor}, ${alpha * 0.65})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(sparkX, sparkY);
+        ctx.lineTo(sparkX - Math.cos(sAng) * trailLen, sparkY - Math.sin(sAng) * trailLen);
+        ctx.stroke();
+      }
+    }
+
     ctx.restore();
   }
 

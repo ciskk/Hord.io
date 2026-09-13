@@ -802,23 +802,40 @@ function update(dt) {
     const sDist = Math.sqrt(sdx * sdx + sdy * sdy);
 
     if (!sw.hitPlayer && Math.abs(sDist - sw.radius) < 16 && player.iFrames <= 0) {
-      let finalSwDamage = sw.damage;
+      let finalSwDamage = sw.damage || 0;
       if (selectedHeroKey === 'KNIGHT') finalSwDamage = Math.round(finalSwDamage * 0.80);
-      player.hp -= finalSwDamage;
-      player.iFrames = 25;
-      sw.hitPlayer = true;
-      lastAttackerName = activeBoss ? activeBoss.name : "Onda de Choque Sísmica";
-      triggerShake(9);
-      playSfx('hit');
-      const swColor = sw.color || (activeBoss && activeBoss.bossId === 3 ? '#00cec9' : '#e67e22');
-      addDamageText(player.x, player.y, `-${finalSwDamage}`, false, swColor);
-      createHitParticles(player.x, player.y, swColor, 5);
 
-      if (player.hp <= 0) {
-        player.hp = 0;
-        triggerDeath();
-        return;
+      // Repulsão / Knockback Radial da Onda de Choque
+      if (sw.knockback && sDist > 0.1) {
+        const pushForce = sw.knockback;
+        player.pushVx = (sdx / sDist) * pushForce;
+        player.pushVy = (sdy / sDist) * pushForce;
       }
+
+      if (finalSwDamage > 0) {
+        player.hp -= finalSwDamage;
+        player.iFrames = 25;
+        lastAttackerName = activeBoss ? activeBoss.name : "Onda de Choque Sísmica";
+        triggerShake(9);
+        playSfx('hit');
+        const swColor = sw.color || (activeBoss && activeBoss.bossId === 3 ? '#00cec9' : '#e67e22');
+        addDamageText(player.x, player.y, `-${finalSwDamage}`, false, swColor);
+        createHitParticles(player.x, player.y, swColor, 5);
+
+        if (player.hp <= 0) {
+          player.hp = 0;
+          triggerDeath();
+          return;
+        }
+      } else {
+        // Onda puramente de repulsão tática (sem dano punitivo surpresa)
+        player.iFrames = Math.max(player.iFrames, 14);
+        triggerShake(7);
+        playSfx('forcefield');
+        const swColor = sw.color || '#00cec9';
+        createHitParticles(player.x, player.y, swColor, 4);
+      }
+      sw.hitPlayer = true;
     }
 
     if (sw.radius >= sw.maxRadius) bossShockwaves.splice(i, 1);
