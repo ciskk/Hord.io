@@ -44,6 +44,7 @@ export function updateProjectiles(dt) {
 
         // Impacto do ataque ao atingir o solo (dano de impacto 40% menor já calculado em b.damage)
         for (let j = 0; j < enemies.length; j++) {
+          const e = enemies[j];
           if (e.hp <= 0 || e.isTargetable === false) continue;
           if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
           if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
@@ -97,6 +98,7 @@ export function updateProjectiles(dt) {
     const bRadius = b.radius || 6;
 
     for (let j = 0; j < enemies.length; j++) {
+      const e = enemies[j];
       if (e.hp <= 0 || e.isTargetable === false) continue;
       if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
       if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
@@ -291,6 +293,7 @@ export function updateAcidPuddles(dt) {
 
     if (p.isFire || p.isAlchemist) {
       for (let j = 0; j < enemies.length; j++) {
+        const e = enemies[j];
         if (e.hp <= 0 || e.isTargetable === false) continue;
         if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
         if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;

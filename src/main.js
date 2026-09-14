@@ -456,6 +456,7 @@ function update(dt) {
     }
 
     for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
       if (!e || e.hp <= 0 || e.isTargetable === false) continue;
       if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
       if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
@@ -530,6 +531,7 @@ function update(dt) {
     }
 
     for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
       if (!e || e.hp <= 0 || e.isTargetable === false) continue;
       if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
       if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
@@ -664,6 +666,7 @@ function update(dt) {
       }
 
       for (let i = 0; i < enemies.length; i++) {
+        const e = enemies[i];
         if (!e || e.hp <= 0 || e.isTargetable === false) continue;
         if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
         if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
@@ -721,6 +724,7 @@ function update(dt) {
       const oy = player.y + Math.sin(angle) * orbDist;
 
       for (let i = 0; i < enemies.length; i++) {
+        const e = enemies[i];
         if (!e || e.hp <= 0 || e.orbitalHitCd > 0 || e.isTargetable === false) continue;
         if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
         if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;

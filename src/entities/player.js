@@ -857,6 +857,7 @@ export function fireWeapons() {
     const rangeSq = weaponRange * weaponRange;
     const inRange = [];
     for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
       if (e.hp <= 0 || e.isTargetable === false) continue;
       if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
       if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
