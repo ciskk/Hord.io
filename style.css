@@ -32,6 +32,164 @@
   -webkit-touch-callout: none;
 }
 
+/* ==========================================
+   BIBLIOTECA DE ÍCONES VETORIAIS (DARK FANTASY)
+   ========================================== */
+.game-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: -0.15em;
+  flex-shrink: 0;
+  line-height: 1;
+  width: 12px;
+  height: 12px;
+  transition: transform 0.2s ease, filter 0.2s ease, color 0.2s ease;
+}
+
+svg.game-icon {
+  display: inline-block;
+  vertical-align: -0.15em;
+  flex-shrink: 0;
+}
+
+.icon-xxs { width: 8px !important; height: 8px !important; }
+.icon-xs  { width: 10px !important; height: 10px !important; }
+.icon-sm  { width: 11px !important; height: 11px !important; }
+.icon-md  { width: 13px !important; height: 13px !important; }
+.icon-lg  { width: 15px !important; height: 15px !important; }
+.icon-xl  { width: 18px !important; height: 18px !important; }
+
+.icon-glow-gold {
+  filter: drop-shadow(0 0 4px rgba(241, 196, 15, 0.65));
+}
+.icon-glow-crimson {
+  filter: drop-shadow(0 0 4px rgba(231, 76, 60, 0.7));
+}
+.icon-glow-arcane {
+  filter: drop-shadow(0 0 4px rgba(155, 89, 182, 0.7));
+}
+.icon-glow-frost {
+  filter: drop-shadow(0 0 4px rgba(116, 185, 255, 0.7));
+}
+.icon-glow-emerald {
+  filter: drop-shadow(0 0 4px rgba(46, 204, 113, 0.7));
+}
+
+.hud-badge .hud-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  width: 11px;
+  height: 11px;
+}
+.hud-badge .game-icon {
+  width: 11px !important;
+  height: 11px !important;
+}
+
+.hud-wave-pill .wave-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  width: 10px;
+  height: 10px;
+}
+.hud-wave-pill .game-icon {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+.pause-hud-btn .game-icon {
+  width: 11px !important;
+  height: 11px !important;
+}
+
+.vial-rune-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.vial-rune-icon .game-icon {
+  width: 11px !important;
+  height: 11px !important;
+}
+
+.boss-skull-icon .game-icon {
+  width: 12px !important;
+  height: 12px !important;
+}
+
+.stage-pose-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.stage-pose-btn .game-icon {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+.stage-ctrl-btn .game-icon {
+  width: 10px !important;
+  height: 10px !important;
+  margin-right: 2px;
+}
+
+.bento-type-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.bento-type-tag .game-icon {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+.bento-spec-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.bento-spec-badge .game-icon {
+  width: 9px !important;
+  height: 9px !important;
+}
+
+.constellation-tab .game-icon {
+  width: 11px !important;
+  height: 11px !important;
+}
+
+.build-item-badge .game-icon {
+  width: 11px !important;
+  height: 11px !important;
+}
+
+.synergy-row .game-icon {
+  width: 9px !important;
+  height: 9px !important;
+}
+
+.stat-box-label .game-icon {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+.blessing-stat-card .game-icon {
+  width: 13px !important;
+  height: 13px !important;
+}
+
+.node-lvl-pip .game-icon {
+  width: 8px !important;
+  height: 8px !important;
+}
+
 /* Custom Scrollbar Diegética */
 ::-webkit-scrollbar {
   width: 5px;

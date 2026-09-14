@@ -61,6 +61,7 @@ import {
 } from '../main.js';
 import { transitionToArenaTheme, getWaveArenaTheme } from '../render/environment.js';
 import { getCurrentWave, getEffectiveHordeSeconds } from '../systems/waves.js';
+import { renderIcon, ICONS, WEAPON_ICONS, PASSIVE_ICONS } from '../ui/icons.js';
 
 // Biblioteca de Glifos Vetoriais Leves para Cartas de Poder
 const UPGRADE_ICONS = {
@@ -358,7 +359,7 @@ function renderUpgradeCards() {
     const isSynergy = isSynergyIngredient(opt.id);
 
     card.innerHTML = `
-      ${isSynergy ? '<span class="synergy-indicator-tag">✦ PEÇA DE FUSÃO</span>' : ''}
+      ${isSynergy ? `<span class="synergy-indicator-tag">${renderIcon('sparkle', { size: 11, color: '#f1c40f', style: 'margin-right:3px;' })} PEÇA DE FUSÃO</span>` : ''}
       <span class="rarity-badge">${opt.badge}</span>
       <div class="card-icon-wrapper">${iconSvg}</div>
       <div class="card-title" style="font-weight: 800; font-size: 13px;">${opt.title}</div>
@@ -448,9 +449,10 @@ function renderPauseInventory() {
     player.weapons.forEach(w => {
       const row = document.createElement('div');
       row.className = 'build-item-badge';
-      const wIcon = UPGRADE_ICONS[`${w.type.toLowerCase()}_extra`] || UPGRADE_ICONS[`${w.type.toLowerCase()}_speed`] || '⚔️';
+      const iconKey = WEAPON_ICONS[w.type] || 'sword';
+      const weaponSvg = renderIcon(iconKey, { size: 11, style: 'margin-right:5px; color: var(--gold-runic);' });
       row.innerHTML = `
-        <span class="name">⚔️ ${w.type}</span>
+        <span class="name">${weaponSvg} ${w.type}</span>
         <span class="counter">Nv ${w.count || 1}</span>
       `;
       buildList.appendChild(row);
@@ -458,31 +460,40 @@ function renderPauseInventory() {
 
     // Passivas acumuladas
     if (player.damageCardCount) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">⚡ Poder Bruto</span><span class="counter">+${Math.round((player.damagePercentBonus || 0) * 100)}% (${player.damageCardCount}/4)</span></div>`;
+      const icon = renderIcon('damage', { size: 11, style: 'margin-right:5px; color: #e74c3c;' });
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">${icon} Poder Bruto</span><span class="counter">+${Math.round((player.damagePercentBonus || 0) * 100)}% (${player.damageCardCount}/4)</span></div>`;
     }
     if (player.armorCardCount || player.hasArmorPassive) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">🛡️ Armadura Rúnica</span><span class="counter">+${(player.armorCardCount || 1) * 45} HP (${player.armorCardCount || 1}/5)</span></div>`;
+      const icon = renderIcon('armor', { size: 11, style: 'margin-right:5px; color: #3498db;' });
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">${icon} Armadura Rúnica</span><span class="counter">+${(player.armorCardCount || 1) * 45} HP (${player.armorCardCount || 1}/5)</span></div>`;
     }
     if (player.wingsCardCount || player.hasWingsPassive) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">🪽 Asas do Vento</span><span class="counter">+${player.speed.toFixed(1)} Vel (${player.wingsCardCount || 1}/4)</span></div>`;
+      const icon = renderIcon('wings', { size: 11, style: 'margin-right:5px; color: #00cec9;' });
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">${icon} Asas do Vento</span><span class="counter">+${player.speed.toFixed(1)} Vel (${player.wingsCardCount || 1}/4)</span></div>`;
     }
     if (player.frostCardCount || (player.slowChance || 0) > 0) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">❄️ Golpe Criogênico</span><span class="counter">${Math.round(player.slowChance * 100)}% Lentidão (${player.frostCardCount || 1}/4)</span></div>`;
+      const icon = renderIcon('frost', { size: 11, style: 'margin-right:5px; color: #74b9ff;' });
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">${icon} Golpe Criogênico</span><span class="counter">${Math.round(player.slowChance * 100)}% Lentidão (${player.frostCardCount || 1}/4)</span></div>`;
     }
     if (player.orbitals > 0) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">📖 Bíblias Protetoras</span><span class="counter">${player.orbitals} Tomos ${player.evolvedOrbitals ? '(★ Vórtice)' : '(Máx: 3)'}</span></div>`;
+      const icon = renderIcon('orbitals', { size: 11, style: 'margin-right:5px; color: #9b59b6;' });
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">${icon} Bíblias Protetoras</span><span class="counter">${player.orbitals} Tomos ${player.evolvedOrbitals ? '(Vórtice)' : '(Máx: 3)'}</span></div>`;
     }
     if (player.auraLvl > 0) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">✨ Aura Sagrada</span><span class="counter">Nv ${player.auraLvl}/5 ${player.evolvedAura ? '(★ Santuário)' : ''}</span></div>`;
+      const icon = renderIcon('aura', { size: 11, style: 'margin-right:5px; color: #f1c40f;' });
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">${icon} Aura Sagrada</span><span class="counter">Nv ${player.auraLvl}/5 ${player.evolvedAura ? '(Santuário)' : ''}</span></div>`;
     }
     if (player.critCardCount || player.critChance > 0.05) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">🎯 Foco Letal</span><span class="counter">${Math.round(player.critChance * 100)}% Crítico (${player.critCardCount || 1}/4)</span></div>`;
+      const icon = renderIcon('crit', { size: 11, style: 'margin-right:5px; color: #f39c12;' });
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">${icon} Foco Letal</span><span class="counter">${Math.round(player.critChance * 100)}% Crítico (${player.critCardCount || 1}/4)</span></div>`;
     }
     if (player.hasteCardCount || (player.cooldownReduction || 0) > 0) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">⚡ Fúria Rápida</span><span class="counter">-${Math.round((player.cooldownReduction || 0) * 100)}% CDR (${player.hasteCardCount || 1}/3)</span></div>`;
+      const icon = renderIcon('cooldown', { size: 11, style: 'margin-right:5px; color: #e67e22;' });
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">${icon} Fúria Rápida</span><span class="counter">-${Math.round((player.cooldownReduction || 0) * 100)}% CDR (${player.hasteCardCount || 1}/3)</span></div>`;
     }
     if (player.magnetCardCount) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">🧲 Ímã Titânico</span><span class="counter">+${player.magnetCardCount * 50}px (${player.magnetCardCount}/4)</span></div>`;
+      const icon = renderIcon('magnet', { size: 11, style: 'margin-right:5px; color: #9b59b6;' });
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">${icon} Ímã Titânico</span><span class="counter">+${player.magnetCardCount * 50}px (${player.magnetCardCount}/4)</span></div>`;
     }
   }
 
@@ -491,12 +502,12 @@ function renderPauseInventory() {
   if (statsGrid) {
     const totalDmg = Math.round(player.damage * (1 + (player.damagePercentBonus || 0)));
     statsGrid.innerHTML = `
-      <div class="stat-box"><div class="stat-box-label">HP Total</div><div class="stat-box-value">${Math.ceil(player.hp)} / ${player.maxHp}</div></div>
-      <div class="stat-box"><div class="stat-box-label">Dano Base</div><div class="stat-box-value">${totalDmg}</div></div>
-      <div class="stat-box"><div class="stat-box-label">Chance Crítica</div><div class="stat-box-value">${Math.round(player.critChance * 100)}%</div></div>
-      <div class="stat-box"><div class="stat-box-label">Velocidade</div><div class="stat-box-value">${player.speed.toFixed(1)}</div></div>
-      <div class="stat-box"><div class="stat-box-label">Redução Recarga</div><div class="stat-box-value">-${Math.round((player.cooldownReduction || 0) * 100)}%</div></div>
-      <div class="stat-box"><div class="stat-box-label">Raio de Ímã</div><div class="stat-box-value">${player.magnet}px</div></div>
+      <div class="stat-box"><div class="stat-box-label">${renderIcon('heart', { size: 10, color: '#2ecc71', style: 'margin-right:3px;' })} HP Total</div><div class="stat-box-value">${Math.ceil(player.hp)} / ${player.maxHp}</div></div>
+      <div class="stat-box"><div class="stat-box-label">${renderIcon('damage', { size: 10, color: '#e74c3c', style: 'margin-right:3px;' })} Dano Base</div><div class="stat-box-value">${totalDmg}</div></div>
+      <div class="stat-box"><div class="stat-box-label">${renderIcon('crit', { size: 10, color: '#f39c12', style: 'margin-right:3px;' })} Chance Crítica</div><div class="stat-box-value">${Math.round(player.critChance * 100)}%</div></div>
+      <div class="stat-box"><div class="stat-box-label">${renderIcon('boot', { size: 10, color: '#1abc9c', style: 'margin-right:3px;' })} Velocidade</div><div class="stat-box-value">${player.speed.toFixed(1)}</div></div>
+      <div class="stat-box"><div class="stat-box-label">${renderIcon('cooldown', { size: 10, color: '#e67e22', style: 'margin-right:3px;' })} Redução Recarga</div><div class="stat-box-value">-${Math.round((player.cooldownReduction || 0) * 100)}%</div></div>
+      <div class="stat-box"><div class="stat-box-label">${renderIcon('magnet', { size: 10, color: '#9b59b6', style: 'margin-right:3px;' })} Raio de Ímã</div><div class="stat-box-value">${player.magnet}px</div></div>
     `;
   }
 
@@ -507,19 +518,19 @@ function renderPauseInventory() {
 
     synTracker.innerHTML = synList.map(s => {
       let statusColor = '#e74c3c';
-      let statusText = s.req;
+      let statusContent = s.req;
       if (s.isEvolved) {
         statusColor = '#f1c40f';
-        statusText = '★ EVOLUÍDO';
+        statusContent = `${renderIcon('star_evolution', { size: 9, color: '#f1c40f', style: 'margin-right:3px;' })} EVOLUÍDO`;
       } else if (s.isReady) {
         statusColor = '#2ecc71';
-        statusText = '✓ PRONTO (ABRA BAÚ)';
+        statusContent = `${renderIcon('check', { size: 9, color: '#2ecc71', style: 'margin-right:3px;' })} PRONTO (ABRA BAÚ)`;
       }
 
       return `
         <div class="synergy-row">
           <span style="font-weight: 600; color: #fff;">${s.name}</span>
-          <span style="font-weight: bold; color: ${statusColor};">${statusText}</span>
+          <span style="font-weight: bold; color: ${statusColor}; display: inline-flex; align-items: center;">${statusContent}</span>
         </div>
       `;
     }).join('');
@@ -593,9 +604,9 @@ export function openChestModal(tier = 'BOSS') {
         isLegendary: true,
         title: evo.name,
         desc: evo.desc,
-        stat: "★ PODER MÁXIMO ★",
+        stat: "PODER MÁXIMO",
         badge: "Evolução",
-        iconSvg: `<svg viewBox="0 0 24 24"><path fill="#f1c40f" d="M12 2l3 7h7l-5.5 4.5 2 7-6.5-4.5-6.5 4.5 2-7L2 9h7z"/></svg>`,
+        iconSvg: `<svg viewBox="0 0 24 24"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="#f1c40f"/></svg>`,
         apply: () => evo.apply()
       });
     }
@@ -633,14 +644,14 @@ export function openChestModal(tier = 'BOSS') {
   // Bônus de Transmutação Cósmica (Keystone do Destino)
   if (player && player.doubleChestChance > 0 && Math.random() < player.doubleChestChance) {
     if (subElem) {
-      subElem.innerHTML += ' <span style="color:#f39c12; font-weight:bold;">✨ TRANSMUTAÇÃO CÓSMICA ATIVADA! (+Dádiva Astral)</span>';
+      subElem.innerHTML += ` <span style="color:#f39c12; font-weight:bold;">${renderIcon('transmute', { size: 13, style: 'margin-right:3px;' })} TRANSMUTAÇÃO CÓSMICA ATIVADA! (+Dádiva Astral)</span>`;
     }
     const extraUpgrades = getRandomUpgrades(1);
     if (extraUpgrades.length > 0) {
       const u = extraUpgrades[0];
       pendingRewards.push({
         isLegendary: false,
-        title: `✨ ${u.title}`,
+        title: u.title,
         desc: `[Transmutação Cósmica] ${u.desc}`,
         stat: u.stat,
         badge: "Dádiva Astral",
@@ -653,7 +664,7 @@ export function openChestModal(tier = 'BOSS') {
     } else {
       pendingRewards.push({
         isLegendary: false,
-        title: "✨ Transmutação de Almas",
+        title: "Transmutação de Almas",
         desc: "A fenda cósmica duplicou o tesouro, vertendo essências imortais adicionais.",
         stat: "+100 Almas Persistentes",
         badge: "Dádiva Astral",
@@ -673,7 +684,7 @@ export function openChestModal(tier = 'BOSS') {
     card.innerHTML = `
       <div class="chest-card-icon">${r.iconSvg}</div>
       <div class="chest-card-info">
-        ${r.isLegendary ? '<span class="legendary-pill">★ EVOLUÇÃO LENDÁRIA ★</span>' : ''}
+        ${r.isLegendary ? `<span class="legendary-pill">${renderIcon('star_evolution', { size: 11, color: '#f1c40f', style: 'margin-right:3px;' })} EVOLUÇÃO LENDÁRIA</span>` : ''}
         <div class="chest-card-title">
           <span>${r.title}</span>
           <span style="font-size: 10px; color: ${r.isLegendary ? '#f1c40f' : '#8890a6'}; font-weight: normal;">${r.badge}</span>
@@ -795,7 +806,7 @@ export function triggerDeath() {
       Tempo de Sobrevivência: <b style="color:#fff;">${time}</b><br>
       Abominações Abatidas: <b style="color:#e74c3c;">${gameState.kills}</b><br>
       Nível de Poder Atingido: <b style="color:#f1c40f;">Nível ${player.level}</b><br>
-      Ouro Resgatado para a Alma: <b style="color:#f39c12;">🪙 ${getPersistentGold()}</b>
+      Ouro Resgatado para a Alma: <b style="color:#f39c12; display: inline-flex; align-items: center; gap: 3px;">${renderIcon('gold', { size: 11, color: '#f1c40f' })} ${getPersistentGold()}</b>
     `;
   }
 
@@ -836,22 +847,34 @@ export function triggerVictory() {
 const HERO_EMBLEMS_SVG = {
   KNIGHT: `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="5" y="4" width="14" height="7" rx="1.5"/>
-      <line x1="12" y1="11" x2="12" y2="22"/>
-      <line x1="9" y1="22" x2="15" y2="22"/>
-      <polygon points="12,1 14,4 10,4" fill="currentColor"/>
-      <line x1="12" y1="6" x2="12" y2="9" stroke="#fff"/>
-      <line x1="9" y1="7.5" x2="15" y2="7.5" stroke="#fff"/>
+      <polygon points="12,1.2 13.8,4.5 10.2,4.5" fill="currentColor"/>
+      <path d="M3.5 5.5l2-1h13l2 1v5.5l-2 1h-13l-2-1z" fill="currentColor" fill-opacity="0.18"/>
+      <path d="M3.5 5.5l2-1h13l2 1v5.5l-2 1h-13l-2-1z"/>
+      <line x1="6.5" y1="4.5" x2="6.5" y2="12"/>
+      <line x1="17.5" y1="4.5" x2="17.5" y2="12"/>
+      <line x1="12" y1="5.8" x2="12" y2="10.8" stroke-width="1.6"/>
+      <line x1="9.5" y1="8.3" x2="14.5" y2="8.3" stroke-width="1.6"/>
+      <rect x="9.8" y="12" width="4.4" height="2" rx="0.5" fill="currentColor"/>
+      <line x1="12" y1="14" x2="12" y2="21.5" stroke-width="2.4"/>
+      <line x1="10" y1="16.5" x2="14" y2="16.5" stroke-width="1.3"/>
+      <line x1="10" y1="19" x2="14" y2="19" stroke-width="1.3"/>
+      <circle cx="12" cy="22" r="1.5" fill="currentColor"/>
     </svg>
   `,
   PALADIN: `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="5" y="4" width="14" height="7" rx="1.5"/>
-      <line x1="12" y1="11" x2="12" y2="22"/>
-      <line x1="9" y1="22" x2="15" y2="22"/>
-      <polygon points="12,1 14,4 10,4" fill="currentColor"/>
-      <line x1="12" y1="6" x2="12" y2="9" stroke="#fff"/>
-      <line x1="9" y1="7.5" x2="15" y2="7.5" stroke="#fff"/>
+      <polygon points="12,1.2 13.8,4.5 10.2,4.5" fill="currentColor"/>
+      <path d="M3.5 5.5l2-1h13l2 1v5.5l-2 1h-13l-2-1z" fill="currentColor" fill-opacity="0.18"/>
+      <path d="M3.5 5.5l2-1h13l2 1v5.5l-2 1h-13l-2-1z"/>
+      <line x1="6.5" y1="4.5" x2="6.5" y2="12"/>
+      <line x1="17.5" y1="4.5" x2="17.5" y2="12"/>
+      <line x1="12" y1="5.8" x2="12" y2="10.8" stroke-width="1.6"/>
+      <line x1="9.5" y1="8.3" x2="14.5" y2="8.3" stroke-width="1.6"/>
+      <rect x="9.8" y="12" width="4.4" height="2" rx="0.5" fill="currentColor"/>
+      <line x1="12" y1="14" x2="12" y2="21.5" stroke-width="2.4"/>
+      <line x1="10" y1="16.5" x2="14" y2="16.5" stroke-width="1.3"/>
+      <line x1="10" y1="19" x2="14" y2="19" stroke-width="1.3"/>
+      <circle cx="12" cy="22" r="1.5" fill="currentColor"/>
     </svg>
   `,
   MAGE: `
@@ -865,26 +888,58 @@ const HERO_EMBLEMS_SVG = {
   `,
   ROGUE: `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M14.5 2.5l7 7-12 12-7-7z"/>
-      <line x1="2.5" y1="21.5" x2="6.5" y2="17.5"/>
-      <line x1="17" y1="5" x2="19" y2="7"/>
-      <path d="M5 19l14-14"/>
+      <polygon points="21,3 12.5,8.5 15.5,11.5" fill="currentColor" fill-opacity="0.25"/>
+      <polygon points="21,3 12.5,8.5 15.5,11.5"/>
+      <line x1="20" y1="4" x2="14" y2="10" stroke-width="1.2"/>
+      <line x1="10.8" y1="6.8" x2="17.2" y2="13.2" stroke-width="2"/>
+      <line x1="14" y1="10" x2="6.5" y2="17.5" stroke-width="2.2"/>
+      <circle cx="5.5" cy="18.5" r="1.5" fill="currentColor"/>
+
+      <polygon points="3,3 11.5,8.5 8.5,11.5" fill="currentColor" fill-opacity="0.25"/>
+      <polygon points="3,3 11.5,8.5 8.5,11.5"/>
+      <line x1="4" y1="4" x2="10" y2="10" stroke-width="1.2"/>
+      <line x1="13.2" y1="6.8" x2="6.8" y2="13.2" stroke-width="2"/>
+      <line x1="10" y1="10" x2="17.5" y2="17.5" stroke-width="2.2"/>
+      <circle cx="18.5" cy="18.5" r="1.5" fill="currentColor"/>
+
+      <circle cx="12" cy="3.5" r="0.9" fill="currentColor"/>
+      <circle cx="12" cy="20.5" r="0.9" fill="currentColor"/>
     </svg>
   `,
   WARRIOR: `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M14.5 2.5l7 7-12 12-7-7z"/>
-      <line x1="2.5" y1="21.5" x2="6.5" y2="17.5"/>
-      <line x1="17" y1="5" x2="19" y2="7"/>
-      <path d="M8 8l8 8" stroke-opacity="0.5"/>
+      <polygon points="21,3 12.5,8.5 15.5,11.5" fill="currentColor" fill-opacity="0.25"/>
+      <polygon points="21,3 12.5,8.5 15.5,11.5"/>
+      <line x1="20" y1="4" x2="14" y2="10" stroke-width="1.2"/>
+      <line x1="10.8" y1="6.8" x2="17.2" y2="13.2" stroke-width="2"/>
+      <line x1="14" y1="10" x2="6.5" y2="17.5" stroke-width="2.2"/>
+      <circle cx="5.5" cy="18.5" r="1.5" fill="currentColor"/>
+
+      <polygon points="3,3 11.5,8.5 8.5,11.5" fill="currentColor" fill-opacity="0.25"/>
+      <polygon points="3,3 11.5,8.5 8.5,11.5"/>
+      <line x1="4" y1="4" x2="10" y2="10" stroke-width="1.2"/>
+      <line x1="13.2" y1="6.8" x2="6.8" y2="13.2" stroke-width="2"/>
+      <line x1="10" y1="10" x2="17.5" y2="17.5" stroke-width="2.2"/>
+      <circle cx="18.5" cy="18.5" r="1.5" fill="currentColor"/>
+
+      <circle cx="12" cy="3.5" r="0.9" fill="currentColor"/>
+      <circle cx="12" cy="20.5" r="0.9" fill="currentColor"/>
     </svg>
   `,
   BARBARIAN: `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="12" y1="2" x2="12" y2="22"/>
-      <path d="M12 4c3.5 0 7-1.5 8 1.5-1 3.5-3.5 4.5-8 4.5"/>
-      <path d="M12 4c-3.5 0-7-1.5-8 1.5 1 3.5 3.5 4.5 8 4.5"/>
-      <polygon points="12,1 14,4 10,4" fill="currentColor"/>
+      <polygon points="12,1.2 13.8,4.5 10.2,4.5" fill="currentColor"/>
+      <path d="M10.5 5.5C7.5 4.8 4.5 4.2 2.5 3.5c-1.2 3.2-1.2 6.8 0 10 2-.7 5-1.3 8-2z" fill="currentColor" fill-opacity="0.22"/>
+      <path d="M10.5 5.5C7.5 4.8 4.5 4.2 2.5 3.5c-1.2 3.2-1.2 6.8 0 10 2-.7 5-1.3 8-2z"/>
+      <path d="M13.5 5.5C16.5 4.8 19.5 4.2 21.5 3.5c1.2 3.2 1.2 6.8 0 10-2-.7-5-1.3-8-2z" fill="currentColor" fill-opacity="0.22"/>
+      <path d="M13.5 5.5C16.5 4.8 19.5 4.2 21.5 3.5c1.2 3.2 1.2 6.8 0 10-2-.7-5-1.3-8-2z"/>
+      <rect x="9.8" y="5.2" width="4.4" height="6.3" rx="0.6" fill="currentColor"/>
+      <line x1="12" y1="11.5" x2="12" y2="21.5" stroke-width="2.4"/>
+      <line x1="10" y1="14" x2="14" y2="16.5" stroke-width="1.3"/>
+      <line x1="14" y1="14" x2="10" y2="16.5" stroke-width="1.3"/>
+      <line x1="10" y1="17.5" x2="14" y2="20" stroke-width="1.3"/>
+      <line x1="14" y1="17.5" x2="10" y2="20" stroke-width="1.3"/>
+      <polygon points="12,23.5 10.2,21.5 13.8,21.5" fill="currentColor"/>
     </svg>
   `,
   ALCHEMIST: `
@@ -1063,7 +1118,7 @@ export function openCharacterSelect() {
         <!-- Card 1: Arma Inicial -->
         <div class="bento-card bento-card-weapon">
           <div class="bento-card-top">
-            <span class="bento-type-tag">⚔️ ARMA INICIAL</span>
+            <span class="bento-type-tag">${renderIcon(WEAPON_ICONS[char.startingWeapon] || 'sword', { size: 10, color: profile.themeColor })} ARMA INICIAL</span>
             <span class="bento-spec-badge" style="color: ${profile.themeColor}; border-color: ${profile.themeColor}55;">${char.weapon?.type || profile.weaponName}</span>
           </div>
           <div class="bento-card-title" style="color: ${profile.themeColor};">${char.weapon?.name || profile.weaponName}</div>
@@ -1073,8 +1128,8 @@ export function openCharacterSelect() {
         <!-- Card 2: Poder Ancestral -->
         <div class="bento-card bento-card-skill">
           <div class="bento-card-top">
-            <span class="bento-type-tag">⚡ PODER ANCESTRAL</span>
-            <span class="bento-spec-badge bento-cd-badge">⏱ ${char.skill?.cooldown || '7s'}</span>
+            <span class="bento-type-tag">${renderIcon('damage', { size: 10, color: profile.themeColor })} PODER ANCESTRAL</span>
+            <span class="bento-spec-badge bento-cd-badge">${renderIcon('timer', { size: 9 })} ${char.skill?.cooldown || '7s'}</span>
           </div>
           <div class="bento-card-title" style="color: ${profile.themeColor};">${char.skill?.name || 'Habilidade'}</div>
           <div class="bento-card-desc">${char.skill?.desc || ''}</div>
@@ -1083,7 +1138,7 @@ export function openCharacterSelect() {
         <!-- Card 3: Bênção Passiva -->
         <div class="bento-card bento-card-passive" style="border-color: ${profile.themeColor}35;">
           <div class="bento-card-top">
-            <span class="bento-type-tag">🛡️ BÊNÇÃO PASSIVA</span>
+            <span class="bento-type-tag">${renderIcon('armor', { size: 10, color: profile.themeColor })} BÊNÇÃO PASSIVA</span>
             <span class="bento-inline-title" style="color: ${profile.themeColor};">${char.passive?.name || 'Aura'}</span>
           </div>
           <div class="bento-card-desc">${char.passive?.desc || ''}</div>
@@ -1104,7 +1159,7 @@ export function openCharacterSelect() {
       </div>
 
       <button class="card-btn btn-summon-hero" id="confirm-hero-btn">
-        ⚡ DESPERTAR NA ARENA ⚡
+        ${renderIcon('damage', { size: 12, style: 'margin-right:4px;' })} DESPERTAR NA ARENA ${renderIcon('damage', { size: 12, style: 'margin-left:4px;' })}
       </button>
     `;
 
@@ -1554,7 +1609,7 @@ export function openTalentsModal() {
 
       node.innerHTML = `
         ${runeSvg}
-        <div class="node-lvl-pip">${isLocked ? '🔒' : `${curLvl}/${t.maxLvl}`}</div>
+        <div class="node-lvl-pip">${isLocked ? renderIcon('lock', { size: 10, color: '#8c94a8' }) : `${curLvl}/${t.maxLvl}`}</div>
         ${t.isKeystone ? '<div class="keystone-crown-glow"></div>' : ''}
       `;
 
@@ -1588,14 +1643,15 @@ export function openTalentsModal() {
     const buyBtn = document.getElementById('forge-buy-btn');
 
     if (constBadge) {
-      const names = { guerra: '⚔️ CONSTELAÇÃO DA GUERRA', egide: '🛡️ CONSTELAÇÃO DA ÉGIDE', destino: '🔮 CONSTELAÇÃO DO DESTINO' };
-      constBadge.innerText = names[activeTalent.constellation] || 'CONSTELAÇÃO ASTRAL';
+      const names = { guerra: 'CONSTELAÇÃO DA GUERRA', egide: 'CONSTELAÇÃO DA ÉGIDE', destino: 'CONSTELAÇÃO DO DESTINO' };
+      const iconKey = activeTalent.constellation === 'guerra' ? 'constellation_guerra' : (activeTalent.constellation === 'egide' ? 'constellation_egide' : 'constellation_destino');
+      constBadge.innerHTML = `${renderIcon(iconKey, { size: 13, style: 'margin-right:5px;' })} ${names[activeTalent.constellation] || 'CONSTELAÇÃO ASTRAL'}`;
       constBadge.className = `forge-constellation-badge badge-${activeTalent.constellation}`;
     }
 
     if (tierBadge) {
-      tierBadge.innerText = activeTalent.isKeystone 
-        ? '⭐ TALENTO MESTRE (KEYSTONE)' 
+      tierBadge.innerHTML = activeTalent.isKeystone 
+        ? `${renderIcon('keystone', { size: 12, color: '#f1c40f', style: 'margin-right:4px;' })} TALENTO MESTRE (KEYSTONE)` 
         : `TIER ${activeTalent.tier} · NÍVEL ${curLvl}/${activeTalent.maxLvl}`;
     }
 
@@ -1619,15 +1675,15 @@ export function openTalentsModal() {
       if (isLocked) {
         buyBtn.disabled = true;
         const parentT = META_TALENTS.find(p => p.id === activeTalent.parent);
-        buyBtn.innerHTML = `🔒 REQUER ${parentT ? parentT.name.toUpperCase() : 'NÓ ANTECESSOR'}`;
+        buyBtn.innerHTML = `${renderIcon('lock', { size: 13, style: 'margin-right:4px;' })} REQUER ${parentT ? parentT.name.toUpperCase() : 'NÓ ANTECESSOR'}`;
       } else if (isMax) {
         buyBtn.disabled = true;
-        buyBtn.innerHTML = '✨ FORJA MAGISTRAL CONCLUÍDA ✨';
+        buyBtn.innerHTML = `${renderIcon('sparkle', { size: 13, style: 'margin-right:4px;' })} FORJA MAGISTRAL CONCLUÍDA ${renderIcon('sparkle', { size: 13, style: 'margin-left:4px;' })}`;
       } else {
         buyBtn.disabled = !canAfford;
         buyBtn.innerHTML = canAfford
-          ? `⚡ FUNDIR ALMAS • 🪙 ${cost}`
-          : `🪙 ${cost} (FALTAM ${cost - getPersistentGold()} ALMAS)`;
+          ? `${renderIcon('damage', { size: 13, style: 'margin-right:4px;' })} FUNDIR ALMAS • ${renderIcon('soul_coin', { size: 12, color: '#f1c40f', style: 'margin-right:2px;' })} ${cost}`
+          : `${renderIcon('soul_coin', { size: 12, color: '#f1c40f', style: 'margin-right:2px;' })} ${cost} (FALTAM ${cost - getPersistentGold()} ALMAS)`;
         buyBtn.onclick = () => {
           if (buyMetaUpgrade(activeTalent.id)) {
             try { playSfx('level'); } catch(e) {}
@@ -1649,22 +1705,22 @@ function renderBlessingsSummary() {
   const meta = getMetaBonuses();
 
   const cards = [
-    { label: "Dano Global", val: `+${Math.round((meta.damageMult - 1) * 100)}%`, icon: "⚔️", col: "#e74c3c" },
-    { label: "Chance Crítica", val: `+${Math.round(meta.critBonus * 100)}%`, icon: "🎯", col: "#f39c12" },
-    { label: "Redução Recarga", val: `-${Math.round(meta.cooldownReduction * 100)}%`, icon: "⌛", col: "#e67e22" },
-    { label: "Fúria Executora", val: `+${Math.round(meta.executeBonus * 100)}%`, icon: "💀", col: "#c0392b" },
+    { label: "Dano Global", val: `+${Math.round((meta.damageMult - 1) * 100)}%`, icon: renderIcon('sword', { size: 16, color: '#e74c3c' }), col: "#e74c3c" },
+    { label: "Chance Crítica", val: `+${Math.round(meta.critBonus * 100)}%`, icon: renderIcon('crit', { size: 16, color: '#f39c12' }), col: "#f39c12" },
+    { label: "Redução Recarga", val: `-${Math.round(meta.cooldownReduction * 100)}%`, icon: renderIcon('cooldown', { size: 16, color: '#e67e22' }), col: "#e67e22" },
+    { label: "Fúria Executora", val: `+${Math.round(meta.executeBonus * 100)}%`, icon: renderIcon('execute', { size: 16, color: '#c0392b' }), col: "#c0392b" },
 
-    { label: "Vida Máxima", val: `+${Math.round((meta.hpMult - 1) * 100)}%`, icon: "❤️", col: "#2ecc71" },
-    { label: "Armadura Direta", val: `-${meta.armorBonus} Dano`, icon: "🛡️", col: "#3498db" },
-    { label: "Velocidade", val: `+${((meta.speedMult - 1) * 100).toFixed(1)}%`, icon: "👟", col: "#1abc9c" },
-    { label: "Regeneração", val: `+${meta.regenBonus.toFixed(1)} HP/s`, icon: "🌿", col: "#27ae60" },
-    { label: "Segunda Chance", val: meta.phoenixRevives > 0 ? "1 Reviver" : "Inativo", icon: "🔥", col: "#f1c40f" },
+    { label: "Vida Máxima", val: `+${Math.round((meta.hpMult - 1) * 100)}%`, icon: renderIcon('heart', { size: 16, color: '#2ecc71' }), col: "#2ecc71" },
+    { label: "Armadura Direta", val: `-${meta.armorBonus} Dano`, icon: renderIcon('armor', { size: 16, color: '#3498db' }), col: "#3498db" },
+    { label: "Velocidade", val: `+${((meta.speedMult - 1) * 100).toFixed(1)}%`, icon: renderIcon('boot', { size: 16, color: '#1abc9c' }), col: "#1abc9c" },
+    { label: "Regeneração", val: `+${meta.regenBonus.toFixed(1)} HP/s`, icon: renderIcon('regen', { size: 16, color: '#27ae60' }), col: "#27ae60" },
+    { label: "Segunda Chance", val: meta.phoenixRevives > 0 ? "1 Reviver" : "Inativo", icon: renderIcon('phoenix', { size: 16, color: '#f1c40f' }), col: "#f1c40f" },
 
-    { label: "Raio de Atração", val: `+${meta.magnetBonus} px`, icon: "🧲", col: "#9b59b6" },
-    { label: "Bônus de Almas", val: `+${Math.round((meta.goldMult - 1) * 100)}%`, icon: "🪙", col: "#f1c40f" },
-    { label: "Bônus de XP", val: `+${Math.round((meta.xpMult - 1) * 100)}%`, icon: "📖", col: "#8e44ad" },
-    { label: "Rerolls de Tarô", val: `+${meta.rerolls}`, icon: "🎲", col: "#e056fd" },
-    { label: "Transmutação Cósmica", val: meta.doubleChestChance > 0 ? "25% Chance" : "Inativo", icon: "✨", col: "#f39c12" }
+    { label: "Raio de Atração", val: `+${meta.magnetBonus} px`, icon: renderIcon('magnet', { size: 16, color: '#9b59b6' }), col: "#9b59b6" },
+    { label: "Bônus de Almas", val: `+${Math.round((meta.goldMult - 1) * 100)}%`, icon: renderIcon('soul_coin', { size: 16, color: '#f1c40f' }), col: "#f1c40f" },
+    { label: "Bônus de XP", val: `+${Math.round((meta.xpMult - 1) * 100)}%`, icon: renderIcon('xp_tome', { size: 16, color: '#8e44ad' }), col: "#8e44ad" },
+    { label: "Rerolls de Tarô", val: `+${meta.rerolls}`, icon: renderIcon('dice', { size: 16, color: '#e056fd' }), col: "#e056fd" },
+    { label: "Transmutação Cósmica", val: meta.doubleChestChance > 0 ? "25% Chance" : "Inativo", icon: renderIcon('transmute', { size: 16, color: '#f39c12' }), col: "#f39c12" }
   ];
 
   grid.innerHTML = cards.map(c => `
