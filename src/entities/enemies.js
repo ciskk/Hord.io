@@ -154,6 +154,12 @@ export function createEnemy(typeKey, x, y, isElite = false) {
     attackStrikeFrames = 4;
     attackRecoveryFrames = 32;
     attackCooldownMax = 25;
+  } else if (typeKey === 'SHIELDED') {
+    attackRange = 32;
+    attackWindupFrames = 22;
+    attackStrikeFrames = 5;
+    attackRecoveryFrames = 36;
+    attackCooldownMax = 32;
   } else {
     attackRange = Math.max(22, Math.round(radius * 1.5));
   }
@@ -174,6 +180,7 @@ export function createEnemy(typeKey, x, y, isElite = false) {
     xp,
     facing: (player.x >= x ? 1 : -1),
     hitFlash: 0,
+    shieldBlockFlash: 0,
     orbitalHitCd: 0,
     slowTimer: 0,
     slowFactor: 0,
@@ -198,6 +205,11 @@ export function createEnemy(typeKey, x, y, isElite = false) {
     explodedNaturally: false,
     // Timers de comportamentos táticos específicos
     shootTimer: Math.floor(Math.random() * 60),
+    burstRemaining: 0,
+    burstTimer: 0,
+    thrusterCooldown: 0,
+    shadowBoltTimer: Math.floor(Math.random() * 80),
+    pounceCooldown: 0,
     dashTimer: 0,
     dashState: 'chase',
     dashAngle: 0,
@@ -336,6 +348,15 @@ export function spawnMiniBoss(miniBossType) {
     fuseTimer: 0,
     fuseTelegraph: null,
     explodedNaturally: false,
+    // Estado FSM unificado
+    actionState: 'CHASE',
+    actionTimer: 0,
+    actionMaxTimer: 0,
+    currentSkill: null,
+    castProgress: 0,
+    skillCooldown: 40,
+    enraged: false,
+    hasFrontalShield: miniBossType === 'PHALANX_LEADER',
     shootTimer: 0,
     dashTimer: 0,
     dashState: 'chase',

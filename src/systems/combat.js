@@ -3,7 +3,7 @@
  * Subsistema de combate, efeitos visuais de impacto e máquina de estados melee (Fase 3).
  */
 import { playSfx, triggerHaptic } from '../core/audio.js';
-import { triggerShake } from '../main.js';
+import { triggerShake, bossShockwaves } from '../main.js';
 import { triggerDeath } from './ui.js';
 import { selectedHeroKey } from '../entities/player.js';
 
@@ -172,6 +172,24 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
           e.combatState = 'STRIKE';
           e.attackTimer = e.attackStrikeFrames;
           e.hasHitInStrike = false;
+
+          // Efeito de Fenda Sísmica do Golem ao desferir soco
+          if (e.baseType === 'GOLEM') {
+            triggerShake(5);
+            playSfx('boss');
+            bossShockwaves.push({
+              x: e.x + (e.facing || 1) * 24,
+              y: e.y + 6,
+              radius: 8,
+              maxRadius: 52,
+              speed: 3.2,
+              damage: Math.round(e.damage * 0.65),
+              knockback: 7.5,
+              color: '#e67e22',
+              hitPlayer: false
+            });
+            createHitParticles(e.x + (e.facing || 1) * 24, e.y + 6, '#e67e22', 8);
+          }
         }
         break;
       }
@@ -203,11 +221,18 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
               addDamageText(player.x, player.y, `-${Math.round(playerDmgTaken)}`, false, '#e74c3c');
               createHitParticles(player.x, player.y, '#e74c3c', 6);
 
+              // Mordida Amortecedora / Drenante do Morcego (Numbing Bite)
+              if (e.baseType === 'BAT') {
+                player.slowTimer = Math.max(player.slowTimer || 0, 42);
+              }
+
               // Impulso de Knockback sofrido: Leves tomam 100% e Pesados tomam 50%
               const hasSuperArmor = (player.dashDuration > 0) || (player.ignisDashDuration > 0) || (player.invisTimer > 0);
               if (!hasSuperArmor) {
                 const pushAngle = Math.atan2(player.y - e.y, player.x - e.x);
-                const baseMobKnockback = 9.5;
+                let baseMobKnockback = 9.5;
+                if (e.baseType === 'SHIELDED' || e.baseType === 'PHALANX_LEADER') baseMobKnockback = 15.0; // Escudada pesada
+                if (e.baseType === 'GOLEM') baseMobKnockback = 13.0;
                 const finalPush = baseMobKnockback * (player.knockbackReceived !== undefined ? player.knockbackReceived : 1.0);
                 player.pushVx = Math.cos(pushAngle) * finalPush;
                 player.pushVy = Math.sin(pushAngle) * finalPush;
@@ -220,9 +245,16 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
                 if (distToEnemy <= 130) {
                   reflectDmg *= 1.25;
                 }
+                // Se o Guardião Blindado ou Centurião estiver virado de frente para o cavaleiro, bloqueia 75% da retaliação
+                let isRetaliationBlocked = false;
+                if ((e.baseType === 'SHIELDED' || e.baseType === 'PHALANX_LEADER') && (player.x - e.x) * (e.facing || 1) > 0) {
+                  reflectDmg *= (e.baseType === 'PHALANX_LEADER' ? 0.15 : 0.25);
+                  e.shieldBlockFlash = 6;
+                  isRetaliationBlocked = true;
+                }
                 e.hp -= reflectDmg;
                 e.hitFlash = 4;
-                addDamageText(e.x, e.y, Math.round(reflectDmg), distToEnemy <= 130, distToEnemy <= 130 ? '#f1c40f' : '#ffffff');
+                addDamageText(e.x, e.y, Math.round(reflectDmg), !isRetaliationBlocked && distToEnemy <= 130, isRetaliationBlocked ? '#74b9ff' : (distToEnemy <= 130 ? '#f1c40f' : '#ffffff'));
               }
 
               if (player.hp <= 0) {

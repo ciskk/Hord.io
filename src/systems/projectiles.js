@@ -148,14 +148,27 @@ export function updateProjectiles(dt) {
           finalDmg *= (1 + player.executeBonus);
         }
 
+        // Bloqueio Frontal Ativo do Guardião Blindado (SHIELDED) e Centurião da Guarda (PHALANX_LEADER)
+        let isShieldBlocked = false;
+        if (e.baseType === 'SHIELDED' || e.baseType === 'PHALANX_LEADER' || e.hasFrontalShield) {
+          const isFrontalHit = (b.x - e.x) * (e.facing || 1) > -e.radius * 0.25;
+          if (isFrontalHit) {
+            isShieldBlocked = true;
+            const blockDmgFactor = e.baseType === 'PHALANX_LEADER' ? 0.15 : 0.25;
+            finalDmg *= blockDmgFactor;
+            e.shieldBlockFlash = 8;
+            createHitParticles(e.x + (e.facing || 1) * e.radius * 0.8, e.y, e.baseType === 'PHALANX_LEADER' ? '#f1c40f' : '#74b9ff', 4);
+          }
+        }
+
         e.hp -= finalDmg;
         e.hitFlash = 4;
 
-        // Knockback Suave: Elites resistem 50%; Chefes e Mini-Chefes resistem 80% (0.20x); Sub-alvos são imunes
+        // Knockback Suave: Golem e Escudeiro Bloqueador resistem 75%; Elites resistem 50%; Chefes e Mini-Chefes resistem 80%
         if (!e.isBossSubTarget) {
           const impactAngle = b.angle !== undefined ? b.angle : Math.atan2(b.vy || 0, b.vx || 0);
           const baseWeaponPush = (b.type === 'HAMMER_SLAM' ? 14.0 : (b.type === 'STAFF' ? 6.0 : 4.5));
-          const bossResist = (e.isBoss || e.isMiniBoss) ? 0.20 : (e.isElite ? 0.50 : 1.0);
+          const bossResist = (e.isBoss || e.isMiniBoss) ? 0.20 : (e.baseType === 'GOLEM' ? 0.25 : (isShieldBlocked ? 0.25 : (e.isElite ? 0.50 : 1.0)));
           const totalPush = baseWeaponPush * (player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0) * bossResist;
           e.pushVx = (e.pushVx || 0) + Math.cos(impactAngle) * totalPush;
           e.pushVy = (e.pushVy || 0) + Math.sin(impactAngle) * totalPush;
@@ -169,7 +182,9 @@ export function updateProjectiles(dt) {
         }
 
         let dmgTextColor = '#ffffff';
-        if (isMeleeAdrenaline) {
+        if (isShieldBlocked) {
+          dmgTextColor = '#74b9ff';
+        } else if (isMeleeAdrenaline) {
           dmgTextColor = '#f1c40f';
         } else if (isKaelExecute) {
           dmgTextColor = '#00cec9';
@@ -182,7 +197,7 @@ export function updateProjectiles(dt) {
         }
 
         addDamageText(e.x, e.y, Math.round(finalDmg), isCrit || isMeleeAdrenaline || isKaelExecute, dmgTextColor);
-        createHitParticles(b.x, b.y, isKaelExecute ? '#00cec9' : (isMeleeAdrenaline ? '#f1c40f' : (b.color || '#3498db')), isCrit || isKaelExecute ? 5 : 3);
+        createHitParticles(b.x, b.y, isShieldBlocked ? '#74b9ff' : (isKaelExecute ? '#00cec9' : (isMeleeAdrenaline ? '#f1c40f' : (b.color || '#3498db'))), isCrit || isKaelExecute ? 5 : 3);
 
         if (player.slowChance > 0 && Math.random() < player.slowChance) {
           e.slowTimer = 150;
@@ -205,6 +220,21 @@ export function updateProjectiles(dt) {
   for (let i = enemyBullets.length - 1; i >= 0; i--) {
     const eb = enemyBullets[i];
     eb.life -= dt;
+
+    // Rastreamento Suave para SHADOW_ORB (Cultista)
+    if (eb.bulletType === 'SHADOW_ORB' && player.invisTimer <= 0) {
+      const angleToPlayer = Math.atan2(player.y - eb.y, player.x - eb.x);
+      const curAngle = Math.atan2(eb.vy, eb.vx);
+      let diff = angleToPlayer - curAngle;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      const turnSpeed = 0.038 * dt;
+      const newAngle = curAngle + Math.sign(diff) * Math.min(Math.abs(diff), turnSpeed);
+      const speed = Math.hypot(eb.vx, eb.vy);
+      eb.vx = Math.cos(newAngle) * speed;
+      eb.vy = Math.sin(newAngle) * speed;
+    }
+
     eb.x += eb.vx * dt;
     eb.y += eb.vy * dt;
 
@@ -227,7 +257,7 @@ export function updateProjectiles(dt) {
       playSfx('hit');
       triggerHaptic('medium');
 
-      const col = eb.color || '#e74c3c';
+      const col = eb.color || (eb.bulletType === 'SHADOW_ORB' ? '#9b59b6' : '#e74c3c');
       addDamageText(player.x, player.y, `-${finalEbDamage}`, false, col);
       createHitParticles(player.x, player.y, col, 5);
 
@@ -305,16 +335,22 @@ export function updateAcidPuddles(dt) {
     if (!p.isAlchemist && !p.isFire) {
       const pdx = player.x - p.x;
       const pdy = player.y - p.y;
-      if (player.iFrames <= 0 && (pdx * pdx + pdy * pdy) < (p.radius + player.radius) ** 2) {
-        p.tickTimer = (p.tickTimer || 0) + dt;
-        if (p.tickTimer > 20) {
-          p.tickTimer = 0;
-          player.hp -= 6;
-          player.iFrames = 18;
-          triggerShake(3);
-          playSfx('acid');
-          addDamageText(player.x, player.y, "-6", false, '#2ecc71');
-          createHitParticles(player.x, player.y, '#2ecc71', 3);
+      if ((pdx * pdx + pdy * pdy) < (p.radius + player.radius) ** 2) {
+        if (p.isCaustic) {
+          player.slowTimer = Math.max(player.slowTimer || 0, 18);
+        }
+        if (player.iFrames <= 0) {
+          p.tickTimer = (p.tickTimer || 0) + dt;
+          if (p.tickTimer > 20) {
+            p.tickTimer = 0;
+            const dmgVal = p.isCaustic ? 4 : 6;
+            player.hp -= dmgVal;
+            player.iFrames = 18;
+            triggerShake(2);
+            playSfx('acid');
+            addDamageText(player.x, player.y, `-${dmgVal}`, false, p.isCaustic ? '#00d2d3' : '#2ecc71');
+            createHitParticles(player.x, player.y, p.isCaustic ? '#00d2d3' : '#2ecc71', 3);
+          }
         }
       }
     }

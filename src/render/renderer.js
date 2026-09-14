@@ -1591,6 +1591,55 @@ export function render() {
       ctx.fillStyle = '#f1c40f';
       ctx.fillRect(-3, -3.5, 2, 7);
       ctx.fillRect(-11, -1.5, 3, 3);
+    } else if (bType === 'SHADOW_ORB') {
+      const oPulse = Math.sin(frameCount * 0.2 + (eb.x * 0.05)) * 1.5;
+      const orbR = (eb.radius || 6.5) + oPulse;
+
+      // Halo pulsante exterior sombrio
+      ctx.fillStyle = 'rgba(155, 89, 182, 0.45)';
+      ctx.beginPath();
+      ctx.arc(0, 0, orbR * 1.6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Núcleo abissal
+      ctx.fillStyle = '#1e082b';
+      ctx.beginPath();
+      ctx.arc(0, 0, orbR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#a29bfe';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+
+      // Olho / pupila fantasmagórica
+      ctx.fillStyle = '#00cec9';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 3, orbR * 0.7, frameCount * 0.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-1, -1, 2, 2);
+    } else if (bType === 'ACID_SPIT') {
+      const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
+      ctx.rotate(bAng);
+
+      // Rastro de gosma ácida
+      ctx.fillStyle = 'rgba(0, 210, 211, 0.45)';
+      ctx.beginPath();
+      ctx.moveTo(-14, 0);
+      ctx.lineTo(-2, -3.5);
+      ctx.lineTo(6, 0);
+      ctx.lineTo(-2, 3.5);
+      ctx.closePath();
+      ctx.fill();
+
+      // Gota ácida incandescente
+      ctx.fillStyle = '#00d2d3';
+      ctx.beginPath();
+      ctx.ellipse(2, 0, 5.5, 3.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#c4e538';
+      ctx.beginPath();
+      ctx.arc(3, 0, 2, 0, Math.PI * 2);
+      ctx.fill();
     } else {
       // Projétil Padrão Polido (Ruby Shard)
       ctx.fillStyle = '#ff7675';

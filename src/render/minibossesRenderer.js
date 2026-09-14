@@ -53,8 +53,8 @@ export function drawMiniBossShape(e) {
     case 'ZOMBIE_ALPHA': {
       const stepBob = Math.sin(frameCount * 0.14) * 3;
       const armSwing = Math.sin(frameCount * 0.14) * 5;
-      const skinColor = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#1e392a');
-      const veinColor = isHit ? '#ffffff' : '#2ecc71';
+      const skinColor = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : (e.enraged ? '#1e2d24' : '#1e392a'));
+      const veinColor = isHit ? '#ffffff' : (e.enraged ? '#ff4757' : '#2ecc71');
 
       ctx.fillStyle = skinColor;
       ctx.beginPath();
@@ -69,7 +69,7 @@ export function drawMiniBossShape(e) {
       ctx.stroke();
 
       ctx.strokeStyle = veinColor;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = e.enraged ? 2.8 : 2;
       ctx.beginPath();
       ctx.moveTo(-R * 0.4, -R * 0.1 + stepBob);
       ctx.lineTo(-R * 0.1, R * 0.15 + stepBob);
@@ -82,28 +82,43 @@ export function drawMiniBossShape(e) {
       ctx.arc(R * 0.2, -R * 0.55 + stepBob, R * 0.35, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = '#ff3838';
-      ctx.fillRect(R * 0.3, -R * 0.65 + stepBob, 4.5, 3.5);
+      // Olho furioso
+      ctx.fillStyle = e.enraged ? '#ff1744' : '#ff3838';
+      ctx.fillRect(R * 0.3, -R * 0.65 + stepBob, e.enraged ? 5.5 : 4.5, 4.0);
+
+      // Efeito visual de Rugido (HOWL)
+      if (e.actionState === 'WINDUP' && e.currentSkill === 'HOWL') {
+        const howlWave = (frameCount * 0.2) % 1;
+        ctx.strokeStyle = `rgba(46, 204, 113, ${1 - howlWave})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(R * 0.35, -R * 0.55 + stepBob, 12 + howlWave * 26, -Math.PI * 0.4, Math.PI * 0.4);
+        ctx.stroke();
+      }
 
       ctx.fillStyle = skinColor;
       ctx.strokeStyle = '#0d1f14';
       ctx.lineWidth = 2;
 
+      // Poses de braços: Erguidos no Bote (POUNCE) ou swing natural
+      const isPouncing = e.currentSkill === 'POUNCE' && (e.actionState === 'WINDUP' || e.actionState === 'STRIKE');
+      const armLift = isPouncing ? -R * 0.45 : armSwing;
+
       const f1X = R * 0.8;
-      const f1Y = R * 0.2 + armSwing + stepBob;
+      const f1Y = R * 0.2 + armLift + stepBob;
       ctx.beginPath();
       ctx.arc(f1X, f1Y, R * 0.35, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
       const f2X = -R * 0.8;
-      const f2Y = R * 0.2 - armSwing + stepBob;
+      const f2Y = R * 0.2 - armLift + stepBob;
       ctx.beginPath();
       ctx.arc(f2X, f2Y, R * 0.35, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
-      ctx.strokeStyle = isHit ? '#ffffff' : '#bdc3c7';
+      ctx.strokeStyle = isHit ? '#ffffff' : (e.enraged ? '#ff7675' : '#bdc3c7');
       ctx.lineWidth = 2.5;
       const sway = Math.sin(frameCount * 0.15) * 4;
       ctx.beginPath();
@@ -122,18 +137,22 @@ export function drawMiniBossShape(e) {
       const steelCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#57606f');
       const goldTrim = isHit ? '#ffffff' : '#f1c40f';
 
+      // Lança: Projeta-se para a frente durante a estocada
+      const isThrusting = (e.currentSkill === 'SPEAR_THRUST' && e.actionState === 'STRIKE');
+      const spearReach = isThrusting ? R * 2.1 : R * 1.35;
+
       ctx.strokeStyle = isHit ? '#ffffff' : '#dfe4ea';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(-R * 0.2, -R * 0.1 + step);
-      ctx.lineTo(R * 1.35, -R * 0.5 + step);
+      ctx.lineTo(spearReach, -R * 0.5 + step);
       ctx.stroke();
       ctx.fillStyle = goldTrim;
       ctx.beginPath();
-      ctx.moveTo(R * 1.35, -R * 0.5 + step);
-      ctx.lineTo(R * 1.15, -R * 0.65 + step);
-      ctx.lineTo(R * 1.55, -R * 0.5 + step);
-      ctx.lineTo(R * 1.15, -R * 0.35 + step);
+      ctx.moveTo(spearReach, -R * 0.5 + step);
+      ctx.lineTo(spearReach - R * 0.2, -R * 0.65 + step);
+      ctx.lineTo(spearReach + R * 0.2, -R * 0.5 + step);
+      ctx.lineTo(spearReach - R * 0.2, -R * 0.35 + step);
       ctx.closePath();
       ctx.fill();
 
@@ -164,13 +183,22 @@ export function drawMiniBossShape(e) {
       ctx.fillStyle = goldTrim;
       ctx.fillRect(shX + shW * 0.4, shY + shH * 0.2, 4, shH * 0.6);
       ctx.fillRect(shX + shW * 0.15, shY + shH * 0.45, shW * 0.7, 4);
+
+      // Barreira de Bloqueio Frontal Ativa
+      if (e.shieldBlockFlash > 0 || (e.actionState === 'WINDUP' && e.currentSkill === 'SHIELD_CHARGE')) {
+        ctx.strokeStyle = 'rgba(241, 196, 15, 0.85)';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.arc(shX + shW * 0.5, shY + shH * 0.5, shH * 0.65, -Math.PI * 0.45, Math.PI * 0.45);
+        ctx.stroke();
+      }
       break;
     }
 
     case 'SEISMIC_SMASHER': {
       const step = Math.sin(frameCount * 0.1) * 2;
-      const isChargingSlam = (e.slamTimer && e.slamTimer > 80);
-      const vibrate = isChargingSlam ? (Math.random() - 0.5) * 4 : 0;
+      const isChargingSlam = (e.actionState === 'WINDUP' || (e.slamTimer && e.slamTimer > 80));
+      const vibrate = isChargingSlam ? (Math.random() - 0.5) * 5 : 0;
       const mechCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#4b6584');
 
       ctx.fillStyle = mechCol;
@@ -190,7 +218,7 @@ export function drawMiniBossShape(e) {
       ctx.fillStyle = isChargingSlam ? '#f1c40f' : '#e67e22';
       ctx.fillRect(-R * 0.2, -R * 0.7 + step, R * 0.4, 3.5);
 
-      const hammerLift = isChargingSlam ? -R * 0.6 : R * 0.1;
+      const hammerLift = isChargingSlam ? -R * 0.75 : R * 0.1;
       const h1X = R * 0.85 + vibrate;
       const h1Y = hammerLift + step + vibrate;
       const h2X = -R * 0.85 + vibrate;
@@ -270,13 +298,25 @@ export function drawMiniBossShape(e) {
       ctx.moveTo(R * 0.1, -R * 0.1 + step);
       ctx.lineTo(R * 0.1, R * 0.3 + step);
       ctx.stroke();
+
+      // Rocha colossal suspensa durante o arremesso da catapulta
+      if (e.actionState === 'WINDUP' && e.currentSkill === 'BOULDER_TOSS') {
+        ctx.fillStyle = '#7f8c8d';
+        ctx.beginPath();
+        ctx.arc(0, -R * 1.45 + step, R * 0.65, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#d35400';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+      }
       break;
     }
 
     case 'BLOOD_GARGOYLE': {
-      const wingFlap = Math.sin(frameCount * 0.28) * 16;
-      const bodyCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#4b6584');
-      const wingMembrane = isHit ? '#ffffff' : '#8b0000';
+      const isStone = !!e.isStoneForm;
+      const wingFlap = isStone ? 0 : Math.sin(frameCount * (e.isAirborne ? 0.45 : 0.28)) * (e.isAirborne ? 22 : 16);
+      const bodyCol = isHit ? '#ffffff' : (isStone ? '#7f8c8d' : (e.slowTimer > 0 ? '#74b9ff' : '#4b6584'));
+      const wingMembrane = isHit ? '#ffffff' : (isStone ? '#535c68' : '#8b0000');
 
       ctx.fillStyle = wingMembrane;
       ctx.strokeStyle = '#2d3436';
@@ -325,15 +365,20 @@ export function drawMiniBossShape(e) {
       ctx.lineTo(R * 0.45, -R * 1.25);
       ctx.stroke();
 
-      ctx.fillStyle = '#ff1744';
+      ctx.fillStyle = isStone ? '#bdc3c7' : '#ff1744';
       ctx.fillRect(-R * 0.18, -R * 0.72, 3.5, 3.5);
       ctx.fillRect(R * 0.05, -R * 0.72, 3.5, 3.5);
       break;
     }
 
     case 'SPECTRAL_STALKER': {
-      const isAiming = e.dashState === 'aim';
-      const isDashing = e.dashState === 'dashing';
+      const isStealth = !!e.isStealthed;
+      if (isStealth) {
+        ctx.save();
+        ctx.globalAlpha = 0.25;
+      }
+      const isAiming = (e.actionState === 'WINDUP' || e.dashState === 'aim');
+      const isDashing = (e.actionState === 'STRIKE' || e.dashState === 'dashing');
       const wave = Math.sin(frameCount * 0.2) * 5;
       const shadowCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#341f97');
       const daggerCol = isHit ? '#ffffff' : (isAiming ? '#e74c3c' : '#00cec9');
@@ -397,6 +442,9 @@ export function drawMiniBossShape(e) {
           ctx.restore();
         }
       }
+      if (isStealth) {
+        ctx.restore();
+      }
       break;
     }
 
@@ -405,8 +453,8 @@ export function drawMiniBossShape(e) {
       const bladeCol = isHit ? '#ffffff' : '#e056fd';
 
       ctx.save();
-      ctx.globalAlpha = 0.25;
-      ctx.fillStyle = slicerCol;
+      ctx.globalAlpha = (e.blinkCount && e.blinkCount > 0) ? 0.45 : 0.25;
+      ctx.fillStyle = (e.blinkCount && e.blinkCount > 0) ? '#e056fd' : slicerCol;
       const ghostOffset = Math.sin(frameCount * 0.2) * 8;
       ctx.beginPath();
       ctx.ellipse(-ghostOffset, 0, R * 0.6, R * 0.45, 0, 0, Math.PI * 2);
@@ -443,7 +491,7 @@ export function drawMiniBossShape(e) {
     }
 
     case 'ARTILLERY_MECH': {
-      const isShootingRecoil = (e.shootTimer && e.shootTimer > 95) ? -6 : 0;
+      const isShootingRecoil = (e.actionState === 'STRIKE' || (e.shootTimer && e.shootTimer > 95)) ? -6 : 0;
       const mechDark = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#1e3799');
 
       ctx.strokeStyle = '#7f8c8d';
@@ -454,7 +502,7 @@ export function drawMiniBossShape(e) {
         ctx.moveTo(0, 0);
         ctx.lineTo(legP[lp][0], legP[lp][1]);
         ctx.stroke();
-        ctx.fillStyle = '#2d3436';
+        ctx.fillStyle = e.isSiegeMode ? '#e74c3c' : '#2d3436';
         ctx.fillRect(legP[lp][0] - 4, legP[lp][1] - 4, 8, 8);
       }
 
@@ -470,12 +518,22 @@ export function drawMiniBossShape(e) {
       ctx.fillRect(R * 0.2 + isShootingRecoil, -R * 0.25, R * 1.1, 5);
       ctx.fillRect(R * 0.2 + isShootingRecoil, R * 0.1, R * 1.1, 5);
 
-      ctx.strokeStyle = 'rgba(255, 56, 56, 0.65)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(R * 1.3 + isShootingRecoil, -R * 0.25);
-      ctx.lineTo(R * 3.2, -R * 0.25);
-      ctx.stroke();
+      // Linha laser de mira travada (Modo Cerco)
+      if (e.isSiegeMode || (e.actionState === 'WINDUP' && e.currentSkill === 'SIEGE_BURST')) {
+        ctx.strokeStyle = 'rgba(255, 23, 68, 0.85)';
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.moveTo(R * 1.3 + isShootingRecoil, -R * 0.1);
+        ctx.lineTo(R * 7.5, -R * 0.1);
+        ctx.stroke();
+      } else {
+        ctx.strokeStyle = 'rgba(255, 56, 56, 0.65)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(R * 1.3 + isShootingRecoil, -R * 0.25);
+        ctx.lineTo(R * 3.2, -R * 0.25);
+        ctx.stroke();
+      }
 
       ctx.fillStyle = '#00d2d3';
       ctx.beginPath();
@@ -519,6 +577,20 @@ export function drawMiniBossShape(e) {
       ctx.fillStyle = fireShift > 0 ? '#f1c40f' : '#e74c3c';
       ctx.fillRect(R * 0.22, -R * 0.25, R * 0.32, R * 0.5);
 
+      // Labareda saindo da caldeira aberta durante o lança-chamas
+      if (e.isFlamethrowing) {
+        const fPulse = Math.sin(frameCount * 0.4) * 4;
+        ctx.fillStyle = '#f39c12';
+        ctx.beginPath();
+        ctx.moveTo(R * 0.6, -R * 0.2);
+        ctx.lineTo(R * 1.8 + fPulse, -R * 0.6);
+        ctx.lineTo(R * 2.2 + fPulse, 0);
+        ctx.lineTo(R * 1.8 + fPulse, R * 0.6);
+        ctx.lineTo(R * 0.6, R * 0.2);
+        ctx.closePath();
+        ctx.fill();
+      }
+
       ctx.strokeStyle = '#2d3436';
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -531,7 +603,7 @@ export function drawMiniBossShape(e) {
     }
 
     case 'SIEGE_CAPTAIN': {
-      const isMortarRecoil = (e.mortarTimer && e.mortarTimer > 120) ? -5 : 0;
+      const isMortarRecoil = (e.actionState === 'STRIKE' || (e.mortarTimer && e.mortarTimer > 120)) ? -6 : 0;
       const hullCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#b71540');
 
       ctx.fillStyle = '#2d3436';
@@ -604,7 +676,7 @@ export function drawMiniBossShape(e) {
       ctx.stroke();
 
       const eggPulse = Math.sin(frameCount * 0.12) * 1.5;
-      ctx.fillStyle = '#2ecc71';
+      ctx.fillStyle = (e.actionState === 'WINDUP' && e.currentSkill === 'BROOD_EGGS') ? '#00cec9' : '#2ecc71';
       const eggPos = [[-R * 0.95, -R * 0.2], [-R * 0.75, R * 0.2], [-R * 0.55, -R * 0.15], [-R * 0.85, R * 0.15]];
       for (let eg = 0; eg < 4; eg++) {
         ctx.beginPath();
@@ -700,7 +772,7 @@ export function drawMiniBossShape(e) {
       ctx.fillRect(-R * 0.18, -R * 0.6 + hover, 4, 4);
       ctx.fillRect(R * 0.06, -R * 0.6 + hover, 4, 4);
 
-      const isRitual = (e.ritualTimer && e.ritualTimer > 100);
+      const isRitual = (e.actionState === 'WINDUP' || (e.ritualTimer && e.ritualTimer > 100));
       const stX = R * 0.85;
       ctx.strokeStyle = '#95a5a6';
       ctx.lineWidth = 2.5;
@@ -750,8 +822,9 @@ export function drawMiniBossShape(e) {
       ctx.closePath();
       ctx.fill();
 
+      const rSpeed = (e.actionState === 'WINDUP' ? 0.08 : 0.035);
       for (let r = 0; r < 3; r++) {
-        const rAng = frameCount * 0.035 + (r * Math.PI * 2 / 3);
+        const rAng = frameCount * rSpeed + (r * Math.PI * 2 / 3);
         const rx = Math.cos(rAng) * (R * 1.35);
         const ry = Math.sin(rAng) * (R * 0.8);
 
@@ -786,22 +859,23 @@ export function drawMiniBossShape(e) {
       ctx.lineWidth = 3;
       ctx.stroke();
 
+      const spinMult = (e.actionState === 'WINDUP' ? 2.2 : 1.0);
       ctx.strokeStyle = isHit ? '#ffffff' : 'rgba(142, 68, 173, 0.65)';
       ctx.lineWidth = 3.5;
       ctx.beginPath();
-      ctx.ellipse(0, 0, R * 1.35, R * 0.55, frameCount * 0.04, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, R * 1.35, R * 0.55, frameCount * 0.04 * spinMult, 0, Math.PI * 2);
       ctx.stroke();
 
       ctx.strokeStyle = isHit ? '#ffffff' : 'rgba(232, 67, 147, 0.55)';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.ellipse(0, 0, R * 1.2, R * 0.5, -frameCount * 0.035, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, R * 1.2, R * 0.5, -frameCount * 0.035 * spinMult, 0, Math.PI * 2);
       ctx.stroke();
 
       ctx.strokeStyle = isHit ? '#ffffff' : 'rgba(0, 206, 201, 0.6)';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.ellipse(0, 0, R * 1.05, R * 0.42, frameCount * 0.06, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, R * 1.05, R * 0.42, frameCount * 0.06 * spinMult, 0, Math.PI * 2);
       ctx.stroke();
 
       ctx.fillStyle = '#a29bfe';
@@ -814,10 +888,10 @@ export function drawMiniBossShape(e) {
 
     case 'CHAOS_HERALD': {
       const chaosWave = Math.sin(frameCount * 0.16) * 5;
-      const demonCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : '#961b1b');
+      const demonCol = isHit ? '#ffffff' : (e.slowTimer > 0 ? '#74b9ff' : (e.enraged ? '#d63031' : '#961b1b'));
 
       ctx.strokeStyle = demonCol;
-      ctx.lineWidth = 3.5;
+      ctx.lineWidth = e.enraged ? 4.5 : 3.5;
       for (let t = 0; t < 4; t++) {
         const tWave = Math.sin(frameCount * 0.18 + t * 1.5) * 8;
         const tx = (t - 1.5) * (R * 0.4);
@@ -835,7 +909,7 @@ export function drawMiniBossShape(e) {
       ctx.lineWidth = 2.5;
       ctx.stroke();
 
-      ctx.strokeStyle = '#1e080d';
+      ctx.strokeStyle = e.enraged ? '#ff4757' : '#1e080d';
       ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.moveTo(-R * 0.4, -R * 0.4);
@@ -848,8 +922,8 @@ export function drawMiniBossShape(e) {
       ctx.quadraticCurveTo(R * 0.6, -R * 1.4, R * 0.75, -R * 1.6);
       ctx.stroke();
 
-      const eyeR = R * 0.32 + Math.sin(frameCount * 0.12) * 2;
-      ctx.fillStyle = '#ff4757';
+      const eyeR = R * 0.32 + Math.sin(frameCount * 0.12) * (e.enraged ? 4 : 2);
+      ctx.fillStyle = e.enraged ? '#ff1744' : '#ff4757';
       ctx.beginPath();
       ctx.arc(0, -R * 0.05, eyeR, 0, Math.PI * 2);
       ctx.fill();

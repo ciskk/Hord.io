@@ -14,10 +14,10 @@ import {
   setPreviewPose, 
   triggerHeroSurge 
 } from '../render/characterPreview.js';
-import { BOSS_TYPES } from '../config/enemies.js';
+import { BOSS_TYPES, MINI_BOSS_TYPES } from '../config/enemies.js';
 import { getRandomUpgrades, checkSynergies, grant50Upgrades } from '../config/upgrades.js';
 import { checkIsSynergyIngredient, getSynergyTrackerList } from '../config/items.js';
-import { triggerBossEncounter } from '../entities/enemies.js';
+import { triggerBossEncounter, spawnMiniBoss } from '../entities/enemies.js';
 import { 
   playSfx, 
   triggerHaptic, 
@@ -140,10 +140,39 @@ export function launchBossTest(bossId, grantLevels = false) {
   triggerBossEncounter(bossId);
 }
 
+export function launchMiniBossTest(miniBossType, grantLevels = false) {
+  closeBossSelectModal();
+
+  const charModal = document.getElementById('char-modal');
+  const isCharOpen = charModal && charModal.style.display === 'flex';
+
+  if (isCharOpen) {
+    if (charModal) charModal.style.display = 'none';
+    resetGame();
+  } else {
+    const pauseModal = document.getElementById('pause-modal');
+    if (pauseModal) pauseModal.style.display = 'none';
+    gameState.isPaused = false;
+    setLastTime(performance.now());
+  }
+
+  if (grantLevels) {
+    grant50Upgrades();
+  }
+
+  spawnMiniBoss(miniBossType);
+}
+
 export function renderBossSelectModal() {
   const container = document.getElementById('boss-select-list');
   if (!container) return;
   container.innerHTML = '';
+
+  // 1. Chefes Principais de Fase
+  const bossHeader = document.createElement('div');
+  bossHeader.style.cssText = "font-family:'Cinzel',serif; color:#e056fd; font-size:11px; font-weight:bold; margin-bottom:4px; letter-spacing:1px;";
+  bossHeader.innerText = "CHEFES SUPREMOS DE FASE (1 A 4):";
+  container.appendChild(bossHeader);
 
   Object.keys(BOSS_TYPES).forEach(id => {
     const boss = BOSS_TYPES[id];
@@ -185,6 +214,59 @@ export function renderBossSelectModal() {
 
     actions.appendChild(normalBtn);
     actions.appendChild(boostBtn);
+
+    card.appendChild(info);
+    card.appendChild(actions);
+
+    container.appendChild(card);
+  });
+
+  // 2. Minibosses de Elite (16 Arquétipos)
+  const mbHeader = document.createElement('div');
+  mbHeader.style.cssText = "font-family:'Cinzel',serif; color:#f1c40f; font-size:11px; font-weight:bold; margin:10px 0 4px 0; padding-top:6px; border-top:1px solid rgba(241,196,15,0.25); letter-spacing:1px;";
+  mbHeader.innerText = "MINIBOSSES DE ELITE (16 ARQUÉTIPOS):";
+  container.appendChild(mbHeader);
+
+  Object.keys(MINI_BOSS_TYPES).forEach(key => {
+    const mb = MINI_BOSS_TYPES[key];
+    const card = document.createElement('div');
+    card.className = 'boss-dev-card';
+    card.style.borderLeftColor = mb.color || '#f1c40f';
+
+    const info = document.createElement('div');
+    info.className = 'boss-dev-info';
+    info.innerHTML = `
+      <div class="boss-dev-name" style="color:#f1c40f;">${mb.name}</div>
+      <div class="boss-dev-meta">
+        ${key} • HP: ${mb.hp.toLocaleString('pt-BR')} • Dano: ${mb.damage}
+      </div>
+    `;
+
+    const actions = document.createElement('div');
+    actions.className = 'boss-dev-actions';
+
+    const spawnBtn = document.createElement('button');
+    spawnBtn.className = 'boss-dev-btn-normal';
+    spawnBtn.type = 'button';
+    spawnBtn.title = `Invocar ${mb.name} agora`;
+    spawnBtn.innerText = '⚔️ Invocar';
+    spawnBtn.onclick = (e) => {
+      e.stopPropagation();
+      launchMiniBossTest(key, false);
+    };
+
+    const spawnBoostBtn = document.createElement('button');
+    spawnBoostBtn.className = 'boss-dev-btn-boost';
+    spawnBoostBtn.type = 'button';
+    spawnBoostBtn.title = `Invocar ${mb.name} com +50 Níveis`;
+    spawnBoostBtn.innerText = '⚡ +50';
+    spawnBoostBtn.onclick = (e) => {
+      e.stopPropagation();
+      launchMiniBossTest(key, true);
+    };
+
+    actions.appendChild(spawnBtn);
+    actions.appendChild(spawnBoostBtn);
 
     card.appendChild(info);
     card.appendChild(actions);

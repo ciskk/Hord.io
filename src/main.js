@@ -65,6 +65,7 @@ import { render } from './render/renderer.js';
 import { transitionToArenaTheme, getWaveArenaTheme, resetEnvironment, ARENA_PALETTES } from './render/environment.js';
 import { playSfx, triggerHaptic, resetDeathAudioFilter } from './core/audio.js';
 import { updateBoss } from './entities/bosses/bossRegistry.js';
+import { updateMiniBoss } from './entities/minibossController.js';
 
 // Reexportações diretas das variáveis de combate e projéteis
 export { 
@@ -1277,37 +1278,86 @@ function update(dt) {
           createHitParticles,
           addDamageText
         });
+      } else if (e.isMiniBoss) {
+        updateMiniBoss(e, dt, {
+          player,
+          frameCount,
+          enemies,
+          enemyBullets,
+          bossTelegraphs,
+          bossProjectiles,
+          bossShockwaves,
+          voidVortices,
+          acidPuddles,
+          triggerShake,
+          triggerHaptic,
+          createHitParticles,
+          addDamageText
+        });
       } else if (e.behavior === 'swarm') {
-        e.x += Math.cos(angle + Math.sin(frameCount * 0.1) * 0.4) * curSpeed * dt;
-        e.y += Math.sin(angle + Math.sin(frameCount * 0.1) * 0.4) * curSpeed * dt;
+        const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
+        const isDive = distToPlayerSq < 135 * 135;
+        const diveBonus = isDive ? 1.35 : 1.0;
+        e.x += Math.cos(angle + Math.sin(frameCount * 0.12) * 0.35) * curSpeed * diveBonus * dt;
+        e.y += Math.sin(angle + Math.sin(frameCount * 0.12) * 0.35) * curSpeed * diveBonus * dt;
       } else if (e.behavior === 'shooter') {
         const isPlayerVisible = player.invisTimer <= 0;
+        if (e.thrusterCooldown > 0) e.thrusterCooldown -= dt;
         
         if (isPlayerVisible) {
           const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
-          if (distToPlayerSq < 170 * 170) {
+          
+          // Propulsão de Emergência (Aero-Dash) se o jogador invadir o perímetro próximo (< 65px)
+          if (distToPlayerSq < 65 * 65 && (!e.thrusterCooldown || e.thrusterCooldown <= 0)) {
+            e.thrusterCooldown = 160;
+            e.x -= Math.cos(angle) * 70;
+            e.y -= Math.sin(angle) * 70;
+            playSfx('warp');
+            createHitParticles(e.x, e.y, '#00cec9', 10);
+            addDamageText(e.x, e.y, "RECUO A JATO!", false, '#00cec9');
+          } else if (distToPlayerSq < 170 * 170) {
             e.x -= Math.cos(angle) * curSpeed * dt;
             e.y -= Math.sin(angle) * curSpeed * dt;
           } else if (distToPlayerSq > 240 * 240) {
             e.x += Math.cos(angle) * curSpeed * dt;
             e.y += Math.sin(angle) * curSpeed * dt;
           }
-          e.shootTimer += dt;
-          if (e.shootTimer >= 154) {
-            if (canSpawnEnemyBullet()) {
-              e.shootTimer = 0;
-              enemyBullets.push({
-                x: e.x, y: e.y,
-                vx: Math.cos(angle) * 5.0, 
-                vy: Math.sin(angle) * 5.0,
-                radius: 6, 
-                damage: 13, 
-                life: 95,
-                bulletType: 'TECH'
-              });
-              createHitParticles(e.x + Math.cos(angle) * 16, e.y + Math.sin(angle) * 16, '#00cec9', 4);
-            } else {
-              e.shootTimer = 154 - 30;
+
+          // Rajada Tática Tripla (3-Round Burst)
+          if (e.burstRemaining > 0) {
+            e.burstTimer = (e.burstTimer || 0) + dt;
+            if (e.burstTimer >= 6) {
+              e.burstTimer = 0;
+              e.burstRemaining--;
+              if (canSpawnEnemyBullet()) {
+                const spreadAngle = angle + (e.burstRemaining - 1) * 0.12;
+                enemyBullets.push({
+                  x: e.x + Math.cos(spreadAngle) * 14,
+                  y: e.y + Math.sin(spreadAngle) * 14,
+                  vx: Math.cos(spreadAngle) * 5.2,
+                  vy: Math.sin(spreadAngle) * 5.2,
+                  radius: 5.5,
+                  damage: 12,
+                  life: 95,
+                  bulletType: 'TECH'
+                });
+                playSfx('shoot');
+                createHitParticles(e.x + Math.cos(spreadAngle) * 16, e.y + Math.sin(spreadAngle) * 16, '#00cec9', 3);
+                // Recuo mecânico
+                e.x -= Math.cos(spreadAngle) * 2.5;
+                e.y -= Math.sin(spreadAngle) * 2.5;
+              }
+            }
+          } else {
+            e.shootTimer += dt;
+            if (e.shootTimer >= 148) {
+              if (canSpawnEnemyBullet()) {
+                e.shootTimer = 0;
+                e.burstRemaining = 3;
+                e.burstTimer = 6;
+              } else {
+                e.shootTimer = 148 - 25;
+              }
             }
           }
         } else {
@@ -1319,10 +1369,21 @@ function update(dt) {
         if (e.dashState === 'chase') {
           e.x += Math.cos(angle) * curSpeed * dt;
           e.y += Math.sin(angle) * curSpeed * dt;
-          if (e.dashTimer > 110) {
+          if (e.dashTimer > 105) {
             e.dashState = 'aim';
             e.dashTimer = 0;
-            e.dashAngle = angle;
+            // Emboscada de Flanco para Stalker (Assassino Espectral)
+            if (e.baseType === 'STALKER' && Math.random() < 0.75) {
+              createHitParticles(e.x, e.y, '#6c5ce7', 6);
+              const flankOffset = (Math.random() < 0.5 ? 1 : -1) * (Math.PI * 0.4);
+              const flankAng = angle + flankOffset;
+              e.x = player.x - Math.cos(flankAng) * 90;
+              e.y = player.y - Math.sin(flankAng) * 90;
+              createHitParticles(e.x, e.y, '#a29bfe', 8);
+              e.dashAngle = Math.atan2(player.y - e.y, player.x - e.x);
+            } else {
+              e.dashAngle = angle;
+            }
           }
         } else if (e.dashState === 'aim') {
           if (e.dashTimer > 20) {
@@ -1330,7 +1391,7 @@ function update(dt) {
             e.dashTimer = 0;
           }
         } else if (e.dashState === 'dashing') {
-          curSpeed = e.speed * 4.0;
+          curSpeed = e.speed * 4.2;
           e.x += Math.cos(e.dashAngle) * curSpeed * dt;
           e.y += Math.sin(e.dashAngle) * curSpeed * dt;
           createHitParticles(e.x, e.y, '#9b59b6', 1);
@@ -1669,6 +1730,27 @@ function update(dt) {
           e.x += Math.cos(angle) * curSpeed * 0.5 * dt;
           e.y += Math.sin(angle) * curSpeed * 0.5 * dt;
         }
+
+        // Orbe Entrópico Noturno a cada ~3s quando em alcance
+        e.shadowBoltTimer = (e.shadowBoltTimer || 0) + dt;
+        if (e.shadowBoltTimer >= 170 && canSpawnEnemyBullet() && !gameState.isWavePaused) {
+          e.shadowBoltTimer = 0;
+          playSfx('shoot');
+          enemyBullets.push({
+            x: e.x,
+            y: e.y - 10,
+            vx: Math.cos(angle) * 2.9,
+            vy: Math.sin(angle) * 2.9,
+            radius: 6.5,
+            damage: 14,
+            life: 160,
+            bulletType: 'SHADOW_ORB',
+            color: '#9b59b6'
+          });
+          createHitParticles(e.x, e.y - 10, '#9b59b6', 6);
+          addDamageText(e.x, e.y, "ORBE SOMBRIO!", false, '#a29bfe');
+        }
+
         e.summonTimer = (e.summonTimer || 0) + dt;
         if (e.summonTimer > 230 && !gameState.isWavePaused) {
           e.summonTimer = 0;
@@ -1749,6 +1831,16 @@ function update(dt) {
           }
         }
       } else {
+        // Pounce rápido da Célula Parasita (SPLITTER_MINI)
+        if (e.baseType === 'SPLITTER_MINI') {
+          if (e.pounceCooldown > 0) e.pounceCooldown -= dt;
+          const distToPlayerSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
+          if (distToPlayerSq < 85 * 85 && distToPlayerSq > 15 * 15 && (!e.pounceCooldown || e.pounceCooldown <= 0)) {
+            e.pounceCooldown = 90;
+            curSpeed = e.speed * 2.6;
+            createHitParticles(e.x, e.y, '#48dbfb', 3);
+          }
+        }
         e.x += Math.cos(angle) * curSpeed * dt;
         e.y += Math.sin(angle) * curSpeed * dt;
       }
@@ -1772,6 +1864,21 @@ function update(dt) {
 
       if (e.eliteMod === 'TOXIC') {
         acidPuddles.push({ x: e.x, y: e.y, radius: 32, life: 340, maxLife: 340, isFire: false });
+      } else if (e.eliteMod === 'FROST') {
+        triggerShake(4);
+        playSfx('freeze');
+        createHitParticles(e.x, e.y, '#74b9ff', 14);
+        bossShockwaves.push({
+          x: e.x,
+          y: e.y,
+          radius: 8,
+          maxRadius: 75,
+          speed: 4.0,
+          damage: 0,
+          knockback: 5.0,
+          color: '#74b9ff',
+          hitPlayer: false
+        });
       }
 
       if (e.behavior === 'kamikaze') {
@@ -1779,9 +1886,9 @@ function update(dt) {
           playSfx('hit');
           triggerShake(9);
           triggerHaptic('heavy');
-          createHitParticles(e.x, e.y, '#e67e22', 14);
+          createHitParticles(e.x, e.y, '#e67e22', 16);
           const pDistSq = (player.x - e.x) ** 2 + (player.y - e.y) ** 2;
-          if (pDistSq <= 50 * 50 && player.iFrames <= 0) {
+          if (pDistSq <= 55 * 55 && player.iFrames <= 0) {
             player.hp -= e.damage;
             player.iFrames = 20;
             lastAttackerName = "Explosão Necrótica";
@@ -1792,6 +1899,23 @@ function update(dt) {
               return;
             }
           }
+          // Dispersão de Estilhaços e Brasas Incandescentes
+          const shrapnelCount = 4;
+          for (let sIdx = 0; sIdx < shrapnelCount; sIdx++) {
+            if (!canSpawnEnemyBullet()) break;
+            const sAng = (sIdx * Math.PI * 0.5) + Math.random() * 0.3;
+            enemyBullets.push({
+              x: e.x,
+              y: e.y,
+              vx: Math.cos(sAng) * 3.4,
+              vy: Math.sin(sAng) * 3.4,
+              radius: 4.5,
+              damage: Math.round(e.damage * 0.35),
+              life: 65,
+              bulletType: 'FIRE_SHRAPNEL'
+            });
+          }
+          acidPuddles.push({ x: e.x, y: e.y, radius: 24, life: 160, maxLife: 160, isFire: true });
         } else {
           playSfx('hit');
           triggerShake(10);
@@ -1886,6 +2010,27 @@ function update(dt) {
       }
 
       if (e.behavior === 'splitter') {
+        // Poça Cáustica Residual e Espículas Ácidas
+        acidPuddles.push({ x: e.x, y: e.y, radius: 36, life: 180, maxLife: 180, isCaustic: true, isFire: false });
+        playSfx('acid');
+        createHitParticles(e.x, e.y, '#00d2d3', 10);
+
+        for (let aIdx = 0; aIdx < 4; aIdx++) {
+          if (!canSpawnEnemyBullet()) break;
+          const aAng = (aIdx * Math.PI * 0.5) + Math.PI * 0.25;
+          enemyBullets.push({
+            x: e.x,
+            y: e.y,
+            vx: Math.cos(aAng) * 3.5,
+            vy: Math.sin(aAng) * 3.5,
+            radius: 5,
+            damage: Math.round(e.damage * 0.45),
+            life: 60,
+            bulletType: 'ACID_SPIT',
+            color: '#00d2d3'
+          });
+        }
+
         for (let k = 0; k < 2; k++) {
           const subT = ENEMY_TYPES.SPLITTER_MINI;
           enemies.push({
@@ -1990,8 +2135,13 @@ function update(dt) {
           pulseOffset: 0
         });
 
-        if (e.behavior === 'splitter_queen') {
+        if (e.behavior === 'splitter_queen' || e.baseType === 'BROOD_MATRIARCH') {
           for (let k = 0; k < 3; k++) spawnMobCluster('SPLITTER', 1);
+          acidPuddles.push({ x: e.x, y: e.y, radius: 32, life: 240, maxLife: 240, isFire: false });
+        } else if (e.baseType === 'MOBILE_HIVE') {
+          spawnMobCluster('BAT', 3);
+        } else if (e.baseType === 'FIRE_INCINERATOR') {
+          acidPuddles.push({ x: e.x, y: e.y, radius: 30, life: 200, maxLife: 200, isFire: true });
         }
 
         if (Math.random() < 0.40) {
