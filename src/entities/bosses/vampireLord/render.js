@@ -3,6 +3,7 @@
  * Renderização procedural vetorial completa e cinemática do Lorde Vampírico (Boss 1).
  */
 import { dpr, viewW, viewH } from '../../../main.js';
+import { getHudBottom } from '../../../core/responsive.js';
 
 // ============================================================================
 // 1. INTRODUÇÃO CINEMATOGRÁFICA DE 5 SEGUNDOS (300 FRAMES) EM 4 ATOS
@@ -257,11 +258,16 @@ function drawCinematicScreenTitle(ctx, e, frameCount) {
   const screenW = viewW || (typeof window !== 'undefined' ? window.innerWidth : 1280);
   const screenH = viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
   const isVertical = screenH > screenW || screenW < 640;
+  const isCompactH = screenH < 520;
+  const hudBottom = getHudBottom();
 
-  const bannerW = isVertical ? Math.min(380, screenW * 0.94) : Math.min(840, screenW * 0.90);
-  const bannerH = isVertical ? 60 : 96;
+  const bannerW = isVertical 
+    ? Math.min(380, screenW * 0.94) 
+    : (isCompactH ? Math.min(640, screenW * 0.88) : Math.min(840, screenW * 0.90));
+  const bannerH = isVertical ? 60 : (isCompactH ? 56 : 96);
   const bx = (screenW - bannerW) / 2;
-  const by = Math.round((screenH / 2) - bannerH - (isVertical ? 45 : 75));
+  const calculatedY = Math.round((screenH / 2) - bannerH - (isVertical ? 45 : (isCompactH ? 20 : 75)));
+  const by = Math.max(hudBottom + 8, calculatedY);
 
   // 1. Fundo de Veludo Carmesim e Obsidiana
   const bgGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);

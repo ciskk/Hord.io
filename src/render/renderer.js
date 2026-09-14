@@ -9,6 +9,7 @@ import { stick } from '../core/input.js';
 import { renderEnvironment } from './environment.js';
 import { drawEnemyShape, drawDyingEnemyShape } from './enemiesRenderer.js';
 import { drawPlayerCharacter, drawPlayerEquipment } from './playerRenderer.js';
+import { getHudBottom, layoutMetrics } from '../core/responsive.js';
 import {
   ctx,
   dpr,
@@ -1758,11 +1759,15 @@ export function render() {
       alpha = Math.max(0, (1 - progress) / 0.18);
     }
 
-    const bannerW = Math.min(540, viewW * 0.88);
-    const bannerH = 50;
+    const isCompactH = layoutMetrics.isCompactHeight || viewH < 520;
+    const hudBottom = getHudBottom();
+    const bannerW = Math.min(560, Math.floor(viewW * 0.92));
+    const bannerH = isCompactH ? 42 : 52;
     const bx = (viewW - bannerW) / 2;
-    // Reposicionamento: colocado em 148px+ para nunca sobrepor o HUD ou a pílula de onda permanente
-    const by = Math.max(148, Math.floor((viewH || 800) * 0.16));
+    
+    // Ancoragem dinâmica: SEMPRE abaixo da base do HUD com margem de segurança garantida
+    const safeTop = hudBottom + (isCompactH ? 8 : 14);
+    const by = Math.max(safeTop, Math.floor(viewH * (isCompactH ? 0.12 : 0.15)));
 
     ctx.save();
     ctx.globalAlpha = alpha;
@@ -1792,23 +1797,38 @@ export function render() {
     ctx.lineTo(bx + bannerW, by + bannerH);
     ctx.stroke();
 
-    // Texto Centralizado
+    // Texto Centralizado com Auto-Scaling
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    // Rótulo Principal da Horda
-    ctx.font = 'bold 19px "Cinzel", "Cinzel Decorative", Georgia, serif';
+    // Rótulo Principal da Horda com redução dinâmica de fonte
+    let fontSize = isCompactH ? 14 : 18;
+    const waveTitle = (waveAnnouncement.name || '').toUpperCase();
+    const titleText = `⚜ ${waveTitle} ⚜`;
+    
+    ctx.font = `bold ${fontSize}px "Cinzel", "Cinzel Decorative", Georgia, serif`;
+    let textWidth = ctx.measureText(titleText).width;
+    const maxTextWidth = bannerW - 32;
+
+    while (textWidth > maxTextWidth && fontSize > 11) {
+      fontSize -= 1;
+      ctx.font = `bold ${fontSize}px "Cinzel", "Cinzel Decorative", Georgia, serif`;
+      textWidth = ctx.measureText(titleText).width;
+    }
+
     ctx.fillStyle = '#f1c40f';
     ctx.shadowColor = 'rgba(241, 196, 15, 0.65)';
-    ctx.shadowBlur = 12;
-    const waveTitle = (waveAnnouncement.name || '').toUpperCase();
-    ctx.fillText(`⚜ ${waveTitle} ⚜`, viewW / 2, by + 20);
+    ctx.shadowBlur = 10;
+    const titleY = by + (isCompactH ? 15 : 20);
+    ctx.fillText(titleText, viewW / 2, titleY);
 
     // Subtítulo descritivo
-    ctx.font = 'italic 11px sans-serif';
-    ctx.fillStyle = '#dfe4ea';
-    ctx.shadowBlur = 0;
-    ctx.fillText("Sobreviva à maré crescente de horrores", viewW / 2, by + 38);
+    if (!isCompactH || viewH > 370) {
+      ctx.font = 'italic 10.5px sans-serif';
+      ctx.fillStyle = '#dfe4ea';
+      ctx.shadowBlur = 0;
+      ctx.fillText("Sobreviva à maré crescente de horrores", viewW / 2, by + (isCompactH ? 29 : 37));
+    }
 
     ctx.restore();
   }

@@ -41,6 +41,7 @@ import {
   buyMetaUpgrade, 
   resetMetaTree 
 } from '../entities/player.js';
+import { onLayoutChange, layoutMetrics, updateHudBottomMetric } from '../core/responsive.js';
 import { bullets, enemyBullets } from '../systems/projectiles.js';
 import { 
   gameState, 
@@ -1004,10 +1005,13 @@ const CHARACTER_PROFILES = {
 
 let activeShowcaseHeroKey = 'KNIGHT';
 let activeMobileTab = 'skills'; // 'skills' | 'stats'
+let activeRenderAstrolabe = null;
 
 export function isMobileScreen() {
-  return window.innerWidth <= 768 || 
-         ('ontouchstart' in window && window.innerWidth <= 900) || 
+  return layoutMetrics.isCompactWidth || 
+         layoutMetrics.isCompactHeight || 
+         window.innerWidth <= 768 || 
+         ('ontouchstart' in window && window.innerWidth <= 950) || 
          /Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
 }
 
@@ -1695,6 +1699,7 @@ export function openTalentsModal() {
     }
   }
 
+  activeRenderAstrolabe = renderAstrolabe;
   renderAstrolabe();
   modal.style.display = 'flex';
 }
@@ -1755,6 +1760,7 @@ export function initUI() {
 
   bindClick('open-talents-btn', openTalentsModal);
   bindClick('close-talents-btn', () => {
+    activeRenderAstrolabe = null;
     const talentsModal = document.getElementById('talents-modal');
     if (talentsModal) talentsModal.style.display = 'none';
     const blessingsDrawer = document.getElementById('blessings-summary-drawer');
@@ -1880,6 +1886,31 @@ export function initUI() {
           audioCtx.suspend();
         }
       }
+    }
+  });
+
+  // Reorganização dinâmica e automática de modais e elementos visuais ao girar a tela ou redimensionar
+  onLayoutChange((metrics) => {
+    updateHudBottomMetric();
+
+    const charModal = document.getElementById('char-modal');
+    if (charModal && charModal.style.display === 'flex') {
+      charModal.classList.toggle('is-mobile-device', isMobileScreen());
+      resizePreviewCanvas();
+    }
+
+    const talentsModal = document.getElementById('talents-modal');
+    if (talentsModal && talentsModal.style.display === 'flex') {
+      talentsModal.classList.toggle('is-mobile-device', isMobileScreen());
+      if (typeof activeRenderAstrolabe === 'function') {
+        activeRenderAstrolabe();
+      }
+    }
+
+    const pauseModal = document.getElementById('pause-modal');
+    if (pauseModal && pauseModal.style.display === 'flex') {
+      pauseModal.classList.toggle('is-mobile-device', isMobileScreen());
+      renderPauseInventory();
     }
   });
 }

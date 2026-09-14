@@ -7,6 +7,7 @@ import {
   viewW, 
   viewH 
 } from '../../../main.js';
+import { getHudBottom } from '../../../core/responsive.js';
 import { SOVEREIGN_STATES } from './constants.js';
 
 /**
@@ -289,11 +290,16 @@ function drawCinematicScreenTitle(ctx, e, frameCount) {
   const isVertical = screenH > screenW || screenW < 640;
 
   // Em telas verticais (smartphones) e horizontais (desktop):
-  // O banner é centralizado horizontalmente e posicionado flutuando diretamente acima do personagem
-  const bannerW = isVertical ? Math.min(380, screenW * 0.94) : Math.min(880, screenW * 0.90);
-  const bannerH = isVertical ? 58 : 94;
+  // O banner é centralizado horizontalmente e ancorado com evasão garantida do HUD
+  const isCompactH = screenH < 520;
+  const hudBottom = getHudBottom();
+  const bannerW = isVertical 
+    ? Math.min(380, screenW * 0.94) 
+    : (isCompactH ? Math.min(640, screenW * 0.88) : Math.min(880, screenW * 0.90));
+  const bannerH = isVertical ? 58 : (isCompactH ? 56 : 94);
   const bx = (screenW - bannerW) / 2;
-  const by = Math.round((screenH / 2) - bannerH - (isVertical ? 45 : 65));
+  const calculatedY = Math.round((screenH / 2) - bannerH - (isVertical ? 45 : (isCompactH ? 20 : 65)));
+  const by = Math.max(hudBottom + 8, calculatedY);
 
   // 1. Fundo Cósmico Carmesim Profundo com Gradiente Translúcido
   const bgGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);

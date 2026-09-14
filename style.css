@@ -3189,46 +3189,477 @@ html, body {
 /* OTIMIZAÇÃO ESPECIAL PARA SMARTPHONES EM LANDSCAPE CURTO  */
 /* ======================================================== */
 
-@media (max-height: 480px) and (orientation: landscape) {
+/* ======================================================== */
+/* OTIMIZAÇÃO ESTRUTURAL PARA SMARTPHONES EM MODO PAISAGEM  */
+/* (IPHONE 17, ANDROID, TELAS 19.5:9 E ALTURA COMPACTA)     */
+/* ======================================================== */
+
+@media (orientation: landscape) and (max-height: 520px),
+       html.compact-height {
+  /* 0. HUD de combate ultra-slim em paisagem móvel */
+  #hud {
+    top: max(env(safe-area-inset-top, 4px), 4px);
+    left: max(env(safe-area-inset-left, 12px), 16px);
+    right: max(env(safe-area-inset-right, 12px), 16px);
+    gap: 2px;
+    max-width: 100%;
+  }
+
+  .hud-top-bar {
+    display: grid !important;
+    grid-template-columns: auto 1fr auto !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-height: 24px !important;
+  }
+
+  .hud-meta-group.left {
+    gap: 4px !important;
+  }
+
+  .hud-badge {
+    padding: 2px 7px !important;
+    font-size: 9px !important;
+    gap: 3px !important;
+  }
+
+  .hud-badge .hud-icon {
+    font-size: 9.5px !important;
+  }
+
+  .hud-center-chronicle {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    overflow: hidden !important;
+    min-width: 0 !important;
+  }
+
+  .hud-timer {
+    font-size: 13px !important;
+    letter-spacing: 0.8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .hud-wave-pill {
+    padding: 1.5px 8px !important;
+    border-radius: 10px !important;
+    max-width: clamp(160px, 45vw, 360px) !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+  }
+
+  #wave-banner {
+    font-size: 9px !important;
+    letter-spacing: 0.5px !important;
+    max-width: 100% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: inline-block !important;
+  }
+
+  #pause-btn {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 10px !important;
+    border-radius: 5px !important;
+  }
+
+  .hud-vial-block {
+    gap: 1.5px !important;
+  }
+
+  .vial-header {
+    font-size: 8.5px !important;
+    line-height: 1.1 !important;
+  }
+
+  .vial-title {
+    font-size: 8px !important;
+  }
+
+  .vial-readout {
+    font-size: 8.5px !important;
+  }
+
+  .hp-bezel {
+    height: 8px !important;
+    border-radius: 2px !important;
+  }
+
+  .xp-bezel {
+    height: 5px !important;
+    border-radius: 2px !important;
+  }
+
+  #boss-hud {
+    margin-top: 1px !important;
+    gap: 1px !important;
+  }
+
+  .boss-hud-header {
+    font-size: 8.5px !important;
+  }
+
+  .boss-bezel {
+    height: 7px !important;
+  }
+
+  #skill-btn-container {
+    bottom: max(env(safe-area-inset-bottom, 10px), 12px) !important;
+    right: max(env(safe-area-inset-right, 16px), 18px) !important;
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  /* 1. Modais universais em paisagem móvel */
+  .modal-overlay {
+    padding: max(env(safe-area-inset-top, 4px), 4px) 
+             max(env(safe-area-inset-right, 14px), 14px) 
+             max(env(safe-area-inset-bottom, 6px), 6px) 
+             max(env(safe-area-inset-left, 14px), 14px) !important;
+  }
+
   .modal-box {
-    padding: 10px 14px;
-    max-height: 96dvh;
+    padding: 6px 12px !important;
+    max-height: 96dvh !important;
+    border-radius: 12px !important;
   }
+
   .modal-header {
-    padding-bottom: 4px;
-    margin-bottom: 6px;
+    padding-bottom: 3px !important;
+    margin-bottom: 4px !important;
   }
-  #char-list, #talents-list {
-    max-height: 52vh;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 6px;
+
+  .modal-header-title {
+    font-size: 13px !important;
   }
-  .char-card, .talent-card {
-    padding: 8px;
+
+  .modal-header-sub {
+    font-size: 8.5px !important;
   }
-  .char-desc {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+
+  /* 2. Altar dos Condenados (Paisagem) */
+  .modal-box-altar {
+    max-width: min(96vw, 920px) !important;
+    max-height: 96dvh !important;
+    height: 96dvh !important;
+    padding: 6px 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
+
+  .char-altar-layout {
+    display: grid !important;
+    grid-template-columns: 160px 180px 1fr !important;
+    gap: 8px !important;
+    height: calc(96dvh - 46px) !important;
+    overflow: hidden !important;
+    flex-grow: 1 !important;
+    margin-top: 2px !important;
+  }
+
+  .char-pedestals-col {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    gap: 4px !important;
+    padding-right: 3px !important;
+    max-height: none !important;
+  }
+
+  .char-pedestal-btn {
+    padding: 3px 6px !important;
+    min-width: auto !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 6px !important;
+    border-radius: 8px !important;
+  }
+
+  .char-pedestal-emblem {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  .char-pedestal-name {
+    font-size: 9px !important;
+  }
+
+  .char-stage-col {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 4px !important;
+    gap: 2px !important;
+    height: 100% !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+  }
+
+  .char-stage-viewport {
+    height: calc(100% - 24px) !important;
+    min-height: 100px !important;
+    width: 100% !important;
+  }
+
+  #char-preview-canvas {
+    height: 100% !important;
+    width: 100% !important;
+    object-fit: contain !important;
+    min-height: auto !important;
+    max-height: none !important;
+  }
+
+  .stage-nav-arrow {
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 14px !important;
+  }
+
+  .char-stage-controls {
+    display: none !important;
+  }
+
+  .char-vitral-showcase {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+    padding: 4px 8px !important;
+    box-shadow: none !important;
+  }
+
+  .showcase-name-v2 {
+    font-size: 13px !important;
+  }
+
+  .bento-tactical-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 4px !important;
+    margin: 2px 0 4px !important;
+  }
+
+  .bento-card {
+    padding: 3px 6px !important;
+  }
+
+  .bento-card-title {
+    font-size: 9px !important;
+  }
+
+  .bento-card-desc {
+    font-size: 8px !important;
+    line-height: 1.2 !important;
+  }
+
+  .btn-summon-hero {
+    padding: 7px 12px !important;
+    font-size: 11px !important;
+    margin-top: auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 3. Astrolábio das Almas (Paisagem) */
+  .astrolabe-modal {
+    max-width: min(96vw, 920px) !important;
+    max-height: 96dvh !important;
+    height: 96dvh !important;
+    padding: 6px 12px !important;
+    display: grid !important;
+    grid-template-areas:
+      "header header"
+      "tabs drawer"
+      "viewport drawer" !important;
+    grid-template-columns: 1.2fr 0.95fr !important;
+    grid-template-rows: auto auto 1fr !important;
+    gap: 6px !important;
+  }
+
+  .astrolabe-modal .modal-header {
+    grid-area: header !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 2px !important;
+  }
+
+  .astrolabe-constellation-tabs {
+    grid-area: tabs !important;
+    margin: 0 !important;
+    display: flex !important;
+    gap: 4px !important;
+  }
+
+  .constellation-tab {
+    padding: 3px 6px !important;
+    font-size: 9px !important;
+  }
+
+  .astrolabe-viewport {
+    grid-area: viewport !important;
+    height: 100% !important;
+    min-height: 140px !important;
+    margin: 0 !important;
+  }
+
+  .talent-forge-drawer {
+    grid-area: drawer !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    height: 100% !important;
+    padding: 6px 8px !important;
+    margin: 0 !important;
+    background: rgba(14, 18, 30, 0.95) !important;
+  }
+
+  .forge-node-name {
+    font-size: 12px !important;
+  }
+
+  .forge-node-desc {
+    font-size: 8.5px !important;
+    line-height: 1.2 !important;
+  }
+
+  .forge-buy-btn {
+    padding: 7px 10px !important;
+    font-size: 10.5px !important;
+  }
+
+  /* 4. Grimório Tático de Pausa (Paisagem) */
+  .modal-box-large {
+    max-width: min(96vw, 860px) !important;
+    max-height: 96dvh !important;
+    height: 96dvh !important;
+    padding: 6px 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .pause-layout-grid {
+    display: grid !important;
+    grid-template-columns: 1.1fr 0.9fr !important;
+    gap: 10px !important;
+    flex-grow: 1 !important;
+    height: calc(96dvh - 46px) !important;
+    max-height: none !important;
+    overflow: hidden !important;
+  }
+
+  .pause-column {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    gap: 4px !important;
+    padding-right: 4px !important;
+  }
+
+  .pause-actions-group {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+    order: -1 !important;
+    margin-bottom: 4px !important;
+  }
+
+  .btn-resume, .btn-abandon {
+    padding: 7px 8px !important;
+    font-size: 10px !important;
+  }
+
+  .build-inventory-scroll {
+    max-height: 90px !important;
+    padding: 4px !important;
+    gap: 3px !important;
+  }
+
+  .synergies-tracker-list {
+    max-height: 80px !important;
+    padding: 4px !important;
+  }
+
+  .stats-mini-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 3px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .stat-box {
+    padding: 3px 4px !important;
+  }
+
+  .volume-control-card {
+    padding: 4px 6px !important;
+    margin-bottom: 4px !important;
+  }
+
+  /* 5. Cartas de Tarô de Upgrade (Paisagem) */
+  .modal-box-tarot {
+    max-width: min(96vw, 860px) !important;
+    max-height: 96dvh !important;
+    padding: 6px 10px !important;
+  }
+
+  .modal-box-tarot .modal-header {
+    margin-bottom: 2px !important;
+    padding-bottom: 0 !important;
+  }
+
+  .modal-box-tarot .level-up-badge {
+    font-size: 8px !important;
+    padding: 1px 6px !important;
+  }
+
+  .modal-box-tarot .gothic-title {
+    font-size: 13px !important;
+  }
+
+  .modal-box-tarot .modal-header-sub {
+    display: none !important;
+  }
+
   .upgrade-cards-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin: 6px 0;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+    margin: 4px 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
+
   .upgrade-card-pro {
-    padding: 8px;
-    gap: 4px;
+    padding: 6px 8px !important;
+    gap: 2px !important;
   }
-  .card-icon-wrapper {
-    width: 36px;
-    height: 36px;
-    margin-bottom: 2px;
+
+  .upgrade-card-pro .card-icon-wrapper {
+    width: 28px !important;
+    height: 28px !important;
+    margin-bottom: 0 !important;
   }
-  .card-icon-wrapper svg {
-    width: 20px;
-    height: 20px;
+
+  .upgrade-card-pro .card-icon-wrapper svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .upgrade-card-pro .card-title {
+    font-size: 10.5px !important;
+  }
+
+  .upgrade-card-pro .card-stat {
+    font-size: 8.5px !important;
+    line-height: 1.2 !important;
+  }
+
+  .reroll-btn-styled {
+    padding: 4px 10px !important;
+    font-size: 9.5px !important;
+    margin-top: 2px !important;
   }
 }
 
@@ -3297,11 +3728,12 @@ html, body {
   }
 
   .hud-wave-pill {
-    padding: 1.5px 7px;
+    padding: 2px 8px;
     max-width: 100%;
     border-radius: 10px;
     gap: 4px;
     box-sizing: border-box;
+    white-space: nowrap;
   }
 
   .hud-wave-pill .wave-icon {
@@ -3310,13 +3742,17 @@ html, body {
   }
 
   #wave-banner {
-    font-size: 9px;
+    font-size: clamp(8.5px, 2.3vw, 10.5px);
     letter-spacing: 0.4px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: clamp(90px, 32vw, 150px);
+    max-width: clamp(120px, 46vw, 240px);
     display: inline-block;
+  }
+
+  .screen-ultratall #wave-banner {
+    max-width: clamp(150px, 54vw, 290px);
   }
 
   /* Botão de Pausa da Direita */
@@ -3652,14 +4088,14 @@ html, body {
 
   .char-stage-viewport {
     min-height: 135px;
-    height: 135px;
+    height: clamp(140px, 20vh, 220px);
     position: relative;
     width: 100%;
     overflow: hidden;
   }
 
   #char-preview-canvas {
-    max-height: 135px;
+    max-height: 220px;
     min-height: 135px;
     height: 100% !important;
     width: 100% !important;
@@ -3874,7 +4310,7 @@ html, body {
 
   /* Viewport do Astrolábio no Mobile */
   .astrolabe-viewport {
-    height: clamp(230px, 40vh, 310px);
+    height: clamp(240px, 42vh, 380px);
     margin: 3px 0;
     border-radius: 12px;
     background: radial-gradient(circle at center, #0e1322 0%, #05070d 90%);
@@ -4231,7 +4667,7 @@ html, body {
   }
 
   #wave-banner {
-    max-width: clamp(75px, 28vw, 110px);
+    max-width: clamp(105px, 42vw, 175px);
     font-size: 8.5px;
   }
 

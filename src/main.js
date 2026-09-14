@@ -66,6 +66,7 @@ import { transitionToArenaTheme, getWaveArenaTheme, resetEnvironment, ARENA_PALE
 import { playSfx, triggerHaptic, resetDeathAudioFilter } from './core/audio.js';
 import { updateBoss } from './entities/bosses/bossRegistry.js';
 import { updateMiniBoss } from './entities/minibossController.js';
+import { initResponsive, layoutMetrics, updateLayoutMetrics, getHudBottom } from './core/responsive.js';
 
 // Reexportações diretas das variáveis de combate e projéteis
 export { 
@@ -102,17 +103,18 @@ export function resize() {
   }
   if (!canvas) return;
 
-  dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-  viewW = window.innerWidth;
-  viewH = window.innerHeight;
+  dpr = layoutMetrics.dpr || Math.min(window.devicePixelRatio || 1, 1.5);
+  viewW = layoutMetrics.viewW || window.innerWidth;
+  viewH = layoutMetrics.viewH || window.innerHeight;
   canvas.width = Math.floor(viewW * dpr);
   canvas.height = Math.floor(viewH * dpr);
   canvas.style.width = viewW + 'px';
   canvas.style.height = viewH + 'px';
 }
 
-window.addEventListener('resize', resize);
-window.addEventListener('orientationchange', () => { setTimeout(resize, 100); });
+initResponsive(() => {
+  resize();
+});
 
 export const gameState = {
   isPaused: true,
