@@ -3,7 +3,7 @@
  * Máquina de Estados FSM, transições com micro-windup e estabilidade do Soberano do Abismo.
  */
 import { playSfx, triggerHaptic } from '../../../core/audio.js';
-import { SOVEREIGN_STATES } from './constants.js';
+import { SOVEREIGN_STATES, SOVEREIGN_CONFIG } from './constants.js';
 import { 
   bullets, 
   enemyBullets, 
@@ -122,8 +122,8 @@ export function updateAbyssSovereign(e, dt, context) {
     e.currentSkill = null;
     if (player) player.iFrames = 999999;
 
-    e.defeatTimer = (e.defeatTimer !== undefined ? e.defeatTimer : 420) - dt;
-    const maxDefeat = e.defeatMaxTimer || 420;
+    e.defeatTimer = (e.defeatTimer !== undefined ? e.defeatTimer : 540) - dt;
+    const maxDefeat = e.defeatMaxTimer || 540;
     const progress = Math.min(1.0, Math.max(0, 1 - (e.defeatTimer / maxDefeat)));
     e.defeatProgress = progress;
 
@@ -175,8 +175,8 @@ export function updateAbyssSovereign(e, dt, context) {
         createHitParticles(e.x + Math.cos(pAngle) * (pDist * 0.6), e.y + Math.sin(pAngle) * (pDist * 0.6), '#00cec9', 1);
       }
     }
-    // ATO 3: Supernova Divina Dourada & Banner Cósmico (0.55 <= progress < 0.85)
-    else if (progress < 0.85) {
+    // ATO 3: Supernova Divina Dourada & Banner Cósmico (0.55 <= progress < 0.75)
+    else if (progress < 0.75) {
       if (!e.hasTriggeredDefeatSupernova) {
         e.hasTriggeredDefeatSupernova = true;
         triggerShake(30);
@@ -208,9 +208,9 @@ export function updateAbyssSovereign(e, dt, context) {
         createHitParticles(e.x + (Math.random() - 0.5) * 80, e.y + (Math.random() - 0.5) * 80, Math.random() < 0.6 ? '#f1c40f' : '#ffffff', 3);
       }
     }
-    // ATO 4: Fade-out Gradual para o Menu (0.85 <= progress <= 1.00)
+    // ATO 4: Fade-out Gradual para o Menu (0.75 <= progress <= 1.00)
     else {
-      const act4Prog = (progress - 0.85) / 0.15;
+      const act4Prog = (progress - 0.75) / 0.25;
       e.fadeAlpha = Math.min(1.0, act4Prog);
 
       const fadeEl = document.getElementById('victory-fade-overlay');
@@ -302,13 +302,6 @@ export function updateAbyssSovereign(e, dt, context) {
 
   e.lastHp = e.hp;
 
-  if (rawDmgReceived > 0 && (e.actionState === SOVEREIGN_STATES.WINDUP || e.actionState === SOVEREIGN_STATES.CASTING)) {
-    e.staggerGauge += rawDmgReceived;
-    if (e.staggerGauge >= e.maxStaggerGauge) {
-      triggerStabilityBreak(e, context);
-      return;
-    }
-  }
 
   const hpRatio = Math.max(0, e.hp / e.maxHp);
   if (!e.hasTriggeredPhase2 && hpRatio <= 0.70 && e.actionState !== SOVEREIGN_STATES.PHASE_TRANSITION) {
@@ -574,7 +567,7 @@ export function updateAbyssSovereign(e, dt, context) {
       e.windupTimer -= dt;
 
       if (e.currentSkill === 'VOID_CRUCIFIX') {
-        const aimRot = (e.phase === 3 ? 0.009 : 0.006) * e.beamDir;
+        const aimRot = (e.phase === 3 ? 0.007 : 0.006) * e.beamDir;
         e.beamAngle += aimRot * dt;
       } else if (e.currentSkill === 'DIMENSIONAL_CLEAVE') {
         const ratio = 1 - (e.windupTimer / e.windupMax);
@@ -591,7 +584,7 @@ export function updateAbyssSovereign(e, dt, context) {
         }
       } else if (e.currentSkill === 'COSMIC_SUPERNOVA' && e.supernovaOrbs) {
         const ratio = 1 - (e.windupTimer / e.windupMax);
-        const curR = 275 * (1 - ratio); // Calibrado para 275px (+25%)
+        const curR = SOVEREIGN_CONFIG.SUPERNOVA_HEX_RADIUS * (1 - ratio);
         for (let o = 0; o < e.supernovaOrbs.length; o++) {
           e.supernovaOrbs[o].dist = curR;
         }
@@ -643,7 +636,7 @@ export function updateAbyssSovereign(e, dt, context) {
       e.castDuration -= dt;
 
       if (e.currentSkill === 'VOID_CRUCIFIX') {
-        const armCount = e.phase === 1 ? 4 : 6;
+        const armCount = 4;
         const progress = 1 - (e.castDuration / (e.phase === 3 ? 170 : (e.phase === 2 ? 145 : 125)));
 
         if (!e.beamHasReversed && progress >= 0.5) {
@@ -655,7 +648,7 @@ export function updateAbyssSovereign(e, dt, context) {
           addDamageText(e.x, e.y - e.radius - 16, "INVERSÃO!", true, '#ff7675');
         }
 
-        const rotSpeed = (e.phase === 3 ? 0.028 : (e.phase === 2 ? 0.022 : 0.016)) * e.beamDir;
+        const rotSpeed = (e.phase === 3 ? 0.021 : (e.phase === 2 ? 0.019 : 0.015)) * e.beamDir;
         e.beamAngle += rotSpeed * dt;
 
         const beamLength = 1300;

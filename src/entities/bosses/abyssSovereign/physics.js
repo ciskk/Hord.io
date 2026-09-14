@@ -340,12 +340,14 @@ export function updateAnchors(boss, dt, context, onStabilityBreak) {
       const backlashDmg = Math.round(boss.maxHp * 0.05);
       boss.hp -= backlashDmg;
       addDamageText(boss.x, boss.y, backlashDmg, true, '#00cec9');
-      addDamageText(a.x, a.y - 14, "ÂNCORA DESTRUÍDA!", true, '#00cec9');
+      addDamageText(a.x, a.y - 14, "ORBE DESTRUÍDA!", true, '#00cec9');
+
+      // Cancelamento do ataque do chefe garantido estritamente pela destruição da orbe
+      if (typeof onStabilityBreak === 'function') {
+        onStabilityBreak();
+      }
 
       if (boss.activeAnchorsCount <= 0) {
-        if (typeof onStabilityBreak === 'function') {
-          onStabilityBreak();
-        }
         addDamageText(boss.x, boss.y - boss.radius - 20, "COLAPSO DO VAZIO!", true, '#00cec9');
       }
     }
@@ -469,29 +471,82 @@ export function updateActiveAttacks(boss, dt, context) {
 
 /**
  * Spawna um local de cura sagrado (Santuário Cósmico) dentro da arena do Soberano do Abismo.
- * Dura exatamente 3 segundos (180 frames) e regenera 25% de saúde por segundo.
+ * A área de cura é 30% maior (raio 73px), dura exatamente 3 segundos (180 frames) e regenera 25% de saúde por segundo.
+ * Spawna a uma distância intermediária do jogador (fora do alcance imediato, mas bem mais perto do que metade do raio da arena).
  * @param {Object} boss Entidade do Soberano do Abismo
  * @param {Object} context Contexto global do motor
  */
 export function spawnSanctuaryHealingZone(boss, context) {
   if (!boss.healingZones) boss.healingZones = [];
 
-  // Posição calculada estritamente dentro da arena atual
-  const maxSpawnRadius = Math.max(60, (boss.arenaRadius || 520) - 85);
-  const spawnDist = 65 + Math.random() * (maxSpawnRadius - 65);
-  const spawnAngle = Math.random() * Math.PI * 2;
+  const player = context.player;
+  const arenaRadius = boss.arenaRadius || 600;
+  const halfArenaRadius = arenaRadius * 0.5;
+  const zoneRadius = 73; // 30% maior que o raio original de 56 (56 * 1.30 = 72.8 ~ 73px)
+
   const cx = boss.arenaCenterX !== undefined ? boss.arenaCenterX : boss.x;
   const cy = boss.arenaCenterY !== undefined ? boss.arenaCenterY : boss.y;
-  const hx = cx + Math.cos(spawnAngle) * spawnDist;
-  const hy = cy + Math.sin(spawnAngle) * spawnDist;
+  const maxSafeArenaDist = Math.max(60, arenaRadius - zoneRadius - 20);
+
+  // Distância calculada a partir do jogador:
+  // - "Não quero perto": pelo menos ~145px (garante que o jogador está fora do círculo e precisa se deslocar)
+  // - "Realmente mais perto do que metade do raio da arena": limite máximo de ~200px (muito menor que metade do raio ~260-310px)
+  const minDist = Math.max(145, zoneRadius + 60);
+  const maxDist = Math.min(200, Math.max(minDist + 20, halfArenaRadius - 60));
+
+  let hx = cx;
+  let hy = cy;
+
+  if (player && player.x !== undefined && player.y !== undefined) {
+    let foundSafeSpot = false;
+
+    // Tenta encontrar um ponto em direção aleatória ao redor do jogador que caiba 100% dentro da arena
+    for (let attempt = 0; attempt < 24; attempt++) {
+      const spawnDist = minDist + Math.random() * (maxDist - minDist);
+      const spawnAngle = Math.random() * Math.PI * 2;
+      const candX = player.x + Math.cos(spawnAngle) * spawnDist;
+      const candY = player.y + Math.sin(spawnAngle) * spawnDist;
+
+      const distFromCenter = Math.hypot(candX - cx, candY - cy);
+      if (distFromCenter <= maxSafeArenaDist) {
+        hx = candX;
+        hy = candY;
+        foundSafeSpot = true;
+        break;
+      }
+    }
+
+    // Se o jogador estiver na borda da arena e os ângulos aleatórios saírem da barreira,
+    // projeta o ponto apontando em direção ao interior da arena (em direção ao centro a partir do jogador)
+    if (!foundSafeSpot) {
+      const toCenterAngle = Math.atan2(cy - player.y, cx - player.x);
+      const spawnAngle = toCenterAngle + (Math.random() - 0.5) * 1.1; // arco seguro de ~60° para dentro
+      const spawnDist = minDist + Math.random() * (maxDist - minDist);
+      hx = player.x + Math.cos(spawnAngle) * spawnDist;
+      hy = player.y + Math.sin(spawnAngle) * spawnDist;
+
+      // Limitação estrita final para jamais vazar a barreira da arena
+      const distFromCenter = Math.hypot(hx - cx, hy - cy);
+      if (distFromCenter > maxSafeArenaDist) {
+        hx = cx + ((hx - cx) / distFromCenter) * maxSafeArenaDist;
+        hy = cy + ((hy - cy) / distFromCenter) * maxSafeArenaDist;
+      }
+    }
+  } else {
+    // Fallback defensivo caso player não esteja no contexto
+    const spawnAngle = Math.random() * Math.PI * 2;
+    const spawnDist = 120 + Math.random() * (halfArenaRadius - 120);
+    hx = cx + Math.cos(spawnAngle) * spawnDist;
+    hy = cy + Math.sin(spawnAngle) * spawnDist;
+  }
 
   const zone = {
     x: hx,
     y: hy,
-    radius: 56,
-    life: 180, // 3 segundos exatos (180 frames a 60 FPS)
-    maxLife: 180,
-    healRatePerSec: 0.25, // 25% de saúde por segundo
+    radius: zoneRadius,
+    life: 420, // 7 segundos exatos (420 frames a 60 FPS)
+    maxLife: 420,
+    healRatePerSec: 0.25, // Sincronizado com o HUD: 25% de saúde por segundo
     healTickTimer: 0,
     playerInside: false,
     pulseTimer: 0
@@ -499,19 +554,21 @@ export function spawnSanctuaryHealingZone(boss, context) {
 
   boss.healingZones.push(zone);
 
+  console.log(`[Soberano do Abismo] Santuário de Cura criado em (${Math.round(hx)}, ${Math.round(hy)}), Raio: ${zoneRadius}px, Distância do jogador: ${player ? Math.round(Math.hypot(hx - player.x, hy - player.y)) : 'N/A'}px`);
+
   playSfx('heal');
   triggerHaptic('medium');
   if (context.triggerShake) context.triggerShake(4);
-  if (context.addDamageText) context.addDamageText(hx, hy - 20, "SANTUÁRIO DE CURA!", true, '#2ecc71');
+  if (context.addDamageText) context.addDamageText(hx, hy - 32, "SANTUÁRIO DE CURA!", true, '#2ecc71');
   if (context.createHitParticles) {
-    context.createHitParticles(hx, hy, '#2ecc71', 14);
-    context.createHitParticles(hx, hy, '#f1c40f', 8);
+    context.createHitParticles(hx, hy, '#2ecc71', 16);
+    context.createHitParticles(hx, hy, '#f1c40f', 10);
   }
 }
 
 /**
  * Atualiza e processa os locais de cura dentro da arena do Soberano do Abismo.
- * Inicia após o chefe atingir 70% de vida e reaparece a cada 15 segundos.
+ * Inicia após o chefe atingir 85% de vida e reaparece ininterruptamente a cada 10 segundos.
  * @param {Object} boss Entidade do Soberano do Abismo
  * @param {number} dt Variação de tempo
  * @param {Object} context Contexto global do motor
@@ -520,23 +577,27 @@ export function updateHealingZones(boss, dt, context) {
   if (!boss.healingZones) boss.healingZones = [];
   const { player, frameCount, addDamageText, createHitParticles } = context;
 
-  // Condição: Ativa após o boss atingir 70% de vida (Fase 2 em diante)
   const hpRatio = Math.max(0, boss.hp / (boss.maxHp || 1));
-  const isEligible = boss.hp > 0 && 
-                     boss.actionState !== 'SPAWN_INTRO' && 
-                     boss.actionState !== 'DEATH_COLLAPSE' && 
-                     hpRatio <= 0.70;
 
-  if (isEligible) {
-    if (!boss.hasStartedHealingCycle) {
+  // Condição: O ciclo inicia quando o boss atinge <= 85% de vida ou entra na Fase 2/3
+  if (!boss.hasStartedHealingCycle) {
+    const isReadyToStart = boss.hp > 0 && 
+                           boss.actionState !== 'SPAWN_INTRO' && 
+                           boss.actionState !== 'DEATH_COLLAPSE' && 
+                           (hpRatio <= 0.85 || boss.phase >= 2);
+
+    if (isReadyToStart) {
       boss.hasStartedHealingCycle = true;
-      // Spawna o 1º santuário assim que atinge 70% de vida
+      boss.healingZoneSpawnTimer = 10 * 60; // Ciclo de 10 segundos (600 frames)
       spawnSanctuaryHealingZone(boss, context);
-      boss.healingZoneSpawnTimer = 15 * 60; // Ciclo de 15 segundos (900 frames)
-    } else {
+    }
+  } else {
+    // Uma vez ativado, o ciclo de 10 segundos segue continuamente durante todo o restante da batalha,
+    // mesmo que as Âncoras Cósmicas regenerem o HP do chefe temporariamente acima de 85%!
+    if (boss.hp > 0 && boss.actionState !== 'DEATH_COLLAPSE') {
       boss.healingZoneSpawnTimer -= dt;
       if (boss.healingZoneSpawnTimer <= 0) {
-        boss.healingZoneSpawnTimer = 15 * 60; // Reaparece a cada 15 segundos
+        boss.healingZoneSpawnTimer = 10 * 60; // Reaparece pontualmente a cada 10 segundos
         spawnSanctuaryHealingZone(boss, context);
       }
     }
@@ -563,8 +624,9 @@ export function updateHealingZones(boss, dt, context) {
     zone.playerInside = isInside;
 
     if (isInside) {
-      // Regenera 25% de saúde por segundo
-      const healPerFrame = (player.maxHp * 0.25 / 60) * dt;
+      // Regenera saúde dinamicamente com base na taxa da zona (25%/s)
+      const rate = zone.healRatePerSec || 0.25;
+      const healPerFrame = (player.maxHp * rate / 60) * dt;
       if (player.hp < player.maxHp) {
         player.hp = Math.min(player.maxHp, player.hp + healPerFrame);
       }
@@ -578,7 +640,7 @@ export function updateHealingZones(boss, dt, context) {
       zone.healTickTimer = (zone.healTickTimer || 0) + dt;
       if (zone.healTickTimer >= 24) {
         zone.healTickTimer = 0;
-        const displayChunk = Math.round(player.maxHp * 0.25 * 0.4);
+        const displayChunk = Math.round(player.maxHp * rate * 0.4);
         if (displayChunk > 0 && addDamageText) {
           addDamageText(player.x, player.y - 20, `+${displayChunk} HP`, false, '#2ecc71');
           try { playSfx('heal'); } catch (e) {}

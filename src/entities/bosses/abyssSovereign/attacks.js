@@ -3,7 +3,7 @@
  * Arsenal de combate, seleção de habilidades, windups e feixes estelares do Soberano do Abismo.
  */
 import { playSfx, triggerHaptic } from '../../../core/audio.js';
-import { SOVEREIGN_STATES } from './constants.js';
+import { SOVEREIGN_STATES, SOVEREIGN_CONFIG } from './constants.js';
 import { scheduleDelayedAction } from './physics.js';
 import { 
   bullets, 
@@ -97,7 +97,7 @@ export function prepareNextAttack(boss, context) {
       boss.windupMax = boss.windupTimer;
       boss.beamAngle = Math.atan2(player.y - boss.y, player.x - boss.x);
       boss.beamDir = Math.random() < 0.5 ? 1 : -1;
-      boss.beamRotSpeed = boss.phase === 3 ? 0.016 : 0.011;
+      boss.beamRotSpeed = boss.phase === 3 ? 0.012 : 0.011;
       boss.beamHasReversed = false;
       playSfx('charge');
       break;
@@ -132,7 +132,7 @@ export function prepareNextAttack(boss, context) {
       boss.windupMax = 58;
       boss.supernovaOrbs = [];
       const orbCount = 6; // Fixado em 6 vértices para formar um hexágono perfeito
-      const hexTelegraphRadius = 275; // Calibrado em 275px (+25% sobre 220px para manter imponência)
+      const hexTelegraphRadius = SOVEREIGN_CONFIG.SUPERNOVA_HEX_RADIUS; // Reduzido em 35% (179px)
       for (let o = 0; o < orbCount; o++) {
         boss.supernovaOrbs.push({
           baseAngle: (o * Math.PI * 2) / orbCount,
@@ -248,13 +248,13 @@ export function startSkillCast(boss, context) {
       playSfx('boss');
       playSfx('singularity');
 
-      // Onda calibrada com o raio exato do hexágono (275px)
+      // Onda calibrada com o raio reduzido do hexágono (179px, -35%)
       bossShockwaves.push({
         x: boss.x,
         y: boss.y,
-        radius: 20,
-        maxRadius: 275,
-        speed: 7.2,
+        radius: 16,
+        maxRadius: SOVEREIGN_CONFIG.SUPERNOVA_HEX_RADIUS,
+        speed: 5.8,
         damage: Math.round(boss.damage * 0.40),
         hitPlayer: false,
         colorRgb: '224, 86, 253'
@@ -292,7 +292,7 @@ export function startSkillCast(boss, context) {
         type: 'SUPERNOVA_FLASH',
         x: boss.x,
         y: boss.y,
-        maxR: 275,
+        maxR: SOVEREIGN_CONFIG.SUPERNOVA_HEX_RADIUS,
         timer: 28,
         maxTimer: 28
       });

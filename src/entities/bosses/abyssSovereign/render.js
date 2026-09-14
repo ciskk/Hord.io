@@ -646,16 +646,15 @@ function drawCinematicScreenTitle(ctx, e, frameCount) {
  * @param {number} frameCount
  */
 function drawGoldenVictoryBanner(ctx, e, frameCount) {
-  const maxT = e.defeatMaxTimer || 420;
+  const maxT = e.defeatMaxTimer || 540;
   const progress = Math.min(1.0, Math.max(0, 1 - ((e.defeatTimer || 0) / maxT)));
 
   // O banner começa a surgir suavemente a partir de progress = 0.52 (Ato 3)
   if (progress < 0.52) return;
 
-  let bannerAlpha = 1.0;
-  if (progress < 0.62) {
-    bannerAlpha = (progress - 0.52) / 0.10;
-  } else if (progress > 0.94) {
+  const enterRatio = Math.min(1.0, (progress - 0.52) / 0.08);
+  let bannerAlpha = enterRatio;
+  if (progress > 0.94) {
     bannerAlpha = Math.max(0, (1.0 - progress) / 0.06);
   }
 
@@ -671,30 +670,64 @@ function drawGoldenVictoryBanner(ctx, e, frameCount) {
   const bannerW = isVertical 
     ? Math.min(420, screenW * 0.94) 
     : (isCompactH ? Math.min(680, screenW * 0.90) : Math.min(940, screenW * 0.92));
-  const bannerH = isVertical ? 104 : (isCompactH ? 88 : 126);
+  const bannerH = isVertical ? 108 : (isCompactH ? 90 : 128);
   const bx = (screenW - bannerW) / 2;
   const by = Math.round((screenH - bannerH) / 2 - (isVertical ? 40 : (isCompactH ? 15 : 28)));
+  const centerX = screenW / 2;
+  const centerY = by + bannerH / 2;
+
+  // Punch-in zoom de entrada com sutil pulsação contínua
+  const punchScale = 0.88 + 0.12 * Math.sin(enterRatio * Math.PI * 0.5) + Math.sin(frameCount * 0.04) * 0.006;
+  ctx.translate(centerX, centerY);
+  ctx.scale(punchScale, punchScale);
+  ctx.translate(-centerX, -centerY);
+
+  // 0. Raios Cósmicos Celestiais Rotativos atrás do banner (God Rays)
+  ctx.save();
+  const rayCount = isVertical ? 16 : 24;
+  const rayRot = frameCount * 0.005;
+  const maxRayDist = Math.max(bannerW * 0.75, 420);
+  const rayGrad = ctx.createRadialGradient(centerX, centerY, 15, centerX, centerY, maxRayDist);
+  rayGrad.addColorStop(0, 'rgba(255, 245, 170, 0.28)');
+  rayGrad.addColorStop(0.3, 'rgba(241, 196, 15, 0.16)');
+  rayGrad.addColorStop(0.7, 'rgba(212, 172, 13, 0.05)');
+  rayGrad.addColorStop(1, 'rgba(212, 172, 13, 0)');
+  ctx.fillStyle = rayGrad;
+
+  for (let r = 0; r < rayCount; r++) {
+    const ang = rayRot + (r * Math.PI * 2) / rayCount;
+    const rayWidth = (r % 2 === 0 ? 0.06 : 0.032);
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.arc(centerX, centerY, maxRayDist, ang - rayWidth, ang + rayWidth);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
 
   // 1. Fundo Imperial Obsidiana com Ouro Profundo
   const bgGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
   bgGrad.addColorStop(0, 'rgba(10, 8, 2, 0)');
-  bgGrad.addColorStop(0.12, 'rgba(24, 18, 4, 0.96)');
-  bgGrad.addColorStop(0.5, 'rgba(48, 36, 8, 0.98)');
-  bgGrad.addColorStop(0.88, 'rgba(24, 18, 4, 0.96)');
+  bgGrad.addColorStop(0.12, 'rgba(20, 15, 4, 0.96)');
+  bgGrad.addColorStop(0.5, 'rgba(46, 34, 8, 0.98)');
+  bgGrad.addColorStop(0.88, 'rgba(20, 15, 4, 0.96)');
   bgGrad.addColorStop(1, 'rgba(10, 8, 2, 0)');
   ctx.fillStyle = bgGrad;
   ctx.fillRect(bx, by, bannerW, bannerH);
 
-  // 2. Frisos de Neon Dourado Superior e Inferior
+  // 2. Frisos de Neon Dourado Superior e Inferior com pulsação
+  const pulseGlow = 14 + Math.sin(frameCount * 0.12) * 6;
   const borderGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
   borderGrad.addColorStop(0, 'rgba(241, 196, 15, 0)');
   borderGrad.addColorStop(0.2, 'rgba(241, 196, 15, 0.95)');
-  borderGrad.addColorStop(0.5, 'rgba(255, 246, 169, 1)');
+  borderGrad.addColorStop(0.5, 'rgba(255, 250, 190, 1)');
   borderGrad.addColorStop(0.8, 'rgba(241, 196, 15, 0.95)');
   borderGrad.addColorStop(1, 'rgba(241, 196, 15, 0)');
 
+  ctx.shadowColor = 'rgba(241, 196, 15, 0.85)';
+  ctx.shadowBlur = pulseGlow;
   ctx.strokeStyle = borderGrad;
-  ctx.lineWidth = isVertical ? 2.2 : 2.8;
+  ctx.lineWidth = isVertical ? 2.4 : 3.0;
   ctx.beginPath();
   ctx.moveTo(bx, by);
   ctx.lineTo(bx + bannerW, by);
@@ -703,7 +736,8 @@ function drawGoldenVictoryBanner(ctx, e, frameCount) {
   ctx.stroke();
 
   // Frisos internos dourados finos
-  ctx.strokeStyle = 'rgba(255, 235, 150, 0.35)';
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(255, 235, 150, 0.4)';
   ctx.lineWidth = 1;
   const padX = isVertical ? 22 : 45;
   ctx.beginPath();
@@ -713,8 +747,8 @@ function drawGoldenVictoryBanner(ctx, e, frameCount) {
   ctx.lineTo(bx + bannerW - padX, by + bannerH - 3);
   ctx.stroke();
 
-  // 3. Cantoneiras Geométricas Douradas
-  const cornerSize = isVertical ? 10 : 16;
+  // 3. Cantoneiras Geométricas Douradas e Gemas Celestiais
+  const cornerSize = isVertical ? 12 : 18;
   ctx.fillStyle = '#f1c40f';
   ctx.fillRect(bx + padX * 0.7, by - 1.5, cornerSize, 3);
   ctx.fillRect(bx + bannerW - padX * 0.7 - cornerSize, by - 1.5, cornerSize, 3);
@@ -722,11 +756,64 @@ function drawGoldenVictoryBanner(ctx, e, frameCount) {
   ctx.fillRect(bx + padX * 0.7, by + bannerH - 1.5, cornerSize, 3);
   ctx.fillRect(bx + bannerW - padX * 0.7 - cornerSize, by + bannerH - 1.5, cornerSize, 3);
 
-  // 4. Textos e Glifos do Banner Dourado
+  // 4. Efeito de Shimmer Metálico Deslizante (Varredura Diagonal Dourada)
+  const shimmerCycle = (frameCount * 0.014) % 1.6;
+  if (shimmerCycle <= 1.0) {
+    const shimmerX = bx - 100 + shimmerCycle * (bannerW + 200);
+    const shimGrad = ctx.createLinearGradient(shimmerX - 70, by, shimmerX + 70, by + bannerH);
+    shimGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+    shimGrad.addColorStop(0.35, 'rgba(255, 245, 180, 0.10)');
+    shimGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.40)');
+    shimGrad.addColorStop(0.65, 'rgba(255, 245, 180, 0.10)');
+    shimGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(bx, by, bannerW, bannerH);
+    ctx.clip();
+    ctx.fillStyle = shimGrad;
+    ctx.fillRect(bx, by, bannerW, bannerH);
+    ctx.restore();
+  }
+
+  // 5. Partículas e Brasas Douradas Cintilantes ao Redor das Bordas
+  const sparkCount = isVertical ? 12 : 18;
+  for (let s = 0; s < sparkCount; s++) {
+    const sparkSeed = s * 79.19;
+    const sProg = ((frameCount * 0.018 + sparkSeed) % 1.0);
+    const perimeterPos = ((s * 0.23) % 1.0);
+    let sx, sy;
+    if (perimeterPos < 0.35) {
+      sx = bx + (perimeterPos / 0.35) * bannerW;
+      sy = by - 3 - sProg * 14;
+    } else if (perimeterPos < 0.70) {
+      sx = bx + ((perimeterPos - 0.35) / 0.35) * bannerW;
+      sy = by + bannerH + 3 + sProg * 14;
+    } else if (perimeterPos < 0.85) {
+      sx = bx - 3 - sProg * 12;
+      sy = by + ((perimeterPos - 0.70) / 0.15) * bannerH;
+    } else {
+      sx = bx + bannerW + 3 + sProg * 12;
+      sy = by + ((perimeterPos - 0.85) / 0.15) * bannerH;
+    }
+    const sAlpha = Math.sin(sProg * Math.PI);
+    const sSize = 1.2 + (s % 3 === 0 ? 1.6 : 0.8);
+    ctx.fillStyle = `rgba(255, 245, 180, ${sAlpha * 0.95})`;
+    ctx.shadowColor = '#f1c40f';
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy - sSize);
+    ctx.lineTo(sx + sSize, sy);
+    ctx.lineTo(sx, sy + sSize);
+    ctx.lineTo(sx - sSize, sy);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // 6. Textos e Glifos do Banner Dourado
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  const pulseGlow = 14 + Math.sin(frameCount * 0.12) * 6;
   const stats = e.victoryStats || { time: '10:00', kills: 0, level: 1, gold: 0 };
 
   if (isVertical) {
@@ -737,23 +824,29 @@ function drawGoldenVictoryBanner(ctx, e, frameCount) {
     ctx.shadowBlur = 6;
     ctx.fillText("[ CATACLISMA PURGADO • O ABISMO FOI SELADO ]", screenW / 2, by + 14);
 
-    ctx.font = 'bold 18px "Cinzel", "Cinzel Decorative", Georgia, serif';
-    ctx.fillStyle = '#ffffff';
+    const titleY = by + 37;
+    const titleGrad = ctx.createLinearGradient(0, titleY - 10, 0, titleY + 10);
+    titleGrad.addColorStop(0, '#ffffff');
+    titleGrad.addColorStop(0.5, '#fff7c2');
+    titleGrad.addColorStop(1, '#f1c40f');
+
+    ctx.font = 'bold 19px "Cinzel", "Cinzel Decorative", Georgia, serif';
+    ctx.fillStyle = titleGrad;
     ctx.shadowColor = 'rgba(241, 196, 15, 0.95)';
     ctx.shadowBlur = pulseGlow;
-    ctx.fillText("❖ VITÓRIA SUPREMA ❖", screenW / 2, by + 36);
+    ctx.fillText("❖ VITÓRIA SUPREMA ❖", screenW / 2, titleY);
 
     ctx.font = 'italic 10px "Cinzel", Georgia, serif';
     ctx.fillStyle = '#fff2a8';
     ctx.shadowColor = 'rgba(212, 172, 13, 0.7)';
     ctx.shadowBlur = 3;
-    ctx.fillText("✦ O SOBERANO DO ABISMO FOI ANIQUILADO ✦", screenW / 2, by + 56);
+    ctx.fillText("✦ O SOBERANO DO ABISMO FOI ANIQUILADO ✦", screenW / 2, by + 58);
 
     // Linha de Honra e Métricas
     ctx.font = 'bold 9px monospace';
     ctx.fillStyle = '#f1c40f';
     ctx.shadowBlur = 2;
-    ctx.fillText(`TEMPO: ${stats.time}  •  ABATES: ${stats.kills}  •  NÍVEL: ${stats.level}  •  OURO: +${stats.gold}`, screenW / 2, by + 82);
+    ctx.fillText(`TEMPO: ${stats.time}  •  ABATES: ${stats.kills}  •  NÍVEL: ${stats.level}  •  OURO: +${stats.gold}`, screenW / 2, by + 84);
   } else {
     // Layout Horizontal
     ctx.font = 'bold 11px monospace';
@@ -762,27 +855,57 @@ function drawGoldenVictoryBanner(ctx, e, frameCount) {
     ctx.shadowBlur = 8;
     ctx.fillText("[ CATACLISMA PURGADO // A ORDEM CÓSMICA FOI RESTAURADA ]", screenW / 2, by + 22);
 
-    ctx.font = 'bold 30px "Cinzel", "Cinzel Decorative", Georgia, serif';
-    ctx.fillStyle = '#ffffff';
+    const titleY = by + 53;
+    const titleGrad = ctx.createLinearGradient(0, titleY - 16, 0, titleY + 16);
+    titleGrad.addColorStop(0, '#ffffff');
+    titleGrad.addColorStop(0.45, '#fff8cc');
+    titleGrad.addColorStop(0.8, '#f1c40f');
+    titleGrad.addColorStop(1, '#d4ac0d');
+
+    ctx.font = 'bold 31px "Cinzel", "Cinzel Decorative", Georgia, serif';
+    ctx.fillStyle = titleGrad;
     ctx.shadowColor = 'rgba(241, 196, 15, 0.95)';
     ctx.shadowBlur = pulseGlow;
-    ctx.fillText("❖ VITÓRIA SUPREMA ❖", screenW / 2, by + 52);
+    ctx.fillText("❖ VITÓRIA SUPREMA ❖", screenW / 2, titleY);
 
     ctx.font = 'italic 13px "Cinzel", Georgia, serif';
     ctx.fillStyle = '#fff2a8';
     ctx.shadowColor = 'rgba(212, 172, 13, 0.7)';
     ctx.shadowBlur = 4;
-    ctx.fillText("✦ O SOBERANO DO ABISMO FOI ANIQUILADO E AS TREVAS EXPURGADAS ✦", screenW / 2, by + 80);
+    ctx.fillText("✦ O SOBERANO DO ABISMO FOI ANIQUILADO E AS TREVAS EXPURGADAS ✦", screenW / 2, by + 82);
 
     // Fita de Honra com Métricas Destacadas
     ctx.font = 'bold 11px monospace';
     ctx.fillStyle = '#f1c40f';
     ctx.shadowColor = 'rgba(241, 196, 15, 0.6)';
     ctx.shadowBlur = 4;
-    ctx.fillText(`TEMPO DE COMBATE: ${stats.time}    |    MONSTROS EXPURGADOS: ${stats.kills}    |    NÍVEL: ${stats.level}    |    OURO CONQUISTADO: +${stats.gold}`, screenW / 2, by + 106);
+    ctx.fillText(`TEMPO DE COMBATE: ${stats.time}    |    MONSTROS EXPURGADOS: ${stats.kills}    |    NÍVEL: ${stats.level}    |    OURO CONQUISTADO: +${stats.gold}`, screenW / 2, by + 108);
   }
 
   ctx.restore();
+}
+
+/**
+ * Renderiza a camada completa de vitória cósmica sobre todas as outras camadas de jogo:
+ * Banner Dourado Animado e Cortina de Fade-Out para o Menu.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Object} e Entidade do Soberano do Abismo
+ * @param {number} frameCount
+ */
+export function drawBossVictoryOverlay(ctx, e, frameCount) {
+  if (!e) return;
+  if (e.showGoldenBanner) {
+    drawGoldenVictoryBanner(ctx, e, frameCount);
+  }
+  if (e.fadeAlpha > 0) {
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const screenW = viewW || (typeof window !== 'undefined' ? window.innerWidth : 1280);
+    const screenH = viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
+    ctx.fillStyle = `rgba(5, 2, 8, ${Math.min(1.0, e.fadeAlpha)})`;
+    ctx.fillRect(0, 0, screenW, screenH);
+    ctx.restore();
+  }
 }
 
 /**
@@ -797,13 +920,12 @@ function drawHealingZones(ctx, e, frameCount) {
 
   for (let i = 0; i < e.healingZones.length; i++) {
     const zone = e.healingZones[i];
-    const relX = zone.x - e.x;
-    const relY = zone.y - e.y;
     const R = zone.radius;
     const lifeRatio = Math.max(0, zone.life / (zone.maxLife || 180));
 
     ctx.save();
-    ctx.translate(relX, relY);
+    // drawAbyssSovereign já neutralizou o facing horizontal, mantendo coordenadas de mundo 1:1
+    ctx.translate(zone.x - e.x, zone.y - e.y);
 
     // 1. Halo Radial de Luz Esmeralda/Ouro no Solo
     const pulse = Math.sin(frameCount * 0.14 + i * 2) * 4;
@@ -853,10 +975,11 @@ function drawHealingZones(ctx, e, frameCount) {
     // 5. Cruz Sagrada de Cura no Centro
     ctx.fillStyle = zone.playerInside ? '#ffffff' : '#2ecc71';
     ctx.shadowColor = '#2ecc71';
-    ctx.shadowBlur = 6;
-    const cSize = 14;
-    ctx.fillRect(-cSize / 2, -2.5, cSize, 5);
-    ctx.fillRect(-2.5, -cSize / 2, 5, cSize);
+    ctx.shadowBlur = 7;
+    const cSize = Math.round(R * 0.26); // Proporcional ao raio da zona (~19px para R=73)
+    const cThick = 5.5;
+    ctx.fillRect(-cSize / 2, -cThick / 2, cSize, cThick);
+    ctx.fillRect(-cThick / 2, -cSize / 2, cThick, cSize);
 
     // 6. Partículas Ascendentes de Cura
     const sparkleCount = 4;
@@ -1753,6 +1876,7 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
     const relCenterY = e.arenaCenterY - e.y;
 
     ctx.save();
+    // drawAbyssSovereign já neutralizou o facing horizontal, mantendo coordenadas de mundo 1:1
     ctx.translate(relCenterX, relCenterY);
 
     const pulseR = e.arenaRadius + e.horizonPulse * 3;
@@ -1808,7 +1932,7 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
 
   // 4. Telegrafia do Crucifixo
   if (isWindup && e.currentSkill === 'VOID_CRUCIFIX') {
-    const armCount = e.phase === 1 ? 4 : 6;
+    const armCount = 4;
     ctx.save();
     ctx.strokeStyle = 'rgba(232, 67, 147, 0.55)';
     ctx.lineWidth = 2;
@@ -1827,7 +1951,7 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
 
   // 5. Feixes do Crucifixo do Vácuo
   if (isCasting && e.currentSkill === 'VOID_CRUCIFIX') {
-    const armCount = e.phase === 1 ? 4 : 6;
+    const armCount = 4;
     ctx.save();
 
     for (let arm = 0; arm < armCount; arm++) {
@@ -2257,19 +2381,4 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
     drawCinematicScreenTitle(ctx, e, frameCount);
   }
 
-  // 19. Grande Banner Dourado de Vitória Cósmica
-  if (e.showGoldenBanner) {
-    drawGoldenVictoryBanner(ctx, e, frameCount);
-  }
-
-  // 20. Fade-out gradual da tela para o menu de seleção
-  if (e.fadeAlpha > 0) {
-    ctx.save();
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const screenW = viewW || (typeof window !== 'undefined' ? window.innerWidth : 1280);
-    const screenH = viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
-    ctx.fillStyle = `rgba(3, 1, 6, ${Math.min(1.0, e.fadeAlpha)})`;
-    ctx.fillRect(0, 0, screenW, screenH);
-    ctx.restore();
-  }
 }

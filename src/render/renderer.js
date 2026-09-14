@@ -9,6 +9,7 @@ import { stick } from '../core/input.js';
 import { renderEnvironment } from './environment.js';
 import { drawEnemyShape, drawDyingEnemyShape } from './enemiesRenderer.js';
 import { drawPlayerCharacter, drawPlayerEquipment } from './playerRenderer.js';
+import { drawBossVictoryOverlay } from '../entities/bosses/abyssSovereign/render.js';
 import { getHudBottom, layoutMetrics } from '../core/responsive.js';
 import {
   ctx,
@@ -1931,6 +1932,15 @@ export function render() {
     ctx.beginPath();
     ctx.arc(stick.curX, stick.curY, 20, 0, Math.PI * 2);
     ctx.fill();
+  }
+
+  // 3. Overlay Cósmico de Vitória do Boss Final (Banner Dourado + Fade-Out da Tela)
+  // Renderizado na camada superior absoluta para que nunca seja sobreposto pelo jogador ou projéteis
+  const sovereignBoss = (activeBoss && activeBoss.bossId === 4) 
+    ? activeBoss 
+    : enemies.find(en => en && en.bossId === 4);
+  if (sovereignBoss && (sovereignBoss.showGoldenBanner || sovereignBoss.fadeAlpha > 0)) {
+    drawBossVictoryOverlay(ctx, sovereignBoss, frameCount);
   }
 
   ctx.restore();

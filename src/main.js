@@ -776,7 +776,7 @@ function update(dt) {
           if (!e.isBossSubTarget) {
             const pushAng = Math.atan2(e.y - player.y, e.x - player.x);
             const basePush = player.evolvedOrbitals ? 1.36 : 0.96;
-            const bossResist = (e.isBoss || e.isMiniBoss) ? 0.20 : (e.isElite ? 0.45 : 1.0);
+            const bossResist = e.isFinalBoss ? 0.10 : ((e.isBoss || e.isMiniBoss) ? 0.20 : (e.isElite ? 0.45 : 1.0));
             const pushForce = basePush * (player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0) * bossResist;
             e.pushVx = (e.pushVx || 0) + Math.cos(pushAng) * pushForce;
             e.pushVy = (e.pushVy || 0) + Math.sin(pushAng) * pushForce;
@@ -1280,7 +1280,7 @@ function update(dt) {
         );
       }
 
-      if (e.isBoss && e.windupTimer > 0) {
+      if (e.isBoss && e.windupAction && e.windupTimer > 0) {
         e.windupTimer -= dt;
         createHitParticles(
           e.x + (Math.random() - 0.5) * e.radius,
@@ -1288,7 +1288,7 @@ function update(dt) {
           e.color,
           1
         );
-        if (e.windupTimer <= 0 && e.windupAction) {
+        if (e.windupTimer <= 0) {
           e.windupAction();
           e.windupAction = null;
         }
@@ -2120,38 +2120,12 @@ function update(dt) {
       }
 
       if (e.isBoss) {
-        triggerShake(20);
-        triggerHaptic('heavy');
-
-        if (e.bossId === 1) setFirstBossKilled(true);
-        
-        const bossXp = e.xp || 400;
-        
-        // Registra o contexto de vitória contra o chefe para exibição destacada na tela de bênçãos
-        setBossRewardContext(e.name, e.bossId);
-        addXP(bossXp);
-        
-        // Garante no mínimo 2 upgrades para o 1º chefe e 3 para os chefes avançados
-        const minBossUpgrades = (e.bossId === 1) ? 2 : 3;
-        ensureBossUpgradeCount(minBossUpgrades);
-
-        for (let k = 0; k < 4; k++) {
-          const bAngle = (k * Math.PI * 2) / 4;
-          createHitParticles(e.x + Math.cos(bAngle) * 36, e.y + Math.sin(bAngle) * 36, '#e056fd', 8);
-        }
-
-        const bossGold = 120 * (e.bossId || 1);
-        addPersistentGold(bossGold);
-        addDamageText(e.x, e.y - 18, `+${bossGold} OURO!`, true, '#f1c40f');
-
-        onBossDefeated(seconds);
-
         if (e.isFinalBoss) {
           if (e.actionState !== 'DEATH_COLLAPSE') {
             e.hp = 0;
             e.actionState = 'DEATH_COLLAPSE';
-            e.defeatTimer = 420; // ~7 segundos a 60 FPS
-            e.defeatMaxTimer = 420;
+            e.defeatTimer = 540; // ~9 segundos a 60 FPS
+            e.defeatMaxTimer = 540;
             e.isTargetable = false;
             e.isVulnerable = false;
             e.currentSkill = null;
@@ -2159,6 +2133,17 @@ function update(dt) {
             e.castDuration = 0;
             player.iFrames = 999999;
             setIsWavePaused(true);
+
+            for (let k = 0; k < 4; k++) {
+              const bAngle = (k * Math.PI * 2) / 4;
+              createHitParticles(e.x + Math.cos(bAngle) * 36, e.y + Math.sin(bAngle) * 36, '#e056fd', 8);
+            }
+
+            const bossGold = 120 * (e.bossId || 1);
+            addPersistentGold(bossGold);
+            addDamageText(e.x, e.y - 18, `+${bossGold} OURO!`, true, '#f1c40f');
+
+            onBossDefeated(seconds);
 
             // Guarda métricas consolidadas da vitória para o Banner Dourado
             const timerElem = document.getElementById('timer-val');
@@ -2196,6 +2181,32 @@ function update(dt) {
           }
           return;
         }
+
+        triggerShake(20);
+        triggerHaptic('heavy');
+
+        if (e.bossId === 1) setFirstBossKilled(true);
+        
+        const bossXp = e.xp || 400;
+        
+        // Registra o contexto de vitória contra o chefe para exibição destacada na tela de bênçãos
+        setBossRewardContext(e.name, e.bossId);
+        addXP(bossXp);
+        
+        // Garante no mínimo 2 upgrades para o 1º chefe e 3 para os chefes avançados
+        const minBossUpgrades = (e.bossId === 1) ? 2 : 3;
+        ensureBossUpgradeCount(minBossUpgrades);
+
+        for (let k = 0; k < 4; k++) {
+          const bAngle = (k * Math.PI * 2) / 4;
+          createHitParticles(e.x + Math.cos(bAngle) * 36, e.y + Math.sin(bAngle) * 36, '#e056fd', 8);
+        }
+
+        const bossGold = 120 * (e.bossId || 1);
+        addPersistentGold(bossGold);
+        addDamageText(e.x, e.y - 18, `+${bossGold} OURO!`, true, '#f1c40f');
+
+        onBossDefeated(seconds);
 
         // Garante que o jogador veja a barra zerar explicitamente (0%) no instante do abate
         const bossHpFill = document.getElementById('boss-hp-fill');

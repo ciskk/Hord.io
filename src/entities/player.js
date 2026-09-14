@@ -607,7 +607,7 @@ export function triggerHeroSkill() {
         if (!e.isBossSubTarget) {
           const nx = dist > 0.001 ? dx / dist : 1;
           const ny = dist > 0.001 ? dy / dist : 0;
-          const bossResist = (e.isBoss || e.isMiniBoss) ? 0.20 : 1.0;
+          const bossResist = e.isFinalBoss ? 0.10 : ((e.isBoss || e.isMiniBoss) ? 0.20 : 1.0);
           // Redução de 40% (de 55 para 33) e impulso suave no vetor cinético
           const roarPush = 33 * bossResist;
           e.pushVx = (e.pushVx || 0) + nx * roarPush;
@@ -810,7 +810,7 @@ export function updateSpinningAxes(dt) {
         // Repulsão tangencial e radial suave amplificada pelo peso do personagem
         if (!e.isBossSubTarget) {
           const kbMult = player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0;
-          const bossResist = (e.isBoss || e.isMiniBoss) ? 0.20 : (e.isElite ? 0.50 : 1.0);
+          const bossResist = e.isFinalBoss ? 0.10 : ((e.isBoss || e.isMiniBoss) ? 0.20 : (e.isElite ? 0.50 : 1.0));
           if (isOuterZone) {
             const tanAng = angle + Math.PI * 0.5;
             const pushForce = (player.evolvedAxe ? 12 : 7) * (player.berserkTimer > 0 ? 1.6 : 1.0) * kbMult * bossResist;

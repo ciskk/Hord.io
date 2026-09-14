@@ -21,7 +21,7 @@ export const BOSS_TYPES = {
   1: { name: 'Lorde Vampírico', hp: 20000, radius: 38, speed: 1.85, color: '#8e44ad', damage: 60, xp: 450, bossId: 1 },
   2: { name: 'Monólito Abissal', hp: 70000, radius: 48, speed: 0.95, color: '#c0392b', damage: 100, xp: 1200, bossId: 2 },
   3: { name: 'Thanatos, o Ceifador Supremo', hp: 100000, radius: 44, speed: 2.1, color: '#00cec9', damage: 182, xp: 2400, bossId: 3 },
-  4: { name: 'Soberano do Abismo', hp: 170000, radius: 52, speed: 1.25, color: '#8e44ad', damage: 225, xp: 0, bossId: 4, isFinalBoss: true }
+  4: { name: 'Soberano do Abismo', hp: 221000, radius: 52, speed: 1.25, color: '#8e44ad', damage: 270, xp: 0, bossId: 4, isFinalBoss: true }
 };
 
 export const MINI_BOSS_TYPES = {

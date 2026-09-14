@@ -833,11 +833,16 @@ export function finalizeVictoryAndReturnToMenu() {
   const modal = document.getElementById('victory-modal');
   if (modal) modal.style.display = 'none';
 
-  const fadeOverlay = document.getElementById('victory-fade-overlay');
-  if (fadeOverlay) fadeOverlay.style.opacity = '0';
-
   // Retorna triunfalmente ao menu de seleção de personagens
   openCharacterSelect();
+
+  setTimeout(() => {
+    const fadeOverlay = document.getElementById('victory-fade-overlay');
+    if (fadeOverlay) {
+      fadeOverlay.classList.remove('active');
+      fadeOverlay.style.opacity = '0';
+    }
+  }, 400);
 }
 
 export function triggerVictory() {
