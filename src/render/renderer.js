@@ -227,30 +227,7 @@ export function render() {
     ctx.restore();
   }
 
-  for (let i = 0; i < gems.length; i++) {
-    const g = gems[i];
-    if (g.x < viewLeft || g.x > viewRight || g.y < viewTop || g.y > viewBottom) continue;
-    ctx.save();
-    let pulse = 0;
-    if (g.isSuper) {
-      pulse = Math.sin(frameCount * 0.16 + (g.pulseOffset || 0)) * 2.2;
-      ctx.fillStyle = 'rgba(224, 86, 253, 0.32)';
-      ctx.beginPath();
-      ctx.arc(g.x, g.y, g.radius + 6 + pulse, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.fillStyle = g.color || (g.isSuper ? '#e056fd' : '#00d2d3');
-    ctx.beginPath();
-    ctx.arc(g.x, g.y, Math.max(2, g.radius + pulse), 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(g.x - g.radius * 0.3, g.y - g.radius * 0.3, Math.max(1, g.radius * 0.28), 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  // Renderização das poças ativas no solo (Ácido / Alquimia / Fogo)
+  // 1. Renderização das poças ativas no solo (Ácido / Alquimia / Fogo) - no chão, abaixo das orbes de XP
   for (let i = 0; i < acidPuddles.length; i++) {
     const p = acidPuddles[i];
     if (p.x < viewLeft || p.x > viewRight || p.y < viewTop || p.y > viewBottom) continue;
@@ -312,6 +289,112 @@ export function render() {
       ctx.arc(p.x, p.y, Math.max(1, r * 0.78), 0, Math.PI * 2);
       ctx.stroke();
     }
+    ctx.restore();
+  }
+
+  // 2. Renderização das Orbes de XP (Gems) - Sobrepostas às poças com alto relevo visual
+  for (let i = 0; i < gems.length; i++) {
+    const g = gems[i];
+    if (g.x < viewLeft || g.x > viewRight || g.y < viewTop || g.y > viewBottom) continue;
+
+    const baseColor = g.color || (g.isSuper ? '#e056fd' : '#00d2d3');
+    const baseR = g.radius || 4.5;
+    const pulseOffset = g.pulseOffset || 0;
+    const pulse = Math.sin(frameCount * 0.16 + pulseOffset) * (g.isSuper ? 2.2 : 1.2);
+    const rad = Math.max(3, baseR + pulse);
+
+    ctx.save();
+    ctx.translate(g.x, g.y);
+
+    // 1. Halo Luminoso / Aura Radiante Pulsante
+    let haloColor = 'rgba(0, 210, 211, 0.38)';
+    if (g.isSuper) haloColor = 'rgba(224, 86, 253, 0.45)';
+    else if (baseColor === '#f1c40f') haloColor = 'rgba(241, 196, 15, 0.40)';
+    else if (baseColor === '#2ecc71') haloColor = 'rgba(46, 204, 113, 0.40)';
+
+    ctx.fillStyle = haloColor;
+    ctx.beginPath();
+    ctx.arc(0, 0, rad * 2.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 2. Geometria de Cristal Facetado em Losango / Gema Lapidada
+    const rx = rad * 0.95;
+    const ry = rad * 1.35;
+
+    // Faceta Esquerda (Tom Base)
+    ctx.fillStyle = baseColor;
+    ctx.beginPath();
+    ctx.moveTo(0, -ry);
+    ctx.lineTo(-rx, 0);
+    ctx.lineTo(0, ry);
+    ctx.closePath();
+    ctx.fill();
+
+    // Faceta Direita (Reflexo Lapidado Mais Claro)
+    ctx.fillStyle = g.isSuper ? '#f3a4fc' : (baseColor === '#f1c40f' ? '#f9ca24' : (baseColor === '#2ecc71' ? '#55efc4' : '#81ecec'));
+    ctx.beginPath();
+    ctx.moveTo(0, -ry);
+    ctx.lineTo(rx, 0);
+    ctx.lineTo(0, ry);
+    ctx.closePath();
+    ctx.fill();
+
+    // Borda Lapidada de Alto Contraste
+    ctx.strokeStyle = g.isSuper ? '#ffffff' : 'rgba(255, 255, 255, 0.85)';
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(0, -ry);
+    ctx.lineTo(rx, 0);
+    ctx.lineTo(0, ry);
+    ctx.lineTo(-rx, 0);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Núcleo Incandescente Central
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, rx * 0.32, ry * 0.32, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3. Ponto Especular e Cintilação Estelar (Sparkle Glint)
+    const glintPhase = Math.sin(frameCount * 0.22 + pulseOffset);
+    if (glintPhase > 0.3) {
+      const glintSize = (g.isSuper ? 4.5 : 3.0) * glintPhase;
+      ctx.fillStyle = '#ffffff';
+      // Brilho em cruz de 4 pontas
+      ctx.beginPath();
+      ctx.moveTo(-rx * 0.22, -ry * 0.35 - glintSize);
+      ctx.lineTo(-rx * 0.22 + glintSize * 0.28, -ry * 0.35);
+      ctx.lineTo(-rx * 0.22, -ry * 0.35 + glintSize);
+      ctx.lineTo(-rx * 0.22 - glintSize * 0.28, -ry * 0.35);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(-rx * 0.22 - glintSize, -ry * 0.35);
+      ctx.lineTo(-rx * 0.22, -ry * 0.35 - glintSize * 0.28);
+      ctx.lineTo(-rx * 0.22 + glintSize, -ry * 0.35);
+      ctx.lineTo(-rx * 0.22, -ry * 0.35 + glintSize * 0.28);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // 4. Detalhe Astral de Super Gemas: Fagulho Orbital Mágico
+    if (g.isSuper) {
+      const sparkAng = frameCount * 0.14 + pulseOffset;
+      const sparkDist = rad * 1.8;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(Math.cos(sparkAng) * sparkDist, Math.sin(sparkAng) * sparkDist, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.arc(0, 0, sparkDist, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
     ctx.restore();
   }
 
@@ -1368,16 +1451,16 @@ export function render() {
     if (bType === 'TECH') {
       const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
       ctx.rotate(bAng);
-      // Rastro de Plasma
-      ctx.fillStyle = 'rgba(0, 206, 201, 0.45)';
+      // Rastro de Plasma Carmesim
+      ctx.fillStyle = 'rgba(255, 71, 87, 0.45)';
       ctx.fillRect(-12, -2.5, 16, 5);
-      // Núcleo Energético
-      ctx.fillStyle = '#00cec9';
+      // Núcleo Energético Vermelho
+      ctx.fillStyle = '#ff4757';
       ctx.fillRect(-8, -1.8, 12, 3.6);
       // Centro Incandescente
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(-2, -1, 7, 2);
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = '#ff6b81';
       ctx.fillRect(4, -1.5, 3, 3);
     } else if (bType === 'FIRE_SHRAPNEL') {
       ctx.rotate(frameCount * 0.18 + eb.x);
@@ -1622,8 +1705,8 @@ export function render() {
       const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
       ctx.rotate(bAng);
 
-      // Rastro de gosma ácida
-      ctx.fillStyle = 'rgba(0, 210, 211, 0.45)';
+      // Rastro de gosma cáustica vermelha
+      ctx.fillStyle = 'rgba(255, 71, 87, 0.45)';
       ctx.beginPath();
       ctx.moveTo(-14, 0);
       ctx.lineTo(-2, -3.5);
@@ -1632,14 +1715,14 @@ export function render() {
       ctx.closePath();
       ctx.fill();
 
-      // Gota ácida incandescente
-      ctx.fillStyle = '#00d2d3';
+      // Gota ácida escarlate incandescente
+      ctx.fillStyle = '#ff4757';
       ctx.beginPath();
       ctx.ellipse(2, 0, 5.5, 3.2, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#c4e538';
+      ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(3, 0, 2, 0, Math.PI * 2);
+      ctx.arc(3, 0, 1.8, 0, Math.PI * 2);
       ctx.fill();
     } else {
       // Projétil Padrão Polido (Ruby Shard)

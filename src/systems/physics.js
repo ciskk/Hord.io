@@ -87,6 +87,11 @@ export function resolveWorldPhysics(player, enemies, dt) {
   const pDirY = isPlayerMoving ? (inputY / moveLen) : 0;
   const isBerserk = (player.berserkTimer || 0) > 0;
 
+  let maxSingleAttackPush = 0;
+  let accumAttackPushX = 0;
+  let accumAttackPushY = 0;
+  let attackingCount = 0;
+
   for (let i = 0; i < enemyCount; i++) {
     const e = enemies[i];
     if (!e || e.hp <= 0 || e.isBossSubTarget) continue;
@@ -118,11 +123,18 @@ export function resolveWorldPhysics(player, enemies, dt) {
         const isAttacking = e.combatState === 'WINDUP' || e.combatState === 'STRIKE';
 
         if (isAttacking) {
-          // Redução de 75% da força de contra-empurrão sofrida pelo jogador (de 85% para 21%)
+          // O monstro resiste ao empurrão com 79% da força para manter o alcance do golpe
           e.x -= nx * (overlap * 0.79);
           e.y -= ny * (overlap * 0.79);
-          player.x += nx * (overlap * 0.21);
-          player.y += ny * (overlap * 0.21);
+
+          // Força de contra-empurrão/retenção no jogador coletada sem acúmulo multiplicativo
+          const singlePush = overlap * 0.21;
+          if (singlePush > maxSingleAttackPush) {
+            maxSingleAttackPush = singlePush;
+          }
+          accumAttackPushX += nx * singlePush;
+          accumAttackPushY += ny * singlePush;
+          attackingCount++;
         } else {
           // Monstro em perseguição, recuperação ou atordoamento:
           // Aplica deslocamento radial acentuado e dispersão tangencial lateral (abrir caminho)
@@ -152,5 +164,19 @@ export function resolveWorldPhysics(player, enemies, dt) {
         }
       }
     }
+  }
+
+  // Aplicação da força de ataque não-cumulativa:
+  // Mesmo que 3 ou mais mobs estejam atacando ao mesmo tempo,
+  // apenas a força equivalente a 1 único mob "segurando" o jogador é de fato aplicada.
+  if (attackingCount > 0) {
+    const totalAttackPushLen = Math.hypot(accumAttackPushX, accumAttackPushY);
+    if (totalAttackPushLen > maxSingleAttackPush && totalAttackPushLen > 0.0001) {
+      const clampFactor = maxSingleAttackPush / totalAttackPushLen;
+      accumAttackPushX *= clampFactor;
+      accumAttackPushY *= clampFactor;
+    }
+    player.x += accumAttackPushX;
+    player.y += accumAttackPushY;
   }
 }

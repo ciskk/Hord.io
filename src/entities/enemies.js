@@ -187,6 +187,9 @@ export function createEnemy(typeKey, x, y, isElite = false) {
     stunTimer: 0,
     isElite: !!isElite,
     eliteMod,
+    // Emergência do Solo (Zumbis e Vermes Terrestres)
+    emergeTimer: (typeKey === 'ZOMBIE' || typeKey === 'SPLITTER') ? 34 : 0,
+    emergeDuration: (typeKey === 'ZOMBIE' || typeKey === 'SPLITTER') ? 34 : 0,
     // Máquina de Estados Melee (src/systems/combat.js)
     combatState: 'CHASE',
     attackTimer: 0,

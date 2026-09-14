@@ -673,7 +673,7 @@ function update(dt) {
 
       for (let i = 0; i < enemies.length; i++) {
         const e = enemies[i];
-        if (!e || e.hp <= 0 || e.isTargetable === false) continue;
+        if (!e || e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
         if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
         if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
 
@@ -731,7 +731,7 @@ function update(dt) {
 
       for (let i = 0; i < enemies.length; i++) {
         const e = enemies[i];
-        if (!e || e.hp <= 0 || e.orbitalHitCd > 0 || e.isTargetable === false) continue;
+        if (!e || e.hp <= 0 || e.orbitalHitCd > 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
         if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
         if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
         const dx = e.x - ox;
@@ -1209,6 +1209,10 @@ function update(dt) {
     if (e.hitFlash > 0) e.hitFlash -= dt;
     if (e.orbitalHitCd > 0) e.orbitalHitCd -= dt;
     if (e.axeHitCd > 0) e.axeHitCd -= dt;
+    if (e.emergeTimer > 0) {
+      e.emergeTimer -= dt;
+      if (e.emergeTimer < 0) e.emergeTimer = 0;
+    }
 
     if (e.isBossSubTarget) continue;
 
@@ -1237,6 +1241,9 @@ function update(dt) {
       e.facing = (targetX - e.x) > 0 ? 1 : -1;
       
       let curSpeed = e.speed;
+      if (e.emergeTimer > 0) {
+        curSpeed *= 0.18;
+      }
       if (e.slowTimer > 0) {
         e.slowTimer -= dt;
         const maxSlow = e.isBoss ? 0.18 : (e.slowFactor || 0.5);
@@ -1348,15 +1355,16 @@ function update(dt) {
                 enemyBullets.push({
                   x: e.x + Math.cos(spreadAngle) * 14,
                   y: e.y + Math.sin(spreadAngle) * 14,
-                  vx: Math.cos(spreadAngle) * 5.2,
-                  vy: Math.sin(spreadAngle) * 5.2,
+                  vx: Math.cos(spreadAngle) * 3.9,
+                  vy: Math.sin(spreadAngle) * 3.9,
                   radius: 5.5,
                   damage: 12,
                   life: 95,
-                  bulletType: 'TECH'
+                  bulletType: 'TECH',
+                  color: '#ff4757'
                 });
                 playSfx('shoot');
-                createHitParticles(e.x + Math.cos(spreadAngle) * 16, e.y + Math.sin(spreadAngle) * 16, '#00cec9', 3);
+                createHitParticles(e.x + Math.cos(spreadAngle) * 16, e.y + Math.sin(spreadAngle) * 16, '#ff4757', 3);
                 // Recuo mecânico
                 e.x -= Math.cos(spreadAngle) * 2.5;
                 e.y -= Math.sin(spreadAngle) * 2.5;
@@ -1753,8 +1761,8 @@ function update(dt) {
           enemyBullets.push({
             x: e.x,
             y: e.y - 10,
-            vx: Math.cos(angle) * 2.9,
-            vy: Math.sin(angle) * 2.9,
+            vx: Math.cos(angle) * 2.175,
+            vy: Math.sin(angle) * 2.175,
             radius: 6.5,
             damage: 14,
             life: 160,
@@ -1921,12 +1929,13 @@ function update(dt) {
             enemyBullets.push({
               x: e.x,
               y: e.y,
-              vx: Math.cos(sAng) * 3.4,
-              vy: Math.sin(sAng) * 3.4,
+              vx: Math.cos(sAng) * 2.55,
+              vy: Math.sin(sAng) * 2.55,
               radius: 4.5,
               damage: Math.round(e.damage * 0.35),
               life: 65,
-              bulletType: 'FIRE_SHRAPNEL'
+              bulletType: 'FIRE_SHRAPNEL',
+              color: '#e74c3c'
             });
           }
           acidPuddles.push({ x: e.x, y: e.y, radius: 24, life: 160, maxLife: 160, isFire: true });
@@ -1986,12 +1995,13 @@ function update(dt) {
             enemyBullets.push({
               x: e.x,
               y: e.y,
-              vx: Math.cos(bAng) * 4.0,
-              vy: Math.sin(bAng) * 4.0,
+              vx: Math.cos(bAng) * 3.0,
+              vy: Math.sin(bAng) * 3.0,
               radius: 5,
               damage: Math.round(e.damage * 0.35),
               life: 80,
-              bulletType: 'FIRE_SHRAPNEL'
+              bulletType: 'FIRE_SHRAPNEL',
+              color: '#e74c3c'
             });
           }
         } else {
@@ -2027,7 +2037,7 @@ function update(dt) {
         // Poça Cáustica Residual e Espículas Ácidas
         acidPuddles.push({ x: e.x, y: e.y, radius: 36, life: 180, maxLife: 180, isCaustic: true, isFire: false });
         playSfx('acid');
-        createHitParticles(e.x, e.y, '#00d2d3', 10);
+        createHitParticles(e.x, e.y, '#ff4757', 10);
 
         for (let aIdx = 0; aIdx < 4; aIdx++) {
           if (!canSpawnEnemyBullet()) break;
@@ -2035,13 +2045,13 @@ function update(dt) {
           enemyBullets.push({
             x: e.x,
             y: e.y,
-            vx: Math.cos(aAng) * 3.5,
-            vy: Math.sin(aAng) * 3.5,
+            vx: Math.cos(aAng) * 2.625,
+            vy: Math.sin(aAng) * 2.625,
             radius: 5,
             damage: Math.round(e.damage * 0.45),
             life: 60,
             bulletType: 'ACID_SPIT',
-            color: '#00d2d3'
+            color: '#ff4757'
           });
         }
 
@@ -2065,6 +2075,8 @@ function update(dt) {
             slowTimer: 0,
             slowFactor: 0,
             stunTimer: 0,
+            emergeTimer: 20,
+            emergeDuration: 20,
             combatState: 'CHASE',
             attackTimer: 0,
             attackRange: 24,

@@ -157,10 +157,12 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
         if (e.attackCooldown > 0) {
           e.attackCooldown -= dt;
         } else if (distSq <= strikeLimit * strikeLimit) {
-          e.combatState = 'WINDUP';
-          e.attackTimer = e.attackWindupFrames;
-          e.attackAngle = Math.atan2(dy, dx);
-          e.facing = dx >= 0 ? 1 : -1;
+          if ((e.emergeTimer || 0) <= 0) {
+            e.combatState = 'WINDUP';
+            e.attackTimer = e.attackWindupFrames;
+            e.attackAngle = Math.atan2(dy, dx);
+            e.facing = dx >= 0 ? 1 : -1;
+          }
         }
         break;
       }

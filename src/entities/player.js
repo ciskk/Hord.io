@@ -7,7 +7,7 @@ import { playSfx, triggerHaptic } from '../core/audio.js';
 import { inputX, inputY } from '../core/input.js';
 import { createHitParticles, addDamageText } from '../systems/combat.js';
 import { bullets, enemyBullets, acidPuddles } from '../systems/projectiles.js';
-import { gameState, triggerShake, enemies } from '../main.js';
+import { gameState, triggerShake, enemies, viewW, viewH } from '../main.js';
 import { getNeighborIndices } from '../core/spatialGrid.js';
 import { distToSegment } from '../core/math.js';
 
@@ -597,7 +597,7 @@ export function triggerHeroSkill() {
 
     for (let i = 0; i < enemies.length; i++) {
       const e = enemies[i];
-      if (!e || e.hp <= 0 || e.isTargetable === false) continue;
+      if (!e || e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
       if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
       if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
       const dx = e.x - player.x;
@@ -723,7 +723,7 @@ export function updateSpinningAxes(dt) {
 
     for (let k = 0; k < nearbyIndices.length; k++) {
       const e = enemies[nearbyIndices[k]];
-      if (!e || player.axeContactCds.has(e) || e.isTargetable === false) continue;
+      if (!e || player.axeContactCds.has(e) || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
       if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
       if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
 
@@ -857,11 +857,28 @@ export function fireWeapons() {
 
     const rangeSq = weaponRange * weaponRange;
     const inRange = [];
+    const halfW = (viewW || 1200) / 2;
+    const halfH = (viewH || 800) / 2;
+    // Margem interna para garantir que o monstro esteja visível de fato dentro da tela e não apenas surgindo na borda
+    const screenMargin = 20;
+
     for (let i = 0; i < enemies.length; i++) {
       const e = enemies[i];
       if (e.hp <= 0 || e.isTargetable === false) continue;
+      // Monstros que ainda estão emergindo do solo (Zumbis, Vermes, Parasitas) não podem ser mirados
+      if ((e.emergeTimer || 0) > 0) continue;
       if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
       if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
+
+      // Monstros comuns só podem se tornar alvos quando estiverem de fato dentro da tela visível
+      if (!e.isBoss && !e.isMiniBoss && !e.isBossSubTarget) {
+        const offX = Math.abs(e.x - player.x);
+        const offY = Math.abs(e.y - player.y);
+        if (offX > halfW - screenMargin || offY > halfH - screenMargin) {
+          continue;
+        }
+      }
+
       const dx = e.x - player.x;
       const dy = e.y - player.y;
       const dSq = dx * dx + dy * dy;

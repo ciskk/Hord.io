@@ -194,15 +194,90 @@ export function drawEnemyShape(e) {
     ctx.ellipse(0, shadowY, shadowRx, shadowRy, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // 2. Telegrafia Melee no Solo (WINDUP Threat Arc)
-    if (e.combatState === 'WINDUP') {
-      const windupRatio = 1 - (e.attackTimer / (e.attackWindupFrames || 20));
+    // 1.1 Telegrafia e Alerta de Emergência do Solo (Zumbis, Vermes e Parasitas)
+    if (e.emergeTimer > 0) {
+      const emergeDuration = e.emergeDuration || 26;
+      const progress = Math.max(0, Math.min(1, 1 - (e.emergeTimer / emergeDuration)));
+      const groundRadius = e.radius * 1.5;
+      const pulseAlert = Math.sin(frameCount * 0.3) * 2;
+
       ctx.save();
-      ctx.strokeStyle = `rgba(255, 71, 87, ${0.45 + windupRatio * 0.45})`;
+      // Fissuras e solo rompido na terra
+      ctx.strokeStyle = '#2d3436';
       ctx.lineWidth = 2.2;
       ctx.beginPath();
-      ctx.arc(0, shadowY, e.radius + 5 + (1 - windupRatio) * 6, -Math.PI * 0.38, Math.PI * 0.38);
+      for (let crack = 0; crack < 6; crack++) {
+        const cAng = crack * (Math.PI * 2 / 6) + 0.25;
+        const cDist = groundRadius * (0.6 + (crack % 3) * 0.25);
+        ctx.moveTo(0, shadowY);
+        ctx.lineTo(Math.cos(cAng) * cDist, shadowY + Math.sin(cAng) * (cDist * 0.45));
+      }
       ctx.stroke();
+
+      // Círculo de Alerta e Perigo Pulsante no Solo
+      ctx.strokeStyle = `rgba(231, 76, 60, ${0.45 + (1 - progress) * 0.5})`;
+      ctx.fillStyle = `rgba(231, 76, 60, ${0.14 + (1 - progress) * 0.22})`;
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.ellipse(0, shadowY, groundRadius + pulseAlert, (groundRadius + pulseAlert) * 0.46, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Partículas de poeira/cascalho saltando da fenda
+      ctx.fillStyle = '#636e72';
+      for (let d = 0; d < 4; d++) {
+        const dAng = frameCount * 0.22 + d * 1.57;
+        const dDist = groundRadius * 0.75;
+        const dHeight = Math.sin(progress * Math.PI) * 11;
+        ctx.fillRect(Math.cos(dAng) * dDist - 1.5, shadowY + Math.sin(dAng) * (dDist * 0.4) - dHeight, 3, 3);
+      }
+
+      // Indicador de Alerta "!" flutuando sobre a fenda
+      if (progress < 0.85) {
+        ctx.font = "bold 13px 'Cinzel', 'Outfit', sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = '#ff4757';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+        ctx.shadowBlur = 4;
+        ctx.fillText("!", 0, shadowY - e.radius - 12);
+        ctx.shadowBlur = 0;
+      }
+      ctx.restore();
+
+      // Translação física e subida progressiva da criatura para fora da terra
+      ctx.translate(0, (1 - progress) * (e.radius * 0.75));
+      ctx.scale(1, Math.max(0.25, progress));
+    }
+
+    // 2. Telegrafia Melee Intuitiva no Solo (WINDUP Threat Zone)
+    if (e.combatState === 'WINDUP') {
+      const windupRatio = 1 - (e.attackTimer / (e.attackWindupFrames || 20));
+      const threatR = e.radius + (e.attackRange ? e.attackRange * 0.75 : 18);
+      ctx.save();
+
+      // Setor de Perigo Preenchido Translúcido no Solo
+      ctx.fillStyle = `rgba(255, 71, 87, ${0.15 + windupRatio * 0.25})`;
+      ctx.beginPath();
+      ctx.moveTo(0, shadowY);
+      ctx.arc(0, shadowY, threatR * Math.max(0.2, windupRatio), -Math.PI * 0.42, Math.PI * 0.42);
+      ctx.closePath();
+      ctx.fill();
+
+      // Borda Externa de Advertência de Impacto
+      ctx.strokeStyle = `rgba(255, 71, 87, ${0.6 + windupRatio * 0.4})`;
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      ctx.arc(0, shadowY, threatR, -Math.PI * 0.42, Math.PI * 0.42);
+      ctx.stroke();
+
+      // Arco de Carga Ativa
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(0, shadowY, threatR * Math.max(0.2, windupRatio), -Math.PI * 0.42, Math.PI * 0.42);
+      ctx.stroke();
+
       ctx.restore();
     }
 

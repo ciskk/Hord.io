@@ -39,10 +39,10 @@ export const CHARACTERS = {
     },
     startingWeapon: "HAMMER",
     stats: { 
-      hp: 126, 
-      maxHp: 126, 
+      hp: 175, 
+      maxHp: 175, 
       speed: 3.2, 
-      damage: 46, 
+      damage: 64.4, 
       auraLvl: 1, 
       projectiles: 1, 
       orbitals: 0, 

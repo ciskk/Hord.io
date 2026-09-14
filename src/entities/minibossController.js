@@ -584,7 +584,7 @@ const MINIBOSS_HANDLERS = {
             e.shotDelay = 5;
             e.burstShotsLeft--;
             safePlaySfx('shoot');
-            createHitParticles(e.x, e.y, '#00cec9', 4);
+            createHitParticles(e.x, e.y, '#ff4757', 4);
             e.x -= Math.cos(e.aimAngle) * 2.5;
             e.y -= Math.sin(e.aimAngle) * 2.5;
 
@@ -593,13 +593,13 @@ const MINIBOSS_HANDLERS = {
             enemyBullets.push({
               x: e.x + Math.cos(bAng) * 16,
               y: e.y + Math.sin(bAng) * 16,
-              vx: Math.cos(bAng) * 5.6,
-              vy: Math.sin(bAng) * 5.6,
+              vx: Math.cos(bAng) * 4.2,
+              vy: Math.sin(bAng) * 4.2,
               radius: 5,
               damage: Math.round(e.damage * 0.35),
               life: 85,
               bulletType: 'TECH',
-              color: '#00cec9'
+              color: '#ff4757'
             });
           }
           if (e.burstShotsLeft <= 0) {
