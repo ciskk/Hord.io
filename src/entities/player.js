@@ -382,6 +382,7 @@ export const player = {
   isMoving: false,
   auraLvl: 0,
   auraTimer: 0,
+  auraTickFlash: 0,
   orbitals: 0,
   orbitalAngle: 0,
 
@@ -1087,6 +1088,8 @@ export function resetPlayer(heroKey) {
   player.critChance = (c.stats.critChance || 0.15) + (meta.critBonus || 0);
   player.critMult = 1.5;
   player.auraLvl = c.stats.auraLvl;
+  player.auraTimer = 0;
+  player.auraTickFlash = 0;
   player.orbitals = c.stats.orbitals;
   player.skillMaxCd = Math.round(c.stats.skillCooldownMax * (1 - (meta.cooldownReduction || 0)));
   player.skillCd = 0;

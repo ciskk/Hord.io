@@ -309,13 +309,13 @@ export const upgradesPool = [
     title: "Bíblias Protetoras",
     rarity: "card-rare",
     badge: "Passiva",
-    desc: "Tomos celestiais giram destruindo oponentes",
-    stat: "+1 Tomo Orbital (Máx: 6)",
+    desc: "Tomos celestiais giram em órbita protetora repelindo oponentes com impacto suave",
+    stat: "+1 Tomo Orbital (Máx: 3)",
     apply: () => {
       player.orbitals += 1;
       registerWeaponInInventory('orbitals', player.orbitals);
     },
-    isAvailable: () => player.orbitals < 6 && !player.evolvedOrbitals
+    isAvailable: () => player.orbitals < 3 && !player.evolvedOrbitals
   },
   {
     id: 'armor',

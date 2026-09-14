@@ -470,7 +470,7 @@ function renderPauseInventory() {
       buildList.innerHTML += `<div class="build-item-badge"><span class="name">❄️ Golpe Criogênico</span><span class="counter">${Math.round(player.slowChance * 100)}% Lentidão (${player.frostCardCount || 1}/4)</span></div>`;
     }
     if (player.orbitals > 0) {
-      buildList.innerHTML += `<div class="build-item-badge"><span class="name">📖 Bíblias Protetoras</span><span class="counter">${player.orbitals} Tomos ${player.evolvedOrbitals ? '(★ Vórtice)' : '(Máx: 6)'}</span></div>`;
+      buildList.innerHTML += `<div class="build-item-badge"><span class="name">📖 Bíblias Protetoras</span><span class="counter">${player.orbitals} Tomos ${player.evolvedOrbitals ? '(★ Vórtice)' : '(Máx: 3)'}</span></div>`;
     }
     if (player.auraLvl > 0) {
       buildList.innerHTML += `<div class="build-item-badge"><span class="name">✨ Aura Sagrada</span><span class="counter">Nv ${player.auraLvl}/5 ${player.evolvedAura ? '(★ Santuário)' : ''}</span></div>`;

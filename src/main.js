@@ -654,8 +654,12 @@ function update(dt) {
   if (player.auraLvl > 0 || player.evolvedAura) {
     player.auraTimer += dt;
     const auraInterval = player.evolvedAura ? 18 : 26;
+    if (player.auraTickFlash > 0) {
+      player.auraTickFlash = Math.max(0, player.auraTickFlash - 0.08 * dt);
+    }
     if (player.auraTimer >= auraInterval) {
       player.auraTimer = 0;
+      player.auraTickFlash = 1.0;
       const auraRadius = (player.evolvedAura ? 150 : 65) + player.auraLvl * 18;
       const aRadiusSq = auraRadius * auraRadius;
       let auraDmg = player.damage * (player.evolvedAura ? 0.85 : 0.45 * player.auraLvl);
@@ -755,10 +759,10 @@ function update(dt) {
           playSfx('hit');
           if (isCrit || isKaelExecute) playSfx('crit');
 
-          // Knockback Sagrado Suave: afasta monstros com vetor cinético; chefes e mini-chefes resistem 80% (0.20x)
+          // Knockback Sagrado Suave: 80% menos empurrão (micro-stagger que interrompe o avanço sem catapultar monstros)
           if (!e.isBossSubTarget) {
             const pushAng = Math.atan2(e.y - player.y, e.x - player.x);
-            const basePush = player.evolvedOrbitals ? 6.8 : 4.8;
+            const basePush = player.evolvedOrbitals ? 1.36 : 0.96;
             const bossResist = (e.isBoss || e.isMiniBoss) ? 0.20 : (e.isElite ? 0.45 : 1.0);
             const pushForce = basePush * (player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0) * bossResist;
             e.pushVx = (e.pushVx || 0) + Math.cos(pushAng) * pushForce;

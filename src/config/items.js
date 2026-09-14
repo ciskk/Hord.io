@@ -71,7 +71,7 @@ export const ITEMS = {
     icon: "📖",
     badge: "Bíblias",
     description: "Tomos celestiais giram destruindo oponentes em órbita protetora ao redor do herói.",
-    maxLevel: 6,
+    maxLevel: 3,
     evolutionId: 'evolved_orbitals'
   },
   AURA: {
@@ -288,18 +288,18 @@ export const SYNERGIES = [
     id: 'evolved_orbitals',
     name: "Vórtice do Apocalipse",
     fullName: "★ Vórtice do Apocalipse",
-    desc: "Fusão: Bíblias + Asas do Vento! 8 tomos supersônicos que trituram os inimigos sem intervalo.",
-    reqText: "Bíblias Nv 5 + Asas",
+    desc: "Fusão: Bíblias + Asas do Vento! 3 grimórios supremos hipersônicos com ressonância sagrada e dano devastador.",
+    reqText: "Bíblias Nv 3 + Asas",
     weaponId: 'ORBITALS',
     weaponUpgradeIds: ['orbitals'],
     passiveId: 'wings',
     isReady: (player) => {
-      return !!(!player.evolvedOrbitals && player.orbitals >= 5 && player.hasWingsPassive);
+      return !!(!player.evolvedOrbitals && player.orbitals >= 3 && player.hasWingsPassive);
     },
     isEvolved: (player) => !!player.evolvedOrbitals,
     apply: (player) => {
       player.evolvedOrbitals = true;
-      player.orbitals = 8;
+      player.orbitals = 3;
     }
   }
 ];

@@ -10,20 +10,124 @@ import { player, selectedHeroKey } from '../entities/player.js';
 import { CHARACTERS } from '../config/characters.js';
 
 /**
- * Renderiza o pulso e anéis luminosos da Aura Sagrada / Santuário Celestial.
+ * Renderiza a Aura Sagrada / Santuário Celestial com fade radial inverso,
+ * alta transparência na arena, geometria sagrada tênue e ondas de purificação.
  */
 export function drawPlayerAura() {
   if (player.auraLvl <= 0 && !player.evolvedAura) return;
 
-  const auraRadius = (player.evolvedAura ? 150 : 65) + player.auraLvl * 18;
-  const pulse = Math.sin(frameCount * 0.15) * 3;
-  ctx.strokeStyle = player.evolvedAura ? 'rgba(241, 196, 15, 0.75)' : 'rgba(241, 196, 15, 0.4)';
-  ctx.lineWidth = player.evolvedAura ? 4 : 2;
+  const isEvolved = !!player.evolvedAura;
+  const baseRadius = (isEvolved ? 150 : 65) + player.auraLvl * 18;
+  const breathing = Math.sin(frameCount * 0.05) * 2.5;
+  const auraRadius = Math.max(10, baseRadius + breathing);
+
+  ctx.save();
+
+  // 1. Campo de Luz Celestial com Gradiente Radial (Fade Inverso)
+  // Próximo ao herói: brilho áureo mais presente e acolhedor.
+  // Distanciando-se: transição suave e etérea, tornando-se 100% translúcida na borda.
+  const auraGrad = ctx.createRadialGradient(player.x, player.y, 4, player.x, player.y, auraRadius);
+  if (isEvolved) {
+    auraGrad.addColorStop(0.00, 'rgba(255, 245, 200, 0.22)');
+    auraGrad.addColorStop(0.20, 'rgba(255, 215, 0, 0.14)');
+    auraGrad.addColorStop(0.50, 'rgba(243, 156, 18, 0.05)');
+    auraGrad.addColorStop(0.80, 'rgba(241, 196, 15, 0.015)');
+    auraGrad.addColorStop(1.00, 'rgba(241, 196, 15, 0.00)');
+  } else {
+    auraGrad.addColorStop(0.00, 'rgba(255, 240, 180, 0.16)');
+    auraGrad.addColorStop(0.25, 'rgba(255, 215, 0, 0.09)');
+    auraGrad.addColorStop(0.55, 'rgba(241, 196, 15, 0.03)');
+    auraGrad.addColorStop(0.85, 'rgba(241, 196, 15, 0.008)');
+    auraGrad.addColorStop(1.00, 'rgba(241, 196, 15, 0.00)');
+  }
+  ctx.fillStyle = auraGrad;
   ctx.beginPath();
-  ctx.arc(player.x, player.y, auraRadius + pulse, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.fillStyle = player.evolvedAura ? 'rgba(241, 196, 15, 0.12)' : 'rgba(241, 196, 15, 0.04)';
+  ctx.arc(player.x, player.y, auraRadius, 0, Math.PI * 2);
   ctx.fill();
+
+  // 2. Anel Periférico Delicado com Traço Tênue (Não ofusca o piso da arena)
+  ctx.strokeStyle = isEvolved ? 'rgba(241, 196, 15, 0.28)' : 'rgba(241, 196, 15, 0.18)';
+  ctx.lineWidth = isEvolved ? 1.6 : 1.0;
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, auraRadius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 3. Anel Rúnico Interno Tênue e Marcadores Cardeais Celestes
+  const innerRingR = auraRadius * (isEvolved ? 0.82 : 0.86);
+  ctx.save();
+  ctx.setLineDash([3, 9]);
+  ctx.strokeStyle = isEvolved ? 'rgba(255, 215, 0, 0.14)' : 'rgba(241, 196, 15, 0.09)';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, innerRingR, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // 4 nós cardeais celestes rotacionando lentamente em harmonia
+  const cardAngle = frameCount * 0.008;
+  for (let k = 0; k < 4; k++) {
+    const ang = cardAngle + (k * Math.PI / 2);
+    const nx = player.x + Math.cos(ang) * auraRadius;
+    const ny = player.y + Math.sin(ang) * auraRadius;
+    ctx.fillStyle = isEvolved ? 'rgba(255, 235, 150, 0.35)' : 'rgba(241, 196, 15, 0.25)';
+    ctx.beginPath();
+    ctx.arc(nx, ny, isEvolved ? 2.2 : 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 4. Pulso de Purificação / Onda de Dano Sincronizada com o Tick
+  if (player.auraTickFlash && player.auraTickFlash > 0.01) {
+    const flashProgress = 1 - player.auraTickFlash;
+    const waveRadius = auraRadius * (0.25 + flashProgress * 0.75);
+    const waveAlpha = player.auraTickFlash * (isEvolved ? 0.35 : 0.22);
+    ctx.strokeStyle = isEvolved ? `rgba(255, 235, 150, ${waveAlpha})` : `rgba(241, 196, 15, ${waveAlpha})`;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, waveRadius, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // 5. Centelhas Divinas Flutuantes (Ambientação procedimental etérea sem alocação)
+  const sparkCount = isEvolved ? 6 : 4;
+  for (let s = 0; s < sparkCount; s++) {
+    const seed = s * 73.13;
+    const sparkDist = ((frameCount * 0.45 + seed * 19) % (auraRadius * 0.72)) + 14;
+    const sparkAng = seed + Math.sin(frameCount * 0.015 + s) * 0.6;
+    const sx = player.x + Math.cos(sparkAng) * sparkDist;
+    const sy = player.y + Math.sin(sparkAng) * sparkDist - ((frameCount * 0.3 + seed) % 18);
+    const lifeRatio = sparkDist / (auraRadius * 0.72);
+    const sparkAlpha = Math.sin(lifeRatio * Math.PI) * (isEvolved ? 0.32 : 0.20);
+    if (sparkAlpha > 0.02) {
+      ctx.fillStyle = isEvolved ? `rgba(255, 250, 200, ${sparkAlpha})` : `rgba(255, 235, 160, ${sparkAlpha})`;
+      ctx.beginPath();
+      ctx.arc(sx, sy, isEvolved ? 1.4 : 1.0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 6. Santuário Celestial (Detalhe exclusivo da Evolução: Runa Estelar no Solo)
+  if (isEvolved) {
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    ctx.rotate(frameCount * 0.003);
+    ctx.strokeStyle = 'rgba(255, 215, 0, 0.06)';
+    ctx.lineWidth = 0.8;
+    const starR = auraRadius * 0.38;
+    ctx.beginPath();
+    for (let p = 0; p < 8; p++) {
+      const a1 = p * Math.PI / 4;
+      const sr = p % 2 === 0 ? starR : starR * 0.55;
+      const px = Math.cos(a1) * sr;
+      const py = Math.sin(a1) * sr;
+      if (p === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  ctx.restore();
 }
 
 /**
@@ -56,7 +160,36 @@ export function drawPlayerOrbitals() {
   ctx.stroke();
   ctx.restore();
 
-  // 2. Renderização de Cada Tomo Celestial Aberto e seus Rastros
+  // 2. Vínculo Harmônico Celestial entre os Tomos (Tríade Sagrada)
+  if (player.orbitals === 3) {
+    ctx.save();
+    ctx.strokeStyle = isEvolved ? 'rgba(241, 196, 15, 0.16)' : 'rgba(52, 152, 219, 0.12)';
+    ctx.lineWidth = isEvolved ? 1.4 : 1.0;
+    ctx.beginPath();
+    for (let oIdx = 0; oIdx < 3; oIdx++) {
+      const a = player.orbitalAngle + (oIdx * (Math.PI * 2 / 3));
+      const bx = player.x + Math.cos(a) * orbDist;
+      const by = player.y + Math.sin(a) * orbDist;
+      if (oIdx === 0) ctx.moveTo(bx, by);
+      else ctx.lineTo(bx, by);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+  } else if (player.orbitals === 2) {
+    ctx.save();
+    ctx.strokeStyle = isEvolved ? 'rgba(241, 196, 15, 0.14)' : 'rgba(52, 152, 219, 0.10)';
+    ctx.lineWidth = 1.0;
+    const a1 = player.orbitalAngle;
+    const a2 = player.orbitalAngle + Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(player.x + Math.cos(a1) * orbDist, player.y + Math.sin(a1) * orbDist);
+    ctx.lineTo(player.x + Math.cos(a2) * orbDist, player.y + Math.sin(a2) * orbDist);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 3. Renderização de Cada Tomo Celestial Aberto e seus Rastros
   const bookW = isEvolved ? 26 : 22;
   const bookH = isEvolved ? 18 : 15;
   const halfW = bookW / 2;
