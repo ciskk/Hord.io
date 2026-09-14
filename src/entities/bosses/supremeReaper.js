@@ -7,6 +7,8 @@ export {
   initSupremeReaper, 
   updateSupremeReaper, 
   drawSupremeReaper,
+  drawCinematicScreenTitle,
+  drawReaperSpawnIntro,
   checkReaperPhases,
   REAPER_STATES,
   REAPER_SKILLS,

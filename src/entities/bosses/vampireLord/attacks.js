@@ -208,12 +208,22 @@ function executePreparedSkill(e, context) {
 
     case 'CLEAVE': {
       playSfx('boss');
-      triggerShake(10);
-      triggerHaptic('medium');
+      triggerShake(12);
+      triggerHaptic('heavy');
 
       // Avanço físico suave sincronizado com a direção exata telegrafada
-      e.x += Math.cos(targetAngle) * 18;
-      e.y += Math.sin(targetAngle) * 18;
+      e.x += Math.cos(targetAngle) * 22;
+      e.y += Math.sin(targetAngle) * 22;
+      e.isCleaving = true;
+      e.cleaveSlashTimer = 22;
+      e.cleaveProgress = 1;
+
+      // Partículas em crescente carmesim do corte da foice
+      for (let sc = 0; sc < 22; sc++) {
+        const scAng = (targetAngle - Math.PI * 0.45) + (sc / 21) * Math.PI * 0.9;
+        const scDist = 50 + Math.random() * 85;
+        createHitParticles(e.x + Math.cos(scAng) * scDist, e.y + Math.sin(scAng) * scDist, '#ff1744', 2);
+      }
 
       // FASE 5.4: Janela de Recuperação Pós-Golpe garantida (generosa para punição melee)
       e.actionState = 'RECOVERY';
@@ -240,9 +250,11 @@ function executePreparedSkill(e, context) {
           y: e.y,
           vx: Math.cos(bAng) * speedVar,
           vy: Math.sin(bAng) * speedVar,
-          radius: 6.5,
+          radius: 8.5,
           damage: Math.round(e.damage * 0.24),
-          life: 115
+          life: 115,
+          bulletType: 'VAMPIRE_BAT',
+          color: '#ff1744'
         });
       }
 
@@ -283,9 +295,11 @@ function executePreparedSkill(e, context) {
           y: leftFlankY,
           vx: Math.cos(fireAng) * spd,
           vy: Math.sin(fireAng) * spd,
-          radius: 6.5,
+          radius: 7.5,
           damage: Math.round(e.damage * 0.23),
-          life: 120
+          life: 120,
+          bulletType: 'BLOOD_CLAW',
+          color: '#ff4757'
         });
       }
 
@@ -298,9 +312,11 @@ function executePreparedSkill(e, context) {
           y: rightFlankY,
           vx: Math.cos(fireAng) * spd,
           vy: Math.sin(fireAng) * spd,
-          radius: 6.5,
+          radius: 7.5,
           damage: Math.round(e.damage * 0.23),
-          life: 120
+          life: 120,
+          bulletType: 'BLOOD_CLAW',
+          color: '#ff4757'
         });
       }
 

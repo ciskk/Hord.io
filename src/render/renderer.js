@@ -771,41 +771,142 @@ export function render() {
     ctx.rotate(bp.angle);
 
     if (bp.type === 'SOUL_SCYTHE') {
-      const scytheColor = bp.color || '#00cec9';
       const isRet = bp.isReturning;
+      const primaryCol = isRet ? '#ff4757' : (bp.color || '#00cec9');
+      const glowCol    = isRet ? '#ff6b81' : '#81ecec';
+      const r = bp.radius || 20;
 
-      // Halo pulsante de perigo e rastro espectral no retorno
-      if (isRet) {
-        ctx.strokeStyle = 'rgba(255, 71, 87, 0.45)';
-        ctx.lineWidth = 5;
-        ctx.beginPath();
-        ctx.arc(0, 0, bp.radius * 1.35, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-
-      ctx.strokeStyle = isRet ? '#ff4757' : scytheColor;
-      ctx.lineWidth = isRet ? 4.5 : 3.5;
+      // 1. Rastro Espectral Circular / Desfoque de Giro (Motion Blur Whirl)
+      ctx.save();
+      const whirlGrad = ctx.createRadialGradient(0, 0, r * 0.3, 0, 0, r * 1.45);
+      whirlGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      whirlGrad.addColorStop(0.65, isRet ? 'rgba(255, 71, 87, 0.24)' : 'rgba(0, 206, 201, 0.20)');
+      whirlGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = whirlGrad;
       ctx.beginPath();
-      ctx.arc(0, 0, bp.radius, -Math.PI * 0.4, Math.PI * 0.75);
-      ctx.stroke();
-
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.8;
-      ctx.beginPath();
-      ctx.arc(0, 0, bp.radius * 0.85, -Math.PI * 0.2, Math.PI * 0.5);
-      ctx.stroke();
-
-      ctx.fillStyle = '#1e272e';
-      ctx.fillRect(-2, -bp.radius * 0.65, 4, bp.radius * 1.3);
-
-      ctx.fillStyle = isRet ? '#ff6b81' : scytheColor;
-      ctx.beginPath();
-      ctx.arc(0, 0, 5, 0, Math.PI * 2);
+      ctx.arc(0, 0, r * 1.45, 0, Math.PI * 2);
       ctx.fill();
 
+      // Anéis de perigo no retorno
+      if (isRet) {
+        ctx.strokeStyle = 'rgba(255, 71, 87, 0.6)';
+        ctx.lineWidth = 2.4;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 1.35, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.restore();
+
+      // 2. Cabo de Guerra Escuro e Reforçado
+      ctx.fillStyle = '#11171d';
+      ctx.beginPath();
+      ctx.moveTo(-2.5, -r * 0.95);
+      ctx.lineTo(2.5, -r * 0.95);
+      ctx.lineTo(1.8, r * 1.1);
+      ctx.lineTo(-1.8, r * 1.1);
+      ctx.closePath();
+      ctx.fill();
+
+      // Detalhes de ferro e empunhadura do cabo
+      ctx.strokeStyle = '#2f3b46';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-3, -r * 0.4);
+      ctx.lineTo(3, -r * 0.4);
+      ctx.moveTo(-3, r * 0.4);
+      ctx.lineTo(3, r * 0.4);
+      ctx.stroke();
+
+      // Espigão no pomo inferior
+      ctx.fillStyle = '#3a4752';
+      ctx.beginPath();
+      ctx.moveTo(-3, r * 1.1);
+      ctx.lineTo(0, r * 1.35);
+      ctx.lineTo(3, r * 1.1);
+      ctx.closePath();
+      ctx.fill();
+
+      // 3. Cabeçote e Espigão Traseiro (Back-Spike / Bico de Corvo)
+      ctx.fillStyle = '#1e2b36';
+      ctx.beginPath();
+      ctx.moveTo(-4, -r * 0.9);
+      ctx.lineTo(14, -r * 1.05); // ponta do bico traseiro
+      ctx.lineTo(10, -r * 0.85);
+      ctx.lineTo(4, -r * 0.75);
+      ctx.lineTo(-4, -r * 0.75);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = primaryCol;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // 4. Lâmina Foice Curva Volumétrica e Aterrorizante
+      const bladeGrad = ctx.createLinearGradient(-r * 0.2, -r * 1.1, -r * 1.4, r * 0.5);
+      bladeGrad.addColorStop(0, '#224a5e');
+      bladeGrad.addColorStop(0.4, isRet ? '#3d0a10' : '#142a38');
+      bladeGrad.addColorStop(1, '#08141e');
+
+      ctx.fillStyle = bladeGrad;
+      ctx.beginPath();
+      // Encaixe superior
+      ctx.moveTo(-3, -r * 0.95);
+      // Dorso da foice com farpas dorsais ameaçadoras
+      ctx.lineTo(-r * 0.55, -r * 1.25);
+      ctx.lineTo(-r * 0.5, -r * 1.42); // espigão dorsal 1
+      ctx.lineTo(-r * 0.75, -r * 1.3);
+      ctx.quadraticCurveTo(-r * 1.3, -r * 1.2, -r * 1.45, -r * 0.4);
+      ctx.lineTo(-r * 1.62, -r * 0.45); // espigão dorsal 2
+      ctx.lineTo(-r * 1.48, -r * 0.15);
+      // Curva em direção à ponta afiadíssima
+      ctx.quadraticCurveTo(-r * 1.5, r * 0.45, -r * 1.3, r * 0.75); // Ponta
+
+      // Gume interno afiado com farpa de corte
+      ctx.quadraticCurveTo(-r * 1.1, r * 0.2, -r * 0.95, -r * 0.2);
+      ctx.lineTo(-r * 0.8, -r * 0.1); // farpa interna de degola
+      ctx.quadraticCurveTo(-r * 0.85, -r * 0.6, -2, -r * 0.75);
+      ctx.closePath();
+      ctx.fill();
+
+      // Borda escura do dorso
+      ctx.strokeStyle = '#020508';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+
+      // 5. Sulco Rúnico de Almas (Fuller Glow)
+      ctx.strokeStyle = primaryCol;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.3, -r * 0.9);
+      ctx.quadraticCurveTo(-r * 1.1, -r * 0.8, -r * 1.15, r * 0.4);
+      ctx.stroke();
+
+      // 6. Gume Biselado Ultra-Afiado Incandescente
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.0;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-r * 1.3, r * 0.75); // Ponta
+      ctx.quadraticCurveTo(-r * 1.1, r * 0.2, -r * 0.95, -r * 0.2);
+      ctx.lineTo(-r * 0.8, -r * 0.1);
+      ctx.quadraticCurveTo(-r * 0.85, -r * 0.6, -2, -r * 0.75);
+      ctx.stroke();
+
+      // 7. Núcleo de Alma / Olho Espectral no Eixo da Foice
+      const eyeGrad = ctx.createRadialGradient(0, -r * 0.8, 1, 0, -r * 0.8, 6);
+      eyeGrad.addColorStop(0, '#ffffff');
+      eyeGrad.addColorStop(0.5, glowCol);
+      eyeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = eyeGrad;
+      ctx.beginPath();
+      ctx.arc(0, -r * 0.8, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Brilho estrela na ponta da lâmina
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(0, 0, 2, 0, Math.PI * 2);
+      ctx.arc(-r * 1.3, r * 0.75, 2.5, 0, Math.PI * 2);
       ctx.fill();
     } else {
       ctx.strokeStyle = '#e74c3c';
@@ -1288,6 +1389,133 @@ export function render() {
       ctx.beginPath();
       ctx.arc(6, 0, 2.5, 0, Math.PI * 2);
       ctx.fill();
+    } else if (bType === 'VAMPIRE_BAT') {
+      const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
+      ctx.rotate(bAng);
+
+      // Rastro de fumaça e névoa carmesim
+      const tailGrad = ctx.createLinearGradient(-18, 0, 0, 0);
+      tailGrad.addColorStop(0, 'rgba(40, 2, 8, 0)');
+      tailGrad.addColorStop(0.6, 'rgba(142, 68, 173, 0.4)');
+      tailGrad.addColorStop(1, 'rgba(255, 23, 68, 0.7)');
+      ctx.fillStyle = tailGrad;
+      ctx.beginPath();
+      ctx.moveTo(-18, 0);
+      ctx.lineTo(-4, -4);
+      ctx.lineTo(2, 0);
+      ctx.lineTo(-4, 4);
+      ctx.closePath();
+      ctx.fill();
+
+      // Morcego espectral animado (batimento de asas)
+      const flap = Math.sin(frameCount * 0.5 + (eb.x * 0.1)) * 6;
+      ctx.fillStyle = '#120206';
+      ctx.beginPath();
+      ctx.moveTo(7, 0);
+      ctx.lineTo(-2, -9 + flap);
+      ctx.lineTo(-5, -2);
+      ctx.lineTo(-8, 0);
+      ctx.lineTo(-5, 2);
+      ctx.lineTo(-2, 9 - flap);
+      ctx.closePath();
+      ctx.fill();
+
+      // Borda das asas em sangue brilhante
+      ctx.strokeStyle = '#ff1744';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      // Olhos vermelhos brilhantes
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(3, -2, 1.5, 1.5);
+      ctx.fillRect(3, 1, 1.5, 1.5);
+    } else if (bType === 'BLOOD_ORB') {
+      const bPulse = Math.sin(frameCount * 0.28 + (eb.x * 0.05)) * 1.8;
+      const orbR = eb.radius + bPulse;
+
+      // Halo pulsante exterior
+      const haloGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, orbR * 1.8);
+      haloGrad.addColorStop(0, 'rgba(255, 0, 85, 0.9)');
+      haloGrad.addColorStop(0.4, 'rgba(200, 15, 45, 0.6)');
+      haloGrad.addColorStop(0.8, 'rgba(80, 5, 20, 0.3)');
+      haloGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = haloGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, orbR * 1.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Núcleo denso de sangue carmesim
+      ctx.fillStyle = '#200207';
+      ctx.beginPath();
+      ctx.arc(0, 0, orbR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ff1744';
+      ctx.lineWidth = 2.0;
+      ctx.stroke();
+
+      // Anel rúnico orbital
+      const rAng = frameCount * 0.15;
+      ctx.strokeStyle = 'rgba(255, 107, 129, 0.8)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, orbR * 1.35, orbR * 0.55, rAng, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Ponto especular branco no núcleo
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-orbR * 0.35, -orbR * 0.35, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (bType === 'BLOOD_CLAW') {
+      const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
+      ctx.rotate(bAng);
+
+      // Rastro de corte translúcido
+      const cGrad = ctx.createLinearGradient(-16, 0, 10, 0);
+      cGrad.addColorStop(0, 'rgba(255, 23, 68, 0)');
+      cGrad.addColorStop(0.5, 'rgba(180, 10, 35, 0.65)');
+      cGrad.addColorStop(1, 'rgba(255, 255, 255, 0.95)');
+      ctx.fillStyle = cGrad;
+      ctx.beginPath();
+      ctx.moveTo(-16, 0);
+      ctx.quadraticCurveTo(-4, -8, 8, 0);
+      ctx.quadraticCurveTo(-4, 8, -16, 0);
+      ctx.fill();
+
+      // Lâmina curvada afiada em forma de garra
+      ctx.fillStyle = '#ff1744';
+      ctx.beginPath();
+      ctx.moveTo(10, 0);
+      ctx.lineTo(-4, -6);
+      ctx.quadraticCurveTo(0, 0, -4, 6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+    } else if (bType === 'BLOOD_DAGGER') {
+      const bAng = Math.atan2(eb.vy || 0, eb.vx || 0);
+      ctx.rotate(bAng);
+
+      // Adaga de cristal de sangue giratória
+      const spin = frameCount * 0.22;
+      ctx.fillStyle = '#ff1744';
+      ctx.beginPath();
+      ctx.moveTo(12, 0);
+      ctx.lineTo(-2, -5 * Math.cos(spin));
+      ctx.lineTo(-10, 0);
+      ctx.lineTo(-2, 5 * Math.cos(spin));
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // Guarda e pomo
+      ctx.fillStyle = '#f1c40f';
+      ctx.fillRect(-3, -3.5, 2, 7);
+      ctx.fillRect(-11, -1.5, 3, 3);
     } else {
       // Projétil Padrão Polido (Ruby Shard)
       ctx.fillStyle = '#ff7675';

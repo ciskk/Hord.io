@@ -434,22 +434,25 @@ export function triggerBossEncounter(bossId) {
 
   const bossHpFill = document.getElementById('boss-hp-fill');
   if (bossHpFill) {
-    bossHpFill.style.width = boss.bossId === 4 ? '0%' : '100%';
+    bossHpFill.style.width = (boss.bossId === 1 || boss.bossId === 3 || boss.bossId === 4) ? '0%' : '100%';
     bossHpFill.style.background = '';
     bossHpFill.style.boxShadow = '';
   }
 
   const bossHpVal = document.getElementById('boss-hp-val');
-  if (bossHpVal) bossHpVal.innerText = boss.bossId === 4 ? '0%' : '100%';
+  if (bossHpVal) bossHpVal.innerText = (boss.bossId === 1 || boss.bossId === 3 || boss.bossId === 4) ? '0%' : '100%';
 
-  if (boss.bossId !== 4) {
-    playSfx('boss');
-    triggerShake(16);
-    triggerHaptic('heavy');
-  } else {
+  if (boss.bossId === 4) {
     playSfx('warp');
     triggerShake(6);
     triggerHaptic('medium');
+  } else if (boss.bossId === 1 || boss.bossId === 3) {
+    // A introdução cinemática de 5 segundos gerencia seus próprios efeitos sonoros e tremores
+    triggerShake(4);
+  } else {
+    playSfx('boss');
+    triggerShake(16);
+    triggerHaptic('heavy');
   }
 
   return boss;

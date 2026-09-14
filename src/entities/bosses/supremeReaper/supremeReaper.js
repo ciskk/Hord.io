@@ -5,7 +5,11 @@
 export { REAPER_STATES, REAPER_SKILLS, REAPER_CONFIG } from './constants.js';
 export { initSupremeReaper } from './init.js';
 export { updateSupremeReaper, checkReaperPhases } from './fsm.js';
-export { drawSupremeReaper } from './render.js';
+export { 
+  drawSupremeReaper, 
+  drawCinematicScreenTitle, 
+  drawReaperSpawnIntro 
+} from './render.js';
 export { 
   cleanupReaperSubTargets, 
   spawnReaperLanterns, 

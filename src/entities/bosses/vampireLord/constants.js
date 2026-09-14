@@ -4,6 +4,7 @@
  */
 
 export const VAMPIRE_STATES = Object.freeze({
+  SPAWN_INTRO: 'SPAWN_INTRO',
   CHASE: 'CHASE',
   WINDUP: 'WINDUP',
   RECOVERY: 'RECOVERY',
@@ -26,9 +27,18 @@ export const VAMPIRE_SKILLS = Object.freeze({
   REPULSION: 'REPULSION'
 });
 
+export const VAMPIRE_PROJECTILES = Object.freeze({
+  BAT: 'VAMPIRE_BAT',
+  ORB: 'BLOOD_ORB',
+  CLAW: 'BLOOD_CLAW',
+  DAGGER: 'BLOOD_DAGGER'
+});
+
 export const VAMPIRE_CONFIG = Object.freeze({
   COLOR_NORMAL: '#8e44ad',
   COLOR_ENRAGED: '#e74c3c',
   COLOR_REPULSION: '#ff1744',
-  ENRAGE_HP_RATIO: 0.45
+  ENRAGE_HP_RATIO: 0.45,
+  INTRO_DURATION: 300, // 5 segundos a 60 FPS
+  TITLE_DURATION: 180  // 3 segundos na tela
 });

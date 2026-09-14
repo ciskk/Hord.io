@@ -13,11 +13,26 @@ import { spawnLitocistos } from './mechanics.js';
  */
 export function initAbyssalMonolith(boss) {
   // Máquina de estados principal
-  boss.actionState = MONOLITH_STATES.CHASE;
+  boss.actionState = MONOLITH_STATES.SPAWN_INTRO;
   boss.actionTimer = 0;
   boss.currentSkill = null;
   boss.lastUsedSkill = null;
   boss.skillCooldown = 50;
+
+  // Intro Cinematográfica de 5 segundos (300 frames a 60 FPS)
+  boss.introDuration = MONOLITH_CONFIG.INTRO_DURATION || 300;
+  boss.introTimer = boss.introDuration;
+  boss.isTargetable = false;
+  boss.titleTimer = 0;
+  boss.titleMaxTimer = MONOLITH_CONFIG.TITLE_DURATION || 180;
+  boss.hasTriggeredTitle = false;
+  boss.hasRoared = false;
+
+  // Punhos / Manoplas Megalíticas Flutuantes do Titã
+  boss.gauntlets = {
+    left: { x: -64, y: 10, lift: 0, rot: 0.15 },
+    right: { x: 64, y: 10, lift: 0, rot: -0.15 }
+  };
 
   // Velocidade Dinâmica Calibrada (Colosso Ativo)
   boss.speed = MONOLITH_CONFIG.BASE_SPEED;
@@ -41,6 +56,7 @@ export function initAbyssalMonolith(boss) {
   boss.orbitals = [];
   boss.orbitalAngularVelocity = MONOLITH_CONFIG.ORBITAL_ANGULAR_VELOCITY;
   spawnLitocistos(boss, MONOLITH_CONFIG.P1_ORBITAL_COUNT, MONOLITH_CONFIG.P1_ORBITAL_HP, enemies);
+  boss.orbitals.forEach(o => { o.isTargetable = false; });
 
   // Fontes Termais no Solo
   boss.thermalVents = [];

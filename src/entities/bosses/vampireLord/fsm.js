@@ -35,6 +35,50 @@ export function updateVampireLord(e, dt, context) {
     e.repulsionCooldown -= dt;
   }
 
+  // Atualização do corte de foice do Cleave
+  if (e.isCleaving) {
+    if (e.cleaveSlashTimer === undefined) e.cleaveSlashTimer = 0;
+    e.cleaveSlashTimer -= dt;
+    if (e.cleaveSlashTimer <= 0) {
+      e.isCleaving = false;
+    }
+  }
+
+  // 0. Gerenciamento do Banner de Título
+  if (e.titleTimer > 0) {
+    e.titleTimer -= dt;
+  }
+
+  // 0.1. Gestão de Pós-Imagens (Ghost Afterimages)
+  if (e.afterImages && e.afterImages.length > 0) {
+    for (let ai = e.afterImages.length - 1; ai >= 0; ai--) {
+      e.afterImages[ai].life -= dt;
+      if (e.afterImages[ai].life <= 0) {
+        e.afterImages.splice(ai, 1);
+      }
+    }
+  }
+
+  // 0.2. Gestão do Rastro Espectral dos Olhos
+  if (!e.eyeTrails) e.eyeTrails = [];
+  if (e.actionState !== 'SPAWN_INTRO' || (e.introTimer && e.introTimer < 220)) {
+    if (Math.floor(frameCount) % 2 === 0) {
+      e.eyeTrails.push({
+        x: e.x,
+        y: e.y + (e.floatBob || 0) - (e.isVulnerable ? 22 : 32),
+        facing: e.facing,
+        life: 16,
+        maxLife: 16,
+        isEnraged: e.isEnraged
+      });
+      if (e.eyeTrails.length > 20) e.eyeTrails.shift();
+    }
+  }
+  for (let et = e.eyeTrails.length - 1; et >= 0; et--) {
+    e.eyeTrails[et].life -= dt;
+    if (e.eyeTrails[et].life <= 0) e.eyeTrails.splice(et, 1);
+  }
+
   // 1. Orientação horizontal e postura com mira travada
   if (e.actionState === 'WINDUP') {
     e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
@@ -42,15 +86,16 @@ export function updateVampireLord(e, dt, context) {
     e.actionState !== 'RECOVERY' && 
     e.actionState !== 'MIST_BRAKE' && 
     e.actionState !== 'MIST_DASH_PAUSE' && 
-    e.actionState !== 'TELEPORTING'
+    e.actionState !== 'TELEPORTING' &&
+    e.actionState !== 'SPAWN_INTRO'
   ) {
     e.facing = (player.x - e.x) > 0 ? 1 : -1;
   }
   e.floatBob = Math.sin(frameCount * 0.08) * 4;
 
-  // 2. Transição para Fase de Fúria (< 45% HP)
+  // 2. Transição para Fase de Fúria (< 45% HP) - Bloqueada durante a introdução
   const hpRatio = e.hp / e.maxHp;
-  if (hpRatio < 0.45 && !e.hasEnraged) {
+  if (e.actionState !== 'SPAWN_INTRO' && hpRatio < 0.45 && !e.hasEnraged) {
     e.hasEnraged = true;
     e.isEnraged = true;
     e.speed *= 1.28;
@@ -94,6 +139,115 @@ export function updateVampireLord(e, dt, context) {
 
   // 4. MÁQUINA DE ESTADOS PRINCIPAL
   switch (e.actionState) {
+    case 'SPAWN_INTRO': {
+      const introMax = e.introDuration || 300;
+      e.introTimer -= dt;
+      const progress = Math.min(1.0, Math.max(0, 1 - (e.introTimer / introMax)));
+
+      e.isVulnerable = false;
+      e.isTargetable = false;
+
+      // Preenchimento cinematográfico contínuo da barra de HP (0% a 100%)
+      const hpPercent = Math.min(100, Math.round(progress * 100));
+      const bossHpFill = document.getElementById('boss-hp-fill');
+      if (bossHpFill) bossHpFill.style.width = `${hpPercent}%`;
+      const bossHpVal = document.getElementById('boss-hp-val');
+      if (bossHpVal) bossHpVal.innerText = `${hpPercent}%`;
+
+      // ATO 1: O Selo Carmesim & Eclipse (0.00 <= progress < 0.24, frames 0-72)
+      if (progress < 0.24) {
+        if (Math.floor(e.introTimer) === Math.floor(introMax - 4)) {
+          playSfx('charge');
+        }
+        if (Math.floor(frameCount) % 4 === 0) {
+          triggerShake(1.2 + progress * 5);
+          const pAngle = Math.random() * Math.PI * 2;
+          const pDist = 70 + Math.random() * 110;
+          createHitParticles(
+            e.x + Math.cos(pAngle) * pDist,
+            e.y + Math.sin(pAngle) * pDist,
+            '#ff1744',
+            1
+          );
+        }
+      } 
+      // ATO 2: Vórtice das Trevas & Olhos Espectrais (0.24 <= progress < 0.50, frames 72-150)
+      else if (progress < 0.50) {
+        if (Math.floor(e.introTimer) === Math.floor(introMax * 0.76)) {
+          playSfx('warp');
+          triggerHaptic('medium');
+        }
+        if (Math.floor(frameCount) % 3 === 0) {
+          triggerShake(2.0 + Math.sin(progress * 10) * 2);
+          const pAngle = Math.random() * Math.PI * 2;
+          const pDist = 25 + Math.random() * 65;
+          createHitParticles(e.x + Math.cos(pAngle) * pDist, e.y + Math.sin(pAngle) * pDist, '#8e44ad', 2);
+          createHitParticles(e.x, e.y, '#2c0c16', 1);
+        }
+      } 
+      // ATO 3: Desdobrar de Asas & Banner Imperial (0.50 <= progress < 0.76, frames 150-228)
+      else if (progress < 0.76) {
+        if (!e.hasTriggeredTitle) {
+          e.hasTriggeredTitle = true;
+          e.titleTimer = e.titleMaxTimer || 180;
+          playSfx('forcefield');
+          triggerHaptic('medium');
+        }
+        if (Math.floor(frameCount) % 3 === 0) {
+          triggerShake(2.5 + Math.sin(progress * 12) * 2);
+          createHitParticles(
+            e.x + (Math.random() - 0.5) * e.radius * 2.2,
+            e.y + (Math.random() - 0.5) * e.radius * 2.2,
+            '#ff1744',
+            2
+          );
+        }
+      } 
+      // ATO 4: Rugido Predatório & Impacto Sísmico (0.76 <= progress <= 1.00, frames 228-300)
+      else {
+        if (!e.hasRoared) {
+          e.hasRoared = true;
+          playSfx('boss');
+          triggerShake(16);
+          triggerHaptic('heavy');
+          addDamageText(e.x, e.y - 45, "A NOITE ME PERTENCE!", true, '#ff1744');
+
+          bossShockwaves.push({
+            x: e.x,
+            y: e.y,
+            radius: 20,
+            maxRadius: 280,
+            speed: 8.5,
+            damage: 0,
+            colorRgb: '255, 23, 68',
+            hitPlayer: false
+          });
+
+          for (let p = 0; p < 36; p++) {
+            const rAng = Math.random() * Math.PI * 2;
+            const rDist = 20 + Math.random() * 140;
+            createHitParticles(e.x + Math.cos(rAng) * rDist, e.y + Math.sin(rAng) * rDist, '#ff1744', 2);
+          }
+        }
+
+        if (Math.floor(frameCount) % 2 === 0) {
+          triggerShake(3.5);
+          createHitParticles(e.x, e.y, '#ffffff', 2);
+          createHitParticles(e.x, e.y, '#ff1744', 2);
+        }
+      }
+
+      if (e.introTimer <= 0) {
+        e.actionState = 'CHASE';
+        e.isTargetable = true;
+        e.isVulnerable = false;
+        e.skillCooldown = 40;
+        triggerShake(8);
+        playSfx('crit');
+      }
+      return;
+    }
+
     case 'ENRAGE_TRANSITION': {
       e.actionTimer -= dt;
       if (Math.floor(frameCount) % 3 === 0) {
@@ -143,8 +297,21 @@ export function updateVampireLord(e, dt, context) {
       e.y += Math.sin(e.mistAngle) * dashSpeed * dt;
       e.actionTimer -= dt;
 
+      // Pós-imagens e névoa volumétrica
+      if (Math.floor(frameCount) % 2 === 0) {
+        if (!e.afterImages) e.afterImages = [];
+        e.afterImages.push({
+          x: e.x,
+          y: e.y,
+          facing: e.facing,
+          life: 14,
+          maxLife: 14
+        });
+      }
+
       createHitParticles(e.x, e.y, '#8e44ad', 2);
-      createHitParticles(e.x, e.y, '#2c0c16', 1);
+      createHitParticles(e.x, e.y, '#2c0c16', 2);
+      createHitParticles(e.x, e.y, '#ff1744', 1);
 
       const mdx = player.x - e.x;
       const mdy = player.y - e.y;
@@ -219,14 +386,16 @@ export function updateVampireLord(e, dt, context) {
         triggerShake(9);
         playSfx('shoot');
 
-        // Anel expansivo previsível de esferas na saída da névoa
+        // Anel expansivo previsível de adagas de sangue na saída da névoa
         const ringCount = e.isEnraged ? 16 : 12;
         for (let k = 0; k < ringCount; k++) {
           const fAng = (k * Math.PI * 2) / ringCount;
           enemyBullets.push({
             x: e.x, y: e.y,
-            vx: Math.cos(fAng) * 4.0, vy: Math.sin(fAng) * 4.0,
-            radius: 6.5, damage: Math.round(e.damage * 0.24), life: 110
+            vx: Math.cos(fAng) * 4.2, vy: Math.sin(fAng) * 4.2,
+            radius: 7.0, damage: Math.round(e.damage * 0.24), life: 110,
+            bulletType: 'BLOOD_DAGGER',
+            color: '#ff1744'
           });
         }
 
@@ -253,7 +422,9 @@ export function updateVampireLord(e, dt, context) {
           enemyBullets.push({
             x: e.x, y: e.y,
             vx: Math.cos(fAng) * spd, vy: Math.sin(fAng) * spd,
-            radius: 6, damage: Math.round(e.damage * 0.22), life: 125
+            radius: 7.5, damage: Math.round(e.damage * 0.22), life: 125,
+            bulletType: 'BLOOD_ORB',
+            color: '#ff0037'
           });
         }
 
@@ -288,7 +459,16 @@ export function updateVampireLord(e, dt, context) {
       e.actionTimer -= dt;
 
       // Partículas específicas de acordo com o ataque preparado
-      if (e.currentSkill === 'REPULSION') {
+      if (e.currentSkill === 'CLEAVE') {
+        const cleaveMax = e.isEnraged ? 52 : 68;
+        e.cleaveProgress = Math.min(1.0, Math.max(0, 1 - (e.actionTimer / cleaveMax)));
+        if (Math.floor(frameCount) % 2 === 0) {
+          const scAngle = e.aimAngle + (Math.random() - 0.5) * 1.4;
+          const scDist = 25 + Math.random() * 95;
+          createHitParticles(e.x + Math.cos(scAngle) * scDist, e.y + Math.sin(scAngle) * scDist, '#ff1744', 1);
+          createHitParticles(e.x, e.y, '#2c0c16', 1);
+        }
+      } else if (e.currentSkill === 'REPULSION') {
         if (Math.floor(frameCount) % 2 === 0) {
           const rAng = Math.random() * Math.PI * 2;
           const rDist = Math.random() * (e.radius * 1.3);

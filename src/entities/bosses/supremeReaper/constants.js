@@ -4,6 +4,7 @@
  */
 
 export const REAPER_STATES = Object.freeze({
+  SPAWN_INTRO: 'SPAWN_INTRO',
   CHASE: 'CHASE',
   WINDUP: 'WINDUP',
   BLINK_AIM: 'BLINK_AIM',
@@ -22,10 +23,14 @@ export const REAPER_SKILLS = Object.freeze({
 });
 
 export const REAPER_CONFIG = Object.freeze({
+  // Introdução Cinemática e Banner
+  INTRO_DURATION: 300, // 5.0 segundos a 60 FPS
+  TITLE_DURATION: 180, // 3.0 segundos na tela
+
   // Lanternas Espirituais
-  LANTERN_DIST: 105,
+  LANTERN_DIST: 110,
   LANTERN_DIST_Y_FACTOR: 0.48,
-  LANTERN_RADIUS: 16,
+  LANTERN_RADIUS: 17,
   P1_LANTERN_COUNT: 3,
   P1_LANTERN_HP: 4000,
   P2_LANTERN_COUNT: 4,
@@ -43,10 +48,19 @@ export const REAPER_CONFIG = Object.freeze({
   ENRAGE_HP_RATIO: 0.45,
   PHASE3_HP_RATIO: 0.20,
 
-  // Cores
+  // Paleta de Cores Espectrais e de Trevas
+  COLOR_VOID_BLACK: '#020509',
+  COLOR_VOID_DEEP: '#061019',
+  COLOR_VOID_ROBE: '#0a1a26',
   COLOR_SOUL_CYAN: '#00cec9',
   COLOR_SOUL_GLOW: '#81ecec',
+  COLOR_SOUL_EMERALD: '#00b894',
+  COLOR_BONE_WHITE: '#e6f2f2',
+  COLOR_BONE_SHADE: '#1a333d',
   COLOR_ENRAGED: '#ff4757',
+  COLOR_ENRAGED_GLOW: '#ff6b81',
+  COLOR_ENRAGED_DARK: '#2c080d',
   COLOR_P3: '#ff4757',
-  COLOR_RECOVERY: '#81ecec'
+  COLOR_RECOVERY: '#81ecec',
+  COLOR_GOLD_TRIM: '#f1c40f'
 });

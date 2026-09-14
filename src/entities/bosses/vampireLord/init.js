@@ -2,7 +2,7 @@
  * src/entities/bosses/vampireLord/init.js
  * Inicialização e configuração de propriedades do Lorde Vampírico (Boss 1).
  */
-import { VAMPIRE_STATES } from './constants.js';
+import { VAMPIRE_STATES, VAMPIRE_CONFIG } from './constants.js';
 
 /**
  * Inicializa propriedades exclusivas, flags mecânicas e parâmetros visuais do Lorde Vampírico.
@@ -10,13 +10,23 @@ import { VAMPIRE_STATES } from './constants.js';
  */
 export function initVampireLord(boss) {
   // Máquina de estados principal:
-  // 'CHASE', 'WINDUP', 'RECOVERY', 'ENRAGE_TRANSITION', 'CHANNELING_SPIRAL', 'MIST_DASH', 'MIST_DASH_PAUSE', 'MIST_BRAKE', 'TELEPORTING'
-  boss.actionState = 'CHASE';
+  // 'SPAWN_INTRO', 'CHASE', 'WINDUP', 'RECOVERY', 'ENRAGE_TRANSITION', 'CHANNELING_SPIRAL', 'MIST_DASH', 'MIST_DASH_PAUSE', 'MIST_BRAKE', 'TELEPORTING'
+  boss.actionState = VAMPIRE_STATES.SPAWN_INTRO;
   boss.actionTimer = 0;
   boss.currentSkill = null; // 'CLEAVE', 'SWARM', 'MIST_DASH', 'TELEPORT', 'BLOOD_BURST', 'SPIRAL_BARRAGE', 'PINCER_SHOT'
   boss.skillCooldown = 70;
   boss.aimAngle = 0;
   boss.isWingPrepping = false;
+
+  // Intro Cinematográfica de 5 segundos (300 frames a 60 FPS)
+  boss.introDuration = VAMPIRE_CONFIG.INTRO_DURATION || 300;
+  boss.introTimer = boss.introDuration;
+  boss.isTargetable = false; // Bloqueia mira e auto-fire durante a animação de entrada
+  boss.titleTimer = 0;
+  boss.titleMaxTimer = VAMPIRE_CONFIG.TITLE_DURATION || 180;
+  boss.hasTriggeredTitle = false;
+  boss.hasRoared = false;
+  boss.introBats = [];
 
   // Janelas de vulnerabilidade e recuperação
   boss.recoveryTimer = 0;
@@ -42,12 +52,18 @@ export function initVampireLord(boss) {
   boss.hasEnraged = false;
   boss.isEnraged = false;
 
-  // Micro-animações e postura procedural
+  // Micro-animações e postura procedural avançada
   boss.floatBob = 0;
   boss.wingSpread = 1.0;
   boss.facing = 1;
+  boss.afterImages = [];
+  boss.eyeTrails = [];
+  boss.cleaveProgress = 0;
+  boss.isCleaving = false;
+  boss.heartBeatTimer = 0;
 
   // Mecânica de Repulsão Melee
   boss.meleeContactTimer = 0;
   boss.repulsionCooldown = 0;
 }
+

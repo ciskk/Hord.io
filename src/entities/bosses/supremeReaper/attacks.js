@@ -63,6 +63,7 @@ export function selectReaperSkill(e, dist, player) {
 export function executeReaperSkill(e, context) {
   const {
     player,
+    frameCount = 0,
     bossTelegraphs,
     bossProjectiles,
     triggerShake,
@@ -74,22 +75,23 @@ export function executeReaperSkill(e, context) {
   switch (e.currentSkill) {
     case REAPER_SKILLS.DOUBLE_CLEAVE: {
       playSfx('boss');
-      triggerShake(11);
+      triggerShake(12);
       triggerHaptic('heavy');
-      e.wingTargetSpan = 1.35;
+      e.wingTargetSpan = 1.45;
       e.scytheTargetAngle = 1.4 * e.facing;
+      e.scytheGlow = 1.0;
 
       bossTelegraphs.push({
         type: 'SCYTHE_CLEAVE',
         x: e.x,
         y: e.y,
-        radius: 175,
+        radius: 180,
         angle: angleToPlayer,
         timer: 32,
         maxTimer: 32,
         damage: Math.round(e.damage * 0.45),
-        color: '#00cec9',
-        colorRgb: '0, 206, 201',
+        color: e.isEnraged ? '#ff4757' : '#00cec9',
+        colorRgb: e.isEnraged ? '255, 71, 87' : '0, 206, 201',
         boss: e
       });
 
@@ -97,11 +99,13 @@ export function executeReaperSkill(e, context) {
         timer: 20,
         callback: () => {
           playSfx('crit');
+          triggerShake(10);
+          e.scytheGlow = 1.0;
           bossTelegraphs.push({
             type: 'SCYTHE_CLEAVE',
             x: e.x,
             y: e.y,
-            radius: 205,
+            radius: 215,
             angle: angleToPlayer + 0.38 * e.facing,
             timer: 38,
             maxTimer: 38,
@@ -120,6 +124,10 @@ export function executeReaperSkill(e, context) {
 
     case REAPER_SKILLS.SOUL_SCYTHES: {
       playSfx('shoot');
+      e.wingTargetSpan = 1.15;
+      e.scytheTargetAngle = (frameCount || 0) * 0.25;
+      e.scytheGlow = 0.8;
+
       const blades = e.isPhase3 ? 7 : (e.isEnraged ? 5 : 3);
       const arc = Math.PI * (e.isEnraged ? 0.65 : 0.45);
       const startAngle = angleToPlayer - arc / 2;
@@ -133,7 +141,7 @@ export function executeReaperSkill(e, context) {
           y: e.y,
           vx: Math.cos(bAng) * 6.5,
           vy: Math.sin(bAng) * 6.5,
-          radius: 19,
+          radius: 20,
           damage: Math.round(e.damage * 0.48),
           life: 140,
           maxLife: 140,
@@ -149,19 +157,23 @@ export function executeReaperSkill(e, context) {
 
     case REAPER_SKILLS.SOUL_TETHER: {
       playSfx('boss');
+      triggerShake(7);
       e.tetherActive = true;
       e.tetherTimer = 160;
       e.actionState = REAPER_STATES.CHASE;
       e.skillCooldown = 80;
-      addDamageText(player.x, player.y, "VÍNCULO DE ALMAS!", true, '#00cec9');
+      addDamageText(player.x, player.y, "VÍNCULO DAS ALMAS!", true, '#00cec9');
       break;
     }
 
     case REAPER_SKILLS.VORTEX_HARVEST: {
       playSfx('boss');
-      triggerShake(8);
+      triggerShake(9);
+      e.wingTargetSpan = 1.35;
+      e.scytheTargetAngle = 0;
       e.actionState = REAPER_STATES.VORTEX_HARVEST;
       e.actionTimer = e.isEnraged ? 75 : 95;
+      addDamageText(e.x, e.y - 45, "COLHEITA DO CREPÚSCULO!", true, e.isEnraged ? '#ff4757' : '#00cec9');
       break;
     }
 

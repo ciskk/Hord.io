@@ -31,6 +31,8 @@ export function spawnReaperLanterns(boss, count, lHp, targetList = enemies) {
   cleanupReaperSubTargets(boss, targetList);
   boss.lanterns = [];
 
+  const isIntro = boss.actionState === REAPER_STATES.SPAWN_INTRO;
+
   for (let k = 0; k < count; k++) {
     const angle = (k * Math.PI * 2) / count;
     const lantern = {
@@ -46,9 +48,11 @@ export function spawnReaperLanterns(boss, count, lHp, targetList = enemies) {
       sway: 0,
       swayVel: 0,
       isBossSubTarget: true,
+      isTargetable: !isIntro,
       baseType: 'LANTERNA',
       color: REAPER_CONFIG.COLOR_SOUL_CYAN,
       parentBoss: boss,
+      flickerPhase: k * (Math.PI * 2 / count),
       x: boss.x + Math.cos(angle) * REAPER_CONFIG.LANTERN_DIST,
       y: boss.y + Math.sin(angle) * (REAPER_CONFIG.LANTERN_DIST * REAPER_CONFIG.LANTERN_DIST_Y_FACTOR)
     };
@@ -163,6 +167,14 @@ export function updateSoulTether(e, dt, context) {
     }
     e.hp = Math.min(e.maxHp, e.hp + 45);
     createHitParticles(e.x, e.y, '#2ecc71', 2);
+  }
+
+  // Partículas de sucção da essência vital fluindo para o núcleo do Ceifador
+  if (Math.floor(context.frameCount) % 4 === 0) {
+    const streamT = Math.random();
+    const sx = player.x + dx * streamT;
+    const sy = player.y + dy * streamT;
+    createHitParticles(sx, sy, '#81ecec', 1);
   }
 
   if (e.tetherTimer <= 0) {

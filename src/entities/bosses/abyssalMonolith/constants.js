@@ -4,6 +4,7 @@
  */
 
 export const MONOLITH_STATES = Object.freeze({
+  SPAWN_INTRO: 'SPAWN_INTRO',
   CHASE: 'CHASE',
   WINDUP_SLAM: 'WINDUP_SLAM',
   WINDUP_EPICENTER: 'WINDUP_EPICENTER',
@@ -67,5 +68,9 @@ export const MONOLITH_CONFIG = Object.freeze({
   COLOR_ENRAGED: '#e74c3c',
   COLOR_PHASE3: '#ff1744',
   COLOR_RESTORED: '#3498db',
-  COLOR_STUN: '#f1c40f'
+  COLOR_STUN: '#f1c40f',
+
+  // Configurações da Introdução Cinemática de 5 segundos
+  INTRO_DURATION: 300, // 5.0 segundos a 60 FPS
+  TITLE_DURATION: 180  // 3.0 segundos de exibição na tela
 });

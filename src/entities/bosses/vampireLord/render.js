@@ -1,75 +1,440 @@
 /**
  * src/entities/bosses/vampireLord/render.js
- * Renderização procedural vetorial completa do Lorde Vampírico (Boss 1).
+ * Renderização procedural vetorial completa e cinemática do Lorde Vampírico (Boss 1).
  */
+import { dpr, viewW, viewH } from '../../../main.js';
 
 // ============================================================================
-// SISTEMA DE RENDERIZAÇÃO PROCEDURAL VETORIAL
+// 1. INTRODUÇÃO CINEMATOGRÁFICA DE 5 SEGUNDOS (300 FRAMES) EM 4 ATOS
+// ============================================================================
+
+/**
+ * Desenha o Selo Vampírico Sagrado no solo com anéis concêntricos, pentagrama e runas.
+ */
+function drawSummoningCircle(ctx, e, progress, frameCount) {
+  const R = e.radius * 2.4;
+  const sealScale = Math.min(1.0, progress * 2.2);
+  const curR = R * sealScale;
+  const rot = frameCount * 0.02;
+
+  ctx.save();
+  // Elipse projetada no solo 2.5D
+  ctx.translate(0, 36);
+  ctx.scale(1, 0.46);
+
+  // Brilho difuso do selo
+  const sealGlow = ctx.createRadialGradient(0, 0, 10, 0, 0, curR * 1.3);
+  sealGlow.addColorStop(0, 'rgba(255, 23, 68, 0.45)');
+  sealGlow.addColorStop(0.5, 'rgba(142, 68, 173, 0.25)');
+  sealGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = sealGlow;
+  ctx.beginPath();
+  ctx.arc(0, 0, curR * 1.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Anel exterior principal
+  ctx.strokeStyle = `rgba(255, 23, 68, ${0.4 + progress * 0.55})`;
+  ctx.lineWidth = 3.2;
+  ctx.beginPath();
+  ctx.arc(0, 0, curR, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Anel interno pontilhado em contra-rotação
+  ctx.strokeStyle = 'rgba(255, 107, 129, 0.75)';
+  ctx.lineWidth = 1.8;
+  ctx.setLineDash([8, 6]);
+  ctx.beginPath();
+  ctx.arc(0, 0, curR * 0.82, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Pentagrama / Estrela de Sangue no centro do selo
+  ctx.save();
+  ctx.rotate(rot);
+  ctx.strokeStyle = 'rgba(255, 23, 68, 0.85)';
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  const starPoints = 5;
+  const starR = curR * 0.78;
+  for (let i = 0; i < starPoints; i++) {
+    const a1 = (i * 2 * Math.PI * 2) / starPoints - Math.PI / 2;
+    const a2 = ((i + 1) * 2 * Math.PI * 2) / starPoints - Math.PI / 2;
+    if (i === 0) ctx.moveTo(Math.cos(a1) * starR, Math.sin(a1) * starR);
+    ctx.lineTo(Math.cos(a2) * starR, Math.sin(a2) * starR);
+  }
+  ctx.stroke();
+
+  // Glifos e runas orbitando a estrela
+  const glyphCount = 8;
+  for (let g = 0; g < glyphCount; g++) {
+    const ga = (g * Math.PI * 2) / glyphCount - rot * 1.5;
+    const gx = Math.cos(ga) * curR * 0.92;
+    const gy = Math.sin(ga) * curR * 0.92;
+    ctx.fillStyle = '#ff1744';
+    ctx.fillRect(gx - 2.5, gy - 2.5, 5, 5);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(gx - 2.5, gy - 2.5, 5, 5);
+  }
+  ctx.restore();
+
+  // 8 Canais de sangue fluindo do centro para as bordas
+  for (let c = 0; c < 8; c++) {
+    const cAng = (c * Math.PI * 2) / 8 + rot * 0.4;
+    ctx.strokeStyle = 'rgba(255, 71, 87, 0.65)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(cAng) * curR, Math.sin(cAng) * curR);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Renderiza a cena de invocação de 5 segundos (4 Atos) do Lorde Vampírico.
+ */
+function drawVampireSpawnIntro(ctx, e, frameCount) {
+  const introMax = e.introDuration || 300;
+  const progress = Math.min(1.0, Math.max(0, 1 - (e.introTimer / introMax)));
+
+  // Selo constante no solo evoluindo com o progresso
+  drawSummoningCircle(ctx, e, progress, frameCount);
+
+  // =========================================================================
+  // ATO 1: O SELO CARMESIM & ECLIPSE (0.00 <= progress < 0.24)
+  // =========================================================================
+  if (progress < 0.24) {
+    const act1Prog = progress / 0.24;
+    const riftH = 80 * act1Prog;
+    const riftW = 8 + Math.sin(frameCount * 0.3) * 4;
+
+    ctx.save();
+    const riftGrad = ctx.createLinearGradient(0, -riftH, 0, riftH);
+    riftGrad.addColorStop(0, 'rgba(255, 23, 68, 0)');
+    riftGrad.addColorStop(0.5, 'rgba(255, 23, 68, 0.95)');
+    riftGrad.addColorStop(1, 'rgba(255, 23, 68, 0)');
+    ctx.strokeStyle = riftGrad;
+    ctx.lineWidth = riftW;
+    ctx.beginPath();
+    ctx.moveTo(0, -riftH + 20);
+    ctx.lineTo(0, riftH + 20);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -riftH * 0.7 + 20);
+    ctx.lineTo(0, riftH * 0.7 + 20);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  // =========================================================================
+  // ATO 2: VÓRTICE DAS TREVAS & OLHOS ESPECTRAIS (0.24 <= progress < 0.50)
+  // =========================================================================
+  if (progress < 0.50) {
+    const act2Prog = (progress - 0.24) / 0.26;
+    const colHeight = 150 * act2Prog;
+    const colWidth = 45 + Math.sin(frameCount * 0.2) * 8;
+
+    ctx.save();
+    const colGrad = ctx.createLinearGradient(-colWidth, 0, colWidth, 0);
+    colGrad.addColorStop(0, 'rgba(10, 1, 3, 0)');
+    colGrad.addColorStop(0.2, 'rgba(28, 2, 8, 0.85)');
+    colGrad.addColorStop(0.5, 'rgba(74, 5, 18, 0.95)');
+    colGrad.addColorStop(0.8, 'rgba(28, 2, 8, 0.85)');
+    colGrad.addColorStop(1, 'rgba(10, 1, 3, 0)');
+    ctx.fillStyle = colGrad;
+    ctx.fillRect(-colWidth, -colHeight + 30, colWidth * 2, colHeight);
+
+    ctx.strokeStyle = 'rgba(255, 23, 68, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-colWidth, -colHeight + 30, colWidth * 2, colHeight);
+
+    // Morcegos em espiral ascendente rápida
+    const batCount = 14;
+    ctx.fillStyle = '#0a0104';
+    for (let b = 0; b < batCount; b++) {
+      const bProgress = ((frameCount * 0.04 + b / batCount) % 1);
+      const bY = 30 - bProgress * (colHeight + 30);
+      const bAngle = bProgress * Math.PI * 6 + b;
+      const bX = Math.sin(bAngle) * (colWidth * 0.85);
+      const flap = Math.sin(frameCount * 0.6 + b) * 5;
+
+      ctx.beginPath();
+      ctx.moveTo(bX, bY);
+      ctx.lineTo(bX - 6, bY - 4 + flap);
+      ctx.lineTo(bX - 2, bY + 3);
+      ctx.lineTo(bX + 2, bY + 3);
+      ctx.lineTo(bX + 6, bY - 4 + flap);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Silhueta escura do Lorde Vampírico se formando no interior
+    const silAlpha = act2Prog * 0.8;
+    ctx.globalAlpha = silAlpha;
+    ctx.fillStyle = '#060002';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 24, 42, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Olhos vermelhos incandescentes cortando as trevas
+    if (act2Prog > 0.35) {
+      const eyeFlare = Math.sin(frameCount * 0.3) * 3;
+      ctx.fillStyle = '#ff0037';
+      ctx.beginPath();
+      ctx.ellipse(-6, -14, 4 + eyeFlare * 0.5, 2.5, 0.2, 0, Math.PI * 2);
+      ctx.ellipse(6, -14, 4 + eyeFlare * 0.5, 2.5, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(255, 23, 68, 0.85)';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(-6, -14);
+      ctx.lineTo(-28 - eyeFlare * 2, -18);
+      ctx.moveTo(6, -14);
+      ctx.lineTo(28 + eyeFlare * 2, -18);
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-7, -15, 2, 2);
+      ctx.fillRect(5, -15, 2, 2);
+    }
+    ctx.restore();
+    return;
+  }
+
+  // =========================================================================
+  // ATO 3: DESDOBRAR DE ASAS & BANNER IMPERIAL (0.50 <= progress < 0.76)
+  // ATO 4: RUGIDO PREDATÓRIO & IMPACTO (0.76 <= progress <= 1.00)
+  // =========================================================================
+  const wingProg = (progress - 0.50) / 0.50;
+  const wingSpan = 0.3 + Math.min(1.0, wingProg * 1.6) * 1.15;
+  const flap = Math.sin(frameCount * 0.2) * 12 * (1 - wingProg * 0.3);
+  const bob = Math.sin(frameCount * 0.1) * 3;
+
+  ctx.save();
+  if (progress < 0.76) {
+    const mistAlpha = Math.max(0, 1 - (progress - 0.5) / 0.26);
+    ctx.fillStyle = `rgba(20, 2, 8, ${mistAlpha * 0.55})`;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 50, 70, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  drawSingleWing(ctx, -1, flap, wingSpan, false, false, frameCount);
+  drawSingleWing(ctx, 1, flap, wingSpan, false, false, frameCount);
+
+  drawFluidCape(ctx, bob, frameCount, false, false);
+  drawGothicArmor(ctx, bob, frameCount, false, false);
+  drawHeadAndFace(ctx, bob, frameCount, false, false);
+  drawClawsAndArms(ctx, bob, frameCount, false, false, progress >= 0.76, false);
+  ctx.restore();
+}
+
+/**
+ * Banner Cinematográfico de Título do Lorde Vampírico.
+ */
+function drawCinematicScreenTitle(ctx, e, frameCount) {
+  const maxT = e.titleMaxTimer || 180;
+  const titleProgress = 1 - Math.max(0, e.titleTimer / maxT);
+
+  let bannerAlpha = 1.0;
+  if (titleProgress < 0.10) {
+    bannerAlpha = titleProgress / 0.10;
+  } else if (titleProgress > 0.80) {
+    bannerAlpha = Math.max(0, (1 - titleProgress) / 0.20);
+  }
+
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.globalAlpha = bannerAlpha;
+
+  const screenW = viewW || (typeof window !== 'undefined' ? window.innerWidth : 1280);
+  const screenH = viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
+  const isVertical = screenH > screenW || screenW < 640;
+
+  const bannerW = isVertical ? Math.min(380, screenW * 0.94) : Math.min(840, screenW * 0.90);
+  const bannerH = isVertical ? 60 : 96;
+  const bx = (screenW - bannerW) / 2;
+  const by = Math.round((screenH / 2) - bannerH - (isVertical ? 45 : 75));
+
+  // 1. Fundo de Veludo Carmesim e Obsidiana
+  const bgGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
+  bgGrad.addColorStop(0, 'rgba(12, 1, 3, 0)');
+  bgGrad.addColorStop(0.18, 'rgba(32, 3, 9, 0.95)');
+  bgGrad.addColorStop(0.5, 'rgba(64, 5, 18, 0.98)');
+  bgGrad.addColorStop(0.82, 'rgba(32, 3, 9, 0.95)');
+  bgGrad.addColorStop(1, 'rgba(12, 1, 3, 0)');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(bx, by, bannerW, bannerH);
+
+  // 2. Frisos de Neon Escarlate Superior e Inferior
+  const borderGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
+  borderGrad.addColorStop(0, 'rgba(255, 23, 68, 0)');
+  borderGrad.addColorStop(0.2, 'rgba(255, 23, 68, 0.95)');
+  borderGrad.addColorStop(0.5, 'rgba(255, 107, 129, 1)');
+  borderGrad.addColorStop(0.8, 'rgba(255, 23, 68, 0.95)');
+  borderGrad.addColorStop(1, 'rgba(255, 23, 68, 0)');
+
+  ctx.strokeStyle = borderGrad;
+  ctx.lineWidth = isVertical ? 2.0 : 2.8;
+  ctx.beginPath();
+  ctx.moveTo(bx, by);
+  ctx.lineTo(bx + bannerW, by);
+  ctx.moveTo(bx, by + bannerH);
+  ctx.lineTo(bx + bannerW, by + bannerH);
+  ctx.stroke();
+
+  // Frisos internos com acabamento dourado
+  ctx.strokeStyle = 'rgba(241, 196, 15, 0.45)';
+  ctx.lineWidth = 1.2;
+  const padX = isVertical ? 24 : 45;
+  ctx.beginPath();
+  ctx.moveTo(bx + padX, by + 4);
+  ctx.lineTo(bx + bannerW - padX, by + 4);
+  ctx.moveTo(bx + padX, by + bannerH - 4);
+  ctx.lineTo(bx + bannerW - padX, by + bannerH - 4);
+  ctx.stroke();
+
+  // Cantoneiras Góticas
+  const cornerSize = isVertical ? 10 : 16;
+  ctx.fillStyle = '#ff1744';
+  ctx.fillRect(bx + padX * 0.7, by - 2, cornerSize, 4);
+  ctx.fillRect(bx + bannerW - padX * 0.7 - cornerSize, by - 2, cornerSize, 4);
+  ctx.fillRect(bx + padX * 0.7, by + bannerH - 2, cornerSize, 4);
+  ctx.fillRect(bx + bannerW - padX * 0.7 - cornerSize, by + bannerH - 2, cornerSize, 4);
+
+  // Ornamento Central Superior: Morcego / Joia de Rubi
+  ctx.fillStyle = '#f1c40f';
+  ctx.beginPath();
+  ctx.moveTo(screenW / 2, by - 8);
+  ctx.lineTo(screenW / 2 + 10, by);
+  ctx.lineTo(screenW / 2, by + 8);
+  ctx.lineTo(screenW / 2 - 10, by);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#ff1744';
+  ctx.beginPath();
+  ctx.arc(screenW / 2, by, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 3. Tipografia Majestosa
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  ctx.shadowColor = '#ff1744';
+  ctx.shadowBlur = isVertical ? 10 : 18;
+  ctx.font = isVertical ? '900 21px "Cinzel", "Times New Roman", serif' : '900 34px "Cinzel", "Times New Roman", serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('LORDE VAMPÍRICO', screenW / 2, by + (isVertical ? 22 : 36));
+
+  ctx.shadowBlur = 0;
+  ctx.font = isVertical ? '600 10px "Cinzel", sans-serif' : '700 13px "Cinzel", sans-serif';
+  ctx.letterSpacing = isVertical ? '3px' : '6px';
+  ctx.fillStyle = '#f1c40f';
+  ctx.fillText('SOBERANO DA ESTIRPE CARMESIM', screenW / 2, by + (isVertical ? 44 : 70));
+  ctx.letterSpacing = '0px';
+
+  ctx.restore();
+}
+
+// ============================================================================
+// 2. SISTEMA DE RENDERIZAÇÃO PROCEDURAL VETORIAL
 // ============================================================================
 
 function drawTeleportDeparture(ctx, e, frameCount) {
   const progress = Math.max(0, Math.min(1, 1 - (e.teleportResolveTimer / 50)));
-  const alpha = Math.max(0, 1 - progress * 1.5);
+  const alpha = Math.max(0, 1 - progress * 1.4);
   ctx.save();
   ctx.globalAlpha = alpha;
 
-  ctx.fillStyle = 'rgba(26, 2, 8, 0.7)';
+  ctx.fillStyle = 'rgba(26, 2, 8, 0.75)';
   ctx.beginPath();
-  ctx.ellipse(0, 20, e.radius * (1 - progress * 0.6), 8, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 20, e.radius * (1 - progress * 0.6), 10, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  const batCount = 8;
+  const batCount = 12;
   ctx.fillStyle = '#0a0104';
   for (let i = 0; i < batCount; i++) {
-    const angle = (i * Math.PI * 2 / batCount) + frameCount * 0.1;
-    const dist = progress * (e.radius * 2.2) + 6;
+    const angle = (i * Math.PI * 2 / batCount) + frameCount * 0.12;
+    const dist = progress * (e.radius * 2.5) + 8;
     const bx = Math.cos(angle) * dist;
-    const by = Math.sin(angle) * dist * 0.6 - progress * 24;
-    const flap = Math.sin(frameCount * 0.5 + i) * 5;
+    const by = Math.sin(angle) * dist * 0.6 - progress * 28;
+    const flap = Math.sin(frameCount * 0.55 + i) * 6;
 
     ctx.beginPath();
     ctx.moveTo(bx, by);
-    ctx.lineTo(bx - 6, by - 4 + flap);
+    ctx.lineTo(bx - 7, by - 4 + flap);
     ctx.lineTo(bx - 2, by + 3);
     ctx.lineTo(bx + 2, by + 3);
-    ctx.lineTo(bx + 6, by - 4 + flap);
+    ctx.lineTo(bx + 7, by - 4 + flap);
     ctx.closePath();
     ctx.fill();
+
+    ctx.fillStyle = '#ff1744';
+    ctx.fillRect(bx - 1, by - 1, 1.5, 1.5);
+    ctx.fillStyle = '#0a0104';
   }
   ctx.restore();
 }
 
 function drawMistVortex(ctx, e, frameCount) {
-  const t = frameCount * 0.16;
+  const t = frameCount * 0.18;
 
-  for (let c = 0; c < 3; c++) {
-    const rOffset = Math.sin(t + c * 1.8) * 5;
-    ctx.fillStyle = c === 0 ? 'rgba(142, 68, 173, 0.4)' : (c === 1 ? 'rgba(104, 8, 29, 0.45)' : 'rgba(20, 2, 8, 0.55)');
+  // Renderização de Pós-Imagens (Ghost Afterimages)
+  if (e.afterImages && e.afterImages.length > 0) {
+    for (let i = 0; i < e.afterImages.length; i++) {
+      const ai = e.afterImages[i];
+      const aiAlpha = Math.max(0, (ai.life / ai.maxLife) * 0.45);
+      ctx.save();
+      ctx.translate(ai.x - e.x, ai.y - e.y);
+      ctx.scale(ai.facing, 1);
+      ctx.globalAlpha = aiAlpha;
+      ctx.fillStyle = '#8e44ad';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, e.radius * 0.9, e.radius * 1.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // Núcleo volumétrico do cometa de névoa
+  for (let c = 0; c < 4; c++) {
+    const rOffset = Math.sin(t + c * 1.6) * 6;
+    ctx.fillStyle = c === 0 
+      ? 'rgba(142, 68, 173, 0.45)' 
+      : (c === 1 ? 'rgba(180, 15, 45, 0.45)' : (c === 2 ? 'rgba(255, 23, 68, 0.35)' : 'rgba(15, 1, 4, 0.65)'));
     ctx.beginPath();
-    ctx.ellipse((c - 1) * 8, (c % 2 === 0 ? 4 : -4), (e.radius * 0.95) + rOffset, (e.radius * 0.65) - rOffset * 0.5, t * 0.5, 0, Math.PI * 2);
+    ctx.ellipse((c - 1.5) * 10, (c % 2 === 0 ? 5 : -5), (e.radius * 1.05) + rOffset, (e.radius * 0.70) - rOffset * 0.5, t * 0.5, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  const batCount = 6;
+  // Morcegos espectrais com olhos incandescentes
+  const batCount = 8;
   ctx.fillStyle = '#0a0104';
   for (let i = 0; i < batCount; i++) {
-    const phase = t * 2 + i * (Math.PI * 2 / batCount);
-    const bx = Math.cos(phase) * (e.radius * 0.75);
-    const by = Math.sin(phase) * (e.radius * 0.45);
-    const flap = Math.sin(frameCount * 0.45 + i) * 6;
+    const phase = t * 2.2 + i * (Math.PI * 2 / batCount);
+    const bx = Math.cos(phase) * (e.radius * 0.85);
+    const by = Math.sin(phase) * (e.radius * 0.50);
+    const flap = Math.sin(frameCount * 0.5 + i) * 6;
 
     ctx.beginPath();
     ctx.moveTo(bx, by);
-    ctx.lineTo(bx - 7, by - 5 + flap);
+    ctx.lineTo(bx - 8, by - 5 + flap);
     ctx.lineTo(bx - 3, by + 4);
     ctx.lineTo(bx + 3, by + 4);
-    ctx.lineTo(bx + 7, by - 5 + flap);
+    ctx.lineTo(bx + 8, by - 5 + flap);
     ctx.closePath();
     ctx.fill();
 
     ctx.fillStyle = '#ff1744';
-    ctx.fillRect(bx - 1.5, by - 1, 1.2, 1.2);
-    ctx.fillRect(bx + 0.5, by - 1, 1.2, 1.2);
+    ctx.fillRect(bx - 1.5, by - 1, 1.4, 1.4);
+    ctx.fillRect(bx + 0.5, by - 1, 1.4, 1.4);
     ctx.fillStyle = '#0a0104';
   }
 }
@@ -593,7 +958,7 @@ function drawClawsAndArms(ctx, bob, frameCount, isVuln, isEnraged, isWindup, isC
   // Efeito de garras flamejantes de sangue carregando o ataque em leque
   if (isWindup) {
     const clawGlow = (Math.sin(frameCount * 0.3) + 1) * 2;
-    ctx.fillStyle = isEnraged ? 'rgba(255, 71, 87, 0.7)' : 'rgba(231, 76, 60, 0.65)';
+    ctx.fillStyle = isEnraged ? 'rgba(255, 71, 87, 0.75)' : 'rgba(231, 76, 60, 0.65)';
     ctx.beginPath();
     ctx.arc(cX + 16, cY, 5 + clawGlow, 0, Math.PI * 2);
     ctx.fill();
@@ -606,17 +971,97 @@ function drawClawsAndArms(ctx, bob, frameCount, isVuln, isEnraged, isWindup, isC
 }
 
 /**
+ * Renderiza a Foice de Sangue Cristalizado durante o ataque CLEAVE (windup e corte).
+ */
+function drawBloodScythe(ctx, e, bob, frameCount) {
+  const cleaveProg = e.cleaveProgress || 0;
+  const scytheScale = 0.65 + cleaveProg * 0.55;
+
+  ctx.save();
+  ctx.translate(36, 4 + bob);
+  // Rotação da foice se armando
+  const scytheRot = -0.6 + cleaveProg * 1.8;
+  ctx.rotate(scytheRot);
+  ctx.scale(scytheScale, scytheScale);
+
+  // Cabo longo da foice (obsidiana com filigrana dourada)
+  ctx.strokeStyle = '#120206';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(-10, 45);
+  ctx.lineTo(15, -65);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#f1c40f';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(-6, 35);
+  ctx.lineTo(12, -55);
+  ctx.stroke();
+
+  // Lâmina curvada colossal de sangue cristalizado
+  const bladeGrad = ctx.createRadialGradient(15, -65, 5, 15, -65, 75);
+  bladeGrad.addColorStop(0, '#ffffff');
+  bladeGrad.addColorStop(0.2, '#ff1744');
+  bladeGrad.addColorStop(0.6, '#a30022');
+  bladeGrad.addColorStop(1, 'rgba(50, 2, 10, 0.9)');
+
+  ctx.fillStyle = bladeGrad;
+  ctx.beginPath();
+  ctx.moveTo(15, -65);
+  ctx.quadraticCurveTo(65, -85, 75, -20);
+  ctx.quadraticCurveTo(45, -55, 15, -55);
+  ctx.closePath();
+  ctx.fill();
+
+  // Fio cortante luminoso da lâmina
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.moveTo(15, -65);
+  ctx.quadraticCurveTo(65, -85, 75, -20);
+  ctx.stroke();
+
+  // Rastro de corte translúcido quando no clímax
+  if (cleaveProg > 0.6) {
+    ctx.strokeStyle = 'rgba(255, 23, 68, 0.65)';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.arc(0, 0, 75, -1.2, 0.4);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/**
  * Renderizador Vetorial Master do Lorde Vampírico.
  * @param {CanvasRenderingContext2D} ctx 
- * @param {Object} e 
- * @param {number} frameCount 
+ * @param {Object} e Entidade do chefe.
+ * @param {number} frameCount Contador de frames global.
  */
 export function drawVampireLord(ctx, e, frameCount) {
+  // 1. Introdução de 5 segundos
+  if (e.actionState === 'SPAWN_INTRO') {
+    drawVampireSpawnIntro(ctx, e, frameCount);
+    if (e.titleTimer > 0) {
+      drawCinematicScreenTitle(ctx, e, frameCount);
+    }
+    return;
+  }
+
+  // 2. Banner de apresentação (continua ativo durante a transição pós-intro)
+  if (e.titleTimer > 0) {
+    drawCinematicScreenTitle(ctx, e, frameCount);
+  }
+
+  // 3. Teleporte em andamento
   if (e.actionState === 'TELEPORTING') {
     drawTeleportDeparture(ctx, e, frameCount);
     return;
   }
 
+  // 4. Investida em forma de névoa
   if (e.mistState === 'DASHING') {
     drawMistVortex(ctx, e, frameCount);
     return;
@@ -633,17 +1078,17 @@ export function drawVampireLord(ctx, e, frameCount) {
   } else {
     // 1. Miasma e Névoa Carmesim Flutuante no Solo
     const mistPulse = Math.sin(frameCount * 0.08) * 6;
-    const mistGrad = ctx.createRadialGradient(0, 42, 8, 0, 42, e.radius * 1.05 + mistPulse);
-    mistGrad.addColorStop(0, isEnraged ? 'rgba(192, 57, 43, 0.45)' : 'rgba(142, 68, 173, 0.35)');
-    mistGrad.addColorStop(0.65, isEnraged ? 'rgba(104, 8, 29, 0.22)' : 'rgba(74, 5, 18, 0.16)');
+    const mistGrad = ctx.createRadialGradient(0, 42, 8, 0, 42, e.radius * 1.15 + mistPulse);
+    mistGrad.addColorStop(0, isEnraged ? 'rgba(192, 57, 43, 0.48)' : 'rgba(142, 68, 173, 0.38)');
+    mistGrad.addColorStop(0.65, isEnraged ? 'rgba(104, 8, 29, 0.25)' : 'rgba(74, 5, 18, 0.18)');
     mistGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = mistGrad;
     ctx.beginPath();
-    ctx.ellipse(0, 42, e.radius * 1.05 + mistPulse, 16, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 42, e.radius * 1.15 + mistPulse, 16, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Sombra de contato no solo
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.58)';
     ctx.beginPath();
     ctx.ellipse(0, 42, e.radius * 0.75 - bob * 0.4, 11, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -653,12 +1098,19 @@ export function drawVampireLord(ctx, e, frameCount) {
       const sparkX = (Math.random() - 0.5) * 55;
       const sparkY = 32 - Math.random() * 45 + bob;
       ctx.fillStyle = Math.random() < 0.5 ? '#ff4757' : '#ffa502';
-      ctx.fillRect(sparkX, sparkY, 2, 2);
+      ctx.fillRect(sparkX, sparkY, 2.5, 2.5);
     }
   }
 
+  // 2. Dinâmica e envergadura das asas
   const wingFlap = isVuln ? 0 : Math.sin(frameCount * (isEnraged ? 0.28 : 0.16)) * 14;
-  const wingSpan = isVuln ? 0.55 : (isEnraged ? 1.25 : (isChanneling ? 1.38 : (e.currentSkill === 'REPULSION' ? 1.45 : (e.isWingPrepping ? 1.3 : 1.0))));
+  const wingSpan = isVuln 
+    ? 0.55 
+    : (isEnraged 
+        ? 1.28 
+        : (isChanneling 
+            ? 1.40 
+            : (e.currentSkill === 'REPULSION' ? 1.50 : (e.isWingPrepping ? 1.35 : 1.0))));
 
   if (isWindup || isChanneling) {
     ctx.translate((Math.random() - 0.5) * 2.5, (Math.random() - 0.5) * 2.5);
@@ -667,27 +1119,27 @@ export function drawVampireLord(ctx, e, frameCount) {
   drawSingleWing(ctx, -1, wingFlap, wingSpan, isVuln, isEnraged, frameCount);
   drawSingleWing(ctx, 1, wingFlap, wingSpan, isVuln, isEnraged, frameCount);
 
-  // Orbes de carregamento nas asas para o disparo convergente
+  // Orbes de carregamento nas asas para o disparo convergente (PINCER_SHOT)
   if ((e.isWingPrepping && e.currentSkill === 'PINCER_SHOT') || (isWindup && e.currentSkill === 'PINCER_SHOT')) {
-    const orbPulse = (Math.sin(frameCount * 0.3) + 1) * 2.2;
+    const orbPulse = (Math.sin(frameCount * 0.3) + 1) * 2.4;
     ctx.fillStyle = '#ff1744';
     ctx.beginPath();
     ctx.arc(-58, -45 + bob, 5 + orbPulse, 0, Math.PI * 2);
     ctx.arc(58, -45 + bob, 5 + orbPulse, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.6;
     ctx.stroke();
   }
 
-  // Aura de vendaval repulsor nas asas durante a preparação do Vendaval de Asas
+  // Aura de vendaval repulsor nas asas durante a preparação do REPULSION
   if (isWindup && e.currentSkill === 'REPULSION') {
     const repPulse = (Math.sin(frameCount * 0.4) + 1) * 3;
     ctx.save();
-    ctx.strokeStyle = 'rgba(255, 23, 68, 0.8)';
-    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(255, 23, 68, 0.85)';
+    ctx.lineWidth = 2.8;
     ctx.beginPath();
-    ctx.arc(0, -10 + bob, 48 + repPulse, 0, Math.PI * 2);
+    ctx.arc(0, -10 + bob, 52 + repPulse, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
   }
@@ -698,16 +1150,16 @@ export function drawVampireLord(ctx, e, frameCount) {
     ctx.save();
     ctx.translate(0, -8 + bob);
     ctx.rotate(rot);
-    ctx.strokeStyle = 'rgba(255, 23, 68, 0.75)';
-    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = 'rgba(255, 23, 68, 0.8)';
+    ctx.lineWidth = 2.0;
     ctx.beginPath();
-    ctx.arc(0, 0, 18, 0, Math.PI * 2);
+    ctx.arc(0, 0, 20, 0, Math.PI * 2);
     ctx.stroke();
     ctx.beginPath();
     for (let k = 0; k < 4; k++) {
       const a = k * Math.PI / 2;
-      ctx.moveTo(Math.cos(a) * 18, Math.sin(a) * 18);
-      ctx.lineTo(Math.cos(a + Math.PI) * 18, Math.sin(a + Math.PI) * 18);
+      ctx.moveTo(Math.cos(a) * 20, Math.sin(a) * 20);
+      ctx.lineTo(Math.cos(a + Math.PI) * 20, Math.sin(a + Math.PI) * 20);
     }
     ctx.stroke();
     ctx.restore();
@@ -715,9 +1167,9 @@ export function drawVampireLord(ctx, e, frameCount) {
 
   // Efeito de pulso concêntrico de aviso durante a frenagem da investida
   if (e.actionState === 'MIST_BRAKE') {
-    const brakePulse = (e.actionTimer / 20) * 26;
-    ctx.strokeStyle = 'rgba(231, 76, 60, 0.85)';
-    ctx.lineWidth = 2.5;
+    const brakePulse = (e.actionTimer / 20) * 28;
+    ctx.strokeStyle = 'rgba(231, 76, 60, 0.9)';
+    ctx.lineWidth = 2.8;
     ctx.beginPath();
     ctx.arc(0, bob, e.radius + brakePulse, 0, Math.PI * 2);
     ctx.stroke();
@@ -727,4 +1179,9 @@ export function drawVampireLord(ctx, e, frameCount) {
   drawGothicArmor(ctx, bob, frameCount, isVuln, isEnraged);
   drawHeadAndFace(ctx, bob, frameCount, isVuln, isEnraged);
   drawClawsAndArms(ctx, bob, frameCount, isVuln, isEnraged, isWindup, isChanneling);
+
+  // Foice de Sangue durante a preparação e corte do CLEAVE
+  if ((isWindup && e.currentSkill === 'CLEAVE') || e.isCleaving) {
+    drawBloodScythe(ctx, e, bob, frameCount);
+  }
 }
