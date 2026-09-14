@@ -22,7 +22,8 @@ const soundCooldowns = {
   charge: 0, 
   warp: 0,
   card_hover: 0,
-  forcefield: 0
+  forcefield: 0,
+  heal: 0
 };
 
 export function triggerHaptic(type) {
@@ -324,6 +325,21 @@ export function playSfx(type) {
       gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
       osc.start(t);
       osc.stop(t + 0.12);
+      triggerHaptic('light');
+    } else if (type === 'heal') {
+      [523.25, 659.25, 783.99].forEach((freq, idx) => {
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.connect(g);
+        g.connect(masterGainNode);
+        o.type = 'sine';
+        o.frequency.value = freq;
+        g.gain.setValueAtTime(0.001, t + idx * 0.04);
+        g.gain.linearRampToValueAtTime(0.05, t + idx * 0.04 + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.04 + 0.16);
+        o.start(t + idx * 0.04);
+        o.stop(t + idx * 0.04 + 0.16);
+      });
       triggerHaptic('light');
     } 
     

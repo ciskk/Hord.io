@@ -263,6 +263,241 @@ function drawMajesticSpawnIntro(ctx, e, frameCount) {
 }
 
 /**
+ * Renderiza a Sequência Cinematográfica Dramática de Derrota em 4 Atos do Soberano do Abismo.
+ * Ato 1: Fratura Fatal & Desestabilização (Agulhas quebram, espasmos nos tentáculos, fendas na mandala).
+ * Ato 2: Implosão Gravitacional de Vácuo (Vórtice reverso sugando a luz e matéria para dentro do olho).
+ * Ato 3: Supernova Divina Dourada (Flash de glória celestial e dispersão em poeira estelar ascendente).
+ * Ato 4: Despedida Estelar & Fade-out.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Object} e Entidade do Soberano do Abismo
+ * @param {number} frameCount
+ */
+function drawMajesticDeathCollapse(ctx, e, frameCount) {
+  const R = e.radius;
+  const maxT = e.defeatMaxTimer || 420;
+  const progress = Math.min(1.0, Math.max(0, 1 - ((e.defeatTimer || 0) / maxT)));
+
+  // =========================================================================
+  // ATO 1: FRATURA FATAL & DESESTABILIZAÇÃO (0.00 <= progress < 0.25)
+  // =========================================================================
+  if (progress < 0.25) {
+    const act1Prog = progress / 0.25;
+    ctx.save();
+
+    // Tremores e espasmos agônicos da carcaça titânica
+    const spasmX = (Math.sin(frameCount * 0.9) * 2.5 + Math.cos(frameCount * 1.3) * 1.5) * (1 + act1Prog * 2);
+    const spasmY = (Math.cos(frameCount * 0.8) * 2.0) * (1 + act1Prog * 2);
+    ctx.translate(spasmX, spasmY);
+
+    // 1. As 4 Agulhas Cristalinas inferiores partindo-se e caindo em pedaços girando
+    const fallDist = Math.pow(act1Prog, 2) * 110;
+    const spikeDefs = [
+      { x: -R * 0.40, y: R * 0.70, len: 32, ang: 0.02, w: 6.5, vx: -32 * act1Prog, rot: -0.8 * act1Prog },
+      { x: -R * 0.16, y: R * 0.80, len: 48, ang: 0.00, w: 8.5, vx: -14 * act1Prog, rot: -0.4 * act1Prog },
+      { x:  R * 0.16, y: R * 0.80, len: 48, ang: 0.00, w: 8.5, vx:  14 * act1Prog, rot:  0.4 * act1Prog },
+      { x:  R * 0.40, y: R * 0.70, len: 32, ang: -0.02, w: 6.5, vx:  32 * act1Prog, rot:  0.8 * act1Prog }
+    ];
+
+    for (let i = 0; i < spikeDefs.length; i++) {
+      const sp = spikeDefs[i];
+      const curX = sp.x + sp.vx;
+      const curY = sp.y + fallDist;
+      const curAng = sp.ang + sp.rot;
+
+      ctx.save();
+      ctx.translate(curX, curY);
+      ctx.rotate(curAng);
+
+      const tipX = Math.sin(0) * sp.len;
+      const tipY = Math.cos(0) * sp.len;
+      const perpX = sp.w * 0.5;
+
+      ctx.fillStyle = '#0a0614';
+      ctx.beginPath();
+      ctx.moveTo(-perpX, 0);
+      ctx.lineTo(tipX, tipY);
+      ctx.lineTo(perpX, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+
+      // Fissura de luz interna no fragmento
+      ctx.strokeStyle = '#00cec9';
+      ctx.lineWidth = 1.0;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(tipX, tipY);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // 2. Membros e Tentáculos Convulsionando com Faíscas
+    ctx.save();
+    drawCelestialLimbs(ctx, e, R, frameCount, true, false, false);
+    ctx.restore();
+
+    // 3. Domo Sagrado e Esfera Obsidiana com Trincas Violentas e Flash
+    const isGlitchFlash = act1Prog > 0.10 && Math.floor(frameCount) % 4 === 0;
+    drawSacredMandalaVoidSphere(ctx, e, R, frameCount, isGlitchFlash, true, 3, 0);
+
+    // 4. Olho Observador Arregalado e Trincando
+    e.eyeAperture = 1.0;
+    drawColdObserverEye(ctx, e, R, frameCount, true, false, false, 3, 0);
+
+    // 5. Relâmpagos de matéria escura e arco elétrico instável
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.8;
+    for (let l = 0; l < 3; l++) {
+      const lY = (Math.sin(frameCount * 0.5 + l * 2) * R * 0.7);
+      const lW = Math.sin(frameCount * 0.6 + l) * (R * 1.1);
+      ctx.beginPath();
+      ctx.moveTo(0, lY);
+      ctx.lineTo(lW * 0.5, lY + 6);
+      ctx.lineTo(lW, lY - 4);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  // =========================================================================
+  // ATO 2: IMPLOSÃO GRAVITACIONAL DE VÁCUO (0.25 <= progress < 0.55)
+  // =========================================================================
+  else if (progress < 0.55) {
+    const act2Prog = (progress - 0.25) / 0.30;
+    const implodeScale = Math.max(0.04, 1.0 - Math.pow(act2Prog, 1.6) * 0.96);
+    const spinAng = act2Prog * Math.PI * 4;
+
+    ctx.save();
+
+    // 1. Anéis concêntricos de sucção reversa (colapso gravitacional)
+    for (let r = 0; r < 4; r++) {
+      const ringProg = ((act2Prog * 3 + r * 0.25) % 1);
+      const ringR = (1 - ringProg) * (R * 3.4);
+      ctx.strokeStyle = r % 2 === 0 ? `rgba(0, 206, 201, ${ringProg * 0.9})` : `rgba(241, 196, 15, ${ringProg * 0.85})`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, Math.max(2, ringR), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // 2. Raios de sucção espiral curvando para o centro
+    const suctionRays = 8;
+    for (let s = 0; s < suctionRays; s++) {
+      const sAng = (s * Math.PI * 2) / suctionRays + act2Prog * 8;
+      const rayLen = (1 - act2Prog) * 170;
+      ctx.strokeStyle = s % 2 === 0 ? 'rgba(255, 255, 255, 0.85)' : 'rgba(232, 67, 147, 0.75)';
+      ctx.lineWidth = 2.0;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(sAng) * rayLen, Math.sin(sAng) * rayLen);
+      ctx.lineTo(Math.cos(sAng + 0.35) * (rayLen * 0.25), Math.sin(sAng + 0.35) * (rayLen * 0.25));
+      ctx.stroke();
+    }
+
+    // 3. Entidade sendo comprimida para dentro do próprio centro
+    ctx.scale(implodeScale, implodeScale);
+    ctx.rotate(spinAng);
+    drawSacredMandalaVoidSphere(ctx, e, R, frameCount, true, true, 3, 0);
+    drawColdObserverEye(ctx, e, R, frameCount, true, false, false, 3, 0);
+    drawCelestialLimbs(ctx, e, R, frameCount, true, false, false);
+
+    ctx.restore();
+
+    // 4. Núcleo hiperdenso incandescente prestes a explodir
+    const corePulse = 10 + Math.sin(frameCount * 0.5) * 4 + act2Prog * 14;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(0, 0, corePulse, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#f1c40f';
+    ctx.lineWidth = 3.5;
+    ctx.stroke();
+  }
+
+  // =========================================================================
+  // ATO 3: SUPERNOVA DIVINA & DISSIPAÇÃO ESTELAR (0.55 <= progress < 0.85)
+  // =========================================================================
+  else if (progress < 0.85) {
+    const act3Prog = (progress - 0.55) / 0.30;
+    ctx.save();
+
+    // 1. Flash Inicial e Corona Radiante da Supernova Divina Dourada/Branca
+    if (act3Prog < 0.28) {
+      const flashAlpha = 1 - (act3Prog / 0.28);
+      const coronaR = (act3Prog / 0.28) * (R * 7.5);
+
+      const blastGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, Math.max(12, coronaR));
+      blastGrad.addColorStop(0, `rgba(255, 255, 255, ${flashAlpha * 0.98})`);
+      blastGrad.addColorStop(0.25, `rgba(241, 196, 15, ${flashAlpha * 0.92})`);
+      blastGrad.addColorStop(0.65, `rgba(0, 206, 201, ${flashAlpha * 0.50})`);
+      blastGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+      ctx.fillStyle = blastGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, coronaR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Feixes radiais de luz estelar saindo do epicentro
+      const starRays = 12;
+      for (let sr = 0; sr < starRays; sr++) {
+        const sAng = (sr * Math.PI * 2) / starRays + frameCount * 0.02;
+        ctx.strokeStyle = `rgba(255, 246, 169, ${flashAlpha * 0.75})`;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(sAng) * (coronaR * 1.25), Math.sin(sAng) * (coronaR * 1.25));
+        ctx.stroke();
+      }
+    }
+
+    // 2. Poeira Estelar Celestial Ascendente
+    const stardustCount = 32;
+    for (let p = 0; p < stardustCount; p++) {
+      const pSeed = p * 137.5;
+      const pT = ((frameCount * 0.015 + p * 0.035) % 1);
+      const px = Math.sin(pSeed) * (R * 2.8);
+      const py = (Math.cos(pSeed) * (R * 1.4)) - pT * 240;
+      const pAlpha = Math.sin(pT * Math.PI) * (1 - act3Prog * 0.25);
+
+      ctx.fillStyle = p % 3 === 0 ? `rgba(241, 196, 15, ${pAlpha})` : (p % 3 === 1 ? `rgba(255, 255, 255, ${pAlpha})` : `rgba(0, 206, 201, ${pAlpha})`);
+      const pR = 2.2 + Math.sin(frameCount * 0.2 + p) * 1.4;
+      ctx.beginPath();
+      ctx.arc(px, py, Math.max(0.6, pR), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  // =========================================================================
+  // ATO 4: DESPEDIDA ESTELAR & FADE-OUT (0.85 <= progress <= 1.00)
+  // =========================================================================
+  else {
+    const act4Prog = (progress - 0.85) / 0.15;
+    ctx.save();
+    for (let p = 0; p < 18; p++) {
+      const pSeed = p * 137.5;
+      const pT = ((frameCount * 0.01 + p * 0.05) % 1);
+      const px = Math.sin(pSeed) * (R * 2.4);
+      const py = (Math.cos(pSeed) * (R * 1.2)) - pT * 220;
+      const pAlpha = Math.sin(pT * Math.PI) * (1 - act4Prog);
+
+      ctx.fillStyle = `rgba(241, 196, 15, ${pAlpha * 0.85})`;
+      ctx.beginPath();
+      ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+
+/**
  * Renderiza o Banner Cinematográfico Apocalíptico de Entrada do Soberano do Abismo.
  * Posicionado no centro da tela, flutuando diretamente acima do herói (horizontal e vertical).
  * @param {CanvasRenderingContext2D} ctx
@@ -401,6 +636,255 @@ function drawCinematicScreenTitle(ctx, e, frameCount) {
   }
 
   ctx.restore();
+}
+
+/**
+ * Renderiza o Grande Banner Dourado de Vitória Cósmica ao abater o Soberano do Abismo.
+ * Geometria heráldica inspirada no banner de boss, transmutada para Ouro Imperial Cósmico.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Object} e Entidade do Soberano do Abismo
+ * @param {number} frameCount
+ */
+function drawGoldenVictoryBanner(ctx, e, frameCount) {
+  const maxT = e.defeatMaxTimer || 420;
+  const progress = Math.min(1.0, Math.max(0, 1 - ((e.defeatTimer || 0) / maxT)));
+
+  // O banner começa a surgir suavemente a partir de progress = 0.52 (Ato 3)
+  if (progress < 0.52) return;
+
+  let bannerAlpha = 1.0;
+  if (progress < 0.62) {
+    bannerAlpha = (progress - 0.52) / 0.10;
+  } else if (progress > 0.94) {
+    bannerAlpha = Math.max(0, (1.0 - progress) / 0.06);
+  }
+
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.globalAlpha = bannerAlpha;
+
+  const screenW = viewW || (typeof window !== 'undefined' ? window.innerWidth : 1280);
+  const screenH = viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
+  const isVertical = screenH > screenW || screenW < 640;
+  const isCompactH = screenH < 520;
+
+  const bannerW = isVertical 
+    ? Math.min(420, screenW * 0.94) 
+    : (isCompactH ? Math.min(680, screenW * 0.90) : Math.min(940, screenW * 0.92));
+  const bannerH = isVertical ? 104 : (isCompactH ? 88 : 126);
+  const bx = (screenW - bannerW) / 2;
+  const by = Math.round((screenH - bannerH) / 2 - (isVertical ? 40 : (isCompactH ? 15 : 28)));
+
+  // 1. Fundo Imperial Obsidiana com Ouro Profundo
+  const bgGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
+  bgGrad.addColorStop(0, 'rgba(10, 8, 2, 0)');
+  bgGrad.addColorStop(0.12, 'rgba(24, 18, 4, 0.96)');
+  bgGrad.addColorStop(0.5, 'rgba(48, 36, 8, 0.98)');
+  bgGrad.addColorStop(0.88, 'rgba(24, 18, 4, 0.96)');
+  bgGrad.addColorStop(1, 'rgba(10, 8, 2, 0)');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(bx, by, bannerW, bannerH);
+
+  // 2. Frisos de Neon Dourado Superior e Inferior
+  const borderGrad = ctx.createLinearGradient(bx, by, bx + bannerW, by);
+  borderGrad.addColorStop(0, 'rgba(241, 196, 15, 0)');
+  borderGrad.addColorStop(0.2, 'rgba(241, 196, 15, 0.95)');
+  borderGrad.addColorStop(0.5, 'rgba(255, 246, 169, 1)');
+  borderGrad.addColorStop(0.8, 'rgba(241, 196, 15, 0.95)');
+  borderGrad.addColorStop(1, 'rgba(241, 196, 15, 0)');
+
+  ctx.strokeStyle = borderGrad;
+  ctx.lineWidth = isVertical ? 2.2 : 2.8;
+  ctx.beginPath();
+  ctx.moveTo(bx, by);
+  ctx.lineTo(bx + bannerW, by);
+  ctx.moveTo(bx, by + bannerH);
+  ctx.lineTo(bx + bannerW, by + bannerH);
+  ctx.stroke();
+
+  // Frisos internos dourados finos
+  ctx.strokeStyle = 'rgba(255, 235, 150, 0.35)';
+  ctx.lineWidth = 1;
+  const padX = isVertical ? 22 : 45;
+  ctx.beginPath();
+  ctx.moveTo(bx + padX, by + 3);
+  ctx.lineTo(bx + bannerW - padX, by + 3);
+  ctx.moveTo(bx + padX, by + bannerH - 3);
+  ctx.lineTo(bx + bannerW - padX, by + bannerH - 3);
+  ctx.stroke();
+
+  // 3. Cantoneiras Geométricas Douradas
+  const cornerSize = isVertical ? 10 : 16;
+  ctx.fillStyle = '#f1c40f';
+  ctx.fillRect(bx + padX * 0.7, by - 1.5, cornerSize, 3);
+  ctx.fillRect(bx + bannerW - padX * 0.7 - cornerSize, by - 1.5, cornerSize, 3);
+  ctx.fillStyle = '#d4ac0d';
+  ctx.fillRect(bx + padX * 0.7, by + bannerH - 1.5, cornerSize, 3);
+  ctx.fillRect(bx + bannerW - padX * 0.7 - cornerSize, by + bannerH - 1.5, cornerSize, 3);
+
+  // 4. Textos e Glifos do Banner Dourado
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const pulseGlow = 14 + Math.sin(frameCount * 0.12) * 6;
+  const stats = e.victoryStats || { time: '10:00', kills: 0, level: 1, gold: 0 };
+
+  if (isVertical) {
+    // Layout Vertical
+    ctx.font = 'bold 9px monospace';
+    ctx.fillStyle = '#f6e58d';
+    ctx.shadowColor = 'rgba(241, 196, 15, 0.85)';
+    ctx.shadowBlur = 6;
+    ctx.fillText("[ CATACLISMA PURGADO • O ABISMO FOI SELADO ]", screenW / 2, by + 14);
+
+    ctx.font = 'bold 18px "Cinzel", "Cinzel Decorative", Georgia, serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(241, 196, 15, 0.95)';
+    ctx.shadowBlur = pulseGlow;
+    ctx.fillText("❖ VITÓRIA SUPREMA ❖", screenW / 2, by + 36);
+
+    ctx.font = 'italic 10px "Cinzel", Georgia, serif';
+    ctx.fillStyle = '#fff2a8';
+    ctx.shadowColor = 'rgba(212, 172, 13, 0.7)';
+    ctx.shadowBlur = 3;
+    ctx.fillText("✦ O SOBERANO DO ABISMO FOI ANIQUILADO ✦", screenW / 2, by + 56);
+
+    // Linha de Honra e Métricas
+    ctx.font = 'bold 9px monospace';
+    ctx.fillStyle = '#f1c40f';
+    ctx.shadowBlur = 2;
+    ctx.fillText(`TEMPO: ${stats.time}  •  ABATES: ${stats.kills}  •  NÍVEL: ${stats.level}  •  OURO: +${stats.gold}`, screenW / 2, by + 82);
+  } else {
+    // Layout Horizontal
+    ctx.font = 'bold 11px monospace';
+    ctx.fillStyle = '#f6e58d';
+    ctx.shadowColor = 'rgba(241, 196, 15, 0.85)';
+    ctx.shadowBlur = 8;
+    ctx.fillText("[ CATACLISMA PURGADO // A ORDEM CÓSMICA FOI RESTAURADA ]", screenW / 2, by + 22);
+
+    ctx.font = 'bold 30px "Cinzel", "Cinzel Decorative", Georgia, serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(241, 196, 15, 0.95)';
+    ctx.shadowBlur = pulseGlow;
+    ctx.fillText("❖ VITÓRIA SUPREMA ❖", screenW / 2, by + 52);
+
+    ctx.font = 'italic 13px "Cinzel", Georgia, serif';
+    ctx.fillStyle = '#fff2a8';
+    ctx.shadowColor = 'rgba(212, 172, 13, 0.7)';
+    ctx.shadowBlur = 4;
+    ctx.fillText("✦ O SOBERANO DO ABISMO FOI ANIQUILADO E AS TREVAS EXPURGADAS ✦", screenW / 2, by + 80);
+
+    // Fita de Honra com Métricas Destacadas
+    ctx.font = 'bold 11px monospace';
+    ctx.fillStyle = '#f1c40f';
+    ctx.shadowColor = 'rgba(241, 196, 15, 0.6)';
+    ctx.shadowBlur = 4;
+    ctx.fillText(`TEMPO DE COMBATE: ${stats.time}    |    MONSTROS EXPURGADOS: ${stats.kills}    |    NÍVEL: ${stats.level}    |    OURO CONQUISTADO: +${stats.gold}`, screenW / 2, by + 106);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Renderiza os Locais de Cura Sagrados (Santuários de Luz Celestial) na Arena do Soberano.
+ * Exibe halo esmeralda, anel rúnico, medidor circular decrescente dos 3 segundos e cruz de restauração.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Object} e Entidade do Soberano do Abismo
+ * @param {number} frameCount
+ */
+function drawHealingZones(ctx, e, frameCount) {
+  if (!e.healingZones || e.healingZones.length === 0) return;
+
+  for (let i = 0; i < e.healingZones.length; i++) {
+    const zone = e.healingZones[i];
+    const relX = zone.x - e.x;
+    const relY = zone.y - e.y;
+    const R = zone.radius;
+    const lifeRatio = Math.max(0, zone.life / (zone.maxLife || 180));
+
+    ctx.save();
+    ctx.translate(relX, relY);
+
+    // 1. Halo Radial de Luz Esmeralda/Ouro no Solo
+    const pulse = Math.sin(frameCount * 0.14 + i * 2) * 4;
+    const groundGrad = ctx.createRadialGradient(0, 0, 8, 0, 0, R + pulse);
+    groundGrad.addColorStop(0, 'rgba(46, 204, 113, 0.45)');
+    groundGrad.addColorStop(0.65, 'rgba(26, 188, 156, 0.22)');
+    groundGrad.addColorStop(0.9, 'rgba(241, 196, 15, 0.15)');
+    groundGrad.addColorStop(1, 'rgba(46, 204, 113, 0)');
+    ctx.fillStyle = groundGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, R + pulse, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 2. Anel de Limite Sagrado Rúnico
+    ctx.strokeStyle = zone.playerInside ? '#ffffff' : 'rgba(46, 204, 113, 0.85)';
+    ctx.lineWidth = zone.playerInside ? 3.0 : 2.2;
+    ctx.shadowColor = '#2ecc71';
+    ctx.shadowBlur = zone.playerInside ? 14 : 8;
+    ctx.beginPath();
+    ctx.arc(0, 0, R, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 3. Medidor Circular de Duração Residual (Contagem Regressiva dos 3 Segundos)
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#f1c40f';
+    ctx.lineWidth = 3.2;
+    ctx.beginPath();
+    ctx.arc(0, 0, R + 4, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * lifeRatio));
+    ctx.stroke();
+
+    // 4. Glifos Celestiais Orbitantes
+    const rot = frameCount * 0.035;
+    ctx.save();
+    ctx.rotate(rot);
+    const glyphCount = 4;
+    for (let g = 0; g < glyphCount; g++) {
+      const ga = (g * Math.PI * 2) / glyphCount;
+      const gx = Math.cos(ga) * (R * 0.65);
+      const gy = Math.sin(ga) * (R * 0.65);
+      ctx.fillStyle = g % 2 === 0 ? '#2ecc71' : '#f1c40f';
+      ctx.beginPath();
+      ctx.arc(gx, gy, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // 5. Cruz Sagrada de Cura no Centro
+    ctx.fillStyle = zone.playerInside ? '#ffffff' : '#2ecc71';
+    ctx.shadowColor = '#2ecc71';
+    ctx.shadowBlur = 6;
+    const cSize = 14;
+    ctx.fillRect(-cSize / 2, -2.5, cSize, 5);
+    ctx.fillRect(-2.5, -cSize / 2, 5, cSize);
+
+    // 6. Partículas Ascendentes de Cura
+    const sparkleCount = 4;
+    for (let sp = 0; sp < sparkleCount; sp++) {
+      const spProgress = ((frameCount * 0.04 + sp * 0.25) % 1);
+      const spAng = sp * 1.57;
+      const spDist = (R * 0.4) * (1 - spProgress * 0.3);
+      const spX = Math.cos(spAng) * spDist;
+      const spY = Math.sin(spAng) * spDist - spProgress * 35;
+      const spAlpha = Math.sin(spProgress * Math.PI);
+      ctx.fillStyle = sp % 2 === 0 ? `rgba(46, 204, 113, ${spAlpha})` : `rgba(241, 196, 15, ${spAlpha})`;
+      ctx.beginPath();
+      ctx.arc(spX, spY, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 7. Texto Flutuante Indicador de Duração
+    ctx.shadowBlur = 4;
+    ctx.shadowColor = '#000000';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 9px monospace';
+    ctx.fillStyle = zone.playerInside ? '#ffffff' : '#2ecc71';
+    const secondsLeft = (zone.life / 60).toFixed(1);
+    ctx.fillText(`CURA +25%/s (${secondsLeft}s)`, 0, -R - 10);
+
+    ctx.restore();
+  }
 }
 
 /**
@@ -635,6 +1119,69 @@ function drawCelestialLimbs(ctx, e, R, frameCount, isStaggered, isWindup, isCast
 }
 
 /**
+ * Renderiza Fissuras Visuais Progressivas de Dano de Batalha (Battle Damage) no Domo Gótico.
+ * Intensifica-se conforme o HP do Soberano diminui (<75%, <50%, <30%, <15%).
+ */
+function drawDomeFractures(ctx, R, hpRatio, frameCount) {
+  ctx.save();
+  const severity = 1 - hpRatio;
+  const glow = 4 + Math.sin(frameCount * 0.15) * 2;
+
+  ctx.strokeStyle = hpRatio < 0.20 ? '#ffffff' : (hpRatio < 0.40 ? '#fff6a9' : 'rgba(255, 255, 255, 0.85)');
+  ctx.shadowColor = hpRatio < 0.20 ? '#f1c40f' : (hpRatio < 0.40 ? '#00cec9' : '#e84393');
+  ctx.shadowBlur = glow;
+  ctx.lineWidth = hpRatio < 0.20 ? 2.2 : 1.4;
+
+  // Racha 1: Superior Esquerda
+  ctx.beginPath();
+  ctx.moveTo(0, -R * 0.2);
+  ctx.lineTo(-R * 0.35, -R * 0.45);
+  ctx.lineTo(-R * 0.42, -R * 0.65);
+  if (hpRatio < 0.50) {
+    ctx.lineTo(-R * 0.65, -R * 0.85);
+    ctx.moveTo(-R * 0.35, -R * 0.45);
+    ctx.lineTo(-R * 0.55, -R * 0.35);
+  }
+  ctx.stroke();
+
+  // Racha 2: Inferior Direita (< 60% HP)
+  if (hpRatio < 0.60) {
+    ctx.beginPath();
+    ctx.moveTo(R * 0.1, R * 0.1);
+    ctx.lineTo(R * 0.38, R * 0.35);
+    ctx.lineTo(R * 0.52, R * 0.55);
+    if (hpRatio < 0.35) {
+      ctx.lineTo(R * 0.72, R * 0.78);
+      ctx.moveTo(R * 0.38, R * 0.35);
+      ctx.lineTo(R * 0.60, R * 0.25);
+    }
+    ctx.stroke();
+  }
+
+  // Racha 3: Fissura de Cisalhamento Central Crítica (< 30% HP)
+  if (hpRatio < 0.30) {
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(-R * 0.1, -R * 0.75);
+    ctx.lineTo(R * 0.15, -R * 0.35);
+    ctx.lineTo(-R * 0.08, R * 0.15);
+    ctx.lineTo(R * 0.22, R * 0.65);
+    ctx.stroke();
+
+    // Micro-faíscas estelares vazando da brecha
+    const sparkCount = 3;
+    for (let s = 0; s < sparkCount; s++) {
+      const sAng = (frameCount * 0.25 + s * 2.1) % (Math.PI * 2);
+      const sDist = R * 0.45 + Math.sin(frameCount * 0.3 + s) * (R * 0.35);
+      ctx.fillStyle = s % 2 === 0 ? '#ffffff' : '#f1c40f';
+      ctx.fillRect(Math.cos(sAng) * sDist - 1.5, Math.sin(sAng) * sDist - 1.5, 3, 3);
+    }
+  }
+
+  ctx.restore();
+}
+
+/**
  * Renderiza a Esfera de Vácuo Central Envolta pelo Anel Translúcido Ciano com Arcos Góticos (Fiel à Referência).
  * Comporta transição dinâmica entre energia de combate e paleta serena da referência durante a inatividade.
  */
@@ -818,6 +1365,12 @@ function drawSacredMandalaVoidSphere(ctx, e, R, frameCount, isHit, isStaggered, 
   ctx.beginPath();
   ctx.arc(0, 0, R * 0.96, 0, Math.PI * 2);
   ctx.stroke();
+
+  // Trincas de Dano de Batalha (Battle Damage) Progressivas no Domo
+  const hpRatio = Math.max(0, e.hp / (e.maxHp || 1));
+  if (hpRatio < 0.75) {
+    drawDomeFractures(ctx, R, hpRatio, frameCount);
+  }
 
   ctx.restore();
 }
@@ -1104,6 +1657,8 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
 
   if (e.actionState === SOVEREIGN_STATES.SPAWN_INTRO) {
     drawMajesticSpawnIntro(ctx, e, frameCount);
+  } else if (e.actionState === SOVEREIGN_STATES.DEATH_COLLAPSE) {
+    drawMajesticDeathCollapse(ctx, e, frameCount);
   } else {
   const R = e.radius;
   const isTransition = e.actionState === SOVEREIGN_STATES.PHASE_TRANSITION;
@@ -1186,6 +1741,11 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
     ctx.stroke();
   }
   ctx.restore();
+
+  // 1.5. Locais de Cura Sagrados (Santuários Celestiais)
+  if (e.healingZones && e.healingZones.length > 0) {
+    drawHealingZones(ctx, e, frameCount);
+  }
 
   // 2. Barreira do Horizonte de Eventos
   if (e.phase >= 2) {
@@ -1695,5 +2255,21 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
   // 18. Grande Banner Cinematográfico de Tela (Tema Vermelho, Duração Reduzida em 50% e Responsivo para Telas Verticais)
   if (e.titleTimer > 0) {
     drawCinematicScreenTitle(ctx, e, frameCount);
+  }
+
+  // 19. Grande Banner Dourado de Vitória Cósmica
+  if (e.showGoldenBanner) {
+    drawGoldenVictoryBanner(ctx, e, frameCount);
+  }
+
+  // 20. Fade-out gradual da tela para o menu de seleção
+  if (e.fadeAlpha > 0) {
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const screenW = viewW || (typeof window !== 'undefined' ? window.innerWidth : 1280);
+    const screenH = viewH || (typeof window !== 'undefined' ? window.innerHeight : 800);
+    ctx.fillStyle = `rgba(3, 1, 6, ${Math.min(1.0, e.fadeAlpha)})`;
+    ctx.fillRect(0, 0, screenW, screenH);
+    ctx.restore();
   }
 }

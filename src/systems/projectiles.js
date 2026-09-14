@@ -170,7 +170,8 @@ export function updateProjectiles(dt) {
         // Knockback Suave: Golem e Escudeiro Bloqueador resistem 75%; Elites resistem 50%; Chefes e Mini-Chefes resistem 80%
         if (!e.isBossSubTarget) {
           const impactAngle = b.angle !== undefined ? b.angle : Math.atan2(b.vy || 0, b.vx || 0);
-          const baseWeaponPush = (b.type === 'HAMMER_SLAM' ? 14.0 : (b.type === 'STAFF' ? 6.0 : 4.5));
+          // Knockback balanceado: STAFF (Ignis) agora possui o mesmo empurrão base de SWORD (Kael) = 4.5
+          const baseWeaponPush = (b.type === 'HAMMER_SLAM' ? 14.0 : 4.5);
           const bossResist = (e.isBoss || e.isMiniBoss) ? 0.20 : (e.baseType === 'GOLEM' ? 0.25 : (isShieldBlocked ? 0.25 : (e.isElite ? 0.50 : 1.0)));
           const totalPush = baseWeaponPush * (player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0) * bossResist;
           e.pushVx = (e.pushVx || 0) + Math.cos(impactAngle) * totalPush;

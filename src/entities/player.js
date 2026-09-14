@@ -7,7 +7,7 @@ import { playSfx, triggerHaptic } from '../core/audio.js';
 import { inputX, inputY } from '../core/input.js';
 import { createHitParticles, addDamageText } from '../systems/combat.js';
 import { bullets, enemyBullets, acidPuddles } from '../systems/projectiles.js';
-import { gameState, triggerShake, enemies, viewW, viewH } from '../main.js';
+import { gameState, triggerShake, enemies, viewW, viewH, cameraViewW, cameraViewH } from '../main.js';
 import { getNeighborIndices } from '../core/spatialGrid.js';
 import { distToSegment } from '../core/math.js';
 
@@ -857,8 +857,8 @@ export function fireWeapons() {
 
     const rangeSq = weaponRange * weaponRange;
     const inRange = [];
-    const halfW = (viewW || 1200) / 2;
-    const halfH = (viewH || 800) / 2;
+    const halfW = (cameraViewW || 960) / 2;
+    const halfH = (cameraViewH || 640) / 2;
     // Margem interna para garantir que o monstro esteja visível de fato dentro da tela e não apenas surgindo na borda
     const screenMargin = 20;
 

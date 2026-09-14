@@ -815,13 +815,10 @@ export function triggerDeath() {
   if (modal) modal.style.display = 'flex';
 }
 
-export function triggerVictory() {
+export function finalizeVictoryAndReturnToMenu() {
   gameState.isWon = true;
-  gameState.isPaused = true;
+  gameState.isPaused = false;
   resetInput();
-  playSfx('victory');
-  triggerShake(20);
-  triggerHaptic('heavy');
 
   bullets.length = 0;
   enemyBullets.length = 0;
@@ -833,15 +830,19 @@ export function triggerVictory() {
   const bossHud = document.getElementById('boss-hud');
   if (bossHud) bossHud.style.display = 'none';
 
-  const timerElem = document.getElementById('timer-val');
-  const time = timerElem ? timerElem.innerText : '00:00';
-  const summary = document.getElementById('victory-summary');
-  if (summary) {
-    summary.innerHTML = 
-      `Tempo de Combate: <b>${time}</b><br>Monstros Expurgados: <b>${gameState.kills}</b><br>Nível Alcançado: <b>${player.level}</b><br>Status: <b>Soberano do Abismo Exterminado!</b><br>Ouro Total: <b>${getPersistentGold()}</b>`;
-  }
   const modal = document.getElementById('victory-modal');
-  if (modal) modal.style.display = 'flex';
+  if (modal) modal.style.display = 'none';
+
+  const fadeOverlay = document.getElementById('victory-fade-overlay');
+  if (fadeOverlay) fadeOverlay.style.opacity = '0';
+
+  // Retorna triunfalmente ao menu de seleção de personagens
+  openCharacterSelect();
+}
+
+export function triggerVictory() {
+  // Transição de segurança / legado
+  finalizeVictoryAndReturnToMenu();
 }
 
 // Brasões Heráldicos Vetoriais dos Campeões (Geometria 24x24)

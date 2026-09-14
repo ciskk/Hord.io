@@ -56,6 +56,7 @@ import {
   openCharacterSelect, 
   triggerDeath, 
   triggerVictory, 
+  finalizeVictoryAndReturnToMenu,
   openChestModal,
   setBossRewardContext,
   ensureBossUpgradeCount,
@@ -94,6 +95,11 @@ export let dpr = 1;
 export let viewW = window.innerWidth;
 export let viewH = window.innerHeight;
 
+// Redução de ~20% no campo de visão (câmera aproximada em 1.25x: 1 / 1.25 = 0.80)
+export const CAMERA_ZOOM = 1.25;
+export let cameraViewW = viewW / CAMERA_ZOOM;
+export let cameraViewH = viewH / CAMERA_ZOOM;
+
 export function resize() {
   if (!canvas) {
     canvas = document.getElementById('game-canvas');
@@ -106,6 +112,8 @@ export function resize() {
   dpr = layoutMetrics.dpr || Math.min(window.devicePixelRatio || 1, 1.5);
   viewW = layoutMetrics.viewW || window.innerWidth;
   viewH = layoutMetrics.viewH || window.innerHeight;
+  cameraViewW = viewW / CAMERA_ZOOM;
+  cameraViewH = viewH / CAMERA_ZOOM;
   canvas.width = Math.floor(viewW * dpr);
   canvas.height = Math.floor(viewH * dpr);
   canvas.style.width = viewW + 'px';
@@ -280,6 +288,9 @@ export function resetGame() {
 
   const bloodFilter = document.getElementById('blood-screen-filter');
   if (bloodFilter) bloodFilter.classList.remove('active');
+
+  const victoryFade = document.getElementById('victory-fade-overlay');
+  if (victoryFade) victoryFade.classList.remove('active');
 
   updateSkillUI();
 
@@ -645,8 +656,8 @@ function update(dt) {
     }
   }
 
-  camera.x = player.x - viewW / 2;
-  camera.y = player.y - viewH / 2;
+  camera.x = player.x - cameraViewW / 2;
+  camera.y = player.y - cameraViewH / 2;
 
   player.weapons.forEach(w => { w.timer += dt; });
   fireWeapons();
@@ -1297,7 +1308,11 @@ function update(dt) {
           triggerShake,
           triggerHaptic,
           createHitParticles,
-          addDamageText
+          addDamageText,
+          onDefeatComplete: () => {
+            activeBoss = null;
+            finalizeVictoryAndReturnToMenu();
+          }
         });
       } else if (e.isMiniBoss) {
         updateMiniBoss(e, dt, {
@@ -1868,6 +1883,10 @@ function update(dt) {
       }
     }
 
+    if (e.isBoss && e.isFinalBoss && e.actionState === 'DEATH_COLLAPSE') {
+      continue;
+    }
+
     if (e.hp <= 0) {
       gameState.kills++;
       createHitParticles(e.x, e.y, e.color, 6);
@@ -2128,9 +2147,64 @@ function update(dt) {
         onBossDefeated(seconds);
 
         if (e.isFinalBoss) {
-          triggerVictory();
+          if (e.actionState !== 'DEATH_COLLAPSE') {
+            e.hp = 0;
+            e.actionState = 'DEATH_COLLAPSE';
+            e.defeatTimer = 420; // ~7 segundos a 60 FPS
+            e.defeatMaxTimer = 420;
+            e.isTargetable = false;
+            e.isVulnerable = false;
+            e.currentSkill = null;
+            e.windupTimer = 0;
+            e.castDuration = 0;
+            player.iFrames = 999999;
+            setIsWavePaused(true);
+
+            // Guarda métricas consolidadas da vitória para o Banner Dourado
+            const timerElem = document.getElementById('timer-val');
+            e.victoryStats = {
+              time: timerElem ? timerElem.innerText : '00:00',
+              kills: gameState.kills || 0,
+              level: player.level || 1,
+              gold: getPersistentGold() || 0
+            };
+
+            // Hit-stop dramático no frame de abate fatal
+            freezeTimer = 16;
+            triggerShake(26);
+            triggerHaptic('heavy');
+            playSfx('shatter');
+            playSfx('crit');
+
+            // Limpa perigos residuais e outros monstros comuns da arena
+            for (let rem = enemies.length - 1; rem >= 0; rem--) {
+              if (enemies[rem] !== e) enemies.splice(rem, 1);
+            }
+            enemyBullets.length = 0;
+            bossTelegraphs.length = 0;
+            bossProjectiles.length = 0;
+            bossShockwaves.length = 0;
+            voidVortices.length = 0;
+
+            const bossHpFill = document.getElementById('boss-hp-fill');
+            if (bossHpFill) {
+              bossHpFill.style.transition = 'none';
+              bossHpFill.style.width = '0%';
+            }
+            const bossHpVal = document.getElementById('boss-hp-val');
+            if (bossHpVal) bossHpVal.innerText = 'EXPURGADO';
+          }
           return;
         }
+
+        // Garante que o jogador veja a barra zerar explicitamente (0%) no instante do abate
+        const bossHpFill = document.getElementById('boss-hp-fill');
+        if (bossHpFill) {
+          bossHpFill.style.transition = 'none';
+          bossHpFill.style.width = '0%';
+        }
+        const bossHpVal = document.getElementById('boss-hp-val');
+        if (bossHpVal) bossHpVal.innerText = '0%';
 
         spawnChest(e.x, e.y, 'BOSS');
         activeBoss = null;
@@ -2140,7 +2214,11 @@ function update(dt) {
         voidVortices.length = 0;
         gameState.isWavePaused = true;
         const bossHud = document.getElementById('boss-hud');
-        if (bossHud) bossHud.style.display = 'none';
+        if (bossHud) {
+          setTimeout(() => {
+            if (!activeBoss) bossHud.style.display = 'none';
+          }, 350);
+        }
       } else if (e.isMiniBoss) {
         triggerShake(10);
         triggerHaptic('medium');
@@ -2347,7 +2425,7 @@ function update(dt) {
 
   updateCombatVisuals(dt);
 
-  const despawnDist = Math.hypot(viewW / 2, viewH / 2) + 500;
+  const despawnDist = Math.hypot(cameraViewW / 2, cameraViewH / 2) + 500;
   const despawnDistSq = despawnDist * despawnDist;
   let writeIdx = 0;
   for (let i = 0; i < enemies.length; i++) {

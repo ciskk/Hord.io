@@ -1,7 +1,9 @@
 import { 
   camera, 
   viewW, 
-  viewH, 
+  viewH,
+  cameraViewW,
+  cameraViewH, 
   currentArenaTheme, 
   setCurrentArenaTheme,
   bloodSplats, 
@@ -290,14 +292,14 @@ export function renderSurrealAbyssArena(ctx) {
   // CAMADA 1: O VAZIO CÓSMICO PROFUNDO (BACKGROUND)
   // ==========================================
   ctx.fillStyle = '#040108';
-  ctx.fillRect(camera.x, camera.y, viewW, viewH);
+  ctx.fillRect(camera.x, camera.y, cameraViewW, cameraViewH);
 
   // Estrelas cósmicas no vácuo com leve paralaxe
   for (let i = 0; i < 48; i++) {
     const h1 = tileHash(i * 13, i * 37);
     const h2 = tileHash(i * 71, i * 19);
-    const starX = camera.x + ((h1 * 3200 - camera.x * 0.08) % viewW + viewW) % viewW;
-    const starY = camera.y + ((h2 * 3200 - camera.y * 0.08) % viewH + viewH) % viewH;
+    const starX = camera.x + ((h1 * 3200 - camera.x * 0.08) % cameraViewW + cameraViewW) % cameraViewW;
+    const starY = camera.y + ((h2 * 3200 - camera.y * 0.08) % cameraViewH + cameraViewH) % cameraViewH;
     const twinkle = Math.sin(frameCount * 0.05 + i * 2) * 0.4 + 0.6;
     const isCyan = i % 3 === 0;
     ctx.fillStyle = isCyan ? `rgba(0, 206, 201, ${0.7 * twinkle})` : `rgba(232, 67, 147, ${0.6 * twinkle})`;
@@ -1046,9 +1048,9 @@ function renderStandardTileGround(ctx, startCol, endCol, startRow, endRow, tileS
 export function renderEnvironment(ctx) {
   const tileSize = 96;
   const startCol = Math.floor(camera.x / tileSize) - 1;
-  const endCol = Math.floor((camera.x + viewW) / tileSize) + 1;
+  const endCol = Math.floor((camera.x + cameraViewW) / tileSize) + 1;
   const startRow = Math.floor(camera.y / tileSize) - 1;
-  const endRow = Math.floor((camera.y + viewH) / tileSize) + 1;
+  const endRow = Math.floor((camera.y + cameraViewH) / tileSize) + 1;
 
   // Atualização da transição suave entre temas
   if (transitionProgress < 1.0) {
@@ -1137,8 +1139,8 @@ export function renderEnvironment(ctx) {
   for (let s of ambientEmbers) {
     const floatY = s.y - (frameCount * 0.3 * s.speed);
     const sway = Math.sin(frameCount * 0.03 + s.y) * 8;
-    let sx = (((s.x + sway) - camera.x * s.speed) % viewW + viewW) % viewW;
-    let sy = ((floatY - camera.y * s.speed) % viewH + viewH) % viewH;
+    let sx = (((s.x + sway) - camera.x * s.speed) % cameraViewW + cameraViewW) % cameraViewW;
+    let sy = ((floatY - camera.y * s.speed) % cameraViewH + cameraViewH) % cameraViewH;
 
     const pulse = Math.sin(frameCount * 0.05 + s.x) * 0.35 + 0.65;
     ctx.fillStyle = `rgba(${pal.emberR}, ${pal.emberG}, ${pal.emberB}, ${s.alpha * 0.25 * pulse})`;
@@ -1157,27 +1159,27 @@ export function renderEnvironment(ctx) {
   const mist2 = (frameCount * 0.20 + camera.y * 0.15) % 1200;
 
   ctx.fillStyle = pal.mistBase;
-  ctx.fillRect(camera.x, camera.y, viewW, viewH);
+  ctx.fillRect(camera.x, camera.y, cameraViewW, cameraViewH);
 
   ctx.fillStyle = pal.mistPuff;
   ctx.beginPath();
-  ctx.ellipse(camera.x + (viewW * 0.5) - mist1 + 600, camera.y + viewH * 0.4, 380, 90, 0.05, 0, Math.PI * 2);
-  ctx.ellipse(camera.x + mist2, camera.y + viewH * 0.75, 440, 110, -0.05, 0, Math.PI * 2);
+  ctx.ellipse(camera.x + (cameraViewW * 0.5) - mist1 + 600, camera.y + cameraViewH * 0.4, 380, 90, 0.05, 0, Math.PI * 2);
+  ctx.ellipse(camera.x + mist2, camera.y + cameraViewH * 0.75, 440, 110, -0.05, 0, Math.PI * 2);
   ctx.fill();
 
   // 6. VINHETA PERIFÉRICA SUAVE (Calibrada: iluminação ampla, bordas leves sem cegar os cantos)
   const vignette = ctx.createRadialGradient(
-    camera.x + viewW / 2, 
-    camera.y + viewH / 2, 
-    Math.min(viewW, viewH) * 0.65,
-    camera.x + viewW / 2, 
-    camera.y + viewH / 2, 
-    Math.max(viewW, viewH) * 0.95
+    camera.x + cameraViewW / 2, 
+    camera.y + cameraViewH / 2, 
+    Math.min(cameraViewW, cameraViewH) * 0.65,
+    camera.x + cameraViewW / 2, 
+    camera.y + cameraViewH / 2, 
+    Math.max(cameraViewW, cameraViewH) * 0.95
   );
   vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
   vignette.addColorStop(1, 'rgba(10, 15, 20, 0.16)');
   ctx.fillStyle = vignette;
-  ctx.fillRect(camera.x, camera.y, viewW, viewH);
+  ctx.fillRect(camera.x, camera.y, cameraViewW, cameraViewH);
 }
 
 /**
@@ -2150,8 +2152,8 @@ function drawAbyssProps(ctx, c, r, tileX, tileY, h, h2, h3) {
     const ey = tileY + 24 + (h3 * 30);
 
     // Ângulo em direção ao jogador para a pupila acompanhar a movimentação
-    const eyeTargetX = player ? player.x : camera.x + viewW / 2;
-    const eyeTargetY = player ? player.y : camera.y + viewH / 2;
+    const eyeTargetX = player ? player.x : camera.x + cameraViewW / 2;
+    const eyeTargetY = player ? player.y : camera.y + cameraViewH / 2;
     const pAng = Math.atan2(eyeTargetY - ey, eyeTargetX - ex);
     const pupDist = 3.2;
     const pupX = ex + Math.cos(pAng) * pupDist;

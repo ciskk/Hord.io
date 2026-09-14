@@ -15,6 +15,9 @@ import {
   dpr,
   viewW,
   viewH,
+  CAMERA_ZOOM,
+  cameraViewW,
+  cameraViewH,
   camera,
   screenShake,
   props,
@@ -52,15 +55,17 @@ export function render() {
   const shakeY = screenShake > 0 ? (Math.random() - 0.5) * screenShake : 0;
 
   ctx.save();
+  // Aplica a aproximação de câmera (~20% menor FOV)
+  ctx.scale(CAMERA_ZOOM, CAMERA_ZOOM);
   ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
 
   renderEnvironment(ctx);
 
   const pad = 60;
   const viewLeft = camera.x - pad;
-  const viewRight = camera.x + viewW + pad;
+  const viewRight = camera.x + cameraViewW + pad;
   const viewTop = camera.y - pad;
-  const viewBottom = camera.y + viewH + pad;
+  const viewBottom = camera.y + cameraViewH + pad;
 
   for (let i = 0; i < props.length; i++) {
     const p = props[i];
@@ -1790,8 +1795,8 @@ export function render() {
     const mb = enemies[i];
     if (!mb || !mb.isMiniBoss || mb.hp <= 0) continue;
 
-    const sx = mb.x - camera.x;
-    const sy = mb.y - camera.y;
+    const sx = (mb.x - camera.x) * CAMERA_ZOOM;
+    const sy = (mb.y - camera.y) * CAMERA_ZOOM;
     const pad = 42;
     const isOffscreen = sx < pad || sx > viewW - pad || sy < pad || sy > viewH - pad;
 

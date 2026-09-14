@@ -20,7 +20,8 @@ import {
   updateSingularityPhysics, 
   updateAnchors, 
   updateTentaclePhysics, 
-  updateActiveAttacks 
+  updateActiveAttacks,
+  updateHealingZones 
 } from './physics.js';
 import { prepareNextAttack, startSkillCast } from './attacks.js';
 
@@ -97,7 +98,7 @@ export function triggerPhaseTransition(boss, nextPhase, context) {
 }
 
 export function updateAbyssSovereign(e, dt, context) {
-  if (e.hp <= 0) {
+  if (e.hp <= 0 && e.actionState !== SOVEREIGN_STATES.DEATH_COLLAPSE) {
     cleanupRiftAnchors(e);
     return;
   }
@@ -110,12 +111,134 @@ export function updateAbyssSovereign(e, dt, context) {
     addDamageText
   } = context;
 
+  // Lógica Especial da Sequência Cinematográfica de Derrota
+  if (e.actionState === SOVEREIGN_STATES.DEATH_COLLAPSE) {
+    cleanupRiftAnchors(e);
+    if (e.healingZones) e.healingZones.length = 0;
+    e.isTargetable = false;
+    e.isVulnerable = false;
+    e.windupTimer = 0;
+    e.castDuration = 0;
+    e.currentSkill = null;
+    if (player) player.iFrames = 999999;
+
+    e.defeatTimer = (e.defeatTimer !== undefined ? e.defeatTimer : 420) - dt;
+    const maxDefeat = e.defeatMaxTimer || 420;
+    const progress = Math.min(1.0, Math.max(0, 1 - (e.defeatTimer / maxDefeat)));
+    e.defeatProgress = progress;
+
+    // Atualiza física dos tentáculos durante o colapso
+    updateTentaclePhysics(e, dt);
+
+    // ATO 1: Fratura Fatal & Desestabilização (0.00 <= progress < 0.25)
+    if (progress < 0.25) {
+      if (!e.hasTriggeredDefeatShatter) {
+        e.hasTriggeredDefeatShatter = true;
+        playSfx('shatter');
+        playSfx('crit');
+        triggerShake(26);
+        triggerHaptic('heavy');
+        addDamageText(e.x, e.y - e.radius - 24, "COLAPSO DO VÁZIO!", true, '#f1c40f');
+      }
+
+      e.x += (Math.random() - 0.5) * 2.5;
+      e.y += (Math.random() - 0.5) * 2.5;
+
+      if (Math.floor(frameCount) % 3 === 0) {
+        triggerShake(2.0 + progress * 8);
+        createHitParticles(
+          e.x + (Math.random() - 0.5) * e.radius * 1.5,
+          e.y + (Math.random() - 0.5) * e.radius * 1.5,
+          Math.random() < 0.5 ? '#ffffff' : '#e84393',
+          3
+        );
+      }
+    }
+    // ATO 2: Implosão Gravitacional de Vácuo (0.25 <= progress < 0.55)
+    else if (progress < 0.55) {
+      if (!e.hasTriggeredDefeatImplosion) {
+        e.hasTriggeredDefeatImplosion = true;
+        playSfx('singularity');
+        playSfx('charge');
+        triggerShake(18);
+        triggerHaptic('heavy');
+        addDamageText(e.x, e.y - e.radius - 20, "IMPLOSÃO GRAVITACIONAL", true, '#00cec9');
+      }
+
+      const act2Prog = (progress - 0.25) / 0.30;
+      triggerShake(2.0 + act2Prog * 9);
+
+      if (Math.floor(frameCount) % 2 === 0) {
+        const pAngle = Math.random() * Math.PI * 2;
+        const pDist = 100 + Math.random() * 160;
+        createHitParticles(e.x + Math.cos(pAngle) * pDist, e.y + Math.sin(pAngle) * pDist, '#f1c40f', 2);
+        createHitParticles(e.x + Math.cos(pAngle) * (pDist * 0.6), e.y + Math.sin(pAngle) * (pDist * 0.6), '#00cec9', 1);
+      }
+    }
+    // ATO 3: Supernova Divina Dourada & Banner Cósmico (0.55 <= progress < 0.85)
+    else if (progress < 0.85) {
+      if (!e.hasTriggeredDefeatSupernova) {
+        e.hasTriggeredDefeatSupernova = true;
+        triggerShake(30);
+        triggerHaptic('heavy');
+        playSfx('victory');
+        playSfx('boss');
+        playSfx('chest_fanfare');
+        e.supernovaFlashTimer = 35;
+        e.showGoldenBanner = true;
+
+        if (context.bossShockwaves) {
+          context.bossShockwaves.push({
+            x: e.x,
+            y: e.y,
+            radius: 20,
+            maxRadius: 1000,
+            speed: 20,
+            damage: 0,
+            color: '#f1c40f',
+            colorRgb: '241, 196, 15',
+            thickness: 8
+          });
+        }
+
+        addDamageText(e.x, e.y - e.radius - 24, "VITÓRIA SUPREMA!", true, '#f1c40f');
+      }
+
+      if (Math.floor(frameCount) % 3 === 0) {
+        createHitParticles(e.x + (Math.random() - 0.5) * 80, e.y + (Math.random() - 0.5) * 80, Math.random() < 0.6 ? '#f1c40f' : '#ffffff', 3);
+      }
+    }
+    // ATO 4: Fade-out Gradual para o Menu (0.85 <= progress <= 1.00)
+    else {
+      const act4Prog = (progress - 0.85) / 0.15;
+      e.fadeAlpha = Math.min(1.0, act4Prog);
+
+      const fadeEl = document.getElementById('victory-fade-overlay');
+      if (fadeEl && !fadeEl.classList.contains('active')) {
+        fadeEl.classList.add('active');
+      }
+    }
+
+    // Fim da Sequência: Transição Final para a Seleção de Personagens
+    if (e.defeatTimer <= 0) {
+      if (!e.hasDefeatCompleted) {
+        e.hasDefeatCompleted = true;
+        if (context.onDefeatComplete) {
+          context.onDefeatComplete();
+        }
+      }
+    }
+
+    return;
+  }
+
   updateDelayedActions(e, dt);
   updateAnchors(e, dt, context, () => triggerStabilityBreak(e, context));
   updateEventHorizon(e, dt, context);
   updateSingularityPhysics(e, dt, context);
   updateTentaclePhysics(e, dt);
   updateActiveAttacks(e, dt, context);
+  updateHealingZones(e, dt, context);
 
   // Sincronização explícita e reativa da pálpebra e da paleta do estado inativo (IDLE)
   if (e.eyeAperture === undefined) e.eyeAperture = 1.0;

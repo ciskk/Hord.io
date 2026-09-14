@@ -10,6 +10,8 @@ import {
   props, 
   viewW, 
   viewH, 
+  cameraViewW,
+  cameraViewH,
   frameCount, 
   setActiveBoss, 
   triggerShake,
@@ -35,8 +37,8 @@ export const MAX_ENEMIES = 150;
  * @returns {{ x: number, y: number }}
  */
 function getOffscreenSpawnPoint(minDist = 50, maxDist = 80) {
-  const halfW = (viewW || 1200) / 2;
-  const halfH = (viewH || 800) / 2;
+  const halfW = (cameraViewW || 960) / 2;
+  const halfH = (cameraViewH || 640) / 2;
   const margin = minDist + Math.random() * (maxDist - minDist);
   const w = halfW + margin;
   const h = halfH + margin;
@@ -76,8 +78,8 @@ function getOffscreenSpawnPoint(minDist = 50, maxDist = 80) {
  * @returns {boolean} Verdadeiro se a fusão foi realizada com sucesso.
  */
 export function stackOffscreenMob(typeKey, hpToAdd, xpToAdd) {
-  const halfW = (viewW || 1200) / 2;
-  const halfH = (viewH || 800) / 2;
+  const halfW = (cameraViewW || 960) / 2;
+  const halfH = (cameraViewH || 640) / 2;
   const offscreenThresholdSq = (Math.hypot(halfW, halfH) + 160) ** 2;
 
   for (let i = enemies.length - 1; i >= 0; i--) {
@@ -458,6 +460,7 @@ export function triggerBossEncounter(bossId) {
 
   const bossHpFill = document.getElementById('boss-hp-fill');
   if (bossHpFill) {
+    bossHpFill.style.transition = '';
     bossHpFill.style.width = (boss.bossId === 1 || boss.bossId === 3 || boss.bossId === 4) ? '0%' : '100%';
     bossHpFill.style.background = '';
     bossHpFill.style.boxShadow = '';

@@ -466,3 +466,125 @@ export function updateActiveAttacks(boss, dt, context) {
     }
   }
 }
+
+/**
+ * Spawna um local de cura sagrado (Santuário Cósmico) dentro da arena do Soberano do Abismo.
+ * Dura exatamente 3 segundos (180 frames) e regenera 25% de saúde por segundo.
+ * @param {Object} boss Entidade do Soberano do Abismo
+ * @param {Object} context Contexto global do motor
+ */
+export function spawnSanctuaryHealingZone(boss, context) {
+  if (!boss.healingZones) boss.healingZones = [];
+
+  // Posição calculada estritamente dentro da arena atual
+  const maxSpawnRadius = Math.max(60, (boss.arenaRadius || 520) - 85);
+  const spawnDist = 65 + Math.random() * (maxSpawnRadius - 65);
+  const spawnAngle = Math.random() * Math.PI * 2;
+  const cx = boss.arenaCenterX !== undefined ? boss.arenaCenterX : boss.x;
+  const cy = boss.arenaCenterY !== undefined ? boss.arenaCenterY : boss.y;
+  const hx = cx + Math.cos(spawnAngle) * spawnDist;
+  const hy = cy + Math.sin(spawnAngle) * spawnDist;
+
+  const zone = {
+    x: hx,
+    y: hy,
+    radius: 56,
+    life: 180, // 3 segundos exatos (180 frames a 60 FPS)
+    maxLife: 180,
+    healRatePerSec: 0.25, // 25% de saúde por segundo
+    healTickTimer: 0,
+    playerInside: false,
+    pulseTimer: 0
+  };
+
+  boss.healingZones.push(zone);
+
+  playSfx('heal');
+  triggerHaptic('medium');
+  if (context.triggerShake) context.triggerShake(4);
+  if (context.addDamageText) context.addDamageText(hx, hy - 20, "SANTUÁRIO DE CURA!", true, '#2ecc71');
+  if (context.createHitParticles) {
+    context.createHitParticles(hx, hy, '#2ecc71', 14);
+    context.createHitParticles(hx, hy, '#f1c40f', 8);
+  }
+}
+
+/**
+ * Atualiza e processa os locais de cura dentro da arena do Soberano do Abismo.
+ * Inicia após o chefe atingir 70% de vida e reaparece a cada 15 segundos.
+ * @param {Object} boss Entidade do Soberano do Abismo
+ * @param {number} dt Variação de tempo
+ * @param {Object} context Contexto global do motor
+ */
+export function updateHealingZones(boss, dt, context) {
+  if (!boss.healingZones) boss.healingZones = [];
+  const { player, frameCount, addDamageText, createHitParticles } = context;
+
+  // Condição: Ativa após o boss atingir 70% de vida (Fase 2 em diante)
+  const hpRatio = Math.max(0, boss.hp / (boss.maxHp || 1));
+  const isEligible = boss.hp > 0 && 
+                     boss.actionState !== 'SPAWN_INTRO' && 
+                     boss.actionState !== 'DEATH_COLLAPSE' && 
+                     hpRatio <= 0.70;
+
+  if (isEligible) {
+    if (!boss.hasStartedHealingCycle) {
+      boss.hasStartedHealingCycle = true;
+      // Spawna o 1º santuário assim que atinge 70% de vida
+      spawnSanctuaryHealingZone(boss, context);
+      boss.healingZoneSpawnTimer = 15 * 60; // Ciclo de 15 segundos (900 frames)
+    } else {
+      boss.healingZoneSpawnTimer -= dt;
+      if (boss.healingZoneSpawnTimer <= 0) {
+        boss.healingZoneSpawnTimer = 15 * 60; // Reaparece a cada 15 segundos
+        spawnSanctuaryHealingZone(boss, context);
+      }
+    }
+  }
+
+  // Atualização dos locais de cura ativos
+  for (let i = boss.healingZones.length - 1; i >= 0; i--) {
+    const zone = boss.healingZones[i];
+    zone.life -= dt;
+    if (zone.life <= 0) {
+      if (createHitParticles) createHitParticles(zone.x, zone.y, '#2ecc71', 8);
+      boss.healingZones.splice(i, 1);
+      continue;
+    }
+
+    zone.pulseTimer += dt;
+
+    if (!player || player.hp <= 0) continue;
+
+    const dx = player.x - zone.x;
+    const dy = player.y - zone.y;
+    const distSq = dx * dx + dy * dy;
+    const isInside = distSq <= (zone.radius + (player.radius || 14)) ** 2;
+    zone.playerInside = isInside;
+
+    if (isInside) {
+      // Regenera 25% de saúde por segundo
+      const healPerFrame = (player.maxHp * 0.25 / 60) * dt;
+      if (player.hp < player.maxHp) {
+        player.hp = Math.min(player.maxHp, player.hp + healPerFrame);
+      }
+
+      // Efeito visual de partículas ascendentes enquanto o jogador está dentro
+      if (Math.floor(frameCount) % 3 === 0 && createHitParticles) {
+        createHitParticles(player.x + (Math.random() - 0.5) * 20, player.y + (Math.random() - 0.5) * 20, '#2ecc71', 2);
+      }
+
+      // Feedback numérico flutuante e sonoro de cura a cada 24 frames (~0.4s)
+      zone.healTickTimer = (zone.healTickTimer || 0) + dt;
+      if (zone.healTickTimer >= 24) {
+        zone.healTickTimer = 0;
+        const displayChunk = Math.round(player.maxHp * 0.25 * 0.4);
+        if (displayChunk > 0 && addDamageText) {
+          addDamageText(player.x, player.y - 20, `+${displayChunk} HP`, false, '#2ecc71');
+          try { playSfx('heal'); } catch (e) {}
+        }
+      }
+    }
+  }
+}
+
