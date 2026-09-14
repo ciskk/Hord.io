@@ -120,14 +120,19 @@ export function destroyLantern(boss, lantern, lx, ly, context) {
   // Ao destruir a última lanterna da fase: Colapso por 6.0 segundos
   const activeCount = boss.lanterns.filter(o => o.active).length;
   if (activeCount === 0 && boss.actionState !== REAPER_STATES.RECOVERY && boss.actionState !== REAPER_STATES.ENRAGE_TRANSITION) {
-    boss.actionState = REAPER_STATES.RECOVERY;
-    boss.recoveryTimer = REAPER_CONFIG.RECOVERY_DURATION;
-    boss.isVulnerable = true;
+    if (boss.actionState === REAPER_STATES.SPAWN_INTRO) {
+      boss.pendingCollapse = true;
+    } else {
+      boss.actionState = REAPER_STATES.RECOVERY;
+      boss.recoveryTimer = REAPER_CONFIG.RECOVERY_DURATION;
+      boss.isVulnerable = true;
+      boss.isTargetable = true;
 
-    context.triggerShake(16);
-    triggerHaptic('heavy');
-    playSfx('boss');
-    context.addDamageText(boss.x, boss.y, "COLAPSO ESPIRITUAL (6.0s)!", true, '#81ecec');
+      context.triggerShake(16);
+      triggerHaptic('heavy');
+      playSfx('boss');
+      context.addDamageText(boss.x, boss.y, "COLAPSO ESPIRITUAL (6.0s)!", true, '#81ecec');
+    }
   }
 }
 

@@ -596,7 +596,9 @@ export function triggerHeroSkill() {
 
     for (let i = 0; i < enemies.length; i++) {
       const e = enemies[i];
+      if (!e || e.hp <= 0 || e.isTargetable === false) continue;
       if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
+      if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
       const dx = e.x - player.x;
       const dy = e.y - player.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
@@ -715,12 +717,14 @@ export function updateSpinningAxes(dt) {
 
     const midX = (player.x + ax) * 0.5;
     const midY = (player.y + ay) * 0.5;
-    const queryR = (effectiveRadius * 0.5) + hitRadius + 20;
+    const queryR = (effectiveRadius * 0.5) + hitRadius + 60;
     const nearbyIndices = getNeighborIndices(midX, midY, queryR);
 
     for (let k = 0; k < nearbyIndices.length; k++) {
       const e = enemies[nearbyIndices[k]];
-      if (!e || player.axeContactCds.has(e) || (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false))) continue;
+      if (!e || player.axeContactCds.has(e) || e.isTargetable === false) continue;
+      if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
+      if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
 
       const seg = distToSegment(e.x, e.y, player.x, player.y, ax, ay);
       const rSum = e.radius + hitRadius;
@@ -853,8 +857,9 @@ export function fireWeapons() {
     const rangeSq = weaponRange * weaponRange;
     const inRange = [];
     for (let i = 0; i < enemies.length; i++) {
-      const e = enemies[i];
-      if (e.hp <= 0 || (e.isBossSubTarget && !e.active) || (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) || e.isTargetable === false) continue;
+      if (e.hp <= 0 || e.isTargetable === false) continue;
+      if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
+      if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
       const dx = e.x - player.x;
       const dy = e.y - player.y;
       const dSq = dx * dx + dy * dy;

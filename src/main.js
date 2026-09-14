@@ -456,8 +456,9 @@ function update(dt) {
     }
 
     for (let i = 0; i < enemies.length; i++) {
-      const e = enemies[i];
+      if (!e || e.hp <= 0 || e.isTargetable === false) continue;
       if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
+      if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
 
       const dSq = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
       if (dSq < (player.radius + e.radius + 20) ** 2) {
@@ -529,8 +530,9 @@ function update(dt) {
     }
 
     for (let i = 0; i < enemies.length; i++) {
-      const e = enemies[i];
+      if (!e || e.hp <= 0 || e.isTargetable === false) continue;
       if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
+      if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
 
       const dSq = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
       if (dSq < (player.radius + e.radius + 18) ** 2) {
@@ -662,8 +664,9 @@ function update(dt) {
       }
 
       for (let i = 0; i < enemies.length; i++) {
-        const e = enemies[i];
+        if (!e || e.hp <= 0 || e.isTargetable === false) continue;
         if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
+        if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
 
         const dx = e.x - player.x;
         const dy = e.y - player.y;
@@ -718,8 +721,9 @@ function update(dt) {
       const oy = player.y + Math.sin(angle) * orbDist;
 
       for (let i = 0; i < enemies.length; i++) {
-        const e = enemies[i];
-        if (e.orbitalHitCd > 0 || (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false))) continue;
+        if (!e || e.hp <= 0 || e.orbitalHitCd > 0 || e.isTargetable === false) continue;
+        if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
+        if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
         const dx = e.x - ox;
         const dy = e.y - oy;
         const bookRadius = player.evolvedOrbitals ? 26 : 20;

@@ -2188,7 +2188,11 @@ export function renderHeroModel(c, heroKey, state = {}) {
  */
 export function drawPlayerCharacter() {
   const isInvulnBlink = player.iFrames > 0 && Math.floor(player.iFrames / 4) % 2 === 0;
-  if (isInvulnBlink) return;
+
+  ctx.save();
+  if (isInvulnBlink) {
+    ctx.globalAlpha = 0.35;
+  }
 
   renderHeroModel(ctx, selectedHeroKey, {
     x: player.x,
@@ -2215,4 +2219,6 @@ export function drawPlayerCharacter() {
     isThrowingPotion: (player.potionThrowTimer > 0) || bullets.some(b => b.type === 'POTION' && b.life > 18),
     isAlchemistSkill: (player.alchemistSkillTimer > 0)
   });
+
+  ctx.restore();
 }

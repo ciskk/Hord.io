@@ -162,14 +162,20 @@ export function destroyLitocisto(boss, o, ox, oy, context) {
 
   const activeRemaining = boss.orbitals.filter(item => item.active).length;
   if (activeRemaining === 0 && boss.actionState !== MONOLITH_STATES.RECOVERY && boss.actionState !== MONOLITH_STATES.OVERHEAT_TRANSITION) {
-    boss.actionState = MONOLITH_STATES.RECOVERY;
-    boss.recoveryTimer = MONOLITH_CONFIG.RECOVERY_DURATION; // 4.5 segundos
-    boss.isVulnerable = true;
+    if (boss.actionState === MONOLITH_STATES.SPAWN_INTRO) {
+      // Se quebrou todos os litocistos durante a intro cinematográfica, agenda o colapso sísmico para o fim da intro
+      boss.pendingCollapse = true;
+    } else {
+      boss.actionState = MONOLITH_STATES.RECOVERY;
+      boss.recoveryTimer = MONOLITH_CONFIG.RECOVERY_DURATION; // 4.5 segundos
+      boss.isVulnerable = true;
+      boss.isTargetable = true;
 
-    context.triggerShake(16);
-    triggerHaptic('heavy');
-    playSfx('boss');
-    context.addDamageText(boss.x, boss.y, "COLAPSO SÍSMICO!", true, '#f1c40f');
+      context.triggerShake(16);
+      triggerHaptic('heavy');
+      playSfx('boss');
+      context.addDamageText(boss.x, boss.y, "COLAPSO SÍSMICO!", true, '#f1c40f');
+    }
   }
 }
 

@@ -289,8 +289,6 @@ export function updateSupremeReaper(e, dt, context) {
       }
 
       if (e.introTimer <= 0) {
-        e.actionState = REAPER_STATES.CHASE;
-        e.skillCooldown = 75;
         e.isTargetable = true;
         if (e.lanterns) {
           e.lanterns.forEach(l => { l.isTargetable = true; });
@@ -299,6 +297,21 @@ export function updateSupremeReaper(e, dt, context) {
         if (finalHpFill) finalHpFill.style.width = '100%';
         const finalHpVal = document.getElementById('boss-hp-val');
         if (finalHpVal) finalHpVal.innerText = '100%';
+
+        const activeCount = e.lanterns ? e.lanterns.filter(o => o.active).length : 0;
+        if (e.pendingCollapse || activeCount === 0) {
+          e.pendingCollapse = false;
+          e.actionState = REAPER_STATES.RECOVERY;
+          e.recoveryTimer = REAPER_CONFIG.RECOVERY_DURATION;
+          e.isVulnerable = true;
+          triggerShake(16);
+          triggerHaptic('heavy');
+          playSfx('boss');
+          addDamageText(e.x, e.y, "COLAPSO ESPIRITUAL (6.0s)!", true, '#81ecec');
+        } else {
+          e.actionState = REAPER_STATES.CHASE;
+          e.skillCooldown = 75;
+        }
       }
       return;
     }
@@ -319,6 +332,7 @@ export function updateSupremeReaper(e, dt, context) {
     case REAPER_STATES.RECOVERY: {
       e.recoveryTimer -= dt;
       e.isVulnerable = true;
+      e.isTargetable = true;
       e.wingTargetSpan = 0.12;
       e.scytheTargetAngle = 1.1;
       e.collapseProgress = Math.min(1, (e.collapseProgress || 0) + 0.08 * dt);
@@ -329,6 +343,7 @@ export function updateSupremeReaper(e, dt, context) {
 
       if (e.recoveryTimer <= 0) {
         e.isVulnerable = false;
+        e.isTargetable = true;
         e.collapseProgress = 0;
         e.actionState = REAPER_STATES.CHASE;
         e.skillCooldown = e.isEnraged ? 40 : 65;
@@ -529,5 +544,10 @@ export function updateSupremeReaper(e, dt, context) {
       }
       break;
     }
+  }
+
+  // Salvaguarda Invariante: Fora da introdução cinematográfica, o chefe deve permanecer sempre alvejável
+  if (e.actionState !== REAPER_STATES.SPAWN_INTRO) {
+    e.isTargetable = true;
   }
 }

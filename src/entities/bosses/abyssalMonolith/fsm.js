@@ -254,15 +254,29 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
       }
 
       if (e.introTimer <= 0) {
-        e.actionState = MONOLITH_STATES.CHASE;
         e.isTargetable = true;
-        e.isVulnerable = false;
-        e.skillCooldown = 45;
         if (e.orbitals) {
           e.orbitals.forEach(o => { o.isTargetable = true; });
         }
-        triggerShake(10);
-        playSfx('crit');
+
+        const activeRemaining = e.orbitals ? e.orbitals.filter(item => item.active).length : 0;
+        if (e.pendingCollapse || activeRemaining === 0) {
+          e.pendingCollapse = false;
+          e.actionState = MONOLITH_STATES.RECOVERY;
+          e.recoveryTimer = MONOLITH_CONFIG.RECOVERY_DURATION; // 4.5 segundos
+          e.isVulnerable = true;
+
+          triggerShake(16);
+          triggerHaptic('heavy');
+          playSfx('boss');
+          addDamageText(e.x, e.y, "COLAPSO SÍSMICO!", true, '#f1c40f');
+        } else {
+          e.actionState = MONOLITH_STATES.CHASE;
+          e.isVulnerable = false;
+          e.skillCooldown = 45;
+          triggerShake(10);
+          playSfx('crit');
+        }
       }
       return;
     }
@@ -281,6 +295,7 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
     case MONOLITH_STATES.RECOVERY: {
       e.recoveryTimer -= dt;
       e.isVulnerable = true;
+      e.isTargetable = true;
 
       if (Math.floor(frameCount) % 6 === 0) {
         createHitParticles(
@@ -293,6 +308,7 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
 
       if (e.recoveryTimer <= 0) {
         e.isVulnerable = false;
+        e.isTargetable = true;
         e.actionState = MONOLITH_STATES.CHASE;
         e.skillCooldown = e.isEnraged ? 35 : 45;
 
@@ -492,5 +508,10 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
       }
       break;
     }
+  }
+
+  // 7. Salvaguarda Invariante: Fora da introdução cinematográfica, o chefe deve permanecer sempre alvejável
+  if (e.actionState !== MONOLITH_STATES.SPAWN_INTRO) {
+    e.isTargetable = true;
   }
 }
