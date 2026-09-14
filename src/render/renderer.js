@@ -799,115 +799,190 @@ export function render() {
       }
       ctx.restore();
 
-      // 2. Cabo de Guerra Escuro e Reforçado
-      ctx.fillStyle = '#11171d';
-      ctx.beginPath();
-      ctx.moveTo(-2.5, -r * 0.95);
-      ctx.lineTo(2.5, -r * 0.95);
-      ctx.lineTo(1.8, r * 1.1);
-      ctx.lineTo(-1.8, r * 1.1);
-      ctx.closePath();
-      ctx.fill();
+      // 2. Haste Reto e Manivela Serrilhada com Orbe Ciano
+      const tealCol  = isRet ? '#ff4757' : '#00cec9';
+      const rubyCol  = isRet ? '#ff4757' : '#c0392b';
 
-      // Detalhes de ferro e empunhadura do cabo
-      ctx.strokeStyle = '#2f3b46';
-      ctx.lineWidth = 1.2;
+      // Haste reta
+      ctx.fillStyle = '#141a1f';
+      ctx.fillRect(-1.5, -r * 0.95, 3, r * 1.75);
+
+      // Braçadeiras teal
+      ctx.fillStyle = '#222d36';
+      ctx.strokeStyle = tealCol;
+      ctx.lineWidth = 0.9;
+      ctx.strokeRect(-2.8, -r * 0.45, 5.6, 3);
+      ctx.strokeRect(-2.8, r * 0.25, 5.6, 3);
+
+      // Manivela serrilhada e orbe inferior
+      ctx.strokeStyle = tealCol;
+      ctx.lineWidth = 1.0;
       ctx.beginPath();
-      ctx.moveTo(-3, -r * 0.4);
-      ctx.lineTo(3, -r * 0.4);
-      ctx.moveTo(-3, r * 0.4);
-      ctx.lineTo(3, r * 0.4);
+      ctx.moveTo(0, r * 0.8);
+      ctx.lineTo(-r * 0.25, r * 1.0);
+      ctx.lineTo(-r * 0.25, r * 1.35);
+      ctx.lineTo(-r * 0.45, r * 1.45);
       ctx.stroke();
 
-      // Espigão no pomo inferior
-      ctx.fillStyle = '#3a4752';
+      // Dentes de serra na manivela
+      ctx.fillStyle = '#222d36';
+      for (let s = 0; s < 3; s++) {
+        const sy = r * (1.05 + s * 0.1);
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.25, sy);
+        ctx.lineTo(-r * 0.08, sy + r * 0.04);
+        ctx.lineTo(-r * 0.25, sy + r * 0.08);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // Orbe ciano no pomo
+      ctx.fillStyle = tealCol;
       ctx.beginPath();
-      ctx.moveTo(-3, r * 1.1);
-      ctx.lineTo(0, r * 1.35);
-      ctx.lineTo(3, r * 1.1);
-      ctx.closePath();
+      ctx.arc(-r * 0.45, r * 1.45, 2.5, 0, Math.PI * 2);
       ctx.fill();
 
-      // 3. Cabeçote e Espigão Traseiro (Back-Spike / Bico de Corvo)
+      // Escala reduzida pela metade (50%) para a lâmina e contra-lâmina da foice giratória
+      ctx.save();
+      ctx.translate(0, -r * 0.95);
+      ctx.scale(0.5, 0.5);
+      ctx.translate(0, r * 0.95);
+
+      // 3. Cabeçote e Contra-Lâmina Traseira com Rubi (Formato Curvo em Garra)
       ctx.fillStyle = '#1e2b36';
       ctx.beginPath();
-      ctx.moveTo(-4, -r * 0.9);
-      ctx.lineTo(14, -r * 1.05); // ponta do bico traseiro
-      ctx.lineTo(10, -r * 0.85);
-      ctx.lineTo(4, -r * 0.75);
-      ctx.lineTo(-4, -r * 0.75);
+      ctx.moveTo(r * 0.1, -r * 1.0);
+      ctx.bezierCurveTo(r * 0.35, -r * 1.1, r * 0.55, -r * 0.88, r * 0.65, -r * 0.35);
+      ctx.bezierCurveTo(r * 0.48, -r * 0.55, r * 0.28, -r * 0.75, r * 0.1, -r * 0.86);
       ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle = primaryCol;
-      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = tealCol;
+      ctx.lineWidth = 1.8;
       ctx.stroke();
 
-      // 4. Lâmina Foice Curva Volumétrica e Aterrorizante
-      const bladeGrad = ctx.createLinearGradient(-r * 0.2, -r * 1.1, -r * 1.4, r * 0.5);
-      bladeGrad.addColorStop(0, '#224a5e');
-      bladeGrad.addColorStop(0.4, isRet ? '#3d0a10' : '#142a38');
-      bladeGrad.addColorStop(1, '#08141e');
-
-      ctx.fillStyle = bladeGrad;
+      // Rubi na contra-lâmina
+      ctx.fillStyle = rubyCol;
       ctx.beginPath();
-      // Encaixe superior
-      ctx.moveTo(-3, -r * 0.95);
-      // Dorso da foice com farpas dorsais ameaçadoras
-      ctx.lineTo(-r * 0.55, -r * 1.25);
-      ctx.lineTo(-r * 0.5, -r * 1.42); // espigão dorsal 1
-      ctx.lineTo(-r * 0.75, -r * 1.3);
-      ctx.quadraticCurveTo(-r * 1.3, -r * 1.2, -r * 1.45, -r * 0.4);
-      ctx.lineTo(-r * 1.62, -r * 0.45); // espigão dorsal 2
-      ctx.lineTo(-r * 1.48, -r * 0.15);
-      // Curva em direção à ponta afiadíssima
-      ctx.quadraticCurveTo(-r * 1.5, r * 0.45, -r * 1.3, r * 0.75); // Ponta
-
-      // Gume interno afiado com farpa de corte
-      ctx.quadraticCurveTo(-r * 1.1, r * 0.2, -r * 0.95, -r * 0.2);
-      ctx.lineTo(-r * 0.8, -r * 0.1); // farpa interna de degola
-      ctx.quadraticCurveTo(-r * 0.85, -r * 0.6, -2, -r * 0.75);
+      ctx.moveTo(r * 0.18, -r * 0.95);
+      ctx.lineTo(r * 0.36, -r * 1.0);
+      ctx.lineTo(r * 0.52, -r * 0.80);
+      ctx.lineTo(r * 0.32, -r * 0.82);
       ctx.closePath();
       ctx.fill();
 
-      // Borda escura do dorso
-      ctx.strokeStyle = '#020508';
-      ctx.lineWidth = 1.6;
-      ctx.stroke();
-
-      // 5. Sulco Rúnico de Almas (Fuller Glow)
-      ctx.strokeStyle = primaryCol;
+      // Gume prateado traseiro
+      ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 1.8;
       ctx.beginPath();
-      ctx.moveTo(-r * 0.3, -r * 0.9);
-      ctx.quadraticCurveTo(-r * 1.1, -r * 0.8, -r * 1.15, r * 0.4);
+      ctx.moveTo(r * 0.65, -r * 0.35);
+      ctx.bezierCurveTo(r * 0.48, -r * 0.55, r * 0.28, -r * 0.75, r * 0.1, -r * 0.86);
       ctx.stroke();
 
-      // 6. Gume Biselado Ultra-Afiado Incandescente
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2.0;
+      // 4. Lâmina Principal (Formato Fiel ao Conceito Artístico)
+      // A. Estalactites de cristal sob a junção
+      ctx.fillStyle = rubyCol;
+      const stalsProj = [
+        [[-r * 0.35, -r * 0.74], [-r * 0.42, -r * 0.46], [-r * 0.48, -r * 0.74]],
+        [[-r * 0.48, -r * 0.74], [-r * 0.53, -r * 0.58], [-r * 0.58, -r * 0.74]]
+      ];
+      for (let st of stalsProj) {
+        ctx.beginPath();
+        ctx.moveTo(st[0][0], st[0][1]);
+        ctx.lineTo(st[1][0], st[1][1]);
+        ctx.lineTo(st[2][0], st[2][1]);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // B. Corpo da Lâmina: Cúpula com Crista, 3 Espigões Inclinados e Curvatura Monumental
+      ctx.fillStyle = '#1e2b36';
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.1, -r * 1.0);
+      // Crista da cúpula
+      ctx.quadraticCurveTo(-r * 0.2, -r * 1.16, -r * 0.32, -r * 1.24);
+      ctx.quadraticCurveTo(-r * 0.42, -r * 1.20, -r * 0.5, -r * 1.14);
+      // Espigão 1
+      ctx.quadraticCurveTo(-r * 0.54, -r * 1.25, -r * 0.58, -r * 1.26);
+      ctx.lineTo(-r * 0.64, -r * 1.16);
+      ctx.lineTo(-r * 0.7, -r * 1.12);
+      // Espigão 2
+      ctx.quadraticCurveTo(-r * 0.74, -r * 1.22, -r * 0.8, -r * 1.22);
+      ctx.lineTo(-r * 0.86, -r * 1.12);
+      ctx.lineTo(-r * 0.92, -r * 1.06);
+      // Espigão 3
+      ctx.quadraticCurveTo(-r * 0.96, -r * 1.14, -r * 1.02, -r * 1.14);
+      ctx.lineTo(-r * 1.08, -r * 1.04);
+      ctx.lineTo(-r * 1.15, -r * 0.96);
+      // Curva monumental do dorso até a ponta
+      ctx.bezierCurveTo(-r * 1.45, -r * 0.86, -r * 1.72, -r * 0.55, -r * 1.86, -r * 0.14);
+      ctx.bezierCurveTo(-r * 1.96, r * 0.20, -r * 1.94, r * 0.44, -r * 1.86, r * 0.58);
+      // Gume interno de retorno
+      ctx.bezierCurveTo(-r * 1.82, r * 0.36, -r * 1.74, r * 0.14, -r * 1.64, -r * 0.08);
+      ctx.bezierCurveTo(-r * 1.48, -r * 0.38, -r * 1.18, -r * 0.62, -r * 0.6, -r * 0.74);
+      // Gancho/barb inferior da cúpula
+      ctx.lineTo(-r * 0.25, -r * 0.70);
+      ctx.lineTo(-r * 0.16, -r * 0.60);
+      ctx.lineTo(-r * 0.1, -r * 0.86);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#0e1419';
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+
+      // C. Canal de Cristais de Rubi Facetados
+      ctx.fillStyle = rubyCol;
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.25, -r * 0.95);
+      ctx.lineTo(-r * 0.65, -r * 0.95);
+      ctx.lineTo(-r * 1.15, -r * 0.78);
+      ctx.lineTo(-r * 1.55, -r * 0.40);
+      ctx.lineTo(-r * 1.78, r * 0.15);
+      ctx.lineTo(-r * 1.70, r * 0.25);
+      ctx.lineTo(-r * 1.50, -r * 0.20);
+      ctx.lineTo(-r * 1.10, -r * 0.52);
+      ctx.lineTo(-r * 0.60, -r * 0.74);
+      ctx.closePath();
+      ctx.fill();
+
+      // Facetas internas do rubi
+      ctx.strokeStyle = isRet ? '#ff7675' : '#ff4d61';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.65, -r * 0.95);
+      ctx.lineTo(-r * 0.60, -r * 0.74);
+      ctx.moveTo(-r * 1.15, -r * 0.78);
+      ctx.lineTo(-r * 1.10, -r * 0.52);
+      ctx.moveTo(-r * 1.55, -r * 0.40);
+      ctx.lineTo(-r * 1.50, -r * 0.20);
+      ctx.stroke();
+
+      // D. Gume Chanfrado em Aço Prateado Polido
+      const bladeGrad = ctx.createLinearGradient(-r * 0.6, -r * 0.74, -r * 1.86, r * 0.58);
+      bladeGrad.addColorStop(0.0, '#74b9ff');
+      bladeGrad.addColorStop(0.4, '#c7ecee');
+      bladeGrad.addColorStop(0.8, '#dff9fb');
+      bladeGrad.addColorStop(1.0, '#ffffff');
+
+      ctx.strokeStyle = bladeGrad;
+      ctx.lineWidth = 3.6;
       ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.moveTo(-r * 1.3, r * 0.75); // Ponta
-      ctx.quadraticCurveTo(-r * 1.1, r * 0.2, -r * 0.95, -r * 0.2);
-      ctx.lineTo(-r * 0.8, -r * 0.1);
-      ctx.quadraticCurveTo(-r * 0.85, -r * 0.6, -2, -r * 0.75);
+      ctx.moveTo(-r * 1.86, r * 0.58); // Ponta extrema da foice
+      ctx.bezierCurveTo(-r * 1.82, r * 0.36, -r * 1.74, r * 0.14, -r * 1.64, -r * 0.08);
+      ctx.bezierCurveTo(-r * 1.48, -r * 0.38, -r * 1.18, -r * 0.62, -r * 0.6, -r * 0.74);
       ctx.stroke();
 
-      // 7. Núcleo de Alma / Olho Espectral no Eixo da Foice
-      const eyeGrad = ctx.createRadialGradient(0, -r * 0.8, 1, 0, -r * 0.8, 6);
-      eyeGrad.addColorStop(0, '#ffffff');
-      eyeGrad.addColorStop(0.5, glowCol);
-      eyeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = eyeGrad;
-      ctx.beginPath();
-      ctx.arc(0, -r * 0.8, 6, 0, Math.PI * 2);
-      ctx.fill();
+      // Fio incandescente puro
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
 
-      // Brilho estrela na ponta da lâmina
+      // Ponto especular na ponta da foice
       ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(-r * 1.3, r * 0.75, 2.5, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(-r * 1.86 - 2, r * 0.58 - 2, 4, 4);
+
+      ctx.restore(); // Restaura escala de 50% da foice giratória
     } else {
       ctx.strokeStyle = '#e74c3c';
       ctx.lineWidth = 4;

@@ -159,10 +159,10 @@ export function updateSoulTether(e, dt, context) {
 
   if (Math.floor(context.frameCount) % 15 === 0) {
     if (player.iFrames <= 0) {
-      player.hp -= 4;
+      player.hp -= 5;
       player.iFrames = 15;
       playSfx('hit');
-      addDamageText(player.x, player.y, "-4", false, '#00cec9');
+      addDamageText(player.x, player.y, "-5", false, '#00cec9');
       createHitParticles(player.x, player.y, '#00cec9', 3);
     }
     e.hp = Math.min(e.maxHp, e.hp + 45);

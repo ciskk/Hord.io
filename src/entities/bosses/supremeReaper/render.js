@@ -787,272 +787,415 @@ export function drawMaskAndEyes(ctx, e, bob, frameCount, isVuln, isEnraged, coll
 }
 
 /**
- * Desenha a Foice Monumental das Eras ("Mors Aeterna") com geometria sólida de aço negro,
- * gume biselado incandescente ultra-afiado, espigões dorsais predatórios, sulco de almas rúnico e correntes pesadas.
+ * Desenha a Foice Monumental das Eras de Thanatos reproduzindo com máxima fidelidade
+ * a arma conceitual: lâmina em foice com dorso de aço negro, 3 espigões dorsais inclinados,
+ * núcleo de cristais de rubi carmesim facetados, estalactites de cristal suspensas,
+ * gume de corte chanfrado em aço prateado/ciano polido, bico traseiro com rubi,
+ * haste reta com amarrações em "X", 3 braçadeiras com rebites ciano,
+ * manivela serrilhada com dentes de serra e pomo em orbe ciano.
  */
 export function drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg = 0) {
   ctx.save();
   ctx.translate(36, -10 + bob + collapseProg * 14);
   ctx.rotate(e.scytheAngle);
 
-  const soulCyan    = isVuln ? '#636e72' : (isEnraged ? '#ff4757' : '#00cec9');
-  const soulGlow    = isVuln ? '#7f8c8d' : (isEnraged ? '#ff6b81' : '#81ecec');
-  const bladeSteel  = isVuln ? '#1e272e' : (isEnraged ? '#1e0508' : '#08141e');
-  const bladeMid    = isVuln ? '#2f3640' : (isEnraged ? '#3d0a10' : '#142a38');
-  const bladeLight  = isVuln ? '#57606f' : (isEnraged ? '#801520' : '#224a5e');
-  const edgeColor   = isVuln ? '#a4b0be' : '#ffffff';
-  const isGlow      = (e.scytheGlow && e.scytheGlow > 0) || false;
+  const isGlow = (e.scytheGlow && e.scytheGlow > 0) || false;
+
+  // Paleta da Foice de Thanatos (Fiel à Imagem Conceitual)
+  // 1. Detalhes em Ciano / Teal (Orbe, anéis, bordas dos acopladores e serra)
+  const tealMain   = isVuln ? '#636e72' : (isEnraged ? '#ff4757' : '#00cec9');
+  const tealGlow   = isVuln ? '#7f8c8d' : (isEnraged ? '#ff6b81' : '#81ecec');
+  const tealBorder = isVuln ? '#2d3436' : (isEnraged ? '#780016' : '#008b8b');
+
+  // 2. Cabo e Casca Estrutural em Aço Negro / Grafite Escuro
+  const metalDark   = '#141a1f';
+  const metalPlates = '#222d36';
+  const metalRim    = '#374754';
+  const strapColor  = '#3d4d5a';
+
+  // 3. Cristais de Rubi Facetados (Carmesim / Sangue Profundo)
+  const rubyDeep   = isVuln ? '#2d3436' : '#45040d';
+  const rubyDark   = isVuln ? '#4b5766' : '#780c1b';
+  const rubyMid    = isVuln ? '#636e72' : '#b7152b';
+  const rubyBright = isVuln ? '#8a99a8' : '#e8253b';
+  const rubyHigh   = isVuln ? '#b2bec3' : '#ff4d61';
+  const rubyGlint  = isVuln ? '#dfe6e9' : '#ffa8b5';
+
+  // 4. Lâmina e Gume Chanfrado em Aço Prateado / Ciano Polido
+  const steelDull   = '#2c3e50';
+  const steelMid    = '#53708a';
+  const steelBright = '#94bfd6';
+  const steelSilver = '#dff9fb';
+  const steelEdge   = '#ffffff';
 
   // =========================================================================
-  // 1. CABO DE GUERRA ERGONÔMICO EM MADEIRA NEGRA E REFORÇOS DE FERRO
+  // 1. CABO INFERIOR: MANIVELA EM ZIGUE-ZAGUE COM DENTES DE SERRA E ORBE CIANO
   // =========================================================================
-  
-  // Haste com curvatura orgânica sutil e espessura afunilada
-  ctx.fillStyle = '#12171c';
+
+  // A. Disco / Acoplador Circular no final do cabo reto (y = 70)
+  ctx.fillStyle = metalPlates;
   ctx.beginPath();
-  ctx.moveTo(-4, -92);
-  ctx.quadraticCurveTo(-7, 0, -2, 88);
-  ctx.lineTo(4, 88);
-  ctx.quadraticCurveTo(0, 0, 4, -92);
+  ctx.arc(0, 70, 7.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = tealMain;
+  ctx.lineWidth = 1.8;
+  ctx.stroke();
+
+  // Núcleo central do disco
+  ctx.fillStyle = metalDark;
+  ctx.beginPath();
+  ctx.arc(0, 70, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // B. Braço da Manivela Angular e Serrada
+  // Sai de (0, 70) inclinando para (-10, 85), desce reto até (-10, 122), e dobra até (-24, 130)
+  ctx.fillStyle = metalPlates;
+  ctx.beginPath();
+  ctx.moveTo(2, 70);
+  ctx.lineTo(-10, 85);
+  ctx.lineTo(-10, 122);
+  ctx.lineTo(-24, 130);
+  ctx.lineTo(-26, 124);
+  ctx.lineTo(-15, 118);
+  ctx.lineTo(-15, 83);
+  ctx.lineTo(-2, 68);
   ctx.closePath();
   ctx.fill();
 
-  // Friso lateral de relevo da madeira
-  ctx.strokeStyle = '#27333d';
+  // Contorno Ciano do braço
+  ctx.strokeStyle = tealMain;
   ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  ctx.moveTo(1, -90);
-  ctx.quadraticCurveTo(-2, 0, 1, 86);
   ctx.stroke();
 
-  // Envolturas de couro cruzadas (Criss-Cross Grip)
-  ctx.strokeStyle = '#4b5766';
-  ctx.lineWidth = 2.0;
-  for (let k = 0; k < 6; k++) {
-    const yWrap = -56 + k * 24;
+  // Dentes de Serra Triangulares Afiados (voltados para a direita da haste)
+  ctx.fillStyle = metalPlates;
+  ctx.strokeStyle = tealMain;
+  ctx.lineWidth = 1.2;
+  const sawStartY = 86;
+  const sawCount = 7;
+  const toothH = 4.8;
+  for (let s = 0; s < sawCount; s++) {
+    const ty = sawStartY + s * toothH;
     ctx.beginPath();
-    ctx.moveTo(-4, yWrap - 4);
-    ctx.lineTo(4, yWrap + 4);
-    ctx.moveTo(-4, yWrap + 4);
-    ctx.lineTo(4, yWrap - 4);
+    ctx.moveTo(-10, ty);
+    ctx.lineTo(-2.5, ty + toothH * 0.4); // Ponta do dente
+    ctx.lineTo(-10, ty + toothH);
+    ctx.closePath();
+    ctx.fill();
     ctx.stroke();
   }
 
-  // Anéis / Abraçadeiras de Aço Reforçado com Rebites
-  const ringY = [-84, -40, 24, 76];
-  for (let ry of ringY) {
-    ctx.fillStyle = '#2f3b46';
-    ctx.fillRect(-6, ry - 3, 12, 6);
-    ctx.strokeStyle = soulCyan;
-    ctx.lineWidth = 1.0;
-    ctx.strokeRect(-6, ry - 3, 12, 6);
-    // Rebite central
-    ctx.fillStyle = soulGlow;
-    ctx.fillRect(-1, ry - 1, 2, 2);
-  }
+  // C. Orbe Terminal / Pomo Ciano na ponta da manivela
+  const pommelX = -24;
+  const pommelY = 130;
+  const pommelR = 5.5;
 
-  // POMO INFERIOR: Crânio de Ferro com Espigão Terminal
-  ctx.fillStyle = '#1e262e';
+  const orbGrad = ctx.createRadialGradient(pommelX - 1.5, pommelY - 1.5, 1, pommelX, pommelY, pommelR);
+  orbGrad.addColorStop(0, tealGlow);
+  orbGrad.addColorStop(0.7, tealMain);
+  orbGrad.addColorStop(1, tealBorder);
+
+  ctx.fillStyle = orbGrad;
   ctx.beginPath();
-  ctx.arc(0, 92, 7, 0, Math.PI * 2);
+  ctx.arc(pommelX, pommelY, pommelR, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = soulCyan;
-  ctx.lineWidth = 1.4;
+  ctx.strokeStyle = metalDark;
+  ctx.lineWidth = 1.2;
   ctx.stroke();
 
-  // Espigão perfurante do pomo
-  ctx.fillStyle = '#3a4752';
-  ctx.beginPath();
-  ctx.moveTo(-4, 95);
-  ctx.lineTo(0, 108);
-  ctx.lineTo(4, 95);
-  ctx.closePath();
-  ctx.fill();
-
-  // Correntes de Ferro Articuladas balançando do pomo
-  const chainTime = performance.now() * 0.003;
-  const linkSwing1 = Math.sin(chainTime) * 16;
-  const linkSwing2 = Math.sin(chainTime * 1.4) * 26;
-  ctx.strokeStyle = soulGlow;
-  ctx.lineWidth = 2.2;
-  ctx.beginPath();
-  ctx.moveTo(0, 98);
-  ctx.lineTo(linkSwing1 * 0.5, 114);
-  ctx.lineTo(linkSwing1, 130);
-  ctx.lineTo(linkSwing2, 148);
-  ctx.stroke();
-
-  // Peso terminal da corrente (Orbe pontiagudo / Frasco de Almas)
-  ctx.fillStyle = soulCyan;
-  ctx.beginPath();
-  ctx.arc(linkSwing2, 150, 4.5, 0, Math.PI * 2);
-  ctx.fill();
-
   // =========================================================================
-  // 2. O CABEÇOTE / ENCAIXE MONUMENTAL E BICO DE CORVO (BACK-SPIKE)
+  // 2. HASTE PRINCIPAL DO CABO COM AMARRAÇÕES EM "X" E BRAÇADEIRAS QUADRADAS
   // =========================================================================
-  
-  // Soquete principal de aço forjado no topo
-  ctx.fillStyle = '#1e2b36';
-  ctx.beginPath();
-  ctx.moveTo(-8, -90);
-  ctx.lineTo(10, -90);
-  ctx.lineTo(6, -102);
-  ctx.lineTo(-6, -102);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = soulCyan;
+
+  // Haste reta sólida preta (de y = -92 até y = 70)
+  ctx.fillStyle = metalDark;
+  ctx.fillRect(-3.2, -92, 6.4, 162);
+  ctx.strokeStyle = metalRim;
+  ctx.lineWidth = 0.8;
+  ctx.strokeRect(-3.2, -92, 6.4, 162);
+
+  // Amarras cruzadas em "X" (Crossed Straps)
+  ctx.strokeStyle = strapColor;
   ctx.lineWidth = 1.8;
-  ctx.stroke();
-
-  // Bico de Corvo / Espigão Traseiro Perfurante (Back-Spike Puncturing Beak)
-  ctx.fillStyle = '#223442';
-  ctx.beginPath();
-  ctx.moveTo(8, -92);
-  ctx.lineTo(34, -102); // ponta do bico
-  ctx.lineTo(26, -92);  // reentrância serrilhada
-  ctx.lineTo(38, -88);  // farpa pontiaguda secundária
-  ctx.lineTo(6, -82);   // base do soquete
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.strokeStyle = isGlow ? '#ffffff' : soulCyan;
-  ctx.lineWidth = 1.8;
-  ctx.stroke();
-
-  // =========================================================================
-  // 3. A LÂMINA MONUMENTAL DAS ERAS (CORPO VOLUMÉTRICO E GUME AFIADÍSSIMO)
-  // =========================================================================
-
-  // A. AURA DE ENERGIA ECTOPLASMÁTICA (GLOW VOLUMÉTRICO EXTERNO)
-  if (!isVuln) {
-    ctx.save();
-    ctx.strokeStyle = isGlow ? soulGlow : (isEnraged ? 'rgba(255, 71, 87, 0.40)' : 'rgba(0, 206, 201, 0.35)');
-    ctx.lineWidth = isGlow ? 18 : 10;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+  const xPositions = [-55, -40, 2, 17, 56];
+  for (let py of xPositions) {
     ctx.beginPath();
-    ctx.moveTo(-4, -96);
-    ctx.bezierCurveTo(-50, -135, -96, -105, -104, -40);
-    ctx.quadraticCurveTo(-108, 12, -94, 48);
+    ctx.moveTo(-4, py - 4);
+    ctx.lineTo(4, py + 4);
+    ctx.moveTo(-4, py + 4);
+    ctx.lineTo(4, py - 4);
     ctx.stroke();
-    ctx.restore();
   }
 
-  // B. CORPO SÓLIDO PREENCHIDO DA LÂMINA (DAMASCUS STEEL BODY)
-  const bladeGrad = ctx.createLinearGradient(-10, -110, -90, 30);
-  bladeGrad.addColorStop(0, bladeLight);
-  bladeGrad.addColorStop(0.35, bladeMid);
-  bladeGrad.addColorStop(0.85, bladeSteel);
-  bladeGrad.addColorStop(1, '#020508');
+  // 3 Braçadeiras Metálicas Quadradas / Acopladores com Rebite Ciano
+  const collarY = [-72, -18, 36];
+  for (let cy of collarY) {
+    // Bloco quadrado escuro
+    ctx.fillStyle = metalPlates;
+    ctx.fillRect(-5.5, cy - 4.5, 11, 9);
+    // Borda ciano
+    ctx.strokeStyle = tealMain;
+    ctx.lineWidth = 1.4;
+    ctx.strokeRect(-5.5, cy - 4.5, 11, 9);
+    // Rebite central ciano
+    ctx.fillStyle = tealGlow;
+    ctx.fillRect(-1.5, cy - 1.5, 3, 3);
+  }
 
-  ctx.fillStyle = bladeGrad;
+  // =========================================================================
+  // 3. CABEÇOTE / BLOCO SUPERIOR DE JUNÇÃO (TRAPÉZIO REFORÇADO COM REBITE)
+  // =========================================================================
+  ctx.fillStyle = metalPlates;
   ctx.beginPath();
-  // Começo na base superior do soquete
-  ctx.moveTo(-4, -98);
-  // Dorso da lâmina com 3 Espigões Dorsais Aterrorizantes
-  ctx.lineTo(-24, -118);
-  ctx.lineTo(-20, -130); // Espigão dorsal 1
-  ctx.lineTo(-32, -122);
-  ctx.bezierCurveTo(-52, -136, -76, -126, -78, -110);
-  ctx.lineTo(-88, -122); // Espigão dorsal 2
-  ctx.lineTo(-84, -98);
-  ctx.bezierCurveTo(-102, -72, -106, -30, -104, 0);
-  ctx.lineTo(-114, -6);  // Espigão dorsal 3
-  ctx.lineTo(-102, 18);
-  // Curva final mergulhando até a ponta aguda
-  ctx.quadraticCurveTo(-100, 38, -94, 48); // A PONTA DA LÂMINA
+  ctx.moveTo(-7.5, -86);
+  ctx.lineTo(-6.5, -100);
+  ctx.lineTo(6.5, -100);
+  ctx.lineTo(7.5, -86);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = tealMain;
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
 
-  // Gume Interno Côncavo voltando até a base com farpas
-  ctx.quadraticCurveTo(-82, 16, -78, -10);
-  ctx.lineTo(-70, -4);   // Farpa interna de degola 1
-  ctx.lineTo(-76, -24);
-  ctx.quadraticCurveTo(-68, -55, -48, -75);
-  ctx.lineTo(-40, -70);  // Farpa interna de degola 2
-  ctx.lineTo(-44, -84);
-  ctx.quadraticCurveTo(-24, -92, -4, -90);
+  // Rebite central ciano
+  ctx.fillStyle = tealGlow;
+  ctx.fillRect(-2, -95, 4, 4);
+
+  // Escala reduzida pela metade (50%) para a lâmina e contra-lâmina em relação ao encaixe
+  ctx.save();
+  ctx.translate(0, -94);
+  ctx.scale(0.5, 0.5);
+  ctx.translate(0, 94);
+
+  // =========================================================================
+  // 4. BICO TRASEIRO / CONTRA-LÂMINA OPOSTA (BICO CURVO COM RUBI E GUME)
+  // =========================================================================
+
+  // A. Dorso e Casca Externa da contra-lâmina curvando para baixo
+  ctx.fillStyle = metalPlates;
+  ctx.beginPath();
+  ctx.moveTo(6.5, -100);
+  ctx.bezierCurveTo(28, -110, 52, -88, 62, -34); // Ponta em garra/bico curvado para baixo
+  ctx.bezierCurveTo(48, -54, 28, -74, 7.5, -86);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = metalDark;
+  ctx.lineWidth = 3.0;
+  ctx.stroke();
+
+  // B. Cristais de Rubi Facetados na Contra-Lâmina
+  const backRubyFacets = [
+    { pts: [[14, -96], [32, -101], [50, -78], [30, -82]], c: rubyBright, h: rubyHigh },
+    { pts: [[32, -101], [46, -90], [56, -60], [50, -78]], c: rubyHigh, h: rubyDark },
+    { pts: [[30, -82], [50, -78], [56, -60], [38, -68]], c: rubyMid, h: rubyDeep }
+  ];
+  for (let br of backRubyFacets) {
+    ctx.fillStyle = br.c;
+    ctx.beginPath();
+    ctx.moveTo(br.pts[0][0], br.pts[0][1]);
+    for (let p = 1; p < br.pts.length; p++) ctx.lineTo(br.pts[p][0], br.pts[p][1]);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = br.h;
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+  }
+
+  // C. Gume de Aço Prateado Polido da contra-lâmina
+  ctx.strokeStyle = steelSilver;
+  ctx.lineWidth = 3.6;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(62, -34);
+  ctx.bezierCurveTo(48, -54, 28, -74, 7.5, -86);
+  ctx.stroke();
+
+  // Fio luminoso puro
+  ctx.strokeStyle = steelEdge;
+  ctx.lineWidth = 1.8;
+  ctx.stroke();
+
+  // Brilho diamante na ponta da contra-lâmina
+  ctx.fillStyle = steelEdge;
+  ctx.fillRect(60, -36, 4, 4);
+
+  // =========================================================================
+  // 5. GRANDE LÂMINA PRINCIPAL DA FOICE (FORMA FIEL AO CONCEITO ARTÍSTICO)
+  // =========================================================================
+
+  // A. ESTALACTITES DE CRISTAL DE RUBI PENDENTES SOB A JUNÇÃO
+  const stalactites = [
+    { p: [[-32, -74], [-36, -58], [-40, -74]], col1: rubyMid, col2: rubyBright },
+    { p: [[-38, -74], [-43, -44], [-48, -74]], col1: rubyDark, col2: rubyHigh },
+    { p: [[-46, -74], [-51, -56], [-56, -74]], col1: rubyMid, col2: rubyBright },
+    { p: [[-54, -74], [-58, -65], [-62, -74]], col1: rubyDeep, col2: rubyMid }
+  ];
+  for (let st of stalactites) {
+    ctx.fillStyle = st.col1;
+    ctx.beginPath();
+    ctx.moveTo(st.p[0][0], st.p[0][1]);
+    ctx.lineTo(st.p[1][0], st.p[1][1]);
+    ctx.lineTo(st.p[2][0], st.p[2][1]);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = st.col2;
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+  }
+
+  // B. CORPO PRINCIPAL EM AÇO NEGRO (CÚPULA COM CRISTA, 3 ESPIGÕES INCLINADOS E ARCO MONUMENTAL)
+  ctx.fillStyle = metalPlates;
+  ctx.beginPath();
+  ctx.moveTo(-6.5, -100);
+
+  // Crista da cúpula de armadura
+  ctx.quadraticCurveTo(-16, -116, -28, -124); // Pico da crista
+  ctx.quadraticCurveTo(-38, -120, -46, -114); // Vale antes do Espigão 1
+
+  // Espigão Dorsal 1 (inclinado para trás)
+  ctx.quadraticCurveTo(-49, -122, -52, -126);
+  ctx.lineTo(-58, -118);
+  ctx.lineTo(-64, -112);
+
+  // Espigão Dorsal 2 (inclinado para trás)
+  ctx.quadraticCurveTo(-68, -120, -73, -122);
+  ctx.lineTo(-80, -112);
+  ctx.lineTo(-87, -106);
+
+  // Espigão Dorsal 3 (inclinado para trás)
+  ctx.quadraticCurveTo(-91, -114, -96, -114);
+  ctx.lineTo(-103, -104);
+  ctx.lineTo(-110, -96);
+
+  // Grande Curvatura Monumental em Crescente até a Ponta Extrema
+  ctx.bezierCurveTo(-140, -86, -170, -58, -186, -14);
+  ctx.bezierCurveTo(-196, 20, -194, 44, -186, 58); // PONTA EXTREMA DA FOICE
+
+  // Borda Interna / Gume de Retorno até a base
+  ctx.bezierCurveTo(-182, 36, -174, 14, -164, -8);
+  ctx.bezierCurveTo(-148, -38, -118, -62, -60, -74);
+
+  // Borda inferior da cúpula com o arpão/gancho afiado
+  ctx.lineTo(-40, -74);
+  ctx.lineTo(-24, -70);
+  ctx.lineTo(-16, -60); // Ponta do gancho inferior
+  ctx.lineTo(-10, -72);
+  ctx.lineTo(-7.5, -86);
   ctx.closePath();
   ctx.fill();
 
-  // Borda externa escura da espinha dorsal
-  ctx.strokeStyle = '#050c12';
+  ctx.strokeStyle = metalDark;
+  ctx.lineWidth = 3.6;
+  ctx.stroke();
+
+  // Friso metálico chanfrado de relevo na crista superior
+  ctx.strokeStyle = metalRim;
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.moveTo(-6.5, -100);
+  ctx.quadraticCurveTo(-16, -116, -28, -124);
+  ctx.quadraticCurveTo(-38, -120, -46, -114);
+  ctx.stroke();
+
+  // C. GRANDE CRISTAL DE RUBI MULTIFACETADO DA CÚPULA DA BASE
+  const baseRubyFacets = [
+    { pts: [[-10, -96], [-25, -116], [-41, -108], [-26, -94]], c: rubyBright, h: rubyHigh },
+    { pts: [[-12, -88], [-26, -94], [-41, -88], [-23, -80]], c: rubyMid, h: rubyBright },
+    { pts: [[-14, -80], [-23, -80], [-41, -88], [-32, -74]], c: rubyDark, h: rubyMid },
+    { pts: [[-41, -108], [-48, -102], [-50, -86], [-41, -88]], c: rubyDeep, h: rubyDark }
+  ];
+  for (let f of baseRubyFacets) {
+    ctx.fillStyle = f.c;
+    ctx.beginPath();
+    ctx.moveTo(f.pts[0][0], f.pts[0][1]);
+    for (let p = 1; p < f.pts.length; p++) ctx.lineTo(f.pts[p][0], f.pts[p][1]);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = f.h;
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+  }
+
+  // D. CANAL CONTÍNUO DE CRISTAIS DE RUBI FACETADOS AO LONGO DA LÂMINA
+  const rubyFacets = [
+    { pts: [[-48, -102], [-68, -96], [-70, -82], [-50, -86]], c: rubyBright, h: rubyHigh },
+    { pts: [[-68, -96], [-92, -88], [-94, -74], [-70, -82]], c: rubyMid, h: rubyBright },
+    { pts: [[-92, -88], [-122, -76], [-120, -58], [-94, -74]], c: rubyBright, h: rubyGlint },
+    { pts: [[-122, -76], [-148, -52], [-144, -34], [-120, -58]], c: rubyMid, h: rubyBright },
+    { pts: [[-148, -52], [-170, -16], [-160, -2], [-144, -34]], c: rubyDark, h: rubyMid },
+    { pts: [[-170, -16], [-182, 20], [-174, 28], [-160, -2]], c: rubyBright, h: rubyHigh }
+  ];
+  for (let f of rubyFacets) {
+    ctx.fillStyle = f.c;
+    ctx.beginPath();
+    ctx.moveTo(f.pts[0][0], f.pts[0][1]);
+    for (let p = 1; p < f.pts.length; p++) ctx.lineTo(f.pts[p][0], f.pts[p][1]);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = f.h;
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+  }
+
+  // Pontos de brilho especular de joia nos vértices das facetas
+  ctx.fillStyle = rubyGlint;
+  const glints = [[-25, -116], [-41, -88], [-68, -96], [-92, -88], [-122, -76], [-148, -52], [-170, -16]];
+  for (let g of glints) {
+    ctx.fillRect(g[0] - 2, g[1] - 2, 4, 4);
+  }
+
+  // E. GUME CHANFRADO EM AÇO PRATEADO POLIDO (SILVER-CYAN METALLIC RAZOR BLADE)
+  const edgeGrad = ctx.createLinearGradient(-60, -74, -186, 58);
+  edgeGrad.addColorStop(0.0, steelMid);
+  edgeGrad.addColorStop(0.3, steelBright);
+  edgeGrad.addColorStop(0.7, steelSilver);
+  edgeGrad.addColorStop(1.0, steelEdge);
+
+  // Chanfro primário côncavo de corte
+  ctx.fillStyle = edgeGrad;
+  ctx.beginPath();
+  // Gume externo
+  ctx.moveTo(-186, 58);
+  ctx.bezierCurveTo(-182, 36, -174, 14, -164, -8);
+  ctx.bezierCurveTo(-148, -38, -118, -62, -60, -74);
+  // Borda interna chanfrada
+  ctx.bezierCurveTo(-110, -68, -140, -42, -156, -14);
+  ctx.bezierCurveTo(-168, 12, -176, 36, -186, 58);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = metalDark;
   ctx.lineWidth = 2.4;
   ctx.stroke();
 
-  // C. SULCO DAS ALMAS (FULLER RÚNICO LUMINOSO)
-  ctx.strokeStyle = isGlow ? '#ffffff' : soulCyan;
-  ctx.lineWidth = isGlow ? 3.5 : 2.4;
-  ctx.beginPath();
-  ctx.moveTo(-10, -96);
-  ctx.bezierCurveTo(-46, -122, -82, -88, -88, -25);
-  ctx.quadraticCurveTo(-90, 10, -84, 34);
-  ctx.stroke();
-
-  // Runas arcanas acesas ao longo do sulco da lâmina
-  if (!isVuln) {
-    ctx.fillStyle = soulGlow;
-    const runeNodes = [
-      { x: -32, y: -108 },
-      { x: -55, y: -100 },
-      { x: -74, y: -68 },
-      { x: -84, y: -26 },
-      { x: -82, y: 10 }
-    ];
-    for (let r of runeNodes) {
-      ctx.fillRect(r.x - 1.5, r.y - 1.5, 3, 3);
-      ctx.beginPath();
-      ctx.moveTo(r.x - 3, r.y);
-      ctx.lineTo(r.x + 3, r.y);
-      ctx.moveTo(r.x, r.y - 3);
-      ctx.lineTo(r.x, r.y + 3);
-      ctx.stroke();
-    }
-  }
-
-  // D. GUME CHANFRADO ULTRA-AFIADO (RAZOR-SHARP MIRROR BEVEL)
-  // O bisel de corte reflete a luz com branco e prateado incandescente
-  ctx.strokeStyle = edgeColor;
-  ctx.lineWidth = isGlow ? 4.5 : 2.8;
+  // Fio de corte puro em aço prateado espelhado (Razor Bevel)
+  ctx.strokeStyle = isGlow ? '#ffffff' : steelSilver;
+  ctx.lineWidth = isGlow ? 5.2 : 3.6;
   ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
   ctx.beginPath();
-  ctx.moveTo(-94, 48); // Ponta
-  ctx.quadraticCurveTo(-82, 16, -78, -10);
-  ctx.lineTo(-70, -4);
-  ctx.lineTo(-76, -24);
-  ctx.quadraticCurveTo(-68, -55, -48, -75);
-  ctx.lineTo(-40, -70);
-  ctx.lineTo(-44, -84);
-  ctx.quadraticCurveTo(-24, -92, -4, -90);
+  ctx.moveTo(-186, 58); // Ponta extrema da foice
+  ctx.bezierCurveTo(-182, 36, -174, 14, -164, -8);
+  ctx.bezierCurveTo(-148, -38, -118, -62, -60, -74);
   ctx.stroke();
 
-  // Fio de luz incandescente puro no gume
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 1.4;
+  // Fio incandescente puro no vértice cortante
+  ctx.strokeStyle = steelEdge;
+  ctx.lineWidth = isGlow ? 2.6 : 1.8;
   ctx.stroke();
 
-  // E. ESTRELA RADIANTE DE LUZ NA PONTA DA LÂMINA (STAR FLARE)
-  const tipX = -94;
-  const tipY = 48;
-
-  const tipGrad = ctx.createRadialGradient(tipX, tipY, 1, tipX, tipY, 12);
-  tipGrad.addColorStop(0, '#ffffff');
-  tipGrad.addColorStop(0.35, soulGlow);
-  tipGrad.addColorStop(1, 'rgba(0, 206, 201, 0)');
-  ctx.fillStyle = tipGrad;
+  // F. BRILHO ESPECULAR DIAMANTE NA PONTA EXTREMA DA LÂMINA
+  const tipX = -186;
+  const tipY = 58;
+  ctx.fillStyle = steelEdge;
   ctx.beginPath();
-  ctx.arc(tipX, tipY, 12, 0, Math.PI * 2);
+  ctx.moveTo(tipX, tipY - 7);
+  ctx.lineTo(tipX + 5, tipY);
+  ctx.lineTo(tipX, tipY + 7);
+  ctx.lineTo(tipX - 5, tipY);
+  ctx.closePath();
   ctx.fill();
 
-  // Cruz de brilho afiado na ponta
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  ctx.moveTo(tipX - 7, tipY);
-  ctx.lineTo(tipX + 7, tipY);
-  ctx.moveTo(tipX, tipY - 7);
-  ctx.lineTo(tipX, tipY + 7);
-  ctx.stroke();
+  ctx.restore(); // Restaura a escala de 50% da lâmina
 
   ctx.restore();
 }
