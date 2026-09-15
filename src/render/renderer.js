@@ -37,7 +37,8 @@ import {
   particles,
   damageTexts,
   frameCount,
-  waveAnnouncement
+  waveAnnouncement,
+  cinematicCamera
 } from '../main.js';
 
 // Reexportações para assegurar total retrocompatibilidade
@@ -1941,6 +1942,26 @@ export function render() {
     : enemies.find(en => en && en.bossId === 4);
   if (sovereignBoss && (sovereignBoss.showGoldenBanner || sovereignBoss.fadeAlpha > 0)) {
     drawBossVictoryOverlay(ctx, sovereignBoss, frameCount);
+  }
+
+  // 4. Barras Pretas de Cinema (Letterbox) durante a intro do Boss
+  if (cinematicCamera && cinematicCamera.letterboxProgress > 0.005) {
+    const barHeight = Math.floor(viewH * 0.11 * cinematicCamera.letterboxProgress);
+    ctx.fillStyle = '#000000';
+    // Barra Superior
+    ctx.fillRect(0, 0, viewW, barHeight);
+    // Barra Inferior
+    ctx.fillRect(0, viewH - barHeight, viewW, barHeight);
+
+    // Friso dourado gótico na borda interna das barras
+    ctx.strokeStyle = `rgba(241, 196, 15, ${0.65 * cinematicCamera.letterboxProgress})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, barHeight);
+    ctx.lineTo(viewW, barHeight);
+    ctx.moveTo(0, viewH - barHeight);
+    ctx.lineTo(viewW, viewH - barHeight);
+    ctx.stroke();
   }
 
   ctx.restore();

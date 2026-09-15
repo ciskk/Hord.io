@@ -220,22 +220,22 @@ export const CHARACTERS = {
     title: "A Alquimista Cáustica",
     role: "Controle & Corrosão",
     difficulty: 2,
-    lore: "Erudita dos venenos arcanos e ácidos mutagênicos. Domina a criação de compostos voláteis que derretem armaduras e desaceleram as feras.",
+    lore: "Erudita dos venenos arcanos e ácidos mutagênicos. Domina a criação de compostos voláteis que dissolvem defesas e paralisam hordas sem depender de força bruta.",
     passive: {
-      name: "Miasma Regenerativo & Pegajoso",
-      desc: "Poças químicas violetas regeneram a vida de Valéria continuamente enquanto ela permanecer sobre elas, duram mais tempo ativas e infligem lentidão severa aos inimigos."
+      name: "Miasma Corrosivo & Vapor Estimulante",
+      desc: "Poças violetas dissolvem projéteis inimigos, aplicam 70% de lentidão e acumulam corrosão (+6% de dano sofrido por acúmulo, até +30%). Pisar no miasma concede 3s de regeneração contínua e +15% de velocidade."
     },
     weapon: {
       name: "Frascos Cáusticos",
       type: "Bombardeio Químico em Área",
-      desc: "Lança frascos corrosivos a longa distância prevendo a rota dos alvos e criando zonas contínuas de dano ácido."
+      desc: "Lança frascos corrosivos de alta cadência criando zonas ácidas. Inimigos dissolvidos deixam poças secundárias em cadeia."
     },
     skill: {
       name: "Reagente Volátil",
       cooldown: "6.5s",
-      desc: "Detona uma explosão radial de 6 frascos corrosivos simultâneos banhando todo o entorno em vitríolo letal."
+      desc: "Detona 6 frascos radiais sob 0.6s de imunidade evasiva, liberando uma cortina de fumaça que desorienta inimigos no entorno por 1.8s."
     },
-    desc: "Passiva: Poças violetas curam Valéria continuamente, duram mais e causam lentidão severa.<br><b>Arma Inicial: Frascos Cáusticos</b> (Bombardeio químico concentrado de longo alcance).<br><b>Poder: Reagente Volátil</b> (Explosão radial de 6 frascos corrosivos).",
+    desc: "Passiva: Poças dissolvem tiros, causam 70% de lentidão e acumulam até +30% de dano. Pisar nelas dá 3s de cura e +15% de velocidade.<br><b>Arma Inicial: Frascos Cáusticos</b> (Bombardeio químico contínuo com reação em cadeia).<br><b>Poder: Reagente Volátil</b> (6 frascos com 0.6s de imunidade e fumaça desorientadora).",
     color: { 
       armor: "#1b2a22", 
       coat: "#112920",
@@ -266,15 +266,15 @@ export const CHARACTERS = {
     },
     startingWeapon: "POTION",
     stats: { 
-      hp: 91, 
-      maxHp: 91, 
-      speed: 3.4, 
+      hp: 105, 
+      maxHp: 105, 
+      speed: 3.65, 
       damage: 43, 
       auraLvl: 0, 
       projectiles: 1, 
       orbitals: 0, 
       magnet: 120, 
-      attackCooldown: 34, 
+      attackCooldown: 28, 
       critChance: 0.20, 
       skillCooldownMax: 400,
       knockbackReceived: 1.0,

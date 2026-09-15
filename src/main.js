@@ -162,6 +162,11 @@ export function setIsWavePaused(val) { gameState.isWavePaused = val; }
 export function triggerShake(intensity) { screenShake = Math.max(screenShake, intensity); }
 
 export const camera = { x: 0, y: 0 };
+export const cinematicCamera = {
+  isCinematic: false,
+  returningToPlayer: false,
+  letterboxProgress: 0
+};
 export let enemies = [];
 export let gems = [];
 export let props = [];
@@ -241,6 +246,8 @@ export function resetGame() {
   resize();
   resetPlayer(selectedHeroKey);
   player.isPhasing = false;
+  player.alchemistBuffTimer = 0;
+  player.alchemistSkillDisoriented = false;
 
   enemies.length = 0;
   dyingEnemies.length = 0;
@@ -264,6 +271,9 @@ export function resetGame() {
   resetMiniBossSchedule();
   resetUpgradeQueue();
   currentArenaTheme = 'IVORY_OSSUARY';
+  cinematicCamera.isCinematic = false;
+  cinematicCamera.returningToPlayer = false;
+  cinematicCamera.letterboxProgress = 0;
   resetEnvironment();
   gameState.isWavePaused = false;
   gameState.kills = 0;
@@ -378,15 +388,50 @@ function update(dt) {
   }
 
   if (selectedHeroKey === 'ALCHEMIST') {
-    // Escape de vapor contínuo da retorta dorsal (mais intenso ao mover ou usar habilidade)
-    const ventFrequency = (player.alchemistSkillTimer > 0) ? 3 : (player.isMoving ? 14 : 34);
+    // Escape de vapor contínuo da retorta dorsal
+    const ventFrequency = (player.alchemistSkillTimer > 0 || (player.alchemistBuffTimer || 0) > 0) ? 3 : (player.isMoving ? 14 : 34);
     if (Math.floor(frameCount) % ventFrequency === 0) {
       const ventX = player.x - player.facing * 9;
       const ventY = player.y - 14;
-      const pColor = (player.alchemistSkillTimer > 0)
+      const pColor = (player.alchemistSkillTimer > 0 || (player.alchemistBuffTimer || 0) > 0)
         ? (player.evolvedPotion ? '#81ecec' : '#55efc4')
         : (player.evolvedPotion ? '#00cec9' : '#2ecc71');
       createHitParticles(ventX, ventY, pColor, (player.alchemistSkillTimer > 0) ? 3 : 1);
+    }
+
+    // Passiva: Decaimento e Regeneração do Vapor Estimulante Móvel
+    if (player.alchemistBuffTimer > 0) {
+      player.alchemistBuffTimer -= dt;
+      if (player.hp < player.maxHp) {
+        player.hp = Math.min(player.maxHp, player.hp + 2.5 * (dt / 60));
+      }
+      if (Math.floor(frameCount) % 6 === 0) {
+        createHitParticles(player.x + (Math.random() - 0.5) * 14, player.y + 6, '#55efc4', 1);
+      }
+    }
+
+    // Habilidade: Reagente Volátil (0.6s de imunidade de fuga e fumaça desorientadora em 120px)
+    if (player.alchemistSkillTimer > 0 && !player.alchemistSkillDisoriented) {
+      player.alchemistSkillDisoriented = true;
+      player.iFrames = Math.max(player.iFrames, 36);
+      triggerShake(5);
+      playSfx('acid');
+      createHitParticles(player.x, player.y, '#a55eea', 16);
+      createHitParticles(player.x, player.y, '#55efc4', 12);
+
+      for (let k = 0; k < enemies.length; k++) {
+        const en = enemies[k];
+        if (!en || en.hp <= 0 || en.isBoss) continue;
+        const edx = en.x - player.x;
+        const edy = en.y - player.y;
+        if (edx * edx + edy * edy < 120 * 120) {
+          en.confusedTimer = 110;
+          addDamageText(en.x, en.y - 10, "DESORIENTADO!", false, '#a55eea');
+          createHitParticles(en.x, en.y, '#9b59b6', 5);
+        }
+      }
+    } else if (player.alchemistSkillTimer <= 0) {
+      player.alchemistSkillDisoriented = false;
     }
   }
 
@@ -444,6 +489,9 @@ function update(dt) {
   let currentSpeed = isSlowed ? player.baseSpeed * 0.65 : (insideVortex ? player.baseSpeed * 0.72 : player.baseSpeed);
   if (player.invisTimer > 0) {
     currentSpeed *= 2;
+  }
+  if (player.alchemistBuffTimer > 0) {
+    currentSpeed *= 1.15;
   }
   player.speed = currentSpeed;
 
@@ -656,8 +704,53 @@ function update(dt) {
     }
   }
 
-  camera.x = player.x - cameraViewW / 2;
-  camera.y = player.y - cameraViewH / 2;
+  // =========================================================================
+  // CÂMERA CINEMATOGRÁFICA DINÂMICA (PANNING PARA O CHEFE E RETORNO AO JOGADOR)
+  // =========================================================================
+  const isBossSpawning = !!(activeBoss && activeBoss.actionState === 'SPAWN_INTRO');
+  cinematicCamera.isCinematic = isBossSpawning;
+
+  let focusX = player.x;
+  let focusY = player.y;
+
+  if (isBossSpawning) {
+    focusX = activeBoss.x;
+    focusY = activeBoss.y;
+    cinematicCamera.returningToPlayer = true;
+    // Protege o jogador durante a introdução cinematográfica do chefe
+    player.iFrames = Math.max(player.iFrames, 12);
+  }
+
+  const targetCamX = focusX - cameraViewW / 2;
+  const targetCamY = focusY - cameraViewH / 2;
+
+  if (isBossSpawning) {
+    // Deslize cinematográfico suave e imponente até o chefe
+    const panFactor = 1 - Math.pow(1 - 0.045, dt);
+    camera.x += (targetCamX - camera.x) * panFactor;
+    camera.y += (targetCamY - camera.y) * panFactor;
+  } else if (cinematicCamera.returningToPlayer) {
+    // Retorno suave da câmera para o jogador após o fim da introdução
+    const distToPlayer = Math.hypot(targetCamX - camera.x, targetCamY - camera.y);
+    player.iFrames = Math.max(player.iFrames, 6);
+    if (distToPlayer < 2.0) {
+      cinematicCamera.returningToPlayer = false;
+      camera.x = targetCamX;
+      camera.y = targetCamY;
+    } else {
+      const returnFactor = 1 - Math.pow(1 - 0.08, dt);
+      camera.x += (targetCamX - camera.x) * returnFactor;
+      camera.y += (targetCamY - camera.y) * returnFactor;
+    }
+  } else {
+    // Resposta 1:1 firme e responsiva durante o combate normal
+    camera.x = targetCamX;
+    camera.y = targetCamY;
+  }
+
+  // Transição suave das barras de cinema (Letterbox)
+  const targetLetterbox = isBossSpawning ? 1.0 : 0.0;
+  cinematicCamera.letterboxProgress += (targetLetterbox - cinematicCamera.letterboxProgress) * (1 - Math.pow(1 - 0.08, dt));
 
   player.weapons.forEach(w => { w.timer += dt; });
   fireWeapons();
@@ -703,6 +796,9 @@ function update(dt) {
             const isBossTarget = !!(e.isBoss || e.isMiniBoss || e.isBossSubTarget);
             currentAuraDmg *= isBossTarget ? 1.5 : 2.0;
             isKaelExecute = true;
+          }
+          if (e.acidStacks > 0) {
+            currentAuraDmg *= (1 + e.acidStacks * 0.06);
           }
           const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
           let finalDmg = isCrit ? currentAuraDmg * player.critMult : currentAuraDmg;
@@ -762,6 +858,9 @@ function update(dt) {
             const isBossTarget = !!(e.isBoss || e.isMiniBoss || e.isBossSubTarget);
             dmg *= isBossTarget ? 1.5 : 2.0;
             isKaelExecute = true;
+          }
+          if (e.acidStacks > 0) {
+            dmg *= (1 + e.acidStacks * 0.06);
           }
           const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
           let finalDmg = isCrit ? dmg * player.critMult : dmg;
@@ -828,6 +927,51 @@ function update(dt) {
   resolveWorldPhysics(player, enemies, dt);
   updateProjectiles(dt);
   updateAcidPuddles(dt);
+
+  // Mecânicas do Miasma da Valéria: Dissolução de Tiros, Super Slow (70%), Acid Shred e Vapor Móvel
+  for (let pIdx = 0; pIdx < acidPuddles.length; pIdx++) {
+    const p = acidPuddles[pIdx];
+    if (!p.isAlchemist) continue;
+
+    // 1. Dissolução de projéteis inimigos comuns que entrarem no vapor
+    for (let bIdx = enemyBullets.length - 1; bIdx >= 0; bIdx--) {
+      const eb = enemyBullets[bIdx];
+      const edx = eb.x - p.x;
+      const edy = eb.y - p.y;
+      if (edx * edx + edy * edy < (p.radius + (eb.radius || 5)) ** 2) {
+        createHitParticles(eb.x, eb.y, p.isEvolved ? '#81ecec' : '#a55eea', 4);
+        enemyBullets.splice(bIdx, 1);
+      }
+    }
+
+    // 2. Super slow de 70%, quebra de dashes e stacks de corrosão em inimigos
+    for (let eIdx = 0; eIdx < enemies.length; eIdx++) {
+      const e = enemies[eIdx];
+      if (!e || e.hp <= 0 || e.isTargetable === false) continue;
+      const edx = e.x - p.x;
+      const edy = e.y - p.y;
+      if (edx * edx + edy * edy < (p.radius + e.radius) ** 2) {
+        e.inAcidPuddle = true;
+        e.slowTimer = Math.max(e.slowTimer || 0, 30);
+        e.slowFactor = 0.70;
+        if (e.dashState === 'dashing') {
+          e.dashState = 'cooldown';
+          e.dashTimer = 0;
+        }
+        if (Math.floor(frameCount) % 15 === 0) {
+          e.acidStacks = Math.min(5, (e.acidStacks || 0) + 1);
+          e.acidStackTimer = 180;
+        }
+      }
+    }
+
+    // 3. Concessão e renovação do buff portátil de Vapor Estimulante ao cruzar o miasma
+    const pdx = player.x - p.x;
+    const pdy = player.y - p.y;
+    if (pdx * pdx + pdy * pdy < (p.radius + player.radius) ** 2) {
+      player.alchemistBuffTimer = 180;
+    }
+  }
 
   // Ondas de Choque dos Chefes
   for (let i = bossShockwaves.length - 1; i >= 0; i--) {
@@ -1243,8 +1387,15 @@ function update(dt) {
       continue;
     }
 
+    if (e.acidStackTimer > 0) {
+      e.acidStackTimer -= dt;
+      if (e.acidStackTimer <= 0) e.acidStacks = 0;
+    }
+    if (e.confusedTimer > 0) e.confusedTimer -= dt;
+    e.inAcidPuddle = false;
+
     if (freezeTimer <= 0) {
-      const isConfused = (player.invisTimer > 0 && !e.isBoss);
+      const isConfused = ((player.invisTimer > 0) || (e.confusedTimer > 0)) && !e.isBoss;
       const targetX = isConfused ? (e.x + Math.sin(frameCount * 0.05 + i) * 120) : player.x;
       const targetY = isConfused ? (e.y + Math.cos(frameCount * 0.05 + i) * 120) : player.y;
 
@@ -1891,6 +2042,21 @@ function update(dt) {
       gameState.kills++;
       createHitParticles(e.x, e.y, e.color, 6);
       addBloodSplat(e.x, e.y);
+
+      // Efervescência Necrótica: inimigos corroídos deixam uma poça secundária ao morrer
+      if (selectedHeroKey === 'ALCHEMIST' && ((e.acidStacks && e.acidStacks > 0) || e.inAcidPuddle)) {
+        acidPuddles.push({
+          x: e.x,
+          y: e.y,
+          radius: 24,
+          life: 120,
+          maxLife: 120,
+          isAlchemist: true,
+          isEvolved: player.evolvedPotion
+        });
+        playSfx('acid');
+        createHitParticles(e.x, e.y, '#a29bfe', 8);
+      }
 
       if (!e.isBoss && !e.isMiniBoss && !e.isBossSubTarget && !e.explodedNaturally) {
         const hitAng = Math.atan2(e.y - player.y, e.x - player.x);
