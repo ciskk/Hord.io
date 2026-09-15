@@ -18,23 +18,10 @@ export function tileHash(gx, gy) {
   return n - Math.floor(n);
 }
 
-// Ruído suave de baixa frequência para gerar caminhos e manchas de terreno
-function smoothNoise(x, y) {
-  const i = Math.floor(x);
-  const j = Math.floor(y);
-  const fx = x - i;
-  const fy = y - j;
-  const sx = fx * fx * (3 - 2 * fx);
-  const sy = fy * fy * (3 - 2 * fy);
-
-  const n00 = tileHash(i, j);
-  const n10 = tileHash(i + 1, j);
-  const n01 = tileHash(i, j + 1);
-  const n11 = tileHash(i + 1, j + 1);
-
-  const nx0 = n00 + sx * (n10 - n00);
-  const nx1 = n01 + sx * (n11 - n01);
-  return nx0 + sy * (nx1 - nx0);
+// Hash pseudoaleatório inteiro e determinístico ultra-rápido (Zero Math.sin, Zero Heap)
+function fastTileType(c, r) {
+  let h = ((c * 73856093) ^ (r * 19349663)) & 0xFFFF;
+  return h / 65535;
 }
 
 // Curva de interpolação cúbica suave (smoothstep)
@@ -1001,7 +988,7 @@ function renderStandardTileGround(ctx, startCol, endCol, startRow, endRow, tileS
       const tileX = c * tileSize;
       const tileY = r * tileSize;
       const h = tileHash(c, r);
-      const macroZone = smoothNoise(c * 0.18, r * 0.18);
+      const macroZone = fastTileType(c, r);
 
       if (macroZone > 0.62) {
         // Trilhas de lajotas polidas
@@ -1043,6 +1030,42 @@ function renderStandardTileGround(ctx, startCol, endCol, startRow, endRow, tileS
       }
     }
   }
+}
+
+// Canvas offscreen cacheado para vinheta (evita recompilação contínua de RadialGradient na GPU)
+let cachedVignetteCanvas = null;
+let cachedVignetteW = 0;
+let cachedVignetteH = 0;
+
+function updateVignetteCache(w, h) {
+  const roundedW = Math.max(1, Math.floor(w));
+  const roundedH = Math.max(1, Math.floor(h));
+  if (cachedVignetteCanvas && cachedVignetteW === roundedW && cachedVignetteH === roundedH) return;
+
+  cachedVignetteW = roundedW;
+  cachedVignetteH = roundedH;
+  if (!cachedVignetteCanvas) {
+    cachedVignetteCanvas = document.createElement('canvas');
+  }
+  cachedVignetteCanvas.width = roundedW;
+  cachedVignetteCanvas.height = roundedH;
+  const vCtx = cachedVignetteCanvas.getContext('2d');
+  if (!vCtx) return;
+
+  const halfW = roundedW / 2;
+  const halfH = roundedH / 2;
+  const vignette = vCtx.createRadialGradient(
+    halfW, 
+    halfH, 
+    Math.min(roundedW, roundedH) * 0.65,
+    halfW, 
+    halfH, 
+    Math.max(roundedW, roundedH) * 0.95
+  );
+  vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  vignette.addColorStop(1, 'rgba(10, 15, 20, 0.16)');
+  vCtx.fillStyle = vignette;
+  vCtx.fillRect(0, 0, roundedW, roundedH);
 }
 
 export function renderEnvironment(ctx) {
@@ -1154,32 +1177,15 @@ export function renderEnvironment(ctx) {
     ctx.fill();
   }
 
-  // 5. NÉVOA VOLUMÉTRICA RASTEIRA TRANSLÚCIDA
-  const mist1 = (frameCount * 0.35 + camera.x * 0.2) % 1200;
-  const mist2 = (frameCount * 0.20 + camera.y * 0.15) % 1200;
-
+  // 5. NÉVOA VOLUMÉTRICA RASTEIRA TRANSLÚCIDA (Camada Única Otimizada)
   ctx.fillStyle = pal.mistBase;
   ctx.fillRect(camera.x, camera.y, cameraViewW, cameraViewH);
 
-  ctx.fillStyle = pal.mistPuff;
-  ctx.beginPath();
-  ctx.ellipse(camera.x + (cameraViewW * 0.5) - mist1 + 600, camera.y + cameraViewH * 0.4, 380, 90, 0.05, 0, Math.PI * 2);
-  ctx.ellipse(camera.x + mist2, camera.y + cameraViewH * 0.75, 440, 110, -0.05, 0, Math.PI * 2);
-  ctx.fill();
-
-  // 6. VINHETA PERIFÉRICA SUAVE (Calibrada: iluminação ampla, bordas leves sem cegar os cantos)
-  const vignette = ctx.createRadialGradient(
-    camera.x + cameraViewW / 2, 
-    camera.y + cameraViewH / 2, 
-    Math.min(cameraViewW, cameraViewH) * 0.65,
-    camera.x + cameraViewW / 2, 
-    camera.y + cameraViewH / 2, 
-    Math.max(cameraViewW, cameraViewH) * 0.95
-  );
-  vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
-  vignette.addColorStop(1, 'rgba(10, 15, 20, 0.16)');
-  ctx.fillStyle = vignette;
-  ctx.fillRect(camera.x, camera.y, cameraViewW, cameraViewH);
+  // 6. VINHETA PERIFÉRICA SUAVE (Pré-renderizada em Canvas Offscreen Cacheado)
+  updateVignetteCache(cameraViewW, cameraViewH);
+  if (cachedVignetteCanvas) {
+    ctx.drawImage(cachedVignetteCanvas, camera.x, camera.y);
+  }
 }
 
 /**

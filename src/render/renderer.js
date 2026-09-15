@@ -59,7 +59,11 @@ export function render() {
   ctx.save();
   // Aplica a aproximação de câmera (~20% menor FOV)
   ctx.scale(CAMERA_ZOOM, CAMERA_ZOOM);
-  ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
+
+  // Quantização inteira da posição da câmera: elimina o anti-aliasing cinzento de subpixel no mobile
+  const renderCamX = Math.round(-camera.x + shakeX);
+  const renderCamY = Math.round(-camera.y + shakeY);
+  ctx.translate(renderCamX, renderCamY);
 
   renderEnvironment(ctx);
 

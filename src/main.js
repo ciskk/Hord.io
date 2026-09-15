@@ -109,7 +109,7 @@ export function resize() {
   }
   if (!canvas) return;
 
-  dpr = layoutMetrics.dpr || Math.min(window.devicePixelRatio || 1, 1.5);
+  dpr = layoutMetrics.dpr || ((window.devicePixelRatio || 1) >= 2.0 ? 2.0 : 1.0);
   viewW = layoutMetrics.viewW || window.innerWidth;
   viewH = layoutMetrics.viewH || window.innerHeight;
   cameraViewW = viewW / CAMERA_ZOOM;
@@ -209,25 +209,95 @@ export function getGemConfig(xp) {
   }
 }
 
+// Cache de nós estáticos do DOM para eliminar chamadas a document.getElementById e evitar Layout Thrashing
+const hudDom = {
+  hpVal: null,
+  hpMaxVal: null,
+  hpFill: null,
+  hpGhostFill: null,
+  hpPctVal: null,
+  hpContainer: null,
+  lvlVal: null,
+  killsVal: null,
+  xpVal: null,
+  xpNextVal: null,
+  xpFill: null,
+  xpPctVal: null,
+  goldVal: null,
+  waveBanner: null,
+  bossHud: null,
+  bossHpFill: null,
+  bossHpVal: null,
+  timerVal: null
+};
+
+function ensureHudElementsCached() {
+  if (!hudDom.hpVal) {
+    hudDom.hpVal = document.getElementById('hp-val');
+    hudDom.hpMaxVal = document.getElementById('hp-max-val');
+    hudDom.hpFill = document.getElementById('hp-fill');
+    hudDom.hpGhostFill = document.getElementById('hp-ghost-fill');
+    hudDom.hpPctVal = document.getElementById('hp-pct-val');
+    hudDom.hpContainer = document.getElementById('hp-container');
+    hudDom.lvlVal = document.getElementById('lvl-val');
+    hudDom.killsVal = document.getElementById('kills-val');
+    hudDom.xpVal = document.getElementById('xp-val');
+    hudDom.xpNextVal = document.getElementById('xp-next-val');
+    hudDom.xpFill = document.getElementById('xp-fill');
+    hudDom.xpPctVal = document.getElementById('xp-pct-val');
+    hudDom.goldVal = document.getElementById('gold-val');
+    hudDom.waveBanner = document.getElementById('wave-banner');
+    hudDom.bossHud = document.getElementById('boss-hud');
+    hudDom.bossHpFill = document.getElementById('boss-hp-fill');
+    hudDom.bossHpVal = document.getElementById('boss-hp-val');
+    hudDom.timerVal = document.getElementById('timer-val');
+  }
+}
+
+// Estados cacheados para Dirty Checking no loop principal
+let _lastHp = -1;
+let _lastMaxHp = -1;
+let _lastHpPct = -1;
+let _lastGhostHp = -1;
+let _lastLvl = -1;
+let _lastKills = -1;
+let _lastXp = -1;
+let _lastNextXp = -1;
+let _lastXpPct = -1;
+let _lastGold = -1;
+let _lastWaveBannerText = '';
+let _lastBossHpPct = -1;
+let _lastBossEnraged = null;
+let _lastTimerStr = '';
+
+// Array estático indexador reutilizável para compressão de gemas (Zero-Allocation)
+const _offscreenGems = [];
+
 function compressGems() {
   if (gems.length <= 70) return;
-  const offscreen = [];
+  _offscreenGems.length = 0;
   const keepDistSq = 720 * 720;
 
   for (let i = gems.length - 1; i >= 0; i--) {
     const g = gems[i];
     const dx = g.x - player.x;
     const dy = g.y - player.y;
-    if (dx * dx + dy * dy > keepDistSq) offscreen.push(i);
+    if (dx * dx + dy * dy > keepDistSq) _offscreenGems.push(i);
   }
 
-  if (offscreen.length >= 10) {
+  if (_offscreenGems.length >= 10) {
     let accumulatedXp = 0;
-    const targetX = gems[offscreen[0]].x;
-    const targetY = gems[offscreen[0]].y;
+    const firstIdx = _offscreenGems[0];
+    const targetX = gems[firstIdx].x;
+    const targetY = gems[firstIdx].y;
 
-    offscreen.forEach(idx => { accumulatedXp += gems[idx].value; });
-    offscreen.sort((a, b) => b - a).forEach(idx => gems.splice(idx, 1));
+    for (let j = 0; j < _offscreenGems.length; j++) {
+      accumulatedXp += gems[_offscreenGems[j]].value;
+    }
+
+    for (let j = 0; j < _offscreenGems.length; j++) {
+      gems.splice(_offscreenGems[j], 1);
+    }
 
     const cfg = getGemConfig(accumulatedXp);
     gems.push({ 
@@ -295,6 +365,20 @@ export function resetGame() {
   lastAnnouncedWaveIndex = 0;
   ghostHp = player.maxHp;
   ghostHpTimer = 0;
+  _lastHp = -1;
+  _lastMaxHp = -1;
+  _lastHpPct = -1;
+  _lastGhostHp = -1;
+  _lastLvl = -1;
+  _lastKills = -1;
+  _lastXp = -1;
+  _lastNextXp = -1;
+  _lastXpPct = -1;
+  _lastGold = -1;
+  _lastWaveBannerText = '';
+  _lastBossHpPct = -1;
+  _lastBossEnraged = null;
+  _lastTimerStr = '';
   resetDeathAudioFilter();
 
   const bloodFilter = document.getElementById('blood-screen-filter');
@@ -759,7 +843,7 @@ function update(dt) {
   fireWeapons();
   updateSpinningAxes(dt);
 
-  // Aura Sagrada
+  // Aura Sagrada (Vinculada ao Spatial Grid)
   if (player.auraLvl > 0 || player.evolvedAura) {
     player.auraTimer += dt;
     const auraInterval = player.evolvedAura ? 18 : 26;
@@ -778,8 +862,10 @@ function update(dt) {
         addDamageText(player.x, player.y, "+2", false, '#2ecc71');
       }
 
-      for (let i = 0; i < enemies.length; i++) {
-        const e = enemies[i];
+      const auraNeighbors = getNeighborIndices(player.x, player.y, auraRadius);
+      const aLen = auraNeighbors.length;
+      for (let k = 0; k < aLen; k++) {
+        const e = enemies[auraNeighbors[k]];
         if (!e || e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
         if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
         if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
@@ -830,23 +916,27 @@ function update(dt) {
     }
   }
 
-  // Bíblias Protetoras
+  // Bíblias Protetoras (Vinculadas ao Spatial Grid)
   if (player.orbitals > 0) {
     player.orbitalAngle += (player.evolvedOrbitals ? 0.13 : 0.068) * dt;
     const orbDist = player.evolvedOrbitals ? 88 : 72;
+    const bookRadius = player.evolvedOrbitals ? 26 : 20;
+
     for (let oIdx = 0; oIdx < player.orbitals; oIdx++) {
       const angle = player.orbitalAngle + (oIdx * (Math.PI * 2 / player.orbitals));
       const ox = player.x + Math.cos(angle) * orbDist;
       const oy = player.y + Math.sin(angle) * orbDist;
 
-      for (let i = 0; i < enemies.length; i++) {
-        const e = enemies[i];
+      const orbNeighbors = getNeighborIndices(ox, oy, bookRadius + 45);
+      const oLen = orbNeighbors.length;
+
+      for (let k = 0; k < oLen; k++) {
+        const e = enemies[orbNeighbors[k]];
         if (!e || e.hp <= 0 || e.orbitalHitCd > 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
         if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
         if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
         const dx = e.x - ox;
         const dy = e.y - oy;
-        const bookRadius = player.evolvedOrbitals ? 26 : 20;
         const rSum = e.radius + bookRadius;
         if (dx * dx + dy * dy < rSum * rSum) {
           let dmg = player.damage * (player.evolvedOrbitals ? 2.3 : 1.45);
@@ -948,9 +1038,11 @@ function update(dt) {
       }
     }
 
-    // 2. Super slow de 70%, quebra de dashes e stacks de corrosão em inimigos
-    for (let eIdx = 0; eIdx < enemies.length; eIdx++) {
-      const e = enemies[eIdx];
+    // 2. Super slow de 70%, quebra de dashes e stacks de corrosão em inimigos (Via Spatial Grid)
+    const puddleNeighbors = getNeighborIndices(p.x, p.y, p.radius + 35);
+    const pnLen = puddleNeighbors.length;
+    for (let k = 0; k < pnLen; k++) {
+      const e = enemies[puddleNeighbors[k]];
       if (!e || e.hp <= 0 || e.isTargetable === false) continue;
       const edx = e.x - p.x;
       const edy = e.y - p.y;
@@ -2677,89 +2769,122 @@ function update(dt) {
     ghostHpTimer = 0;
   }
 
-  const hpVal = document.getElementById('hp-val');
-  if (hpVal) hpVal.innerText = Math.max(0, Math.ceil(player.hp));
+  ensureHudElementsCached();
 
-  const hpMaxVal = document.getElementById('hp-max-val');
-  if (hpMaxVal) hpMaxVal.innerText = player.maxHp;
+  // Dirty Checking do HUD de Vida
+  const currentHp = Math.max(0, Math.ceil(player.hp));
+  if (currentHp !== _lastHp) {
+    _lastHp = currentHp;
+    if (hudDom.hpVal) hudDom.hpVal.innerText = currentHp;
+  }
 
-  const hpPct = Math.max(0, Math.min(100, Math.round((player.hp / player.maxHp) * 100)));
-  const hpPctVal = document.getElementById('hp-pct-val');
-  if (hpPctVal) hpPctVal.innerText = `${hpPct}%`;
+  if (player.maxHp !== _lastMaxHp) {
+    _lastMaxHp = player.maxHp;
+    if (hudDom.hpMaxVal) hudDom.hpMaxVal.innerText = player.maxHp;
+  }
 
-  const hpContainer = document.getElementById('hp-container');
-  if (hpContainer) {
-    if (hpPct <= 30 && player.hp > 0) {
-      hpContainer.classList.add('critical');
-    } else {
-      hpContainer.classList.remove('critical');
+  const hpPct = Math.max(0, Math.min(100, Math.round((currentHp / player.maxHp) * 100)));
+  if (hpPct !== _lastHpPct) {
+    _lastHpPct = hpPct;
+    if (hudDom.hpPctVal) hudDom.hpPctVal.innerText = `${hpPct}%`;
+    if (hudDom.hpFill) hudDom.hpFill.style.width = `${Math.max(0, (player.hp / player.maxHp) * 100)}%`;
+    if (hudDom.hpContainer) {
+      if (hpPct <= 30 && player.hp > 0) {
+        hudDom.hpContainer.classList.add('critical');
+      } else {
+        hudDom.hpContainer.classList.remove('critical');
+      }
     }
   }
 
-  const hpFill = document.getElementById('hp-fill');
-  if (hpFill) hpFill.style.width = `${Math.max(0, (player.hp / player.maxHp) * 100)}%`;
+  const roundedGhostHp = Math.round(ghostHp);
+  if (roundedGhostHp !== _lastGhostHp) {
+    _lastGhostHp = roundedGhostHp;
+    if (hudDom.hpGhostFill) hudDom.hpGhostFill.style.width = `${Math.max(0, (ghostHp / player.maxHp) * 100)}%`;
+  }
 
-  const hpGhostFill = document.getElementById('hp-ghost-fill');
-  if (hpGhostFill) hpGhostFill.style.width = `${Math.max(0, (ghostHp / player.maxHp) * 100)}%`;
+  // Dirty Checking de Nível, Kills e Progressão de XP
+  if (player.level !== _lastLvl) {
+    _lastLvl = player.level;
+    if (hudDom.lvlVal) hudDom.lvlVal.innerText = player.level;
+  }
 
-  const lvlVal = document.getElementById('lvl-val');
-  if (lvlVal) lvlVal.innerText = player.level;
+  if (gameState.kills !== _lastKills) {
+    _lastKills = gameState.kills;
+    if (hudDom.killsVal) hudDom.killsVal.innerText = gameState.kills;
+  }
 
-  const killsVal = document.getElementById('kills-val');
-  if (killsVal) killsVal.innerText = gameState.kills;
+  const curXp = Math.floor(player.xp);
+  if (curXp !== _lastXp) {
+    _lastXp = curXp;
+    if (hudDom.xpVal) hudDom.xpVal.innerText = curXp;
+  }
 
-  const xpVal = document.getElementById('xp-val');
-  if (xpVal) xpVal.innerText = Math.floor(player.xp);
-
-  const xpNextVal = document.getElementById('xp-next-val');
-  if (xpNextVal) xpNextVal.innerText = player.nextXp;
+  if (player.nextXp !== _lastNextXp) {
+    _lastNextXp = player.nextXp;
+    if (hudDom.xpNextVal) hudDom.xpNextVal.innerText = player.nextXp;
+  }
 
   const xpPct = Math.min(100, Math.round((player.xp / player.nextXp) * 100));
-  const xpPctVal = document.getElementById('xp-pct-val');
-  if (xpPctVal) xpPctVal.innerText = `${xpPct}%`;
+  if (xpPct !== _lastXpPct) {
+    _lastXpPct = xpPct;
+    if (hudDom.xpPctVal) hudDom.xpPctVal.innerText = `${xpPct}%`;
+    if (hudDom.xpFill) hudDom.xpFill.style.width = `${Math.min(100, (player.xp / player.nextXp) * 100)}%`;
+  }
 
-  const xpFill = document.getElementById('xp-fill');
-  if (xpFill) xpFill.style.width = `${Math.min(100, (player.xp / player.nextXp) * 100)}%`;
-
-  const goldVal = document.getElementById('gold-val');
-  if (goldVal) goldVal.innerText = getPersistentGold();
+  const currentPersistentGold = getPersistentGold();
+  if (currentPersistentGold !== _lastGold) {
+    _lastGold = currentPersistentGold;
+    if (hudDom.goldVal) hudDom.goldVal.innerText = currentPersistentGold;
+  }
   
-  const waveBanner = document.getElementById('wave-banner');
-  if (waveBanner) {
-    if (gameState.isWavePaused && !activeBoss) {
-      waveBanner.innerText = "ABRA O BAÚ PARA CONTINUAR!";
-    } else if (activeBoss) {
-      const arenaName = ARENA_PALETTES[currentArenaTheme]?.name || '';
-      waveBanner.innerText = `${activeBoss.name} • ${arenaName}`;
-    } else {
-      const arenaName = ARENA_PALETTES[currentArenaTheme]?.name;
-      waveBanner.innerText = arenaName ? `${currentWave.name} • ${arenaName}` : currentWave.name;
-    }
+  let targetWaveBannerText = '';
+  if (gameState.isWavePaused && !activeBoss) {
+    targetWaveBannerText = "ABRA O BAÚ PARA CONTINUAR!";
+  } else if (activeBoss) {
+    const arenaName = ARENA_PALETTES[currentArenaTheme]?.name || '';
+    targetWaveBannerText = `${activeBoss.name} • ${arenaName}`;
+  } else {
+    const arenaName = ARENA_PALETTES[currentArenaTheme]?.name;
+    targetWaveBannerText = arenaName ? `${currentWave.name} • ${arenaName}` : currentWave.name;
+  }
+
+  if (targetWaveBannerText !== _lastWaveBannerText) {
+    _lastWaveBannerText = targetWaveBannerText;
+    if (hudDom.waveBanner) hudDom.waveBanner.innerText = targetWaveBannerText;
   }
 
   updateSkillUI();
 
   if (activeBoss) {
     const bossHpPct = Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100);
-    const bossHpFill = document.getElementById('boss-hp-fill');
-    if (bossHpFill) {
-      bossHpFill.style.width = `${bossHpPct}%`;
-      if (activeBoss.isEnraged) {
-        bossHpFill.style.background = 'linear-gradient(90deg, #c0392b, #e74c3c)';
-        bossHpFill.style.boxShadow = '0 0 12px rgba(231, 76, 60, 0.85)';
-      } else {
-        bossHpFill.style.background = '';
-        bossHpFill.style.boxShadow = '';
+    const roundedBossHpPct = Math.ceil(bossHpPct);
+
+    if (bossHpPct !== _lastBossHpPct || activeBoss.isEnraged !== _lastBossEnraged) {
+      _lastBossHpPct = bossHpPct;
+      _lastBossEnraged = activeBoss.isEnraged;
+
+      if (hudDom.bossHpFill) {
+        hudDom.bossHpFill.style.width = `${bossHpPct}%`;
+        if (activeBoss.isEnraged) {
+          hudDom.bossHpFill.style.background = 'linear-gradient(90deg, #c0392b, #e74c3c)';
+          hudDom.bossHpFill.style.boxShadow = '0 0 12px rgba(231, 76, 60, 0.85)';
+        } else {
+          hudDom.bossHpFill.style.background = '';
+          hudDom.bossHpFill.style.boxShadow = '';
+        }
       }
+      if (hudDom.bossHpVal) hudDom.bossHpVal.innerText = `${roundedBossHpPct}%`;
     }
-    const bossHpVal = document.getElementById('boss-hp-val');
-    if (bossHpVal) bossHpVal.innerText = `${Math.ceil(bossHpPct)}%`;
   }
 
   const m = String(Math.floor(seconds / 60)).padStart(2, '0');
   const s = String(seconds % 60).padStart(2, '0');
-  const timerVal = document.getElementById('timer-val');
-  if (timerVal) timerVal.innerText = `${m}:${s}`;
+  const currentTimerStr = `${m}:${s}`;
+  if (currentTimerStr !== _lastTimerStr) {
+    _lastTimerStr = currentTimerStr;
+    if (hudDom.timerVal) hudDom.timerVal.innerText = currentTimerStr;
+  }
 }
 
 function loop(now) {

@@ -95,9 +95,18 @@ export function vecDot(x1, y1, x2, y2) {
   return x1 * x2 + y1 * y2;
 }
 
+// Singleton reutilizado internamente para eliminar 100% das alocações na Heap (Zero-Allocation)
+const _segmentResult = {
+  dist: 0,
+  closestX: 0,
+  closestY: 0,
+  t: 0
+};
+
 /**
  * Calcula a distância Euclidiana mínima entre um ponto P(px, py) e um segmento
  * de reta finito delimitado por A(x1, y1) e B(x2, y2).
+ * Retorna uma referência singleton imutável em estrutura, sem instanciar novos objetos por frame.
  * 
  * Projeção escalar normalizada:
  * t = clamp(((P - A) · (B - A)) / |B - A|^2, 0, 1)
@@ -119,12 +128,11 @@ export function distToSegment(px, py, x1, y1, x2, y2) {
   if (l2 < 0.000001) {
     const ddx = px - x1;
     const ddy = py - y1;
-    return {
-      dist: Math.hypot(ddx, ddy),
-      closestX: x1,
-      closestY: y1,
-      t: 0
-    };
+    _segmentResult.dist = Math.hypot(ddx, ddy);
+    _segmentResult.closestX = x1;
+    _segmentResult.closestY = y1;
+    _segmentResult.t = 0;
+    return _segmentResult;
   }
 
   // Projeção escalar normalizada no intervalo [0, 1]
@@ -132,9 +140,10 @@ export function distToSegment(px, py, x1, y1, x2, y2) {
   const pdy = py - y1;
   const t = Math.max(0, Math.min(1, (pdx * dx + pdy * dy) / l2));
 
-  const closestX = x1 + t * dx;
-  const closestY = y1 + t * dy;
-  const dist = Math.hypot(px - closestX, py - closestY);
+  _segmentResult.closestX = x1 + t * dx;
+  _segmentResult.closestY = y1 + t * dy;
+  _segmentResult.dist = Math.hypot(px - _segmentResult.closestX, py - _segmentResult.closestY);
+  _segmentResult.t = t;
 
-  return { dist, closestX, closestY, t };
+  return _segmentResult;
 }

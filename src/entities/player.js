@@ -694,14 +694,8 @@ export function updateSpinningAxes(dt) {
     player.axeBossHealCd = Math.max(0, player.axeBossHealCd - dt);
   }
 
-  for (let [enemyRef, cd] of player.axeContactCds.entries()) {
-    const nextCd = cd - dt;
-    if (nextCd <= 0 || !enemies.includes(enemyRef)) {
-      player.axeContactCds.delete(enemyRef);
-    } else {
-      player.axeContactCds.set(enemyRef, nextCd);
-    }
-  }
+  // Otimização Zero-GC: Cooldown individual no inimigo (e.axeHitCd) decrece em main.js em O(1),
+  // eliminando varreduras com entries(), deletes e enemies.includes() na thread de combate.
 
   const effectiveRadius = player.axeRadius || 56;
   const count = player.evolvedAxe ? Math.max(player.axeCount, 6) : player.axeCount;
@@ -730,7 +724,7 @@ export function updateSpinningAxes(dt) {
 
     for (let k = 0; k < nearbyIndices.length; k++) {
       const e = enemies[nearbyIndices[k]];
-      if (!e || player.axeContactCds.has(e) || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
+      if (!e || (e.axeHitCd || 0) > 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
       if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
       if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
 
@@ -805,7 +799,7 @@ export function updateSpinningAxes(dt) {
         }
 
         const cdFrames = Math.max(6, Math.floor(18 / (currentSpinSpeed / 0.085)));
-        player.axeContactCds.set(e, cdFrames);
+        e.axeHitCd = cdFrames;
 
         playSfx('hit');
         if (isCrit || isMeleeAdrenaline || isKaelExecute) playSfx('crit');
@@ -852,32 +846,38 @@ export function updateSpinningAxes(dt) {
 export function fireWeapons() {
   if (enemies.length === 0) return;
 
-  player.weapons.forEach(w => {
-    if (w.timer < w.cooldown) return;
+  const weaponCount = player.weapons.length;
+  const halfW = (cameraViewW || 960) / 2;
+  const halfH = (cameraViewH || 640) / 2;
+  const screenMargin = 20;
+
+  for (let wIdx = 0; wIdx < weaponCount; wIdx++) {
+    const w = player.weapons[wIdx];
+    if (w.timer < w.cooldown) continue;
 
     let weaponRange = 320;
     if (w.type === 'POTION') weaponRange = 480;
     else if (w.type === 'HAMMER') weaponRange = 110;
     else if (w.type === 'SWORD') weaponRange = 300;
     else if (w.type === 'STAFF') weaponRange = 340;
-    else if (w.type === 'AXE') return;
+    else if (w.type === 'AXE') continue;
 
     const rangeSq = weaponRange * weaponRange;
-    const inRange = [];
-    const halfW = (cameraViewW || 960) / 2;
-    const halfH = (cameraViewH || 640) / 2;
-    // Margem interna para garantir que o monstro esteja visível de fato dentro da tela e não apenas surgindo na borda
-    const screenMargin = 20;
 
-    for (let i = 0; i < enemies.length; i++) {
+    // Mira Automática Zero-Alloc: rastreamento escalar do alvo sem alocar arrays ou chamar .sort()
+    let bestEnemy = null;
+    let bestSubTarget = null;
+    let bestDistSq = rangeSq;
+    let bestSubDistSq = rangeSq;
+
+    const enemyCount = enemies.length;
+    for (let i = 0; i < enemyCount; i++) {
       const e = enemies[i];
-      if (e.hp <= 0 || e.isTargetable === false) continue;
-      // Monstros que ainda estão emergindo do solo (Zumbis, Vermes, Parasitas) não podem ser mirados
-      if ((e.emergeTimer || 0) > 0) continue;
+      if (e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
       if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
       if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
 
-      // Monstros comuns só podem se tornar alvos quando estiverem de fato dentro da tela visível
+      // Monstros comuns só podem se tornar alvos quando estiverem dentro da visão
       if (!e.isBoss && !e.isMiniBoss && !e.isBossSubTarget) {
         const offX = Math.abs(e.x - player.x);
         const offY = Math.abs(e.y - player.y);
@@ -889,29 +889,32 @@ export function fireWeapons() {
       const dx = e.x - player.x;
       const dy = e.y - player.y;
       const dSq = dx * dx + dy * dy;
-      if (dSq <= rangeSq) inRange.push({ enemy: e, distSq: dSq, isSubTarget: !!e.isBossSubTarget });
+
+      if (dSq <= rangeSq) {
+        if (e.isBossSubTarget) {
+          if (dSq < bestSubDistSq) {
+            bestSubDistSq = dSq;
+            bestSubTarget = e;
+          }
+        } else if (!bestSubTarget && dSq < bestDistSq) {
+          bestDistSq = dSq;
+          bestEnemy = e;
+        }
+      }
     }
 
-    if (inRange.length === 0) return;
+    const closestEnemy = bestSubTarget || bestEnemy;
+    if (!closestEnemy) continue;
 
     w.timer = 0;
-    // Prioriza sub-alvos de chefes (Litocistos / Lanternas); se iguais, escolhe o mais próximo
-    inRange.sort((a, b) => {
-      if (a.isSubTarget !== b.isSubTarget) {
-        return a.isSubTarget ? -1 : 1;
-      }
-      return a.distSq - b.distSq;
-    });
-    const closestEnemy = inRange[0].enemy;
 
     if (w.type === 'SWORD') {
       playSfx('shoot');
       const count = player.evolvedSword ? 6 : w.count;
+      const baseAngle = Math.atan2(closestEnemy.y - player.y, closestEnemy.x - player.x);
 
       for (let i = 0; i < count; i++) {
-        const target = inRange[i % inRange.length].enemy;
-        const baseAngle = Math.atan2(target.y - player.y, target.x - player.x);
-        const spread = inRange.length < count ? (i - (count - 1) / 2) * 0.22 : 0;
+        const spread = count > 1 ? (i - (count - 1) / 2) * 0.22 : 0;
         const angle = baseAngle + spread;
 
         bullets.push({
@@ -932,17 +935,16 @@ export function fireWeapons() {
     } else if (w.type === 'STAFF') {
       playSfx('shoot');
       const count = player.evolvedStaff ? Math.max(w.count, 4) : w.count;
-      const primaryTarget = inRange[0].enemy;
-      player.facing = primaryTarget.x >= player.x ? 1 : -1;
+      player.facing = closestEnemy.x >= player.x ? 1 : -1;
       player.staffCastTimer = 11;
 
       // Flash da coroa do cajado na ponta do lançamento
       createHitParticles(player.x + player.facing * 14, player.y - 5, '#ffffff', 5);
       createHitParticles(player.x + player.facing * 14, player.y - 5, '#f1c40f', 7);
 
+      const baseAngle = Math.atan2(closestEnemy.y - player.y, closestEnemy.x - player.x);
+
       for (let i = 0; i < count; i++) {
-        const target = inRange[i % inRange.length].enemy;
-        const baseAngle = Math.atan2(target.y - player.y, target.x - player.x);
         const spread = count > 1 ? (i - (count - 1) / 2) * 0.18 : 0;
         const angle = baseAngle + spread;
 
@@ -971,8 +973,6 @@ export function fireWeapons() {
       const dist = Math.sqrt(rawDx * rawDx + rawDy * rawDy);
       const flightFrames = Math.max(18, Math.min(42, Math.floor(dist / 7.2)));
 
-      // Se o alvo for Chefe, Sub-alvo (Litocisto/Lanterna) ou estiver sem velocidade/vulnerável:
-      // Mirar diretamente no centro do alvo, evitando jogar o frasco no chão vazio ou gerar NaN.
       const isBossOrSub = !!(closestEnemy.isBoss || closestEnemy.isMiniBoss || closestEnemy.isBossSubTarget);
       const isStationaryOrSpecial = isBossOrSub || !closestEnemy.speed || closestEnemy.isVulnerable;
       
@@ -998,11 +998,6 @@ export function fireWeapons() {
       for (let i = 0; i < count; i++) {
         const arcOffset = i * 0.35;
 
-        // Redução progressiva para cada poção adicional adquirida:
-        // Poção 0: 100% de dano
-        // Poção 1: 50% a menos (0.50x da base)
-        // Poção 2: 25% a menos que a anterior (0.50 * 0.75 = 0.375x da base)
-        // Poção 3+: a taxa de redução continua caindo pela metade (12.5%, 6.25%...)
         let volleyMult = 1.0;
         let penaltyRate = 0.50;
         for (let k = 1; k <= i; k++) {
@@ -1052,7 +1047,7 @@ export function fireWeapons() {
         isEvolved: player.evolvedHammer
       });
     }
-  });
+  }
 }
 
 export function addXP(amount) {

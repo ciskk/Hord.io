@@ -31,7 +31,11 @@ export function addDyingEnemy(e, hitAngle = 0) {
   });
 }
 
+// Hard Caps para Mobile: limita instâncias ativas para conter picos de GC e aliviar o pipeline gráfico
 export function addDamageText(x, y, text, isCrit = false, color = '#fff') {
+  if (damageTexts.length >= 25) {
+    damageTexts.shift();
+  }
   damageTexts.push({
     x: x + (Math.random() - 0.5) * 8,
     y: y - 6,
@@ -46,7 +50,9 @@ export function addDamageText(x, y, text, isCrit = false, color = '#fff') {
 }
 
 export function createHitParticles(x, y, color, count = 5) {
-  for (let i = 0; i < count; i++) {
+  const maxParticles = 40;
+  const allowedCount = Math.min(count, Math.max(0, maxParticles - particles.length));
+  for (let i = 0; i < allowedCount; i++) {
     particles.push({
       x, y,
       vx: (Math.random() - 0.5) * 5.5,
