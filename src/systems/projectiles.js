@@ -64,6 +64,9 @@ export function updateProjectiles(dt) {
             }
             if (e.baseType === 'LITOCISTO') {
               impactDmg *= 4.0;
+            } else if ((e.isBoss || e.isMiniBoss) && !e.isBossSubTarget) {
+              // Resistência de Chefes contra múltiplos impactos simultâneos de frascos
+              impactDmg *= 0.60;
             }
             e.hp -= impactDmg;
             e.hitFlash = 4;
@@ -283,6 +286,9 @@ export function updateProjectiles(dt) {
  * Atualiza poças de ácido, lodo alquímico e chamas residuais.
  */
 export function updateAcidPuddles(dt) {
+  // Mapa para Anti-Stacking: consolida o dano por monstro no frame
+  const enemyPuddleOverlap = new Map();
+
   for (let i = acidPuddles.length - 1; i >= 0; i--) {
     const p = acidPuddles[i];
     p.life -= dt;
@@ -301,20 +307,23 @@ export function updateAcidPuddles(dt) {
         const dx = e.x - p.x;
         const dy = e.y - p.y;
         if (dx * dx + dy * dy < (p.radius + e.radius) ** 2) {
-          // 2: Dano contínuo da área envenenada reduzido em 20% (* 0.80)
-          let dotDmg = (p.isAlchemist ? ((p.damage || 18) * 0.08 * 0.80) : 0.55) * dt;
+          let baseDmg = p.isAlchemist ? ((p.damage || 18) * 0.08 * 0.80) : 0.55;
           if (p.isAlchemist && e.baseType === 'LITOCISTO') {
-            dotDmg *= 4.0;
+            baseDmg *= 4.0;
           }
-          e.hp -= dotDmg;
-          e.hitFlash = Math.max(e.hitFlash || 0, 1);
 
-          if (p.isAlchemist) {
-            e.slowTimer = Math.max(e.slowTimer || 0, 40);
-            e.slowFactor = p.isEvolved ? 0.65 : 0.45;
-            if (Math.random() < 0.02 * dt) {
-              createHitParticles(e.x, e.y, p.isEvolved ? '#d6a2e8' : '#a29bfe', 1);
-            }
+          const entry = enemyPuddleOverlap.get(e);
+          if (!entry) {
+            enemyPuddleOverlap.set(e, {
+              maxBaseDmg: baseDmg,
+              extraPuddles: 0,
+              isAlchemist: !!p.isAlchemist,
+              isEvolved: !!p.isEvolved
+            });
+          } else {
+            entry.maxBaseDmg = Math.max(entry.maxBaseDmg, baseDmg);
+            entry.extraPuddles++;
+            if (p.isEvolved) entry.isEvolved = true;
           }
         }
       }
@@ -358,6 +367,45 @@ export function updateAcidPuddles(dt) {
             createHitParticles(player.x, player.y, p.isCaustic ? '#00d2d3' : '#2ecc71', 3);
           }
         }
+      }
+    }
+  }
+
+  // Aplicação consolidada de dano com Anti-Stacking e Resistência de Chefes
+  for (const [e, data] of enemyPuddleOverlap.entries()) {
+    if (e.hp <= 0) continue;
+
+    // Anti-Stacking: 100% da poça principal + 15% por poça adicional (teto de +45%)
+    // Evita que 5 poças sobrepostas multipliquem o dano por 5x
+    const stackBonus = Math.min(0.45, data.extraPuddles * 0.15);
+    let finalDot = data.maxBaseDmg * (1 + stackBonus) * dt;
+
+    // 50% de resistência natural a veneno/ácido para Chefes e Minichefes
+    if ((e.isBoss || e.isMiniBoss) && !e.isBossSubTarget) {
+      finalDot *= 0.50;
+    }
+
+    e.hp -= finalDot;
+    e.hitFlash = Math.max(e.hitFlash || 0, 1);
+
+    if (data.isAlchemist) {
+      e.slowTimer = Math.max(e.slowTimer || 0, 40);
+      e.slowFactor = data.isEvolved ? 0.65 : 0.45;
+      if (Math.random() < 0.02 * dt) {
+        createHitParticles(e.x, e.y, data.isEvolved ? '#d6a2e8' : '#a29bfe', 1);
+      }
+
+      // Feedback visual periódico de dano contínuo (DoT) para as poças da Valéria
+      e.acidDotAcc = (e.acidDotAcc || 0) + finalDot;
+      e.acidDotTimer = (e.acidDotTimer || 0) + dt;
+      if (e.acidDotTimer >= 22) {
+        const displayDmg = Math.round(e.acidDotAcc);
+        if (displayDmg >= 1) {
+          const dotColor = data.isEvolved ? '#a29bfe' : '#9b59b6';
+          addDamageText(e.x, e.y - (e.radius || 14) * 0.5, displayDmg, false, dotColor);
+        }
+        e.acidDotAcc = 0;
+        e.acidDotTimer = 0;
       }
     }
   }

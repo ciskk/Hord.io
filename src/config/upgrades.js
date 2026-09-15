@@ -56,7 +56,7 @@ export const upgradesPool = [
     rarity: "card-legendary",
     badge: "Poção",
     desc: "Arremessa +1 frasco cáustico extra rigorosamente no mesmo epicentro da poça gigante",
-    stat: "+1 Frasco Concentrado (Máx: 5)",
+    stat: "+1 Frasco Concentrado (Máx: 4)",
     apply: () => {
       const w = player.weapons.find(wp => wp.type === 'POTION');
       if (w) {
@@ -65,7 +65,7 @@ export const upgradesPool = [
       player.projectiles = (w ? w.count : 1);
       registerWeaponInInventory('POTION', w ? w.count : 1);
     },
-    isAvailable: () => !player.evolvedPotion && player.weapons.some(w => w.type === 'POTION') && (player.weapons.find(wp => wp.type === 'POTION')?.count || 1) < 5
+    isAvailable: () => !player.evolvedPotion && player.weapons.some(w => w.type === 'POTION') && (player.weapons.find(wp => wp.type === 'POTION')?.count || 1) < 4
   },
   {
     id: 'potion_potency',

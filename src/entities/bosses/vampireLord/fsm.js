@@ -39,8 +39,10 @@ export function updateVampireLord(e, dt, context) {
   if (e.isCleaving) {
     if (e.cleaveSlashTimer === undefined) e.cleaveSlashTimer = 0;
     e.cleaveSlashTimer -= dt;
+    e.cleaveProgress = Math.max(0, e.cleaveSlashTimer / 22);
     if (e.cleaveSlashTimer <= 0) {
       e.isCleaving = false;
+      e.cleaveProgress = 0;
     }
   }
 
@@ -334,7 +336,6 @@ export function updateVampireLord(e, dt, context) {
           e.actionTimer = 16;
           e.aimAngle = Math.atan2(player.y - e.y, player.x - e.x);
           e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
-          triggerShake(4);
 
           bossTelegraphs.push({
             type: 'MIST_DASH_LANE',
@@ -352,7 +353,7 @@ export function updateVampireLord(e, dt, context) {
           e.mistState = 'IDLE';
           e.actionState = 'MIST_BRAKE';
           e.actionTimer = 20;
-          triggerShake(5);
+          triggerShake(2);
           addDamageText(e.x, e.y, "CONDENSANDO...", false, '#e74c3c');
         }
       }
@@ -369,7 +370,7 @@ export function updateVampireLord(e, dt, context) {
         e.actionTimer = 26;
         e.mistAngle = e.aimAngle;
         playSfx('boss');
-        triggerShake(6);
+        triggerShake(3.5);
       }
       return;
     }
@@ -383,7 +384,7 @@ export function updateVampireLord(e, dt, context) {
       }
 
       if (e.actionTimer <= 0) {
-        triggerShake(9);
+        triggerShake(8);
         playSfx('shoot');
 
         // Anel expansivo previsível de adagas de sangue na saída da névoa

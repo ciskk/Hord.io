@@ -46,7 +46,7 @@ Cada sobrevivente possui arquétipo, arma inicial e habilidade ativa com atribut
 | **Ignis** | A Piromante | Cajado da Tormenta | Passo Ígneo | DPS de artilharia ígnea: acertos críticos aplicam combustão residual contínua que drena vida ao longo do tempo. |
 | **Kael** | O Andarilho Sombrio | Lâminas Espirituais | Manto de Fumaça | Assassino crítico: desfere 2.0x de dano em oponentes com <35% de vida (1.5x contra chefes/elites) e invisibilidade com 100% de crítico. |
 | **Kragdor** | O Bárbaro Furioso | Machado Giratório | Rugido Ancestral | Lutador sustentável: rotação orbital destrutiva, roubo de vida (0.5% em chefes/elites) e atordoamento em área. |
-| **Valéria** | A Alquimista Cáustica | Frascos Cáusticos | Reagente Volátil | Controle de multidão: poças ácidas que curam Valéria continuamente enquanto estiver sobre elas e lentidão massiva aos inimigos. |
+| **Valéria** | A Alquimista Cáustica | Frascos Cáusticos | Reagente Volátil | Controle e corrosão: poças violetas que dissolvem projéteis inimigos, causam 70% de lentidão, acumulam corrosão (+30% dano sofrido) e concedem cura e velocidade contínuas à Valéria. |
 
 ---
 
@@ -72,10 +72,10 @@ O jogo progride através de 10 ondas de hordas, 16 tipos de minibosses com mecâ
 
 | Chefe | Arena Temática | Mecânicas e Fases Principais |
 |---|---|---|
-| **Lorde Vampírico** | *Salão Carmesim* | Telegrafias de foice, investida em névoa espectral, enxames, explosão hemática e repulsão melee. |
+| **Lorde Vampírico** | *Salão Carmesim* | Telegrafias de corte com foice e onda frontal de sangue, investida em névoa espectral, enxames de morcegos de longo alcance, gêiseres de sangue com adagas balísticas e repulsão tática. |
 | **Monólito Abissal** | *Caldeira Tectônica* | Litocistos Tectônicos orbitais destrutíveis, fontes termais de cura (+25 HP), esmagamento frontal pesado, erupção do epicentro, onda de fendas e vórtice da caldeira. |
-| **Ceifador Supremo** | *Necrópole Espectral* | Lanternas de Almas com elo etéreo e colapso de 6.0s, cortes duplos, foices de almas, teleporte com aviso holográfico (Blink) e vórtice colhedor. |
-| **Soberano do Abismo** | *Horizonte do Vazio* | **3 fases de combate**, introdução majestosa, barreira física de contenção com FX, horizonte de eventos, âncoras dimensionais e colapsos de estabilidade. |
+| **Ceifador Supremo** | *Necrópole Espectral* | Foice ornamental com manivela articulada sob inércia física, Lanternas de Almas com elo etéreo e colapso de 6.0s, cortes duplos, foices espirituais giratórias, teleporte com aviso holográfico (Blink) e vórtice colhedor. |
+| **Soberano do Abismo** | *Horizonte do Vazio* | **3 fases de combate**, introdução cinematográfica em 4 atos, barreira física de contenção do Altar, horizonte de eventos contrátil com asfixia, Âncoras Cósmicas com mitigação e regeneração de vida, Santuários Celestiais de cura, crucifixo giratório de feixes, corte dimensional, bombardeio abissal e sequência dramática de derrota (DEATH_COLLAPSE) em 4 atos com Supernova Dourada. |
 
 ---
 

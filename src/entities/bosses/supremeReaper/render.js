@@ -835,7 +835,7 @@ export function drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg = 
   const steelEdge   = '#ffffff';
 
   // =========================================================================
-  // 1. CABO INFERIOR: MANIVELA EM ZIGUE-ZAGUE COM DENTES DE SERRA E ORBE CIANO
+  // 1. CABO INFERIOR: MANIVELA ARTICULADA COM INÉRCIA, DENTES DE SERRA E ORBE CIANO
   // =========================================================================
 
   // A. Disco / Acoplador Circular no final do cabo reto (y = 70)
@@ -847,24 +847,23 @@ export function drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg = 
   ctx.lineWidth = 1.8;
   ctx.stroke();
 
-  // Núcleo central do disco
-  ctx.fillStyle = metalDark;
-  ctx.beginPath();
-  ctx.arc(0, 70, 3.5, 0, Math.PI * 2);
-  ctx.fill();
+  // B. Braço Articulado com Inércia Física (Pivô dinâmico em 0, 70)
+  const crankAngle = e.crankAngle || 0;
+  ctx.save();
+  ctx.translate(0, 70);
+  ctx.rotate(crankAngle);
 
-  // B. Braço da Manivela Angular e Serrada
-  // Sai de (0, 70) inclinando para (-10, 85), desce reto até (-10, 122), e dobra até (-24, 130)
+  // Braço da Manivela Angular e Serrada (coordenadas relativas ao pivô 0, 70)
   ctx.fillStyle = metalPlates;
   ctx.beginPath();
-  ctx.moveTo(2, 70);
-  ctx.lineTo(-10, 85);
-  ctx.lineTo(-10, 122);
-  ctx.lineTo(-24, 130);
-  ctx.lineTo(-26, 124);
-  ctx.lineTo(-15, 118);
-  ctx.lineTo(-15, 83);
-  ctx.lineTo(-2, 68);
+  ctx.moveTo(2, 0);
+  ctx.lineTo(-10, 15);
+  ctx.lineTo(-10, 52);
+  ctx.lineTo(-24, 60);
+  ctx.lineTo(-26, 54);
+  ctx.lineTo(-15, 48);
+  ctx.lineTo(-15, 13);
+  ctx.lineTo(-2, -2);
   ctx.closePath();
   ctx.fill();
 
@@ -877,7 +876,7 @@ export function drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg = 
   ctx.fillStyle = metalPlates;
   ctx.strokeStyle = tealMain;
   ctx.lineWidth = 1.2;
-  const sawStartY = 86;
+  const sawStartY = 16;
   const sawCount = 7;
   const toothH = 4.8;
   for (let s = 0; s < sawCount; s++) {
@@ -893,7 +892,7 @@ export function drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg = 
 
   // C. Orbe Terminal / Pomo Ciano na ponta da manivela
   const pommelX = -24;
-  const pommelY = 130;
+  const pommelY = 60;
   const pommelR = 5.5;
 
   const orbGrad = ctx.createRadialGradient(pommelX - 1.5, pommelY - 1.5, 1, pommelX, pommelY, pommelR);
@@ -907,6 +906,17 @@ export function drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg = 
   ctx.fill();
   ctx.strokeStyle = metalDark;
   ctx.lineWidth = 1.2;
+  ctx.stroke();
+
+  ctx.restore();
+
+  // Núcleo central do disco / Pino do eixo da articulação
+  ctx.fillStyle = metalDark;
+  ctx.beginPath();
+  ctx.arc(0, 70, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = tealMain;
+  ctx.lineWidth = 1.0;
   ctx.stroke();
 
   // =========================================================================

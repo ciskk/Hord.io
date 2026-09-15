@@ -143,20 +143,22 @@ function executePreparedSkill(e, context) {
   switch (e.currentSkill) {
     case 'REPULSION': {
       playSfx('boss');
-      triggerShake(13);
+      triggerShake(9);
       triggerHaptic('heavy');
 
-      // Choque de vento/sangue expansivo
+      // Choque de vento/sangue expansivo com repulsão e dano real
       if (bossShockwaves) {
         bossShockwaves.push({
           x: e.x,
           y: e.y,
           radius: 16,
-          maxRadius: 185,
-          speed: 9.0,
-          damage: 0,
+          maxRadius: 210,
+          speed: 8.0,
+          damage: Math.round(e.damage * 0.18),
+          knockback: 18,
           colorRgb: '255, 23, 68',
-          hitPlayer: true
+          color: '#ff1744',
+          hitPlayer: false
         });
       }
 
@@ -166,13 +168,13 @@ function executePreparedSkill(e, context) {
         createHitParticles(e.x + Math.cos(pAng) * pDist, e.y + Math.sin(pAng) * pDist, '#ff1744', 1);
       }
 
-      // Verificação de acerto no jogador
+      // Verificação de acerto direto no jogador (impacto de proximidade)
       const pdx = player.x - e.x;
       const pdy = player.y - e.y;
       const pDist = Math.hypot(pdx, pdy);
 
       if (pDist <= 160) {
-        // Dano puramente simbólico/leve (reduzido em 75%, ~5.5% do dano base do chefe)
+        // Dano leve de contato direto (~5.5% do dano base)
         let repulsionDmg = Math.max(2, Math.round(e.damage * 0.055));
         if (selectedHeroKey === 'KNIGHT') {
           repulsionDmg = Math.max(1, Math.round(repulsionDmg * 0.8));
@@ -207,16 +209,26 @@ function executePreparedSkill(e, context) {
     }
 
     case 'CLEAVE': {
-      playSfx('boss');
-      triggerShake(12);
-      triggerHaptic('heavy');
-
+      // O impacto sonoro e tremor são executados no término do telégrafo em main.js
       // Avanço físico suave sincronizado com a direção exata telegrafada
       e.x += Math.cos(targetAngle) * 22;
       e.y += Math.sin(targetAngle) * 22;
       e.isCleaving = true;
       e.cleaveSlashTimer = 22;
       e.cleaveProgress = 1;
+
+      // Dispara uma onda cortante de sangue para a frente (projétil tangível em média distância)
+      enemyBullets.push({
+        x: e.x + Math.cos(targetAngle) * 28,
+        y: e.y + Math.sin(targetAngle) * 28,
+        vx: Math.cos(targetAngle) * 6.4,
+        vy: Math.sin(targetAngle) * 6.4,
+        radius: 11.5,
+        damage: Math.round(e.damage * 0.32),
+        life: 80,
+        bulletType: 'BLOOD_CLAW',
+        color: '#ff1744'
+      });
 
       // Partículas em crescente carmesim do corte da foice
       for (let sc = 0; sc < 22; sc++) {
@@ -235,7 +247,7 @@ function executePreparedSkill(e, context) {
 
     case 'SWARM': {
       playSfx('shoot');
-      triggerShake(6);
+      triggerShake(5);
 
       const count = e.isEnraged ? 12 : 8;
       const totalArc = Math.PI * (e.isEnraged ? 0.7 : 0.55);
@@ -252,7 +264,7 @@ function executePreparedSkill(e, context) {
           vy: Math.sin(bAng) * speedVar,
           radius: 8.5,
           damage: Math.round(e.damage * 0.24),
-          life: 115,
+          life: 180, // Alcance expandido para atravessar a arena (~750px)
           bulletType: 'VAMPIRE_BAT',
           color: '#ff1744'
         });
@@ -297,7 +309,7 @@ function executePreparedSkill(e, context) {
           vy: Math.sin(fireAng) * spd,
           radius: 7.5,
           damage: Math.round(e.damage * 0.23),
-          life: 120,
+          life: 165, // Alcance expandido para alcançar alvos distantes
           bulletType: 'BLOOD_CLAW',
           color: '#ff4757'
         });
@@ -314,7 +326,7 @@ function executePreparedSkill(e, context) {
           vy: Math.sin(fireAng) * spd,
           radius: 7.5,
           damage: Math.round(e.damage * 0.23),
-          life: 120,
+          life: 165, // Alcance expandido
           bulletType: 'BLOOD_CLAW',
           color: '#ff4757'
         });
@@ -335,7 +347,7 @@ function executePreparedSkill(e, context) {
       e.actionTimer = 28;
       e.mistAngle = targetAngle;
       playSfx('boss');
-      triggerShake(7);
+      triggerShake(6);
       break;
     }
 
@@ -368,35 +380,27 @@ function executePreparedSkill(e, context) {
 
     case 'BLOOD_BURST': {
       playSfx('acid');
-      triggerShake(8);
+      triggerShake(6);
 
-      const puddleCount = 3;
-      for (let p = 0; p < puddleCount; p++) {
+      const geyserCount = e.isEnraged ? 4 : 3;
+      for (let p = 0; p < geyserCount; p++) {
         const pAngle = Math.random() * Math.PI * 2;
-        const pDist = 70 + Math.random() * 110;
+        const pDist = 60 + Math.random() * 120;
         const targetX = player.x + Math.cos(pAngle) * pDist;
         const targetY = player.y + Math.sin(pAngle) * pDist;
 
         bossTelegraphs.push({
           x: targetX,
           y: targetY,
-          radius: 38,
+          radius: 42,
           timer: 45,
           maxTimer: 45,
-          damage: Math.round(e.damage * 0.35)
+          damage: Math.round(e.damage * 0.35),
+          type: 'BLOOD_BURST_GEYSER',
+          color: '#ff1744',
+          colorRgb: '255, 23, 68',
+          boss: e
         });
-
-        setTimeout(() => {
-          acidPuddles.push({
-            x: targetX,
-            y: targetY,
-            radius: 38,
-            life: 240,
-            maxLife: 240,
-            isFire: false,
-            isAlchemist: false
-          });
-        }, 750);
       }
 
       e.actionState = 'CHASE';

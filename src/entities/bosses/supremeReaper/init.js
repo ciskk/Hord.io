@@ -64,6 +64,11 @@ export function initSupremeReaper(boss) {
   boss.wingFlap = 0;
   boss.scytheAngle = 0.4;
   boss.scytheTargetAngle = 0.4;
+  boss.prevScytheAngle = 0.4;
+  boss.crankAngle = 0;
+  boss.crankVelocity = 0;
+  boss.prevBossX = boss.x;
+  boss.prevBossY = boss.y;
   boss.scytheGlow = 0;
   boss.eyePulse = 0;
   boss.eyeTrails = [];

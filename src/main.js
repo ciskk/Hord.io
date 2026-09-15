@@ -1065,6 +1065,50 @@ function update(dt) {
         continue;
       }
 
+      if (tel.type === 'BLOOD_BURST_GEYSER') {
+        triggerShake(6);
+        playSfx('acid');
+        createHitParticles(tel.x, tel.y, '#ff1744', 18);
+        createHitParticles(tel.x, tel.y, '#2c0c16', 12);
+        createHitParticles(tel.x, tel.y, '#ffffff', 6);
+
+        // Dispara fragmentos carmesim na erupção do gêiser de sangue
+        const shardCount = 5;
+        for (let k = 0; k < shardCount; k++) {
+          const sAng = (k * Math.PI * 2) / shardCount + Math.random() * 0.3;
+          const sSpd = 3.6 + Math.random() * 1.2;
+          enemyBullets.push({
+            x: tel.x,
+            y: tel.y,
+            vx: Math.cos(sAng) * sSpd,
+            vy: Math.sin(sAng) * sSpd,
+            radius: 6.5,
+            damage: Math.round(tel.damage * 0.6),
+            life: 85,
+            bulletType: 'BLOOD_DAGGER',
+            color: '#ff1744'
+          });
+        }
+
+        const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
+        if (dSq < tel.radius * tel.radius && player.iFrames <= 0) {
+          player.hp -= tel.damage;
+          player.iFrames = 25;
+          lastAttackerName = "Erupção de Sangue";
+          triggerShake(8);
+          playSfx('hit');
+          addDamageText(player.x, player.y, `-${tel.damage}`, false, '#ff1744');
+
+          if (player.hp <= 0) {
+            player.hp = 0;
+            triggerDeath();
+            return;
+          }
+        }
+        bossTelegraphs.splice(i, 1);
+        continue;
+      }
+
       if (tel.type === 'DIMENSIONAL_CLEAVE') {
         const cosA = Math.cos(tel.angle);
         const sinA = Math.sin(tel.angle);

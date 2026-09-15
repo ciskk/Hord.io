@@ -151,6 +151,34 @@ export function updateSupremeReaper(e, dt, context) {
   e.wingSpan += (e.wingTargetSpan - e.wingSpan) * 0.14 * dt;
   e.scytheAngle += (e.scytheTargetAngle - e.scytheAngle) * 0.18 * dt;
 
+  // 6.1 Inércia Física da Manivela Inferior da Foice
+  const dtSafe = Math.min(Math.max(dt, 0.1), 2.5);
+  const dScytheAngle = e.scytheAngle - (e.prevScytheAngle !== undefined ? e.prevScytheAngle : e.scytheAngle);
+  e.prevScytheAngle = e.scytheAngle;
+
+  const bossDx = e.x - (e.prevBossX !== undefined ? e.prevBossX : e.x);
+  const bossDy = e.y - (e.prevBossY !== undefined ? e.prevBossY : e.y);
+  e.prevBossX = e.x;
+  e.prevBossY = e.y;
+
+  const angularInertiaTorque = -dScytheAngle * 2.2;
+  const linearInertiaTorque = -bossDx * 0.025 * (e.facing || 1);
+  const idleSway = Math.sin(frameCount * 0.06) * 0.008;
+  const springTorque = -0.20 * (e.crankAngle || 0);
+
+  const totalTorque = springTorque + angularInertiaTorque + linearInertiaTorque + idleSway;
+  e.crankVelocity = ((e.crankVelocity || 0) + totalTorque) * Math.pow(0.86, dtSafe);
+  e.crankAngle = (e.crankAngle || 0) + e.crankVelocity * dtSafe;
+
+  // Limitar amplitude angular para manter anatomia da arma coerente (-66° a +66°)
+  if (e.crankAngle > 1.15) {
+    e.crankAngle = 1.15;
+    e.crankVelocity *= 0.5;
+  } else if (e.crankAngle < -1.15) {
+    e.crankAngle = -1.15;
+    e.crankVelocity *= 0.5;
+  }
+
   // 7. Rastro Fantasma de Movimentação
   if (Math.floor(frameCount) % 3 === 0 && e.actionState !== REAPER_STATES.SPAWN_INTRO) {
     e.ghostTrail.unshift({

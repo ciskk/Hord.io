@@ -2068,6 +2068,112 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
     ctx.restore();
   }
 
+  // 7.1 Telegrafia e Efeito de Disparo Relativístico (RELATIVISTIC_SALVO)
+  if (isWindup && e.currentSkill === 'RELATIVISTIC_SALVO') {
+    ctx.save();
+    const ratio = 1 - (e.windupTimer / (e.windupMax || 1));
+    const salvoAng = e.salvoSpiralAngle || 0;
+    
+    // Anel contrátil de energia cósmica no núcleo
+    const chargeR = Math.max(12, (R * 1.8) * (1 - ratio));
+    ctx.strokeStyle = 'rgba(0, 206, 201, 0.8)';
+    ctx.lineWidth = 2.4;
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath();
+    ctx.arc(0, 0, chargeR, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Linha guia de mira vetorial na direção do alvo
+    ctx.strokeStyle = `rgba(0, 206, 201, ${0.35 + ratio * 0.5})`;
+    ctx.lineWidth = 2.0;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(salvoAng) * 450, Math.sin(salvoAng) * 450);
+    ctx.stroke();
+
+    // Nós espirais de partículas convergindo para o núcleo
+    const nodeCount = 5;
+    for (let n = 0; n < nodeCount; n++) {
+      const nAng = salvoAng + (n * Math.PI * 2 / nodeCount) + frameCount * 0.12;
+      const nDist = chargeR * 0.85;
+      ctx.fillStyle = n % 2 === 0 ? '#00cec9' : '#e84393';
+      ctx.beginPath();
+      ctx.arc(Math.cos(nAng) * nDist, Math.sin(nAng) * nDist, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  if (isCasting && e.currentSkill === 'RELATIVISTIC_SALVO') {
+    ctx.save();
+    const salvoAng = e.salvoSpiralAngle || 0;
+    const pulseMuzzle = 12 + Math.sin(frameCount * 0.4) * 6;
+    ctx.fillStyle = 'rgba(0, 206, 201, 0.7)';
+    ctx.beginPath();
+    ctx.arc(Math.cos(salvoAng) * (R * 0.85), Math.sin(salvoAng) * (R * 0.85), pulseMuzzle, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // 7.2 Telegrafia das Fendas Abissais (ABYSSAL_RIFTS)
+  if (isWindup && e.currentSkill === 'ABYSSAL_RIFTS') {
+    ctx.save();
+    const ratio = 1 - (e.windupTimer / (e.windupMax || 1));
+    const groundPulseR = R * (1.2 + ratio * 0.8);
+
+    // Selos de fenda escura no solo sob o chefe
+    ctx.strokeStyle = `rgba(232, 67, 147, ${0.4 + ratio * 0.55})`;
+    ctx.lineWidth = 2.2;
+    ctx.setLineDash([10, 8]);
+    ctx.beginPath();
+    ctx.ellipse(0, R * 0.9, groundPulseR, groundPulseR * 0.45, frameCount * 0.05, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Fissuras radiais se abrindo do centro para fora
+    const fissureCount = 6;
+    for (let f = 0; f < fissureCount; f++) {
+      const fAng = (f * Math.PI * 2 / fissureCount) + frameCount * 0.02;
+      const fDist = groundPulseR * 0.9;
+      ctx.strokeStyle = f % 2 === 0 ? '#00cec9' : '#e84393';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(0, R * 0.9);
+      ctx.lineTo(Math.cos(fAng) * fDist, R * 0.9 + Math.sin(fAng) * fDist * 0.45);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // 7.3 Telegrafia da Chuva Astral (ASTRAL_BARRAGE)
+  if (isWindup && e.currentSkill === 'ASTRAL_BARRAGE') {
+    ctx.save();
+    const ratio = 1 - (e.windupTimer / (e.windupMax || 1));
+    
+    // Vórtice vertical celestial ascendente conectando aos céus
+    const beamW = 16 + ratio * 20;
+    const beamH = 380;
+    const colGrad = ctx.createLinearGradient(0, 0, 0, -beamH);
+    colGrad.addColorStop(0, 'rgba(0, 206, 201, 0.9)');
+    colGrad.addColorStop(0.5, 'rgba(232, 67, 147, 0.65)');
+    colGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = colGrad;
+    ctx.fillRect(-beamW * 0.5, -beamH, beamW, beamH);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-2, -beamH, 4, beamH);
+
+    // Glifos astrais em anel subindo
+    const ringY = -beamH * ratio;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.0;
+    ctx.beginPath();
+    ctx.ellipse(0, ringY, 28, 9, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   // 8. Âncoras de Vácuo (Orbes de Singularidade Cósmica)
   if (e.anchors && e.anchors.length > 0) {
     for (let i = 0; i < e.anchors.length; i++) {

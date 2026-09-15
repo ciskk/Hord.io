@@ -437,6 +437,7 @@ export function updateActiveAttacks(boss, dt, context) {
         const angles = atk.angles || [boss.cleaveAngle || 0];
         const len = atk.length || 1500;
         const halfW = (atk.width || 54) * 0.5;
+        const playerRadius = player.radius || 14;
 
         for (let a = 0; a < angles.length; a++) {
           const ang = angles[a];
@@ -446,9 +447,9 @@ export function updateActiveAttacks(boss, dt, context) {
           const pdy = player.y - boss.y;
           const proj = pdx * cosA + pdy * sinA;
           const perpDist = Math.abs(-pdx * sinA + pdy * cosA);
-          const currentHalfW = a === 0 ? halfW : halfW * 0.65;
+          const currentHalfW = (a === 0 ? halfW : halfW * 0.65) + playerRadius;
 
-          if (proj > 0 && proj < len && perpDist <= currentHalfW) {
+          if (proj >= -playerRadius && proj < len && perpDist <= currentHalfW) {
             player.hp -= atk.damage;
             player.iFrames = 28;
             triggerShake(16);
@@ -459,6 +460,44 @@ export function updateActiveAttacks(boss, dt, context) {
             createHitParticles(player.x, player.y, '#ffffff', 8);
             break;
           }
+        }
+      }
+    } else if (atk.type === 'VOID_IMPLOSION_CORE') {
+      // Dano direto no epicentro do buraco negro caso o jogador esteja dentro do núcleo
+      if (atk.timer > atk.maxTimer - 12 && player.iFrames <= 0) {
+        const pdx = player.x - atk.x;
+        const pdy = player.y - atk.y;
+        const distSq = pdx * pdx + pdy * pdy;
+        const hitR = (atk.radius || 180) * 0.75 + (player.radius || 14);
+        if (distSq <= hitR * hitR) {
+          const coreDmg = Math.round((boss.damage || 270) * 0.42);
+          player.hp -= coreDmg;
+          player.iFrames = 26;
+          triggerShake(16);
+          playSfx('hit');
+          triggerHaptic('heavy');
+          addDamageText(player.x, player.y, `-${coreDmg}`, false, '#8e44ad');
+          createHitParticles(player.x, player.y, '#8e44ad', 18);
+          createHitParticles(player.x, player.y, '#ffffff', 8);
+        }
+      }
+    } else if (atk.type === 'SUPERNOVA_FLASH') {
+      // Dano no epicentro da supernova caso o jogador esteja próximo na detonação inicial
+      if (atk.timer > atk.maxTimer - 10 && player.iFrames <= 0) {
+        const pdx = player.x - atk.x;
+        const pdy = player.y - atk.y;
+        const distSq = pdx * pdx + pdy * pdy;
+        const hitR = (atk.maxR || 275) * 0.65 + (player.radius || 14);
+        if (distSq <= hitR * hitR) {
+          const flashDmg = Math.round((boss.damage || 270) * 0.38);
+          player.hp -= flashDmg;
+          player.iFrames = 24;
+          triggerShake(18);
+          playSfx('hit');
+          triggerHaptic('heavy');
+          addDamageText(player.x, player.y, `-${flashDmg}`, false, '#e84393');
+          createHitParticles(player.x, player.y, '#e84393', 16);
+          createHitParticles(player.x, player.y, '#ffffff', 8);
         }
       }
     }
