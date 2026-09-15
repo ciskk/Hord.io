@@ -9,7 +9,8 @@ import {
   bullets, 
   enemyBullets, 
   bossShockwaves, 
-  bossTelegraphs 
+  bossTelegraphs,
+  canSpawnEnemyBullet 
 } from '../../../main.js';
 
 /**
@@ -262,19 +263,23 @@ export function startSkillCast(boss, context) {
 
       // Mira inteligente: feixe estelar primário apontado diretamente na posição do jogador
       const primaryAngle = Math.atan2(context.player.y - boss.y, context.player.x - boss.x);
-      enemyBullets.push({
-        x: boss.x,
-        y: boss.y,
-        vx: Math.cos(primaryAngle) * 6.8,
-        vy: Math.sin(primaryAngle) * 6.8,
-        radius: 8.0,
-        damage: Math.round(boss.damage * 0.32),
-        bulletType: 'COSMIC_BOLT',
-        life: 130
-      });
+      if (canSpawnEnemyBullet(true)) {
+        enemyBullets.push({
+          x: boss.x,
+          y: boss.y,
+          vx: Math.cos(primaryAngle) * 6.8,
+          vy: Math.sin(primaryAngle) * 6.8,
+          radius: 8.0,
+          damage: Math.round(boss.damage * 0.32),
+          bulletType: 'COSMIC_BOLT',
+          life: 130,
+          isBossProjectile: true
+        });
+      }
 
       const beamCount = 6; // Alinhado aos 6 lados do hexágono
       for (let b = 1; b < beamCount; b++) {
+        if (!canSpawnEnemyBullet(true)) break;
         const bAng = primaryAngle + (b * Math.PI * 2) / beamCount;
         enemyBullets.push({
           x: boss.x,
@@ -284,7 +289,8 @@ export function startSkillCast(boss, context) {
           radius: 6.0,
           damage: Math.round(boss.damage * 0.22),
           bulletType: 'COSMIC_BOLT',
-          life: 120
+          life: 120,
+          isBossProjectile: true
         });
       }
 

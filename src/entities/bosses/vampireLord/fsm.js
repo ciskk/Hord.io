@@ -396,6 +396,7 @@ export function updateVampireLord(e, dt, context) {
             vx: Math.cos(fAng) * 4.2, vy: Math.sin(fAng) * 4.2,
             radius: 7.0, damage: Math.round(e.damage * 0.24), life: 110,
             bulletType: 'BLOOD_DAGGER',
+            isBossProjectile: true,
             color: '#ff1744'
           });
         }
@@ -425,6 +426,7 @@ export function updateVampireLord(e, dt, context) {
             vx: Math.cos(fAng) * spd, vy: Math.sin(fAng) * spd,
             radius: 7.5, damage: Math.round(e.damage * 0.22), life: 125,
             bulletType: 'BLOOD_ORB',
+            isBossProjectile: true,
             color: '#ff0037'
           });
         }

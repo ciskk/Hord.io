@@ -245,6 +245,7 @@ function compressGems() {
 export function resetGame() {
   resize();
   resetPlayer(selectedHeroKey);
+  player.bossIFrames = 0;
   player.isPhasing = false;
   player.alchemistBuffTimer = 0;
   player.alchemistSkillDisoriented = false;
@@ -368,6 +369,7 @@ function update(dt) {
 
   // Timers do Jogador e Sincronização de Estados Reativos
   if (player.iFrames > 0) player.iFrames = Math.max(0, player.iFrames - dt);
+  if (player.bossIFrames > 0) player.bossIFrames = Math.max(0, player.bossIFrames - dt);
   if (player.skillCd > 0) player.skillCd = Math.max(0, player.skillCd - dt);
   if (player.staffCastTimer > 0) player.staffCastTimer = Math.max(0, player.staffCastTimer - dt);
   if (player.potionThrowTimer > 0) player.potionThrowTimer = Math.max(0, player.potionThrowTimer - dt);
@@ -414,6 +416,7 @@ function update(dt) {
     if (player.alchemistSkillTimer > 0 && !player.alchemistSkillDisoriented) {
       player.alchemistSkillDisoriented = true;
       player.iFrames = Math.max(player.iFrames, 36);
+      player.bossIFrames = Math.max(player.bossIFrames, 36);
       triggerShake(5);
       playSfx('acid');
       createHitParticles(player.x, player.y, '#a55eea', 16);
@@ -466,10 +469,10 @@ function update(dt) {
     if (vDist < v.radius) {
       insideVortex = true;
       v.tickTimer = (v.tickTimer || 0) + dt;
-      if (v.tickTimer > 24 && player.iFrames <= 0) {
+      if (v.tickTimer > 24 && player.bossIFrames <= 0) {
         v.tickTimer = 0;
         player.hp -= v.damage;
-        player.iFrames = 20;
+        player.bossIFrames = 15;
         lastAttackerName = "Vórtice do Vazio";
         triggerShake(5);
         playSfx('hit');
@@ -936,6 +939,7 @@ function update(dt) {
     // 1. Dissolução de projéteis inimigos comuns que entrarem no vapor
     for (let bIdx = enemyBullets.length - 1; bIdx >= 0; bIdx--) {
       const eb = enemyBullets[bIdx];
+      if (eb.isBossProjectile) continue;
       const edx = eb.x - p.x;
       const edy = eb.y - p.y;
       if (edx * edx + edy * edy < (p.radius + (eb.radius || 5)) ** 2) {
@@ -982,7 +986,7 @@ function update(dt) {
     const sdy = player.y - sw.y;
     const sDist = Math.sqrt(sdx * sdx + sdy * sdy);
 
-    if (!sw.hitPlayer && Math.abs(sDist - sw.radius) < 16 && player.iFrames <= 0) {
+    if (!sw.hitPlayer && Math.abs(sDist - sw.radius) < 16 && player.bossIFrames <= 0) {
       let finalSwDamage = sw.damage || 0;
       if (selectedHeroKey === 'KNIGHT') finalSwDamage = Math.round(finalSwDamage * 0.80);
 
@@ -995,7 +999,7 @@ function update(dt) {
 
       if (finalSwDamage > 0) {
         player.hp -= finalSwDamage;
-        player.iFrames = 25;
+        player.bossIFrames = 20;
         lastAttackerName = activeBoss ? activeBoss.name : "Onda de Choque Sísmica";
         triggerShake(9);
         playSfx('hit');
@@ -1047,9 +1051,9 @@ function update(dt) {
         createHitParticles(tel.x, tel.y, '#8e44ad', 18);
 
         const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
-        if (dSq < tel.radius * tel.radius && player.iFrames <= 0) {
+        if (dSq < tel.radius * tel.radius && player.bossIFrames <= 0) {
           player.hp -= tel.damage;
-          player.iFrames = 25;
+          player.bossIFrames = 22;
           lastAttackerName = "Teleporte Carmesim";
           triggerShake(10);
           playSfx('hit');
@@ -1086,14 +1090,15 @@ function update(dt) {
             damage: Math.round(tel.damage * 0.6),
             life: 85,
             bulletType: 'BLOOD_DAGGER',
-            color: '#ff1744'
+            color: '#ff1744',
+            isBossProjectile: true
           });
         }
 
         const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
-        if (dSq < tel.radius * tel.radius && player.iFrames <= 0) {
+        if (dSq < tel.radius * tel.radius && player.bossIFrames <= 0) {
           player.hp -= tel.damage;
-          player.iFrames = 25;
+          player.bossIFrames = 22;
           lastAttackerName = "Erupção de Sangue";
           triggerShake(8);
           playSfx('hit');
@@ -1127,9 +1132,9 @@ function update(dt) {
         createHitParticles(sparkX, sparkY, '#e84393', 14);
         createHitParticles(sparkX, sparkY, '#ffffff', 8);
 
-        if (Math.abs(proj) <= halfLen && perpDist <= (tel.width || 34) && player.iFrames <= 0) {
+        if (Math.abs(proj) <= halfLen && perpDist <= (tel.width || 34) && player.bossIFrames <= 0) {
           player.hp -= tel.damage;
-          player.iFrames = 26;
+          player.bossIFrames = 24;
           lastAttackerName = "Fratura Dimensional";
           triggerShake(14);
           playSfx('hit');
@@ -1166,9 +1171,9 @@ function update(dt) {
         });
 
         const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
-        if (dSq < (tel.radius * tel.radius) && player.iFrames <= 0) {
+        if (dSq < (tel.radius * tel.radius) && player.bossIFrames <= 0) {
           player.hp -= tel.damage;
-          player.iFrames = 25;
+          player.bossIFrames = 22;
           lastAttackerName = "Meteoro do Vazio";
           triggerShake(12);
           playSfx('hit');
@@ -1200,9 +1205,9 @@ function update(dt) {
         if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
 
         const maxAngle = tel.arcHalf !== undefined ? tel.arcHalf : Math.PI * 0.52;
-        if (cDist < tel.radius && angleDiff <= maxAngle && player.iFrames <= 0) {
+        if (cDist < tel.radius && angleDiff <= maxAngle && player.bossIFrames <= 0) {
           player.hp -= tel.damage;
-          player.iFrames = 28;
+          player.bossIFrames = 24;
           lastAttackerName = (tel.boss && tel.boss.bossId === 1) ? "Garras Vampíricas" : "Corte de Foice Espectral";
           triggerShake(12);
           playSfx('hit');
@@ -1239,9 +1244,9 @@ function update(dt) {
         });
 
         const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
-        if (dSq < tel.radius * tel.radius && player.iFrames <= 0) {
+        if (dSq < tel.radius * tel.radius && player.bossIFrames <= 0) {
           player.hp -= tel.damage;
-          player.iFrames = 25;
+          player.bossIFrames = 22;
           lastAttackerName = "Monólito Basáltico";
           triggerShake(10);
           playSfx('hit');
@@ -1264,9 +1269,9 @@ function update(dt) {
         createHitParticles(tel.x, tel.y, '#f39c12', 5);
 
         const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
-        if (dSq < tel.radius * tel.radius && player.iFrames <= 0) {
+        if (dSq < tel.radius * tel.radius && player.bossIFrames <= 0) {
           player.hp -= tel.damage;
-          player.iFrames = 25;
+          player.bossIFrames = 20;
           lastAttackerName = "Fissura Tectônica";
           triggerShake(8);
           playSfx('hit');
@@ -1302,9 +1307,9 @@ function update(dt) {
         });
 
         const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
-        if (dSq < tel.radius * tel.radius && player.iFrames <= 0) {
+        if (dSq < tel.radius * tel.radius && player.bossIFrames <= 0) {
           player.hp -= tel.damage;
-          player.iFrames = 24;
+          player.bossIFrames = 22;
           lastAttackerName = "Bombardeio Abissal";
           triggerShake(12);
           playSfx('hit');
@@ -1336,9 +1341,9 @@ function update(dt) {
       });
 
       const dSq = (player.x - tel.x) ** 2 + (player.y - tel.y) ** 2;
-      if (dSq < tel.radius * tel.radius && player.iFrames <= 0) {
+      if (dSq < tel.radius * tel.radius && player.bossIFrames <= 0) {
         player.hp -= tel.damage;
-        player.iFrames = 25;
+        player.bossIFrames = 22;
         lastAttackerName = activeBoss ? activeBoss.name : "Cataclismo de Chefe";
         triggerShake(10);
         playSfx('hit');
@@ -1382,9 +1387,9 @@ function update(dt) {
 
     const pdx = player.x - bp.x;
     const pdy = player.y - bp.y;
-    if (player.iFrames <= 0 && (pdx * pdx + pdy * pdy) < (player.radius + bp.radius) ** 2) {
+    if (player.bossIFrames <= 0 && (pdx * pdx + pdy * pdy) < (player.radius + bp.radius) ** 2) {
       player.hp -= bp.damage;
-      player.iFrames = 25;
+      player.bossIFrames = 18;
       lastAttackerName = bp.type === 'SOUL_SCYTHE' ? "Foice Giratória Espiritual" : "Projétil Abissal";
       triggerShake(8);
       playSfx('hit');

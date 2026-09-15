@@ -13,8 +13,8 @@ export const acidPuddles = [];
 
 export const MAX_CONCURRENT_ENEMY_BULLETS = 14;
 
-export function canSpawnEnemyBullet() {
-  return enemyBullets.length < MAX_CONCURRENT_ENEMY_BULLETS;
+export function canSpawnEnemyBullet(isBoss = false) {
+  return isBoss || enemyBullets.length < MAX_CONCURRENT_ENEMY_BULLETS;
 }
 
 /**
@@ -254,12 +254,20 @@ export function updateProjectiles(dt) {
     const pdy = player.y - eb.y;
     const hitRadius = (player.radius || 14) + (eb.radius || 6);
 
-    if (player.iFrames <= 0 && (pdx * pdx + pdy * pdy) < hitRadius * hitRadius) {
+    const isInvulnerable = eb.isBossProjectile ? (player.bossIFrames > 0) : (player.iFrames > 0);
+    if (!isInvulnerable && (pdx * pdx + pdy * pdy) < hitRadius * hitRadius) {
       let finalEbDamage = eb.damage;
       if (selectedHeroKey === 'KNIGHT') finalEbDamage = Math.round(finalEbDamage * 0.80);
       if (player.armor > 0) finalEbDamage = Math.max(1, finalEbDamage - player.armor);
+      
       player.hp -= finalEbDamage;
-      player.iFrames = 24;
+      
+      if (eb.isBossProjectile) {
+        player.bossIFrames = 16; // Janela menor para não cancelar telégrafos subsequentes
+      } else {
+        player.iFrames = 24;
+      }
+      
       triggerShake(6);
       playSfx('hit');
       triggerHaptic('medium');
@@ -268,7 +276,6 @@ export function updateProjectiles(dt) {
       addDamageText(player.x, player.y, `-${finalEbDamage}`, false, col);
       createHitParticles(player.x, player.y, col, 5);
 
-      // Knockback sofrido por projétil inimigo
       const hasSuperArmor = (player.dashDuration > 0) || (player.ignisDashDuration > 0) || (player.invisTimer > 0);
       if (!hasSuperArmor) {
         const bulletAng = Math.atan2(eb.vy || (player.y - eb.y), eb.vx || (player.x - eb.x));

@@ -8,8 +8,7 @@ import {
   bullets, 
   enemyBullets, 
   bossShockwaves, 
-  bossTelegraphs,
-  canSpawnEnemyBullet 
+  bossTelegraphs 
 } from '../../../main.js';
 import { 
   scheduleDelayedAction, 
@@ -664,10 +663,10 @@ export function updateAbyssSovereign(e, dt, context) {
           if (proj > 0 && proj < beamLength) {
             const perpX = px - proj * bx;
             const perpY = py - proj * by;
-            if (perpX * perpX + perpY * perpY < 20 * 20 && player.bossIFrames <= 0) {
+            if (perpX * perpX + perpY * perpY < 20 * 20 && player.iFrames <= 0) {
               const laserDmg = Math.round(e.damage * 0.2275);
               player.hp -= laserDmg;
-              player.bossIFrames = 18;
+              player.iFrames = 22;
               triggerShake(10);
               playSfx('hit');
               triggerHaptic('heavy');
@@ -691,33 +690,29 @@ export function updateAbyssSovereign(e, dt, context) {
           const speed = 6.2;
           const bulletDmg = Math.round(e.damage * 0.22);
 
-          if (canSpawnEnemyBullet(true)) {
-            enemyBullets.push({
-              x: e.x,
-              y: e.y,
-              vx: Math.cos(aimAng + spread) * speed,
-              vy: Math.sin(aimAng + spread) * speed,
-              radius: 5.5,
-              damage: bulletDmg,
-              bulletType: 'ABYSSAL_BOLT',
-              life: 120,
-              isBossProjectile: true
-            });
-          }
+          enemyBullets.push({
+            x: e.x,
+            y: e.y,
+            vx: Math.cos(aimAng + spread) * speed,
+            vy: Math.sin(aimAng + spread) * speed,
+            radius: 5.5,
+            damage: bulletDmg,
+            bulletType: 'ABYSSAL_BOLT',
+            life: 120,
+            isBossProjectile: true
+          });
 
-          if (canSpawnEnemyBullet(true)) {
-            enemyBullets.push({
-              x: e.x,
-              y: e.y,
-              vx: Math.cos(aimAng - spread) * speed,
-              vy: Math.sin(aimAng - spread) * speed,
-              radius: 5.5,
-              damage: bulletDmg,
-              bulletType: 'ABYSSAL_BOLT',
-              life: 120,
-              isBossProjectile: true
-            });
-          }
+          enemyBullets.push({
+            x: e.x,
+            y: e.y,
+            vx: Math.cos(aimAng - spread) * speed,
+            vy: Math.sin(aimAng - spread) * speed,
+            radius: 5.5,
+            damage: bulletDmg,
+            bulletType: 'ABYSSAL_BOLT',
+            life: 120,
+            isBossProjectile: true
+          });
 
           playSfx('shoot');
           triggerHaptic('light');
@@ -836,7 +831,6 @@ export function updateAbyssSovereign(e, dt, context) {
         const aimToPlayer = Math.atan2(player.y - e.y, player.x - e.x);
         const shardCount = e.phase === 3 ? 12 : 8;
         for (let s = 0; s < shardCount; s++) {
-          if (!canSpawnEnemyBullet(true)) break;
           const sAng = aimToPlayer + (s * Math.PI * 2) / shardCount;
           enemyBullets.push({
             x: e.x,

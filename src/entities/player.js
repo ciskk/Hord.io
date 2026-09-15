@@ -377,6 +377,7 @@ export const player = {
   critChance: 0.15,
   critMult: 1.5,
   iFrames: 0,
+  bossIFrames: 0,
   facing: 1,
   walkCycle: 0,
   isMoving: false,
@@ -518,7 +519,9 @@ export function triggerHeroSkill() {
   if (player.skillCd > 0 || gameState.isPaused || gameState.isDead || gameState.isWon) return;
 
   if (selectedHeroKey === 'KNIGHT') {
+    player.dashDuration = 24;
     player.iFrames = 50;
+    player.bossIFrames = 50;
     const inputLen = Math.hypot(inputX, inputY);
     const moveAng = inputLen > 0.05 
       ? Math.atan2(inputY, inputX) 
@@ -526,7 +529,6 @@ export function triggerHeroSkill() {
 
     player.dashVx = Math.cos(moveAng) * 16;
     player.dashVy = Math.sin(moveAng) * 16;
-    player.dashDuration = 22;
     if (Math.abs(player.dashVx) > 0.1) {
       player.facing = player.dashVx >= 0 ? 1 : -1;
     }
@@ -534,7 +536,9 @@ export function triggerHeroSkill() {
     triggerShake(9);
     triggerHaptic('heavy');
   } else if (selectedHeroKey === 'MAGE') {
+    player.ignisDashDuration = 22;
     player.iFrames = 30;
+    player.bossIFrames = 30;
     const inputLen = Math.hypot(inputX, inputY);
     const moveAng = inputLen > 0.05 
       ? Math.atan2(inputY, inputX) 
@@ -542,7 +546,6 @@ export function triggerHeroSkill() {
 
     player.ignisDashVx = Math.cos(moveAng) * 15.5;
     player.ignisDashVy = Math.sin(moveAng) * 15.5;
-    player.ignisDashDuration = 16;
     if (Math.abs(player.ignisDashVx) > 0.1) {
       player.facing = player.ignisDashVx >= 0 ? 1 : -1;
     }
@@ -557,6 +560,7 @@ export function triggerHeroSkill() {
 
     for (let i = enemyBullets.length - 1; i >= 0; i--) {
       const eb = enemyBullets[i];
+      if (eb.isBossProjectile) continue; // Projéteis de boss não são engolidos
       const edx = eb.x - player.x;
       const edy = eb.y - player.y;
       if (edx * edx + edy * edy < 95 * 95) {
@@ -568,6 +572,7 @@ export function triggerHeroSkill() {
     player.invisTimer = 120;
     player.isPhasing = true;
     player.iFrames = 25;
+    player.bossIFrames = 25;
     
     playSfx('evolution');
     triggerShake(7);
@@ -641,6 +646,8 @@ export function triggerHeroSkill() {
     createHitParticles(player.x, player.y, '#2ecc71', 20);
     player.potionThrowTimer = 24;
     player.alchemistSkillTimer = 40;
+    player.iFrames = Math.max(player.iFrames, 36);
+    player.bossIFrames = Math.max(player.bossIFrames, 36);
 
     const flaskCount = 6;
     const flightFrames = 26;
@@ -1135,6 +1142,7 @@ export function resetPlayer(heroKey) {
   player.slowChance = 0;
   player.rerolls = meta.rerolls;
   player.iFrames = 0;
+  player.bossIFrames = 0;
   player.facing = 1;
   player.walkCycle = 0;
   player.auraTimer = 0;

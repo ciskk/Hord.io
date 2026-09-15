@@ -3,7 +3,7 @@
  * Arsenal de habilidades, seleção de skills e disparo de ataques do Lorde Vampírico.
  */
 import { playSfx, triggerHaptic } from '../../../core/audio.js';
-import { acidPuddles, setLastAttackerName } from '../../../main.js';
+import { acidPuddles, setLastAttackerName, canSpawnEnemyBullet } from '../../../main.js';
 import { selectedHeroKey } from '../../player.js';
 import { triggerDeath } from '../../../systems/ui.js';
 import { VAMPIRE_STATES, VAMPIRE_SKILLS } from './constants.js';
@@ -173,7 +173,7 @@ function executePreparedSkill(e, context) {
       const pdy = player.y - e.y;
       const pDist = Math.hypot(pdx, pdy);
 
-      if (pDist <= 160) {
+      if (pDist <= 160 && player.bossIFrames <= 0) {
         // Dano leve de contato direto (~5.5% do dano base)
         let repulsionDmg = Math.max(2, Math.round(e.damage * 0.055));
         if (selectedHeroKey === 'KNIGHT') {
@@ -181,7 +181,7 @@ function executePreparedSkill(e, context) {
         }
 
         player.hp -= repulsionDmg;
-        player.iFrames = 25;
+        player.bossIFrames = 20;
         playSfx('hit');
         setLastAttackerName('Lorde Vampírico');
         addDamageText(player.x, player.y, `-${repulsionDmg}`, false, '#ff1744');
@@ -218,17 +218,20 @@ function executePreparedSkill(e, context) {
       e.cleaveProgress = 1;
 
       // Dispara uma onda cortante de sangue para a frente (projétil tangível em média distância)
-      enemyBullets.push({
-        x: e.x + Math.cos(targetAngle) * 28,
-        y: e.y + Math.sin(targetAngle) * 28,
-        vx: Math.cos(targetAngle) * 6.4,
-        vy: Math.sin(targetAngle) * 6.4,
-        radius: 11.5,
-        damage: Math.round(e.damage * 0.32),
-        life: 80,
-        bulletType: 'BLOOD_CLAW',
-        color: '#ff1744'
-      });
+      if (canSpawnEnemyBullet(true)) {
+        enemyBullets.push({
+          x: e.x + Math.cos(targetAngle) * 28,
+          y: e.y + Math.sin(targetAngle) * 28,
+          vx: Math.cos(targetAngle) * 6.4,
+          vy: Math.sin(targetAngle) * 6.4,
+          radius: 11.5,
+          damage: Math.round(e.damage * 0.32),
+          life: 80,
+          bulletType: 'BLOOD_CLAW',
+          isBossProjectile: true,
+          color: '#ff1744'
+        });
+      }
 
       // Partículas em crescente carmesim do corte da foice
       for (let sc = 0; sc < 22; sc++) {
@@ -255,6 +258,7 @@ function executePreparedSkill(e, context) {
       const startAngle = targetAngle - totalArc / 2;
 
       for (let k = 0; k < count; k++) {
+        if (!canSpawnEnemyBullet(true)) break;
         const bAng = startAngle + (k * step);
         const speedVar = 4.2 + (Math.abs(k - (count - 1) / 2) * 0.25);
         enemyBullets.push({
@@ -266,6 +270,7 @@ function executePreparedSkill(e, context) {
           damage: Math.round(e.damage * 0.24),
           life: 180, // Alcance expandido para atravessar a arena (~750px)
           bulletType: 'VAMPIRE_BAT',
+          isBossProjectile: true,
           color: '#ff1744'
         });
       }
@@ -299,6 +304,7 @@ function executePreparedSkill(e, context) {
       const rightFlankY = e.y + Math.sin(targetAngle + Math.PI / 2) * flankOffsetDist;
 
       for (let k = 0; k < bulletsPerFlank; k++) {
+        if (!canSpawnEnemyBullet(true)) break;
         const progress = k / (bulletsPerFlank - 1);
         const fireAng = (targetAngle + 0.55) - (progress * 0.4);
         const spd = 4.4 + progress * 1.2;
@@ -311,11 +317,13 @@ function executePreparedSkill(e, context) {
           damage: Math.round(e.damage * 0.23),
           life: 165, // Alcance expandido para alcançar alvos distantes
           bulletType: 'BLOOD_CLAW',
+          isBossProjectile: true,
           color: '#ff4757'
         });
       }
 
       for (let k = 0; k < bulletsPerFlank; k++) {
+        if (!canSpawnEnemyBullet(true)) break;
         const progress = k / (bulletsPerFlank - 1);
         const fireAng = (targetAngle - 0.55) + (progress * 0.4);
         const spd = 4.4 + progress * 1.2;
@@ -328,6 +336,7 @@ function executePreparedSkill(e, context) {
           damage: Math.round(e.damage * 0.23),
           life: 165, // Alcance expandido
           bulletType: 'BLOOD_CLAW',
+          isBossProjectile: true,
           color: '#ff4757'
         });
       }

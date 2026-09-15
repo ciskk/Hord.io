@@ -4,7 +4,7 @@
  */
 
 import { playSfx, triggerHaptic } from '../../../core/audio.js';
-import { enemies } from '../../../main.js';
+import { enemies, canSpawnEnemyBullet } from '../../../main.js';
 import { REAPER_STATES, REAPER_CONFIG } from './constants.js';
 import { 
   updateReaperLanterns, 
@@ -496,6 +496,7 @@ export function updateSupremeReaper(e, dt, context) {
         const bladeCount = e.isEnraged ? 16 : 12;
         const spawnDist = 80;
         for (let s = 0; s < bladeCount; s++) {
+          if (!canSpawnEnemyBullet(true)) break;
           const sAng = (s * Math.PI * 2) / bladeCount;
           enemyBullets.push({
             x: e.x + Math.cos(sAng) * spawnDist,
@@ -504,7 +505,8 @@ export function updateSupremeReaper(e, dt, context) {
             vy: Math.sin(sAng) * 4.6,
             radius: 7,
             damage: Math.round(e.damage * 0.28),
-            life: 120
+            life: 120,
+            isBossProjectile: true
           });
         }
 

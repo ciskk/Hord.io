@@ -277,7 +277,8 @@ export function updateSingularityPhysics(boss, dt, context) {
         vy: Math.sin(ejectAng) * speed,
         radius: 5.5,
         damage: orb.damage,
-        life: 110
+        life: 110,
+        isBossProjectile: true
       });
 
       playSfx('shoot');

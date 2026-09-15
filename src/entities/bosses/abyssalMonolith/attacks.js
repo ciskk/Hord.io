@@ -4,7 +4,7 @@
  */
 
 import { playSfx, triggerHaptic } from '../../../core/audio.js';
-import { setLastAttackerName } from '../../../main.js';
+import { setLastAttackerName, canSpawnEnemyBullet } from '../../../main.js';
 import { selectedHeroKey } from '../../player.js';
 import { triggerDeath } from '../../../systems/ui.js';
 import { MONOLITH_STATES, MONOLITH_SKILLS } from './constants.js';
@@ -112,12 +112,12 @@ export function executeTectonicSlam(e, context) {
   if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
 
   // Dano somente se estiver no cone frontal (< slamArc) e dentro do alcance (185px)
-  if (pDist <= e.slamRadius && angleDiff <= e.slamArc && player.iFrames <= 0) {
+  if (pDist <= e.slamRadius && angleDiff <= e.slamArc && player.bossIFrames <= 0) {
     let slamDamage = e.isPhase3 ? 88 : (e.isEnraged ? 82 : 75);
     if (selectedHeroKey === 'KNIGHT') slamDamage = Math.round(slamDamage * 0.80);
 
     player.hp -= slamDamage;
-    player.iFrames = 26;
+    player.bossIFrames = 24;
     setLastAttackerName("Esmagamento Tectônico");
     playSfx('hit');
     triggerShake(12);
@@ -190,15 +190,15 @@ export function executeEpicenterEruption(e, context) {
     createHitParticles(e.x + Math.cos(cAng) * cDist, e.y + Math.sin(cAng) * cDist, '#f39c12', 1);
   }
 
-  // Avaliação de Dano no Epicentro (< 115px)
+  // Avaliação de Dano no Anel Externo (140 a 245px)
   const pDist = Math.hypot(player.x - e.x, player.y - e.y);
-  if (pDist < 115 && player.iFrames <= 0) {
-    let epicenterDmg = e.isPhase3 ? 38 : (e.isEnraged ? 35 : 33);
-    if (selectedHeroKey === 'KNIGHT') epicenterDmg = Math.round(epicenterDmg * 0.80);
+  if (pDist >= 140 && pDist <= 245 && player.bossIFrames <= 0) {
+    let surgeDmg = e.isPhase3 ? 31 : (e.isEnraged ? 29 : 26);
+    if (selectedHeroKey === 'KNIGHT') surgeDmg = Math.round(surgeDmg * 0.80);
 
-    player.hp -= epicenterDmg;
-    player.iFrames = 26;
-    setLastAttackerName("Erupção do Epicentro");
+    player.hp -= surgeDmg;
+    player.bossIFrames = 20;
+    setLastAttackerName("Onda de Fendas Tectônicas");
     playSfx('hit');
     addDamageText(player.x, player.y, `-${epicenterDmg}`, true, '#ff4757');
     createHitParticles(player.x, player.y, '#ff4757', 10);
@@ -280,14 +280,15 @@ export function executePlateWhirl(e, context) {
     createHitParticles(e.x + Math.cos(ang) * dist, e.y + Math.sin(ang) * dist, '#ff4757', 1);
   }
 
+  // Avaliação de Dano no Epicentro (< 115px)
   const pDist = Math.hypot(player.x - e.x, player.y - e.y);
-  if (pDist <= 110 && player.iFrames <= 0) {
-    let whirlDmg = e.isPhase3 ? 55 : (e.isEnraged ? 50 : 45);
-    if (selectedHeroKey === 'KNIGHT') whirlDmg = Math.round(whirlDmg * 0.80);
+  if (pDist < 115 && player.bossIFrames <= 0) {
+    let epicenterDmg = e.isPhase3 ? 38 : (e.isEnraged ? 35 : 33);
+    if (selectedHeroKey === 'KNIGHT') epicenterDmg = Math.round(epicenterDmg * 0.80);
 
-    player.hp -= whirlDmg;
-    player.iFrames = 25;
-    setLastAttackerName("Varredura de Basalto");
+    player.hp -= epicenterDmg;
+    player.bossIFrames = 22;
+    setLastAttackerName("Erupção do Epicentro");
     playSfx('hit');
     addDamageText(player.x, player.y, `-${whirlDmg}`, false, '#ff4757');
     createHitParticles(player.x, player.y, '#ff4757', 8);
@@ -329,6 +330,7 @@ export function executeMagmaSiphonRelease(e, context) {
         playSfx('shoot');
         const waveOffset = (w * Math.PI) / 8;
         for (let s = 0; s < shardCount; s++) {
+          if (!canSpawnEnemyBullet(true)) break;
           const sAng = waveOffset + (s * Math.PI * 2) / shardCount;
           enemyBullets.push({
             x: e.x + Math.cos(sAng) * 65,
@@ -338,7 +340,8 @@ export function executeMagmaSiphonRelease(e, context) {
             radius: 6.5,
             damage: 26,
             life: 360, // Alcance 2x adicional: viaja até ~1620px através de toda a arena
-            color: '#e67e22'
+            color: '#e67e22',
+            isBossProjectile: true
           });
         }
       }
