@@ -510,7 +510,7 @@ export function updateActiveAttacks(boss, dt, context) {
 
 /**
  * Spawna um local de cura sagrado (Santuário Cósmico) dentro da arena do Soberano do Abismo.
- * A área de cura é 30% maior (raio 73px), dura exatamente 3 segundos (180 frames) e regenera 25% de saúde por segundo.
+ * A área de cura é 30% maior (raio 73px), dura exatamente 7 segundos (420 frames) e regenera 10% de saúde por segundo.
  * Spawna a uma distância intermediária do jogador (fora do alcance imediato, mas bem mais perto do que metade do raio da arena).
  * @param {Object} boss Entidade do Soberano do Abismo
  * @param {Object} context Contexto global do motor
@@ -585,7 +585,7 @@ export function spawnSanctuaryHealingZone(boss, context) {
     radius: zoneRadius,
     life: 420, // 7 segundos exatos (420 frames a 60 FPS)
     maxLife: 420,
-    healRatePerSec: 0.25, // Sincronizado com o HUD: 25% de saúde por segundo
+    healRatePerSec: 0.10, // Sincronizado com o HUD: 10% de saúde por segundo
     healTickTimer: 0,
     playerInside: false,
     pulseTimer: 0
@@ -663,8 +663,8 @@ export function updateHealingZones(boss, dt, context) {
     zone.playerInside = isInside;
 
     if (isInside) {
-      // Regenera saúde dinamicamente com base na taxa da zona (25%/s)
-      const rate = zone.healRatePerSec || 0.25;
+      // Regenera saúde dinamicamente com base na taxa da zona (10%/s)
+      const rate = zone.healRatePerSec || 0.10;
       const healPerFrame = (player.maxHp * rate / 60) * dt;
       if (player.hp < player.maxHp) {
         player.hp = Math.min(player.maxHp, player.hp + healPerFrame);

@@ -910,7 +910,7 @@ export function drawBossVictoryOverlay(ctx, e, frameCount) {
 
 /**
  * Renderiza os Locais de Cura Sagrados (Santuários de Luz Celestial) na Arena do Soberano.
- * Exibe halo esmeralda, anel rúnico, medidor circular decrescente dos 3 segundos e cruz de restauração.
+ * Exibe halo esmeralda, anel rúnico, medidor circular decrescente dos 7 segundos e cruz de restauração.
  * @param {CanvasRenderingContext2D} ctx
  * @param {Object} e Entidade do Soberano do Abismo
  * @param {number} frameCount
@@ -921,7 +921,7 @@ function drawHealingZones(ctx, e, frameCount) {
   for (let i = 0; i < e.healingZones.length; i++) {
     const zone = e.healingZones[i];
     const R = zone.radius;
-    const lifeRatio = Math.max(0, zone.life / (zone.maxLife || 180));
+    const lifeRatio = Math.max(0, zone.life / (zone.maxLife || 420));
 
     ctx.save();
     // drawAbyssSovereign já neutralizou o facing horizontal, mantendo coordenadas de mundo 1:1
@@ -948,7 +948,7 @@ function drawHealingZones(ctx, e, frameCount) {
     ctx.arc(0, 0, R, 0, Math.PI * 2);
     ctx.stroke();
 
-    // 3. Medidor Circular de Duração Residual (Contagem Regressiva dos 3 Segundos)
+    // 3. Medidor Circular de Duração Residual (Contagem Regressiva dos 7 Segundos)
     ctx.shadowBlur = 0;
     ctx.strokeStyle = '#f1c40f';
     ctx.lineWidth = 3.2;
@@ -1004,7 +1004,7 @@ function drawHealingZones(ctx, e, frameCount) {
     ctx.font = 'bold 9px monospace';
     ctx.fillStyle = zone.playerInside ? '#ffffff' : '#2ecc71';
     const secondsLeft = (zone.life / 60).toFixed(1);
-    ctx.fillText(`CURA +25%/s (${secondsLeft}s)`, 0, -R - 10);
+    ctx.fillText(`CURA +10%/s (${secondsLeft}s)`, 0, -R - 10);
 
     ctx.restore();
   }

@@ -99,6 +99,7 @@ export function playSfx(type) {
   if (type === 'warp' && now - soundCooldowns.warp < 80) return;
   if (type === 'card_hover' && now - soundCooldowns.card_hover < 50) return;
   if (type === 'forcefield' && now - soundCooldowns.forcefield < 90) return;
+  if (type === 'heal' && now - soundCooldowns.heal < 250) return;
 
   if (soundCooldowns[type] !== undefined) soundCooldowns[type] = now;
 

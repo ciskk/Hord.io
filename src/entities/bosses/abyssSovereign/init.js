@@ -48,7 +48,7 @@ export function initAbyssSovereign(boss) {
   boss.singularityOrbs = [];
   boss.orbSpawnTimer = 0;
 
-  // Santuários / Locais de Cura dentro da Arena (Ativam aos <= 70% HP, ciclo de 15s)
+  // Santuários / Locais de Cura dentro da Arena (Ativam aos <= 85% HP, ciclo de 10s)
   boss.healingZones = [];
   boss.healingZoneSpawnTimer = 0;
   boss.hasStartedHealingCycle = false;

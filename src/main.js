@@ -524,7 +524,7 @@ function update(dt) {
 
       const dSq = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
       if (dSq < (player.radius + e.radius + 20) ** 2) {
-        let impactDmg = player.damage * 1.8;
+        let impactDmg = player.damage * 1.3;
         if (e.isBoss || e.isBossSubTarget) {
           impactDmg *= 1.25;
           if (e.isVulnerable) impactDmg *= 1.25;
