@@ -964,11 +964,11 @@ function update(dt) {
           playSfx('hit');
           if (isCrit || isKaelExecute) playSfx('crit');
 
-          // Knockback Sagrado Suave: 80% menos empurrão (micro-stagger que interrompe o avanço sem catapultar monstros)
+          // Knockback Sagrado Suave: 80% menos empurrão (micro-stagger que interrompe o avanço sem catapultar monstros); Chefe Final imune (0.00)
           if (!e.isBossSubTarget) {
             const pushAng = Math.atan2(e.y - player.y, e.x - player.x);
             const basePush = player.evolvedOrbitals ? 1.36 : 0.96;
-            const bossResist = e.isFinalBoss ? 0.10 : ((e.isBoss || e.isMiniBoss) ? 0.20 : (e.isElite ? 0.45 : 1.0));
+            const bossResist = e.isFinalBoss ? 0.00 : ((e.isBoss || e.isMiniBoss) ? 0.20 : (e.isElite ? 0.45 : 1.0));
             const pushForce = basePush * (player.knockbackDealt !== undefined ? player.knockbackDealt : 1.0) * bossResist;
             e.pushVx = (e.pushVx || 0) + Math.cos(pushAng) * pushForce;
             e.pushVy = (e.pushVy || 0) + Math.sin(pushAng) * pushForce;

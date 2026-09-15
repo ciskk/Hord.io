@@ -437,7 +437,8 @@ export function updateActiveAttacks(boss, dt, context) {
       if (atk.timer > atk.maxTimer - 14 && player.iFrames <= 0) {
         const angles = atk.angles || [boss.cleaveAngle || 0];
         const len = atk.length || 1500;
-        const halfW = (atk.width || 54) * 0.5;
+        const mainHalfW = (atk.width || 108) * 0.5;
+        const sideHalfW = (atk.sideWidth ? atk.sideWidth * 0.5 : mainHalfW * 0.65);
         const playerRadius = player.radius || 14;
 
         for (let a = 0; a < angles.length; a++) {
@@ -448,7 +449,7 @@ export function updateActiveAttacks(boss, dt, context) {
           const pdy = player.y - boss.y;
           const proj = pdx * cosA + pdy * sinA;
           const perpDist = Math.abs(-pdx * sinA + pdy * cosA);
-          const currentHalfW = (a === 0 ? halfW : halfW * 0.65) + playerRadius;
+          const currentHalfW = (a === 0 ? mainHalfW : sideHalfW) + playerRadius;
 
           if (proj >= -playerRadius && proj < len && perpDist <= currentHalfW) {
             player.hp -= atk.damage;

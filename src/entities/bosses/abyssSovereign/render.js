@@ -1622,7 +1622,8 @@ function drawActiveSovereignAttacks(ctx, e, frameCount) {
       const angles = atk.angles || [e.cleaveAngle || 0];
       const alpha = Math.max(0, 1 - progress);
       const len = atk.length || 1500;
-      const w = atk.width || 54;
+      const mainW = atk.width || 108;
+      const sideW = atk.sideWidth || (mainW * 0.65);
 
       ctx.save();
 
@@ -1633,7 +1634,7 @@ function drawActiveSovereignAttacks(ctx, e, frameCount) {
         const tipX = cosA * len;
         const tipY = sinA * len;
         const isMain = a === 0;
-        const beamW = isMain ? w : w * 0.65;
+        const beamW = isMain ? mainW : sideW;
 
         // 1. Halo volumétrico externo de dispersão de luz
         ctx.strokeStyle = `rgba(0, 206, 201, ${alpha * 0.55})`;
@@ -2006,8 +2007,9 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
       // Corredor de perigo translúcido
       ctx.fillStyle = isLocked ? 'rgba(232, 67, 147, 0.12)' : 'rgba(0, 206, 201, 0.07)';
       ctx.beginPath();
-      const perpX = -sinA * (isMain ? 26 : 18);
-      const perpY = cosA * (isMain ? 26 : 18);
+      const halfVisualW = isMain ? (isPhase3 ? 35 : 54) : 23;
+        const perpX = -sinA * halfVisualW;
+        const perpY = cosA * halfVisualW;
       ctx.moveTo(perpX, perpY);
       ctx.lineTo(cosA * beamLen + perpX, sinA * beamLen + perpY);
       ctx.lineTo(cosA * beamLen - perpX, sinA * beamLen - perpY);

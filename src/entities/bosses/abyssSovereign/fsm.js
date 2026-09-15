@@ -525,7 +525,7 @@ export function updateAbyssSovereign(e, dt, context) {
       if (e.idleTimer <= 0) {
         e.actionState = SOVEREIGN_STATES.HOVER_CHASE;
         e.stateTimer = 0;
-        e.attackCooldown = e.phase === 3 ? 30 : (e.phase === 2 ? 45 : 55);
+        e.attackCooldown = e.phase === 3 ? 16 : (e.phase === 2 ? 22 : 28);
       }
       break;
     }
@@ -649,7 +649,7 @@ export function updateAbyssSovereign(e, dt, context) {
           addDamageText(e.x, e.y - e.radius - 16, "INVERSÃO!", true, '#ff7675');
         }
 
-        const rotSpeed = (e.phase === 3 ? 0.021 : (e.phase === 2 ? 0.019 : 0.015)) * e.beamDir;
+        const rotSpeed = (e.phase === 3 ? 0.02625 : (e.phase === 2 ? 0.02375 : 0.01875)) * e.beamDir;
         e.beamAngle += rotSpeed * dt;
 
         const beamLength = 1300;
@@ -687,36 +687,25 @@ export function updateAbyssSovereign(e, dt, context) {
 
           const waveStep = Math.floor(e.stateTimer / salvoInterval);
           const aimAng = (waveStep % 2 === 0) ? directAng : (directAng * 0.7 + leadAng * 0.3);
-          const spread = 0.14;
-          const speed = 6.2;
-          const bulletDmg = Math.round(e.damage * 0.22);
+          const spreadAngles = [-0.24, -0.08, 0.08, 0.24];
+          const speed = 6.4;
+          const bulletDmg = Math.round(e.damage * 0.16);
 
-          if (canSpawnEnemyBullet(true)) {
-            enemyBullets.push({
-              x: e.x,
-              y: e.y,
-              vx: Math.cos(aimAng + spread) * speed,
-              vy: Math.sin(aimAng + spread) * speed,
-              radius: 5.5,
-              damage: bulletDmg,
-              bulletType: 'ABYSSAL_BOLT',
-              life: 120,
-              isBossProjectile: true
-            });
-          }
-
-          if (canSpawnEnemyBullet(true)) {
-            enemyBullets.push({
-              x: e.x,
-              y: e.y,
-              vx: Math.cos(aimAng - spread) * speed,
-              vy: Math.sin(aimAng - spread) * speed,
-              radius: 5.5,
-              damage: bulletDmg,
-              bulletType: 'ABYSSAL_BOLT',
-              life: 120,
-              isBossProjectile: true
-            });
+          for (let sIdx = 0; sIdx < spreadAngles.length; sIdx++) {
+            if (canSpawnEnemyBullet(true)) {
+              const fireAng = aimAng + spreadAngles[sIdx];
+              enemyBullets.push({
+                x: e.x,
+                y: e.y,
+                vx: Math.cos(fireAng) * speed,
+                vy: Math.sin(fireAng) * speed,
+                radius: 5.5,
+                damage: bulletDmg,
+                bulletType: 'ABYSSAL_BOLT',
+                life: 120,
+                isBossProjectile: true
+              });
+            }
           }
 
           playSfx('shoot');
@@ -805,7 +794,7 @@ export function updateAbyssSovereign(e, dt, context) {
         } else {
           e.actionState = SOVEREIGN_STATES.IDLE;
           e.stateTimer = 0;
-          e.idleTimer = e.phase === 3 ? 32 : (e.phase === 2 ? 37 : 42);
+          e.idleTimer = e.phase === 3 ? 12 : (e.phase === 2 ? 16 : 20);
         }
       }
       break;
@@ -853,7 +842,7 @@ export function updateAbyssSovereign(e, dt, context) {
 
         e.actionState = SOVEREIGN_STATES.IDLE;
         e.stateTimer = 0;
-        e.idleTimer = e.phase === 3 ? 30 : (e.phase === 2 ? 35 : 40);
+        e.idleTimer = e.phase === 3 ? 14 : (e.phase === 2 ? 18 : 22);
       }
       break;
     }

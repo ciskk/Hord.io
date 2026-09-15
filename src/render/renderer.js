@@ -642,7 +642,7 @@ export function render() {
     } else if (t.type === 'DIMENSIONAL_CLEAVE') {
       // Telegrafia da Fratura Dimensional: Lâminas Geométricas de Vácuo Cortando a Arena
       const halfLen = (t.length || 1300) * 0.5;
-      const w = t.width || 34;
+      const w = t.width || 68; // Dobro da espessura base de telegrafia
       const cosA = Math.cos(t.angle);
       const sinA = Math.sin(t.angle);
 

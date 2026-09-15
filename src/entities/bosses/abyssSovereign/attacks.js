@@ -98,7 +98,7 @@ export function prepareNextAttack(boss, context) {
       boss.windupMax = boss.windupTimer;
       boss.beamAngle = Math.atan2(player.y - boss.y, player.x - boss.x);
       boss.beamDir = Math.random() < 0.5 ? 1 : -1;
-      boss.beamRotSpeed = boss.phase === 3 ? 0.012 : 0.011;
+      boss.beamRotSpeed = boss.phase === 3 ? 0.015 : 0.01375;
       boss.beamHasReversed = false;
       playSfx('charge');
       break;
@@ -235,7 +235,8 @@ export function startSkillCast(boss, context) {
         type: 'DIMENSIONAL_SLASH',
         angles: angles,
         length: 1500,
-        width: 54,
+        width: isPhase3 ? 70 : 108,
+        sideWidth: 46,
         damage: Math.round(boss.damage * 0.44),
         timer: 28,
         maxTimer: 28

@@ -53,7 +53,7 @@ export function initAbyssSovereign(boss) {
   boss.healingZoneSpawnTimer = 0;
   boss.hasStartedHealingCycle = false;
 
-  boss.attackCooldown = 75;
+  boss.attackCooldown = 35; // Primeiro ataque ocorre mais rápido após a introdução
   boss.windupTimer = 0;
   boss.windupMax = 0;
   boss.castDuration = 0;
@@ -79,7 +79,7 @@ export function initAbyssSovereign(boss) {
   }
 
   boss.idleTimer = 0;
-  boss.idleDuration = 40; // Reduzido pela metade (80 -> 40 frames)
+  boss.idleDuration = 20;
   boss.idleBlend = 0;
   boss.eyeAperture = 1.0;
   boss.eyeAnimState = 'OPEN';
