@@ -598,9 +598,16 @@ export function updateAbyssSovereign(e, dt, context) {
         const ratio = 1 - (e.windupTimer / e.windupMax);
         e.implosionRadius = e.implosionMaxRadius * (1 - ratio);
 
-        if (ratio < 0.60) {
-          e.implosionX += (player.x - e.implosionX) * 0.08 * dt;
-          e.implosionY += (player.y - e.implosionY) * 0.08 * dt;
+        if (ratio < 0.35) {
+          const trackDx = player.x - e.implosionX;
+          const trackDy = player.y - e.implosionY;
+          const trackDist = Math.hypot(trackDx, trackDy);
+          if (trackDist > 0.1) {
+            // Segue o jogador bem mais devagar (max 1.8 px/frame), permitindo que o jogador se distancie facilmente
+            const trackSpeed = Math.min(1.8 * dt, trackDist * 0.03 * dt);
+            e.implosionX += (trackDx / trackDist) * trackSpeed;
+            e.implosionY += (trackDy / trackDist) * trackSpeed;
+          }
         } else if (!e.implosionLocked) {
           e.implosionLocked = true;
           playSfx('singularity');
@@ -611,7 +618,9 @@ export function updateAbyssSovereign(e, dt, context) {
         const vdy = e.implosionY - player.y;
         const vDist = Math.hypot(vdx, vdy);
         if (vDist < e.implosionMaxRadius && vDist > 15) {
-          const pullForce = (0.75 + ratio * 1.2) * dt;
+          // Atração suave enquanto persegue, intensificando somente após a mira travar no solo
+          const pullBase = e.implosionLocked ? 0.45 : 0.15;
+          const pullForce = (pullBase + ratio * 0.65) * dt;
           player.x += (vdx / vDist) * pullForce;
           player.y += (vdy / vDist) * pullForce;
         }
