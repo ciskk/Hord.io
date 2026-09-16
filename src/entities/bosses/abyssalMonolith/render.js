@@ -3,7 +3,7 @@
  * Pipeline de renderização gráfica procedural em Canvas 2D de "Ignis Lithos, o Titã de Basalto".
  */
 
-import { MONOLITH_STATES } from './constants.js';
+import { MONOLITH_STATES, MONOLITH_CONFIG } from './constants.js';
 import { dpr, viewW, viewH } from '../../../main.js';
 import { getHudBottom } from '../../../core/responsive.js';
 
@@ -136,69 +136,79 @@ export function drawCinematicScreenTitle(ctx, e, frameCount) {
 export function drawMonolithSpawnIntro(ctx, e, frameCount) {
   const introMax = e.introDuration || 300;
   const progress = Math.min(1.0, Math.max(0, 1 - (e.introTimer / introMax)));
+  const calderaY = 50;
 
   // =========================================================================
-  // ATO 1: FRATURA TECTÔNICA E LAGO DE MAGMA (0.00 <= progress < 0.25)
+  // CAMADA DE SOLO BASE: CALDEIRA DE MAGMA EVOLUTIVA (Persiste com transição suave)
   // =========================================================================
-  if (progress < 0.25) {
-    const act1Prog = progress / 0.25;
-    const fissureR = e.radius * (1.0 + act1Prog * 1.2);
+  if (progress < 0.85) {
+    const calderaMaxR = e.radius * 2.2;
+    // O magma borbulha forte até 0.55 e depois esfria formando crosta até 0.85
+    const heatAlpha = progress < 0.55 ? 1.0 : Math.max(0, 1.0 - (progress - 0.55) / 0.30);
+    const calderaR = calderaMaxR * (progress < 0.25 ? (0.6 + (progress / 0.25) * 0.4) : 1.0);
 
     ctx.save();
-    // Calha de magma no solo (Elipse 2.5D)
-    ctx.translate(0, 48);
+    ctx.translate(0, calderaY);
     ctx.scale(1, 0.44);
 
-    const magGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, fissureR);
-    magGrad.addColorStop(0, `rgba(255, 234, 167, ${0.4 + act1Prog * 0.5})`);
-    magGrad.addColorStop(0.35, `rgba(230, 126, 34, ${0.4 + act1Prog * 0.4})`);
-    magGrad.addColorStop(0.75, `rgba(192, 57, 43, ${0.3 + act1Prog * 0.4})`);
-    magGrad.addColorStop(1, 'rgba(26, 10, 5, 0)');
-    ctx.fillStyle = magGrad;
+    // 1. Resplendor de calor sob a crosta
+    const calGrad = ctx.createRadialGradient(0, 0, 8, 0, 0, calderaR);
+    calGrad.addColorStop(0, `rgba(255, 245, 200, ${0.9 * heatAlpha})`);
+    calGrad.addColorStop(0.25, `rgba(243, 156, 18, ${0.85 * heatAlpha})`);
+    calGrad.addColorStop(0.65, `rgba(211, 84, 0, ${0.65 * heatAlpha})`);
+    calGrad.addColorStop(0.92, `rgba(39, 12, 6, ${0.45 * heatAlpha + 0.35})`);
+    calGrad.addColorStop(1, 'rgba(10, 4, 2, 0)');
+    ctx.fillStyle = calGrad;
     ctx.beginPath();
-    ctx.arc(0, 0, fissureR, 0, Math.PI * 2);
+    ctx.arc(0, 0, calderaR, 0, Math.PI * 2);
     ctx.fill();
 
-    // Fraturas tectônicas radiais rachando o solo
+    // 2. Fissuras radiais na borda da caldeira
     const crackCount = 10;
-    ctx.strokeStyle = `rgba(243, 156, 18, ${0.5 + act1Prog * 0.5})`;
-    ctx.lineWidth = 2.8;
+    ctx.strokeStyle = `rgba(243, 156, 18, ${0.4 + heatAlpha * 0.5})`;
+    ctx.lineWidth = 2.4;
     for (let c = 0; c < crackCount; c++) {
       const ca = (c * Math.PI * 2) / crackCount;
-      const cDist = fissureR * (0.4 + act1Prog * 0.6);
+      const cDist = calderaR * 0.95;
       ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(Math.cos(ca) * (cDist * 0.5) + (c % 2 === 0 ? 8 : -8), Math.sin(ca) * (cDist * 0.5));
+      ctx.moveTo(Math.cos(ca) * (calderaR * 0.5), Math.sin(ca) * (calderaR * 0.5));
+      ctx.lineTo(Math.cos(ca) * (cDist * 0.8) + (c % 2 === 0 ? 6 : -6), Math.sin(ca) * (cDist * 0.8));
       ctx.lineTo(Math.cos(ca) * cDist, Math.sin(ca) * cDist);
       ctx.stroke();
     }
 
-    // Bolhas de lava e faíscas incandescentes borbulhando do solo
-    const bubbleCount = 6;
-    for (let b = 0; b < bubbleCount; b++) {
-      const bProgress = ((frameCount * 0.05 + b / bubbleCount) % 1);
-      const bAng = b * 1.1 + frameCount * 0.02;
-      const bDist = (b * 14) % (fissureR * 0.7);
-      const bx = Math.cos(bAng) * bDist;
-      const by = Math.sin(bAng) * bDist;
-      const bR = Math.max(1, 6 * (1 - bProgress));
-
-      ctx.fillStyle = bProgress > 0.7 ? '#ffffff' : '#f39c12';
-      ctx.beginPath();
-      ctx.arc(bx, by, bR, 0, Math.PI * 2);
-      ctx.fill();
+    // 3. Bolhas de magma efervescente
+    if (heatAlpha > 0.2) {
+      const bubbleCount = 7;
+      for (let b = 0; b < bubbleCount; b++) {
+        const bProg = ((frameCount * 0.05 + b / bubbleCount) % 1);
+        const bAng = b * 1.3 + frameCount * 0.02;
+        const bDist = (b * 16) % (calderaR * 0.72);
+        const bx = Math.cos(bAng) * bDist;
+        const by = Math.sin(bAng) * bDist;
+        const bR = Math.max(1, 6 * (1 - bProg));
+        ctx.fillStyle = bProg > 0.65 ? '#ffffff' : '#f39c12';
+        ctx.beginPath();
+        ctx.arc(bx, by, bR, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
     ctx.restore();
+  }
 
-    // Fumaça vulcânica e cinzas subindo
+  // =========================================================================
+  // ATO 1: FISSURA SÍSMICA PRELIMINAR (0.00 <= progress < 0.25)
+  // =========================================================================
+  if (progress < 0.25) {
+    const act1Prog = progress / 0.25;
+    // Colunas de fumaça densa e fuligem subindo da fenda
     ctx.save();
-    const smokeCount = 8;
-    for (let s = 0; s < smokeCount; s++) {
-      const sProgress = ((frameCount * 0.02 + s / smokeCount) % 1);
-      const sX = Math.sin(s * 1.7 + frameCount * 0.04) * (25 + s * 4);
-      const sY = 48 - sProgress * 120;
-      const sR = 8 + sProgress * 22;
-      ctx.fillStyle = `rgba(44, 30, 24, ${Math.max(0, (1 - sProgress) * 0.45 * act1Prog)})`;
+    for (let s = 0; s < 8; s++) {
+      const sProg = ((frameCount * 0.025 + s / 8) % 1);
+      const sX = Math.sin(s * 1.8 + frameCount * 0.04) * (20 + s * 5);
+      const sY = calderaY - sProg * 130;
+      const sR = 8 + sProg * 26;
+      ctx.fillStyle = `rgba(35, 20, 14, ${Math.max(0, (1 - sProg) * 0.5 * act1Prog)})`;
       ctx.beginPath();
       ctx.arc(sX, sY, sR, 0, Math.PI * 2);
       ctx.fill();
@@ -208,184 +218,198 @@ export function drawMonolithSpawnIntro(ctx, e, frameCount) {
   }
 
   // =========================================================================
-  // ATO 2: ASCENSÃO DO TITÃ DE BASALTO (0.25 <= progress < 0.52)
+  // ATO 2: EMERSÃO COM MÁSCARA DE RECORTE (0.25 <= progress < 0.55)
   // =========================================================================
-  if (progress < 0.52) {
-    const act2Prog = (progress - 0.25) / 0.27;
+  if (progress < 0.55) {
+    const act2Prog = (progress - 0.25) / 0.30;
+    // Interpolação suave em seno (começa rápido e desacelera na altura de flutuação)
     const easeRise = Math.sin(act2Prog * Math.PI * 0.5);
-    const riseY = (1 - easeRise) * 140; // Do subsolo até a posição de levitação
+    const riseY = (1 - easeRise) * 160; // Desce 160px para o interior da cratera
 
-    // 1. Caldeira de magma borbulhante e expansão tectônica
+    // 1. Fragmentos de rocha ejetados para os lados com a emersão
     ctx.save();
-    ctx.translate(0, 48);
-    ctx.scale(1, 0.44);
-
-    const calderaR = e.radius * 2.2;
-    const calGrad = ctx.createRadialGradient(0, 0, 8, 0, 0, calderaR);
-    calGrad.addColorStop(0, '#ffffff');
-    calGrad.addColorStop(0.2, '#f39c12');
-    calGrad.addColorStop(0.6, '#d35400');
-    calGrad.addColorStop(0.9, '#270c06');
-    calGrad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = calGrad;
-    ctx.beginPath();
-    ctx.arc(0, 0, calderaR, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = '#e67e22';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(0, 0, calderaR * 0.85, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-
-    // 2. Chunks de rocha de basalto sendo arremessados para o alto
-    ctx.save();
-    const rockCount = 6;
-    for (let r = 0; r < rockCount; r++) {
-      const rProg = ((frameCount * 0.04 + r / rockCount) % 1);
-      const rAng = r * 1.05 - 1.5;
-      const rDist = 35 + r * 12;
+    for (let r = 0; r < 7; r++) {
+      const rProg = ((frameCount * 0.045 + r / 7) % 1);
+      const rAng = r * 0.95 - 1.4;
+      const rDist = 30 + r * 14;
       const rx = Math.cos(rAng) * rDist;
-      const ry = 48 - (Math.sin(rProg * Math.PI) * 80) + (r % 2 === 0 ? 10 : -10);
+      const ry = calderaY - (Math.sin(rProg * Math.PI) * 95) + (r % 2 === 0 ? 8 : -8);
       ctx.fillStyle = '#1e272e';
       ctx.strokeStyle = '#e67e22';
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = 1.4;
       ctx.beginPath();
-      ctx.arc(rx, ry, 5 * (1 - rProg * 0.3), 0, Math.PI * 2);
+      ctx.arc(rx, ry, Math.max(1.5, 5.5 * (1 - rProg * 0.4)), 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
     }
     ctx.restore();
 
-    // 3. Monólito e Manoplas Subindo das Profundezas
+    // 2. MÁSCARA DE RECORTE REAL (CLIPPING MASK):
+    // O colosso só é visível acima do lábio inferior da caldeira de magma,
+    // eliminando o efeito "elevador" e fazendo-o brotar fisicamente do subsolo.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(-300, -380, 600, 380 + calderaY);
+    ctx.ellipse(0, calderaY, e.radius * 1.85, (e.radius * 1.85) * 0.42, 0, 0, Math.PI);
+    ctx.closePath();
+    ctx.clip();
+
+    // Desenha o corpo emergindo através do plano da cratera
     ctx.save();
     ctx.translate(0, riseY);
-
-    // Corpo emergindo
     drawMegalithBody(ctx, e, 0, frameCount, false, false, false);
     drawAbyssalCore(ctx, e, 0, frameCount, false, false, false, false, false);
 
-    // Manoplas erguendo-se dos lados
-    const riseGauntlets = {
-      left: { x: -62, y: 15, rot: -0.3 },
-      right: { x: 62, y: 15, rot: 0.3 }
+    // Manoplas erguendo-se dos lados da cratera
+    const gauntletsRise = {
+      left: { x: -62, y: 18, rot: -0.35 },
+      right: { x: 62, y: 18, rot: 0.35 }
     };
-    drawFloatingGauntlets(ctx, { ...e, gauntlets: riseGauntlets }, 0, frameCount, false, false, false, false);
+    drawFloatingGauntlets(ctx, { ...e, gauntlets: gauntletsRise }, 0, frameCount, false, false, false, false);
+    ctx.restore();
+    ctx.restore(); // Fecha o clip
 
+    // 3. Lábio frontal da caldeira de magma sobrepondo a base do corpo emergente
+    ctx.save();
+    ctx.translate(0, calderaY);
+    ctx.scale(1, 0.44);
+    ctx.strokeStyle = `rgba(255, 234, 167, ${0.75 * (1 - act2Prog * 0.4)})`;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(0, 0, e.radius * 1.6, 0.15, Math.PI - 0.15);
+    ctx.stroke();
     ctx.restore();
     return;
   }
 
   // =========================================================================
-  // ATO 3: CONJUNÇÃO TECTÔNICA & LITOCISTOS EM IGNIÇÃO (0.52 <= progress < 0.78)
+  // ATO 3: EJEÇÃO PARABÓLICA DOS LITOCISTOS & IGNIÇÃO (0.55 <= progress < 0.80)
   // =========================================================================
-  if (progress < 0.78) {
-    const act3Prog = (progress - 0.52) / 0.26;
-    const bob = Math.sin(frameCount * 0.08) * 4;
+  if (progress < 0.80) {
+    const act3Prog = (progress - 0.55) / 0.25;
+    const bob = Math.sin(frameCount * 0.08) * 3.5;
 
-    // Sombra no chão estabilizada
+    // Sombra de sustentação gradual sob o titã
     drawShadow(ctx, e, bob, false);
 
-    // Placas tectônicas convergindo do exterior para suas órbitas normais
-    const plateSpread = (1 - act3Prog) * 80;
+    // Placas tectônicas convergindo do solo em direção aos flancos
+    const plateSpread = (1 - act3Prog) * 70;
     ctx.save();
-    const tempPlates = e.floatingPlates.map(p => ({
+    const convergingPlates = e.floatingPlates.map(p => ({
       ...p,
       baseDist: p.baseDist + plateSpread
     }));
-    drawFloatingPlates(ctx, { ...e, floatingPlates: tempPlates }, bob, frameCount, false, false, false);
+    drawFloatingPlates(ctx, { ...e, floatingPlates: convergingPlates }, bob, frameCount, false, false, false);
     ctx.restore();
 
-    // Litocistos descendo dos céus em fogo meteórico para órbita
+    // EJEÇÃO PARABÓLICA DOS LITOCISTOS:
+    // As orbes são disparadas do magma em trajetória curva ascendente até suas órbitas
     ctx.save();
-    for (let o of e.orbitals) {
+    for (let k = 0; k < e.orbitals.length; k++) {
+      const o = e.orbitals[k];
       if (!o.active) continue;
-      const meteorOffset = (1 - act3Prog) * 160;
-      const ox = Math.cos(o.angle) * o.dist;
-      const oy = Math.sin(o.angle) * o.dist + bob - meteorOffset;
 
-      // Cauda de rastro de fogo
-      const tailGrad = ctx.createLinearGradient(ox, oy - 40, ox, oy);
+      const orbEase = Math.min(1.0, Math.max(0, act3Prog * 1.25 - k * 0.08));
+      const curDist = (MONOLITH_CONFIG?.ORBITAL_DIST || o.dist || 90) * orbEase;
+      const curAngle = o.angle - (1 - orbEase) * Math.PI * 1.2;
+      const arcHeight = Math.sin(orbEase * Math.PI) * 65;
+
+      const ox = Math.cos(curAngle) * curDist;
+      const oy = Math.sin(curAngle) * (curDist * 0.45) + bob - arcHeight;
+
+      // Rastro de fogo curvo conectando ao ponto de ejeção
+      const tailGrad = ctx.createLinearGradient(0, calderaY, ox, oy);
       tailGrad.addColorStop(0, 'rgba(230, 126, 34, 0)');
-      tailGrad.addColorStop(1, 'rgba(243, 156, 18, 0.85)');
+      tailGrad.addColorStop(1, `rgba(243, 156, 18, ${0.85 * (1 - orbEase * 0.4)})`);
       ctx.strokeStyle = tailGrad;
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 3.5;
       ctx.beginPath();
-      ctx.moveTo(ox, oy - 40);
-      ctx.lineTo(ox, oy);
+      ctx.moveTo(0, calderaY);
+      ctx.quadraticCurveTo(ox * 0.5, oy - 25, ox, oy);
       ctx.stroke();
 
-      // Meteoro Litocisto em si
+      // Litocisto incandescente
       ctx.fillStyle = '#1e272e';
       ctx.beginPath();
       ctx.arc(ox, oy, o.radius, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = '#f39c12';
-      ctx.lineWidth = 2.2;
+      ctx.lineWidth = 2.4;
       ctx.stroke();
+      ctx.fillStyle = '#ff7675';
+      ctx.beginPath();
+      ctx.arc(ox, oy, o.radius * 0.45, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.restore();
 
-    // Corpo e Manoplas
+    // Corpo e Manoplas em posição de prontidão
     drawMegalithBody(ctx, e, bob, frameCount, false, false, false);
     drawAbyssalCore(ctx, e, bob, frameCount, false, false, false, true, false);
 
     const readyGauntlets = {
-      left: { x: -62, y: -8 + Math.sin(frameCount * 0.1) * 3, rot: -0.15 },
-      right: { x: 62, y: -8 - Math.sin(frameCount * 0.1) * 3, rot: 0.15 }
+      left: { x: -62, y: -6 + Math.sin(frameCount * 0.1) * 3, rot: -0.15 },
+      right: { x: 62, y: -6 - Math.sin(frameCount * 0.1) * 3, rot: 0.15 }
     };
     drawFloatingGauntlets(ctx, { ...e, gauntlets: readyGauntlets }, bob, frameCount, false, false, false, false);
-
     return;
   }
 
   // =========================================================================
-  // ATO 4: ESMAGAMENTO PRIMORDIAL & DESPERTAR (0.78 <= progress <= 1.00)
+  // ATO 4: ANTECIPAÇÃO, IMPACTO TELÚRICO E RECUPERAÇÃO (0.80 <= progress <= 1.00)
   // =========================================================================
-  const act4Prog = (progress - 0.78) / 0.22;
+  const act4Prog = (progress - 0.80) / 0.20;
   const bob = Math.sin(frameCount * 0.08) * 3;
 
   drawShadow(ctx, e, bob, false);
   drawFloatingPlates(ctx, e, bob, frameCount, false, false, false);
   drawLitocistos(ctx, e, bob, frameCount, false, false);
   drawMegalithBody(ctx, e, bob, frameCount, false, false, false);
-  drawAbyssalCore(ctx, e, bob, frameCount, false, false, false, false, act4Prog < 0.6);
+  drawAbyssalCore(ctx, e, bob, frameCount, false, false, false, false, act4Prog < 0.65);
 
-  // Animação de erguer e bater as manoplas titânicas
-  let gY = -8;
+  // CINEMÁTICA DE PESO DAS MANOPLAS (Erguer alto, aceleração de queda e rebote)
+  let gY = -6;
   let gRot = 0.15;
-  if (act4Prog < 0.60) {
-    // Erguendo alto no ar
-    const liftProg = act4Prog / 0.60;
-    gY = -8 - liftProg * 65;
-    gRot = 0.15 + liftProg * 0.4;
+
+  if (act4Prog < 0.65) {
+    // 1. Antecipação (Erguendo alto no ar com acúmulo de energia)
+    const liftProg = act4Prog / 0.65;
+    const smoothLift = Math.sin(liftProg * Math.PI * 0.5);
+    gY = -6 - smoothLift * 75;
+    gRot = 0.15 + smoothLift * 0.45;
+  } else if (act4Prog < 0.85) {
+    // 2. Queda Violenta com aceleração quadrática (gravidade)
+    const slamProg = (act4Prog - 0.65) / 0.20;
+    const accelSlam = slamProg * slamProg;
+    gY = -81 + accelSlam * 115; // Atinge +34px (chão firme)
+    gRot = 0.60 - slamProg * 0.75;
   } else {
-    // Esmagando violentamente no solo
-    const slamProg = (act4Prog - 0.60) / 0.40;
-    gY = -73 + slamProg * 115;
-    gRot = 0.55 - slamProg * 0.7;
+    // 3. Rebote de Impacto e assentamento para combate
+    const reboundProg = (act4Prog - 0.85) / 0.15;
+    const reboundEase = Math.sin(reboundProg * Math.PI * 0.5);
+    gY = 34 - reboundEase * 40; // Volta suave para -6px de flutuação
+    gRot = -0.15 + reboundEase * 0.30;
   }
 
   const slamGauntlets = {
     left: { x: -62, y: gY, rot: -gRot },
     right: { x: 62, y: gY, rot: gRot }
   };
-  drawFloatingGauntlets(ctx, { ...e, gauntlets: slamGauntlets }, bob, frameCount, false, false, false, act4Prog < 0.6);
+  drawFloatingGauntlets(ctx, { ...e, gauntlets: slamGauntlets }, bob, frameCount, false, false, false, act4Prog < 0.65);
 
-  // Onda de Choque Telúrica massiva expandindo no solo ao atingir act4Prog >= 0.70
+  // Efeito Visual de Choque Sísmico no solo a partir do impacto (act4Prog >= 0.70)
   if (act4Prog >= 0.70) {
     const shockProg = (act4Prog - 0.70) / 0.30;
-    const shockR = shockProg * 320;
+    const shockR = shockProg * 350;
     const shockAlpha = Math.max(0, 1 - shockProg);
 
     ctx.save();
-    ctx.translate(0, 48);
+    ctx.translate(0, calderaY);
     ctx.scale(1, 0.42);
 
-    // Anel externo ardente
+    // Anel externo incandescente
     ctx.strokeStyle = `rgba(255, 234, 167, ${shockAlpha * 0.95})`;
-    ctx.lineWidth = 6 * (1 - shockProg * 0.5);
+    ctx.lineWidth = Math.max(1, 7 * (1 - shockProg * 0.5));
     ctx.beginPath();
     ctx.arc(0, 0, shockR, 0, Math.PI * 2);
     ctx.stroke();
@@ -394,16 +418,15 @@ export function drawMonolithSpawnIntro(ctx, e, frameCount) {
     ctx.strokeStyle = `rgba(230, 126, 34, ${shockAlpha * 0.75})`;
     ctx.lineWidth = 3.5;
     ctx.beginPath();
-    ctx.arc(0, 0, shockR * 0.78, 0, Math.PI * 2);
+    ctx.arc(0, 0, shockR * 0.82, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Fagulhas voando ao longo do anel
+    // Partículas de estilhaço voando na crista da onda
     ctx.fillStyle = '#ffffff';
-    for (let sp = 0; sp < 12; sp++) {
-      const sa = sp * (Math.PI * 2 / 12) + frameCount * 0.1;
+    for (let sp = 0; sp < 14; sp++) {
+      const sa = sp * (Math.PI * 2 / 14) + frameCount * 0.08;
       ctx.fillRect(Math.cos(sa) * shockR - 2, Math.sin(sa) * shockR - 2, 4, 4);
     }
-
     ctx.restore();
   }
 }

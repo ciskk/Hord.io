@@ -113,7 +113,7 @@ export function executeTectonicSlam(e, context) {
 
   // Dano somente se estiver no cone frontal (< slamArc) e dentro do alcance (185px)
   if (pDist <= e.slamRadius && angleDiff <= e.slamArc && player.bossIFrames <= 0) {
-    let slamDamage = e.isPhase3 ? 88 : (e.isEnraged ? 82 : 75);
+    let slamDamage = e.isPhase3 ? 119 : (e.isEnraged ? 111 : 101);
     if (selectedHeroKey === 'KNIGHT') slamDamage = Math.round(slamDamage * 0.80);
 
     player.hp -= slamDamage;
@@ -177,7 +177,6 @@ export function executeTectonicSlam(e, context) {
  */
 export function executeEpicenterEruption(e, context) {
   const { player, triggerShake, createHitParticles, addDamageText } = context;
-
   playSfx('boss');
   triggerShake(16);
   triggerHaptic('heavy');
@@ -190,19 +189,17 @@ export function executeEpicenterEruption(e, context) {
     createHitParticles(e.x + Math.cos(cAng) * cDist, e.y + Math.sin(cAng) * cDist, '#f39c12', 1);
   }
 
-  // Avaliação de Dano no Anel Externo (140 a 245px)
+  // Avaliação de Dano no Epicentro (< 115px)
   const pDist = Math.hypot(player.x - e.x, player.y - e.y);
-  if (pDist >= 140 && pDist <= 245 && player.bossIFrames <= 0) {
-    let surgeDmg = e.isPhase3 ? 31 : (e.isEnraged ? 29 : 26);
-    if (selectedHeroKey === 'KNIGHT') surgeDmg = Math.round(surgeDmg * 0.80);
-
-    player.hp -= surgeDmg;
+  if (pDist < 115 && player.bossIFrames <= 0) {
+    let epicenterDmg = e.isPhase3 ? 152 : (e.isEnraged ? 140 : 132);
+    if (selectedHeroKey === 'KNIGHT') epicenterDmg = Math.round(epicenterDmg * 0.80);
+    player.hp -= epicenterDmg;
     player.bossIFrames = 20;
-    setLastAttackerName("Onda de Fendas Tectônicas");
+    setLastAttackerName("Erupção do Epicentro");
     playSfx('hit');
     addDamageText(player.x, player.y, `-${epicenterDmg}`, true, '#ff4757');
     createHitParticles(player.x, player.y, '#ff4757', 10);
-
     if (player.hp <= 0) {
       player.hp = 0;
       triggerDeath();
@@ -240,7 +237,7 @@ export function executeOuterSurge(e, context) {
   // Avaliação de Dano no Anel Externo (140 a 245px)
   const pDist = Math.hypot(player.x - e.x, player.y - e.y);
   if (pDist >= 140 && pDist <= 245 && player.iFrames <= 0) {
-    let surgeDmg = e.isPhase3 ? 31 : (e.isEnraged ? 29 : 26);
+    let surgeDmg = e.isPhase3 ? 124 : (e.isEnraged ? 116 : 104);
     if (selectedHeroKey === 'KNIGHT') surgeDmg = Math.round(surgeDmg * 0.80);
 
     player.hp -= surgeDmg;
@@ -269,7 +266,6 @@ export function executeOuterSurge(e, context) {
  */
 export function executePlateWhirl(e, context) {
   const { player, triggerShake, createHitParticles, addDamageText } = context;
-
   playSfx('hit');
   triggerShake(10);
   triggerHaptic('medium');
@@ -280,23 +276,20 @@ export function executePlateWhirl(e, context) {
     createHitParticles(e.x + Math.cos(ang) * dist, e.y + Math.sin(ang) * dist, '#ff4757', 1);
   }
 
-  // Avaliação de Dano no Epicentro (< 115px)
+  // Avaliação de Dano no raio das placas giratórias (<= 110px)
   const pDist = Math.hypot(player.x - e.x, player.y - e.y);
-  if (pDist < 115 && player.bossIFrames <= 0) {
-    let epicenterDmg = e.isPhase3 ? 38 : (e.isEnraged ? 35 : 33);
-    if (selectedHeroKey === 'KNIGHT') epicenterDmg = Math.round(epicenterDmg * 0.80);
-
-    player.hp -= epicenterDmg;
+  if (pDist <= 110 && player.bossIFrames <= 0) {
+    let whirlDmg = e.isPhase3 ? 51 : (e.isEnraged ? 47 : 45);
+    if (selectedHeroKey === 'KNIGHT') whirlDmg = Math.round(whirlDmg * 0.80);
+    player.hp -= whirlDmg;
     player.bossIFrames = 22;
-    setLastAttackerName("Erupção do Epicentro");
+    setLastAttackerName("Varredura de Placas");
     playSfx('hit');
     addDamageText(player.x, player.y, `-${whirlDmg}`, false, '#ff4757');
     createHitParticles(player.x, player.y, '#ff4757', 8);
-
     const pushAng = Math.atan2(player.y - e.y, player.x - e.x);
     player.x += Math.cos(pushAng) * 26;
     player.y += Math.sin(pushAng) * 26;
-
     if (player.hp <= 0) {
       player.hp = 0;
       triggerDeath();

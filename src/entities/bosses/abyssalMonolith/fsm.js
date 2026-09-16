@@ -160,96 +160,98 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
       e.isVulnerable = false;
       e.isTargetable = false;
 
-      // Preenchimento suave de lava na barra de HP
+      // Preenchimento contínuo de calor na barra de HP
       const hpPercent = Math.min(100, Math.round(progress * 100));
       const bossHpFill = document.getElementById('boss-hp-fill');
       if (bossHpFill) bossHpFill.style.width = `${hpPercent}%`;
       const bossHpVal = document.getElementById('boss-hp-val');
       if (bossHpVal) bossHpVal.innerText = `${hpPercent}%`;
 
-      // ATO 1: A Ruptura Tectônica & Terremoto (0.00 <= progress < 0.24, frames 0-72)
-      if (progress < 0.24) {
-        if (Math.floor(e.introTimer) === Math.floor(introMax - 4)) {
+      // ATO 1: Ruptura da Crosta Tectônica (0.00 <= progress < 0.25)
+      if (progress < 0.25) {
+        if (!e.hasStartedIntro) {
+          e.hasStartedIntro = true;
           playSfx('charge');
         }
-        if (Math.floor(frameCount) % 4 === 0) {
-          triggerShake(1.5 + progress * 6);
+        if (Math.floor(frameCount) % 3 === 0) {
+          triggerShake(1.5 + progress * 8);
           const pAngle = Math.random() * Math.PI * 2;
-          const pDist = 60 + Math.random() * 120;
+          const pDist = 40 + Math.random() * 95;
           createHitParticles(
             e.x + Math.cos(pAngle) * pDist,
-            e.y + Math.sin(pAngle) * pDist,
+            e.y + Math.sin(pAngle) * (pDist * 0.45) + 48,
             '#e67e22',
             1
           );
         }
       }
-      // ATO 2: Ascensão do Titã & Atração Gravitacional (0.24 <= progress < 0.50, frames 72-150)
-      else if (progress < 0.50) {
-        if (Math.floor(e.introTimer) === Math.floor(introMax * 0.76)) {
+      // ATO 2: Erupção e Ascensão do Colosso (0.25 <= progress < 0.55)
+      else if (progress < 0.55) {
+        if (!e.hasEmergedSfx) {
+          e.hasEmergedSfx = true;
           playSfx('warp');
-          triggerHaptic('medium');
+          triggerHaptic('heavy');
         }
         if (Math.floor(frameCount) % 3 === 0) {
-          triggerShake(2.5 + Math.sin(progress * 10) * 2.5);
+          triggerShake(3.5 + Math.sin(progress * 10) * 2.0);
           const pAngle = Math.random() * Math.PI * 2;
-          const pDist = 30 + Math.random() * 75;
-          createHitParticles(e.x + Math.cos(pAngle) * pDist, e.y + Math.sin(pAngle) * pDist, '#d35400', 2);
-          createHitParticles(e.x, e.y, '#f39c12', 1);
+          const pDist = 30 + Math.random() * 70;
+          createHitParticles(e.x + Math.cos(pAngle) * pDist, e.y + 48, '#d35400', 2);
+          createHitParticles(e.x, e.y + 20, '#f39c12', 1);
         }
       }
-      // ATO 3: Convocação dos Litocistos & Banner Imperial (0.50 <= progress < 0.76, frames 150-228)
-      else if (progress < 0.76) {
-        if (!e.hasTriggeredTitle) {
+      // ATO 3: Ejeção dos Litocistos e Ignição do Núcleo (0.55 <= progress < 0.80)
+      else if (progress < 0.80) {
+        if (!e.hasTriggeredTitle && progress >= 0.58) {
           e.hasTriggeredTitle = true;
           e.titleTimer = e.titleMaxTimer || 180;
           playSfx('forcefield');
           triggerHaptic('medium');
         }
         if (Math.floor(frameCount) % 3 === 0) {
-          triggerShake(3.0 + Math.sin(progress * 12) * 2.5);
+          triggerShake(3.0 + Math.sin(progress * 8) * 1.5);
           createHitParticles(
-            e.x + (Math.random() - 0.5) * e.radius * 2.4,
-            e.y + (Math.random() - 0.5) * e.radius * 2.4,
+            e.x + (Math.random() - 0.5) * e.radius * 2.0,
+            e.y + (Math.random() - 0.5) * e.radius * 1.5,
             '#e67e22',
-            2
+            1
           );
         }
       }
-      // ATO 4: Impacto Telúrico & Ruptura da Arena (0.76 <= progress <= 1.00, frames 228-300)
+      // ATO 4: Impacto Telúrico das Manoplas e Despertar (0.80 <= progress <= 1.00)
       else {
-        if (!e.hasRoared) {
+        // Impacto sísmico sincronizado com a queda violenta das manoplas (aos 93% da intro)
+        if (progress >= 0.93 && !e.hasRoared) {
           e.hasRoared = true;
           playSfx('boss');
-          triggerShake(20);
+          triggerShake(24);
           triggerHaptic('heavy');
           addDamageText(e.x, e.y - 50, "DESPERTAR TELÚRICO!", true, '#e67e22');
 
           if (Array.isArray(bossShockwaves)) {
             bossShockwaves.push({
               x: e.x,
-              y: e.y,
-              radius: 24,
-              maxRadius: 320,
-              speed: 9.0,
+              y: e.y + 28,
+              radius: 20,
+              maxRadius: 360,
+              speed: 9.5,
               damage: 0,
               colorRgb: '230, 126, 34',
               hitPlayer: false
             });
           }
 
-          for (let p = 0; p < 42; p++) {
+          for (let p = 0; p < 45; p++) {
             const rAng = Math.random() * Math.PI * 2;
-            const rDist = 25 + Math.random() * 160;
-            createHitParticles(e.x + Math.cos(rAng) * rDist, e.y + Math.sin(rAng) * rDist, '#e67e22', 2);
-            createHitParticles(e.x + Math.cos(rAng) * rDist, e.y + Math.sin(rAng) * rDist, '#f39c12', 1);
+            const rDist = 20 + Math.random() * 180;
+            createHitParticles(e.x + Math.cos(rAng) * rDist, e.y + Math.sin(rAng) * rDist + 20, '#e67e22', 2);
+            createHitParticles(e.x + Math.cos(rAng) * rDist, e.y + Math.sin(rAng) * rDist + 20, '#f39c12', 1);
+            createHitParticles(e.x, e.y + 20, '#ffffff', 1);
           }
-        }
-
-        if (Math.floor(frameCount) % 2 === 0) {
-          triggerShake(4.0);
-          createHitParticles(e.x, e.y, '#ffffff', 2);
-          createHitParticles(e.x, e.y, '#e67e22', 2);
+        } else if (!e.hasRoared && Math.floor(frameCount) % 3 === 0) {
+          triggerShake(2.5);
+          createHitParticles(e.x - 62, e.y - 40, '#ff7675', 1);
+          createHitParticles(e.x + 62, e.y - 40, '#ff7675', 1);
         }
       }
 
@@ -274,7 +276,7 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
           e.actionState = MONOLITH_STATES.CHASE;
           e.isVulnerable = false;
           e.skillCooldown = 45;
-          triggerShake(10);
+          triggerShake(8);
           playSfx('crit');
         }
       }
