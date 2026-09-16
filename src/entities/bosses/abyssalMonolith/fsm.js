@@ -336,7 +336,7 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
       }
       if (e.actionTimer <= 0) {
         e.actionState = MONOLITH_STATES.CHASE;
-        e.skillCooldown = e.isPhase3 ? 26 : (e.isEnraged ? 34 : 42);
+        e.skillCooldown = e.comboNext ? 14 : (e.isPhase3 ? 26 : (e.isEnraged ? 34 : 42));
         e.aimLocked = false;
       }
       return;
@@ -508,7 +508,7 @@ export function updateAbyssalMonolith(e, dt, context = {}) {
 
       e.skillCooldown -= dt;
       if (e.skillCooldown <= 0) {
-        selectNextSkill(e, dist);
+        selectNextSkill(e, dist, player);
       }
       break;
     }

@@ -10,7 +10,11 @@ import {
   updateReaperLanterns, 
   spawnReaperLanterns, 
   updateSoulTether, 
-  updateDelayedActions 
+  updateDelayedActions,
+  updateScytheBoomerang,
+  updateSoulWells,
+  updateDeathMarkExecution,
+  updateTriadSlash
 } from './mechanics.js';
 import { 
   selectReaperSkill, 
@@ -203,6 +207,10 @@ export function updateSupremeReaper(e, dt, context) {
   updateReaperLanterns(e, dt, context);
   checkReaperPhases(e, context);
   updateSoulTether(e, dt, context);
+  updateScytheBoomerang(e, dt, context);
+  updateSoulWells(e, dt, context);
+  updateDeathMarkExecution(e, dt, context);
+  updateTriadSlash(e, dt, context);
 
   // MÁQUINA DE ESTADOS PRINCIPAL
   switch (e.actionState) {
@@ -223,54 +231,79 @@ export function updateSupremeReaper(e, dt, context) {
       const bossHpVal = document.getElementById('boss-hp-val');
       if (bossHpVal) bossHpVal.innerText = `${hpPercent}%`;
 
-      // ATO 1: O Frio Sepulcral & Fenda no Véu (0.00 <= progress < 0.24, frames 0-72)
-      if (progress < 0.24) {
+      // ATO 1: O Frio Sepulcral & Selo Rúnico de Almas (0.00 <= progress < 0.25, frames 0-75)
+      if (progress < 0.25) {
         e.introAct = 1;
-        e.wingTargetSpan = 0.15;
-        e.scytheTargetAngle = 0.6;
-        if (Math.floor(e.introTimer) === Math.floor(introMax - 4)) {
+        e.wingTargetSpan = 0.05;
+        e.scytheTargetAngle = 0.7;
+        e.introRuneAngle = (e.introRuneAngle || 0) + 0.032 * dt;
+
+        if (Math.floor(e.introTimer) === Math.floor(introMax - 2)) {
+          playSfx('singularity');
           playSfx('charge');
         }
-        if (Math.floor(frameCount) % 4 === 0) {
-          triggerShake(1.2 + progress * 5);
+
+        if (Math.floor(frameCount) % 3 === 0) {
+          triggerShake(1.2 + progress * 6);
           const pAngle = Math.random() * Math.PI * 2;
-          const pDist = 60 + Math.random() * 110;
+          const pDist = 30 + Math.random() * 110;
           createHitParticles(
             e.x + Math.cos(pAngle) * pDist,
             e.y + Math.sin(pAngle) * pDist,
             '#00cec9',
             1
           );
+          createHitParticles(e.x, e.y, '#81ecec', 1);
         }
       } 
-      // ATO 2: Convocação das Lanternas & Gaiolas de Almas (0.24 <= progress < 0.50, frames 72-150)
+      // ATO 2: A Queda da Foice Monumental & Despertar das Lanternas (0.25 <= progress < 0.50, frames 75-150)
       else if (progress < 0.50) {
         e.introAct = 2;
-        e.wingTargetSpan = 0.40;
-        e.scytheTargetAngle = 0.2;
-        if (Math.floor(e.introTimer) === Math.floor(introMax * 0.76)) {
-          playSfx('warp');
-          triggerHaptic('medium');
+        e.wingTargetSpan = 0.35;
+        e.introRuneAngle = (e.introRuneAngle || 0) + 0.045 * dt;
+
+        const act2Norm = (progress - 0.25) / 0.25;
+        // Foice despenca de -600 até 0 no solo
+        e.introScytheY = -600 * Math.max(0, 1 - act2Norm * 2.8);
+
+        if (act2Norm >= 0.35 && !e.introScytheEmbedded) {
+          e.introScytheEmbedded = true;
+          playSfx('shatter');
+          playSfx('boss');
+          triggerShake(22);
+          triggerHaptic('heavy');
+          addDamageText(e.x, e.y - 30, "A LÂMINA DO DESTINO!", true, '#00cec9');
+
+          for (let p = 0; p < 28; p++) {
+            const fAng = Math.random() * Math.PI * 2;
+            const fDist = 15 + Math.random() * 80;
+            createHitParticles(e.x + Math.cos(fAng) * fDist, e.y + Math.sin(fAng) * fDist, '#00cec9', 2);
+          }
         }
+
         if (Math.floor(frameCount) % 3 === 0) {
-          triggerShake(2.0 + Math.sin(progress * 10) * 2);
+          triggerShake(2.5 + Math.sin(progress * 10) * 2);
           const pAngle = Math.random() * Math.PI * 2;
-          const pDist = 30 + Math.random() * 75;
+          const pDist = 30 + Math.random() * 85;
           createHitParticles(e.x + Math.cos(pAngle) * pDist, e.y + Math.sin(pAngle) * pDist, '#81ecec', 2);
           createHitParticles(e.x, e.y, '#00cec9', 1);
         }
       } 
-      // ATO 3: Desdobrar do Serafim da Morte & Banner Imperial (0.50 <= progress < 0.76, frames 150-228)
-      else if (progress < 0.76) {
+      // ATO 3: Desdobrar do Serafim da Morte & Banner Imperial (0.50 <= progress < 0.75, frames 150-225)
+      else if (progress < 0.75) {
         e.introAct = 3;
-        e.wingTargetSpan = 1.25;
-        e.scytheTargetAngle = -0.5;
+        const act3Prog = (progress - 0.50) / 0.25;
+        e.wingTargetSpan = 0.35 + act3Prog * 1.05; // Asas abrem gradualmente até 1.4x
+        e.scytheTargetAngle = -0.4 + act3Prog * 0.2;
+
         if (!e.hasTriggeredTitle) {
           e.hasTriggeredTitle = true;
           e.titleTimer = e.titleMaxTimer || 180;
           playSfx('forcefield');
+          playSfx('crit');
           triggerHaptic('medium');
         }
+
         if (Math.floor(frameCount) % 3 === 0) {
           triggerShake(2.5 + Math.sin(progress * 12) * 2);
           createHitParticles(
@@ -281,15 +314,17 @@ export function updateSupremeReaper(e, dt, context) {
           );
         }
       } 
-      // ATO 4: Golpe do Julgamento & Onda de Choque (0.76 <= progress <= 1.00, frames 228-300)
+      // ATO 4: Golpe do Julgamento & Onda de Choque (0.75 <= progress <= 1.00, frames 225-300)
       else {
         e.introAct = 4;
         e.wingTargetSpan = 1.45;
-        e.scytheTargetAngle = 1.3 * e.facing;
+        e.scytheTargetAngle = 1.35 * e.facing;
+
         if (!e.hasRoared) {
           e.hasRoared = true;
           playSfx('boss');
-          triggerShake(18);
+          playSfx('crit');
+          triggerShake(20);
           triggerHaptic('heavy');
           addDamageText(e.x, e.y - 50, "A MORTE É O SEU DESTINO!", true, '#00cec9');
 
@@ -297,16 +332,16 @@ export function updateSupremeReaper(e, dt, context) {
             x: e.x,
             y: e.y,
             radius: 20,
-            maxRadius: 340,
-            speed: 8.5,
+            maxRadius: 360,
+            speed: 9.0,
             damage: 0,
             colorRgb: '0, 206, 201',
             hitPlayer: false
           });
 
-          for (let p = 0; p < 36; p++) {
+          for (let p = 0; p < 42; p++) {
             const rAng = Math.random() * Math.PI * 2;
-            const rDist = 20 + Math.random() * 150;
+            const rDist = 20 + Math.random() * 160;
             createHitParticles(e.x + Math.cos(rAng) * rDist, e.y + Math.sin(rAng) * rDist, '#00cec9', 2);
           }
         }
@@ -547,6 +582,83 @@ export function updateSupremeReaper(e, dt, context) {
         );
       }
 
+      if (e.actionTimer <= 0) {
+        executeReaperSkill(e, context);
+      }
+      return;
+    }
+
+    case REAPER_STATES.WINDUP_BOOMERANG: {
+      e.actionTimer -= dt;
+      e.wingTargetSpan = 1.35;
+      e.scytheTargetAngle = 1.6 * e.facing;
+      e.scytheGlow = 1.0;
+      if (e.actionTimer > 10) {
+        e.aimAngle = Math.atan2(player.y - e.y, player.x - e.x);
+      }
+      if (Math.floor(frameCount) % 3 === 0) {
+        createHitParticles(e.x + Math.cos(e.aimAngle) * 45, e.y + Math.sin(e.aimAngle) * 45, '#00cec9', 2);
+      }
+      if (e.actionTimer <= 0) {
+        executeReaperSkill(e, context);
+      }
+      return;
+    }
+
+    case REAPER_STATES.BOOMERANG_ACTIVE: {
+      e.actionTimer -= dt;
+      e.wingTargetSpan = 1.05;
+      e.scytheGlow = 0;
+      const dx = player.x - e.x;
+      const dy = player.y - e.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 120) {
+        const angle = Math.atan2(dy, dx);
+        e.x += Math.cos(angle) * (e.speed * 0.70) * dt;
+        e.y += Math.sin(angle) * (e.speed * 0.70) * dt;
+      }
+      if (!e.boomerangScythe || !e.boomerangScythe.active || e.actionTimer <= 0) {
+        e.isUnarmed = false;
+        e.actionState = REAPER_STATES.CHASE;
+        e.skillCooldown = e.isEnraged ? 35 : 50;
+      }
+      return;
+    }
+
+    case REAPER_STATES.WINDUP_EXECUTION: {
+      e.actionTimer -= dt;
+      e.wingTargetSpan = 1.55;
+      e.scytheTargetAngle = -Math.PI * 0.55;
+      e.scytheGlow = 1.0;
+      if (Math.floor(frameCount) % 2 === 0) {
+        createHitParticles(e.x + (Math.random() - 0.5) * 30, e.y - 45 - Math.random() * 20, '#ff4757', 2);
+      }
+      if (e.actionTimer <= 0) {
+        executeReaperSkill(e, context);
+      }
+      return;
+    }
+
+    case REAPER_STATES.WINDUP_SOUL_WELLS: {
+      e.actionTimer -= dt;
+      e.wingTargetSpan = 1.25;
+      e.scytheTargetAngle = -1.3 * e.facing;
+      e.scytheGlow = 1.0;
+      if (Math.floor(frameCount) % 3 === 0) {
+        createHitParticles(e.x + (Math.random() - 0.5) * 40, e.y + 35, '#00cec9', 2);
+      }
+      if (e.actionTimer <= 0) {
+        executeReaperSkill(e, context);
+      }
+      return;
+    }
+
+    case REAPER_STATES.WINDUP_TRIAD_SLASH: {
+      e.actionTimer -= dt;
+      e.wingTargetSpan = 1.45;
+      if (Math.floor(frameCount) % 3 === 0) {
+        createHitParticles(e.x, e.y, '#ff4757', 2);
+      }
       if (e.actionTimer <= 0) {
         executeReaperSkill(e, context);
       }

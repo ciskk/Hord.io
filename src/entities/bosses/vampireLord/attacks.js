@@ -36,92 +36,190 @@ function triggerRepulsionSkill(e, player, bossTelegraphs) {
 }
 
 /**
- * Seleciona a próxima habilidade com base no alcance, fase e ritmo, gerando os telégrafos imediatamente no início da preparação.
+ * Seleciona a próxima habilidade com base em avaliação tática situacional (Envelope Anti-Whiff, Distância Real e Combos).
+ * Elimina bugs probabilísticos e escolhe com inteligência agressiva o fechamento de distância e punições corpo a corpo.
  */
 function selectNextSkill(e, dist, player, bossTelegraphs) {
   const isEnraged = e.isEnraged;
-  const rand = Math.random();
   const angleToPlayer = Math.atan2(player.y - e.y, player.x - e.x);
 
-  if (dist < 145) {
-    if ((e.meleeContactTimer || 0) >= 120 && (e.repulsionCooldown || 0) <= 0) {
-      triggerRepulsionSkill(e, player, bossTelegraphs);
-      return;
-    }
-    const cleaveDuration = isEnraged ? 52 : 68;
-    e.currentSkill = 'CLEAVE';
-    e.actionState = 'WINDUP';
-    e.actionTimer = cleaveDuration;
-    e.aimAngle = angleToPlayer;
-    e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
-
-    // Telégrafo gerado no frame 0 do windup para legibilidade completa
-    bossTelegraphs.push({
-      type: 'SCYTHE_CLEAVE',
-      x: e.x,
-      y: e.y,
-      radius: 135,
-      angle: e.aimAngle,
-      arcHalf: Math.PI * 0.38,
-      timer: cleaveDuration,
-      maxTimer: cleaveDuration,
-      damage: Math.round(e.damage * 0.55),
-      color: '#ff4757',
-      colorRgb: '255, 71, 87',
-      boss: e
-    });
-  } else if (dist > 320 && rand < 0.35) {
-    e.currentSkill = 'TELEPORT';
-    e.actionState = 'WINDUP';
-    e.actionTimer = isEnraged ? 20 : 30;
-    e.aimAngle = angleToPlayer;
-    e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
-  } else if (rand < 0.22) {
-    const dashWindup = isEnraged ? 22 : 32;
-    e.currentSkill = 'MIST_DASH';
-    e.actionState = 'WINDUP';
-    e.actionTimer = dashWindup;
-    e.aimAngle = angleToPlayer;
-    e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
-
-    // Faixa telegrafada do trajeto da investida
-    bossTelegraphs.push({
-      type: 'MIST_DASH_LANE',
-      x: e.x,
-      y: e.y,
-      angle: e.aimAngle,
-      length: e.speed * (isEnraged ? 4.2 : 3.6) * 28,
-      width: e.radius * 1.8,
-      timer: dashWindup,
-      maxTimer: dashWindup,
-      boss: e
-    });
-  } else if (rand < 0.46) {
-    e.currentSkill = 'SPIRAL_BARRAGE';
-    e.actionState = 'WINDUP';
-    e.actionTimer = isEnraged ? 24 : 34;
-    e.aimAngle = angleToPlayer;
-    e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
-  } else if (rand < 0.68) {
-    e.currentSkill = 'PINCER_SHOT';
-    e.actionState = 'WINDUP';
-    e.actionTimer = isEnraged ? 22 : 32;
-    e.aimAngle = angleToPlayer;
-    e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
-    e.isWingPrepping = true;
-  } else if (isEnraged && rand < 0.84) {
-    e.currentSkill = 'BLOOD_BURST';
-    e.actionState = 'WINDUP';
-    e.actionTimer = 36;
-    e.aimAngle = angleToPlayer;
-    e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
-  } else {
-    e.currentSkill = 'SWARM';
-    e.actionState = 'WINDUP';
-    e.actionTimer = isEnraged ? 20 : 28;
-    e.aimAngle = angleToPlayer;
-    e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
+  // 1. Checagem de Repulsão Prioritária se o jogador estiver muito tempo grudado no chefe
+  if ((e.meleeContactTimer || 0) >= 100 && (e.repulsionCooldown || 0) <= 0 && dist < 155) {
+    triggerRepulsionSkill(e, player, bossTelegraphs);
+    e.lastUsedSkill = 'REPULSION';
+    return;
   }
+
+  // 2. Tabela de Avaliação de Pesos Táticos (Utility Scoring)
+  const weights = {
+    CLEAVE: 0,
+    REPULSION: 0,
+    MIST_DASH: 0,
+    TELEPORT: 0,
+    SPIRAL_BARRAGE: 0,
+    PINCER_SHOT: 0,
+    BLOOD_BURST: 0,
+    SWARM: 0
+  };
+
+  // CÁLCULO DOS PESOS BASE POR FAIXA DE DISTÂNCIA
+  if (dist < 150) {
+    // Zona 0: Curta Distância / Melee (< 150px)
+    // Alternância inteligente entre corte devastador, sangue ou repulsão
+    weights.CLEAVE = 55;
+    if ((e.repulsionCooldown || 0) <= 0) {
+      weights.REPULSION = 25;
+    }
+    if (isEnraged) {
+      weights.BLOOD_BURST = 35;
+    }
+    weights.PINCER_SHOT = 15;
+  } else if (dist <= 300) {
+    // Zona 1: Médio Alcance (150px a 300px)
+    // Faixa ideal para investidas táticas em névoa, pinças e rajada espiral
+    weights.MIST_DASH = 45;
+    weights.PINCER_SHOT = 40;
+    weights.SPIRAL_BARRAGE = 30;
+    weights.SWARM = 25;
+    weights.TELEPORT = 25;
+    if (isEnraged) {
+      weights.BLOOD_BURST = 30;
+    }
+  } else {
+    // Zona 2: Longo Alcance (> 300px)
+    // O Vampiro NUNCA fica inerte atirando orbes lentos de longe:
+    // Prioridade máxima em investida rápida em névoa (Mist Dash) ou Teleporte surpresa!
+    weights.MIST_DASH = 55;
+    weights.TELEPORT = 45;
+    weights.SWARM = 25;
+    weights.PINCER_SHOT = 15;
+  }
+
+  // 3. Leitura Comportamental do Jogador
+  if (player && player.isMoving) {
+    // Jogador em movimento: o Pincer Shot (garras de sangue convergentes) é excelente para punir corrida lateral
+    if (dist >= 140 && dist <= 380) {
+      weights.PINCER_SHOT *= 1.35;
+    }
+
+    // Se o jogador estiver correndo para longe a longa distância, prioriza ainda mais Mist Dash e Teleport
+    const pdx = player.x - e.x;
+    const pdy = player.y - e.y;
+    const pvx = player.vx || (player.pushVx || 0);
+    const pvy = player.vy || (player.pushVy || 0);
+    const isRetreating = (pvx * pdx + pvy * pdy) > 0;
+    if (isRetreating && dist > 260) {
+      weights.MIST_DASH *= 1.4;
+      weights.TELEPORT *= 1.3;
+    }
+  }
+
+  // 4. Anti-Spam: Reduz repetição consecutiva da mesma habilidade
+  if (e.lastUsedSkill && weights[e.lastUsedSkill] > 0) {
+    weights[e.lastUsedSkill] *= 0.20;
+  }
+
+  // 5. Sorteio Ponderado por Roleta
+  let totalWeight = 0;
+  for (const skill in weights) {
+    totalWeight += weights[skill];
+  }
+
+  if (totalWeight <= 0) {
+    weights.CLEAVE = 1;
+    totalWeight = 1;
+  }
+
+  let roll = Math.random() * totalWeight;
+  let chosenSkill = 'CLEAVE';
+
+  for (const skill in weights) {
+    roll -= weights[skill];
+    if (roll <= 0) {
+      chosenSkill = skill;
+      break;
+    }
+  }
+
+  // 6. Preparação e Telégrafos da Habilidade Escolhida
+  e.currentSkill = chosenSkill;
+  e.aimAngle = angleToPlayer;
+  e.facing = Math.cos(e.aimAngle) >= 0 ? 1 : -1;
+  e.isWingPrepping = false;
+
+  switch (chosenSkill) {
+    case 'REPULSION':
+      triggerRepulsionSkill(e, player, bossTelegraphs);
+      break;
+
+    case 'CLEAVE': {
+      const cleaveDuration = isEnraged ? 52 : 68;
+      e.actionState = 'WINDUP';
+      e.actionTimer = cleaveDuration;
+      bossTelegraphs.push({
+        type: 'SCYTHE_CLEAVE',
+        x: e.x,
+        y: e.y,
+        radius: 135,
+        angle: e.aimAngle,
+        arcHalf: Math.PI * 0.38,
+        timer: cleaveDuration,
+        maxTimer: cleaveDuration,
+        damage: Math.round(e.damage * 0.55),
+        color: '#ff4757',
+        colorRgb: '255, 71, 87',
+        boss: e
+      });
+      break;
+    }
+
+    case 'TELEPORT':
+      e.actionState = 'WINDUP';
+      e.actionTimer = isEnraged ? 20 : 30;
+      break;
+
+    case 'MIST_DASH': {
+      const dashWindup = isEnraged ? 22 : 32;
+      e.actionState = 'WINDUP';
+      e.actionTimer = dashWindup;
+      bossTelegraphs.push({
+        type: 'MIST_DASH_LANE',
+        x: e.x,
+        y: e.y,
+        angle: e.aimAngle,
+        length: e.speed * (isEnraged ? 4.2 : 3.6) * 28,
+        width: e.radius * 1.8,
+        timer: dashWindup,
+        maxTimer: dashWindup,
+        boss: e
+      });
+      break;
+    }
+
+    case 'SPIRAL_BARRAGE':
+      e.actionState = 'WINDUP';
+      e.actionTimer = isEnraged ? 24 : 34;
+      break;
+
+    case 'PINCER_SHOT':
+      e.actionState = 'WINDUP';
+      e.actionTimer = isEnraged ? 22 : 32;
+      e.isWingPrepping = true;
+      break;
+
+    case 'BLOOD_BURST':
+      e.actionState = 'WINDUP';
+      e.actionTimer = 36;
+      break;
+
+    case 'SWARM':
+    default:
+      e.actionState = 'WINDUP';
+      e.actionTimer = isEnraged ? 20 : 28;
+      break;
+  }
+
+  e.lastUsedSkill = chosenSkill;
 }
 
 /**

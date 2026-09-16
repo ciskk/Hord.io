@@ -670,11 +670,11 @@ export function triggerHeroSkill() {
         targetX: targetX,
         targetY: targetY,
         radius: 8,
-        damage: (player.damage * 0.9) * 0.60, // 1: Dano do ataque 40% menor
+        damage: player.damage * 0.70,
         life: flightFrames,
         angle: 0,
         puddleRadius: 48,
-        puddleDuration: Math.round(380 / 1.5), // 3: Some 1,5x mais rápido (~253 frames)
+        puddleDuration: player.evolvedPotion ? 340 : 280,
         isEvolved: player.evolvedPotion,
         trail: []
       });
@@ -764,6 +764,10 @@ export function updateSpinningAxes(dt) {
           const isBossTarget = isBossEntity || isSubTarget || !!e.isMiniBoss;
           dmg *= isBossTarget ? 1.5 : 2.0;
           isKaelExecute = true;
+        }
+
+        if (e.acidStacks > 0) {
+          dmg *= (1 + e.acidStacks * 0.06);
         }
 
         const isCrit = (player.invisTimer > 0) || (Math.random() < player.critChance);
@@ -856,7 +860,7 @@ export function fireWeapons() {
     if (w.timer < w.cooldown) continue;
 
     let weaponRange = 320;
-    if (w.type === 'POTION') weaponRange = 480;
+    if (w.type === 'POTION') weaponRange = 312;
     else if (w.type === 'HAMMER') weaponRange = 110;
     else if (w.type === 'SWORD') weaponRange = 300;
     else if (w.type === 'STAFF') weaponRange = 340;
@@ -993,17 +997,13 @@ export function fireWeapons() {
       const potencyMult = 1 + (w.potencyCount || 0) * 0.05;
       const gravity = 0.24;
 
-      const basePotionDmg = (player.damage * w.damageMult * (player.evolvedPotion ? 1.6 : 1.0)) * 0.60;
+      // Dano base de impacto químico suave (alquimia foca em veneno e DoT, não em impacto físico maciço)
+      const basePotionDmg = player.damage * w.damageMult * (player.evolvedPotion ? 1.0 : 0.65);
 
       for (let i = 0; i < count; i++) {
         const arcOffset = i * 0.35;
-
-        let volleyMult = 1.0;
-        let penaltyRate = 0.50;
-        for (let k = 1; k <= i; k++) {
-          volleyMult *= (1 - penaltyRate);
-          penaltyRate *= 0.50;
-        }
+        // Anti-Shotgun: 1º frasco causa 100% de impacto; frascos adicionais na mesma salva causam 25% de respingo
+        const volleyMult = i === 0 ? 1.0 : 0.25;
 
         bullets.push({
           type: 'POTION',
@@ -1019,7 +1019,7 @@ export function fireWeapons() {
           life: flightFrames,
           angle: i * 0.4,
           puddleRadius: 42 * potencyMult,
-          puddleDuration: Math.round(340 / 1.5),
+          puddleDuration: player.evolvedPotion ? 340 : 280,
           isEvolved: player.evolvedPotion,
           trail: []
         });
@@ -1148,6 +1148,7 @@ export function resetPlayer(heroKey) {
   player.staffCastTimer = 0;
   player.potionThrowTimer = 0;
   player.alchemistSkillTimer = 0;
+  player.alchemistHealTimer = 0;
 
   player.axeAngle = 0;
   player.axeSpinSpeed = 0.085;
@@ -1158,7 +1159,7 @@ export function resetPlayer(heroKey) {
   player.axeHitCount = 0;
   player.axeBossHealCd = 0;
 
-  if (heroKey === 'ALCHEMIST') player.range = 480;
+  if (heroKey === 'ALCHEMIST') player.range = 312;
   else if (heroKey === 'KNIGHT') player.range = 110;
   else if (heroKey === 'MAGE') player.range = 340;
   else player.range = 320;

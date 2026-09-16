@@ -14,6 +14,7 @@ export function initVampireLord(boss) {
   boss.actionState = VAMPIRE_STATES.SPAWN_INTRO;
   boss.actionTimer = 0;
   boss.currentSkill = null; // 'CLEAVE', 'SWARM', 'MIST_DASH', 'TELEPORT', 'BLOOD_BURST', 'SPIRAL_BARRAGE', 'PINCER_SHOT'
+  boss.lastUsedSkill = null;
   boss.skillCooldown = 70;
   boss.aimAngle = 0;
   boss.isWingPrepping = false;

@@ -16,6 +16,7 @@ export function initSupremeReaper(boss) {
   boss.actionState = REAPER_STATES.SPAWN_INTRO;
   boss.actionTimer = 0;
   boss.currentSkill = null;
+  boss.lastUsedSkill = null;
   boss.skillCooldown = 75;
   boss.aimAngle = 0;
 
@@ -52,6 +53,18 @@ export function initSupremeReaper(boss) {
   boss.tetherMaxDist = REAPER_CONFIG.TETHER_MAX_DIST;
   boss.blinkTarget = null;
   boss.phantoms = [];
+
+  // Novas Mecânicas: Foice Bumerangue, Guilhotina, Poços e Tríade
+  boss.boomerangScythe = null;
+  boss.isUnarmed = false;
+  boss.soulWells = [];
+  boss.deathMark = null;
+  boss.triadClones = [];
+
+  // Variáveis da Nova Introdução Cinematográfica
+  boss.introRuneAngle = 0;
+  boss.introScytheY = -600;
+  boss.introScytheEmbedded = false;
 
   // Parâmetros de Animação Procedural 2.5D e Expressividade
   boss.floatY = 0;

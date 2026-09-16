@@ -222,20 +222,20 @@ export const CHARACTERS = {
     difficulty: 2,
     lore: "Erudita dos venenos arcanos e ácidos mutagênicos. Domina a criação de compostos voláteis que dissolvem defesas e paralisam hordas sem depender de força bruta.",
     passive: {
-      name: "Miasma Corrosivo & Vapor Estimulante",
-      desc: "Poças violetas dissolvem projéteis inimigos, aplicam 70% de lentidão e acumulam corrosão (+6% de dano sofrido por acúmulo, até +30%). Pisar no miasma concede 3s de regeneração contínua e +15% de velocidade."
+      name: "Miasma Corrosivo & Fixação Cáustica",
+      desc: "Poças e impactos aplicam corrosão (+6% de dano sofrido por acúmulo, até +30%) e veneno aderente contínuo. Poças dissolvem tiros e aplicam 70% de lentidão. Pisar nelas concede 3s de cura contínua e +15% de velocidade."
     },
     weapon: {
       name: "Frascos Cáusticos",
-      type: "Bombardeio Químico em Área",
-      desc: "Lança frascos corrosivos de alta cadência criando zonas ácidas. Inimigos dissolvidos deixam poças secundárias em cadeia."
+      type: "Bombardeio Químico & Veneno Aderente",
+      desc: "Lança frascos corrosivos que se fixam aos alvos e criam zonas ácidas. O veneno queima continuamente mesmo se o monstro correr ou der dash."
     },
     skill: {
       name: "Reagente Volátil",
       cooldown: "6.5s",
       desc: "Detona 6 frascos radiais sob 0.6s de imunidade evasiva, liberando uma cortina de fumaça que desorienta inimigos no entorno por 1.8s."
     },
-    desc: "Passiva: Poças dissolvem tiros, causam 70% de lentidão e acumulam até +30% de dano. Pisar nelas dá 3s de cura e +15% de velocidade.<br><b>Arma Inicial: Frascos Cáusticos</b> (Bombardeio químico contínuo com reação em cadeia).<br><b>Poder: Reagente Volátil</b> (6 frascos com 0.6s de imunidade e fumaça desorientadora).",
+    desc: "Passiva: Poças e impactos aplicam corrosão (até +30% de dano sofrido) e veneno aderente que drena vida mesmo em movimento. Dissolve tiros e dá 70% de lentidão. Pisar nelas dá 3s de cura e +15% de velocidade.<br><b>Arma Inicial: Frascos Cáusticos</b> (Bombardeio químico com veneno aderente e poças secundárias).<br><b>Poder: Reagente Volátil</b> (6 frascos com 0.6s de imunidade e fumaça desorientadora).",
     color: { 
       armor: "#1b2a22", 
       coat: "#112920",
@@ -268,7 +268,7 @@ export const CHARACTERS = {
     stats: { 
       hp: 105, 
       maxHp: 105, 
-      speed: 3.65, 
+      speed: 2.92, 
       damage: 43, 
       auraLvl: 0, 
       projectiles: 1, 

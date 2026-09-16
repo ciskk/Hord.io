@@ -507,12 +507,9 @@ function update(dt) {
       createHitParticles(ventX, ventY, pColor, (player.alchemistSkillTimer > 0) ? 3 : 1);
     }
 
-    // Passiva: Decaimento e Regeneração do Vapor Estimulante Móvel
+    // Passiva: Decaimento e Partículas do Vapor Estimulante Móvel (+15% vel)
     if (player.alchemistBuffTimer > 0) {
       player.alchemistBuffTimer -= dt;
-      if (player.hp < player.maxHp) {
-        player.hp = Math.min(player.maxHp, player.hp + 2.5 * (dt / 60));
-      }
       if (Math.floor(frameCount) % 6 === 0) {
         createHitParticles(player.x + (Math.random() - 0.5) * 14, player.y + 6, '#55efc4', 1);
       }
@@ -1080,6 +1077,8 @@ function update(dt) {
           e.acidStacks = Math.min(5, (e.acidStacks || 0) + 1);
           e.acidStackTimer = 180;
         }
+        e.acidBurnTimer = Math.max(e.acidBurnTimer || 0, 160);
+        if (p.isEvolved) e.acidBurnEvolved = true;
       }
     }
 
@@ -1545,17 +1544,46 @@ function update(dt) {
       if (Math.abs(e.pushVy) < 0.05) e.pushVy = 0;
     }
 
-    if (e.stunTimer > 0) {
-      e.stunTimer -= dt;
-      continue;
-    }
-
     if (e.acidStackTimer > 0) {
       e.acidStackTimer -= dt;
       if (e.acidStackTimer <= 0) e.acidStacks = 0;
     }
     if (e.confusedTimer > 0) e.confusedTimer -= dt;
     e.inAcidPuddle = false;
+
+    // DoT Aderente de Corrosão / Fixação Cáustica (Caminhos 1 e 3)
+    if (e.acidBurnTimer > 0) {
+      e.acidBurnTimer -= dt;
+      const stacks = Math.max(1, e.acidStacks || 1);
+      // Teto rígido com 5 stacks: ~75-95 DPS estável (+30% da corrosão)
+      const burnBasePerFrame = (e.acidBurnEvolved ? 0.35 : 0.24) * stacks;
+      const corrosionMult = 1 + (stacks * 0.06);
+      const frameDmg = burnBasePerFrame * corrosionMult * dt;
+
+      e.hp -= frameDmg;
+      e.hitFlash = Math.max(e.hitFlash || 0, 1);
+
+      e.burnDmgAcc = (e.burnDmgAcc || 0) + frameDmg;
+      e.burnTickTimer = (e.burnTickTimer || 0) + dt;
+      if (e.burnTickTimer >= 20) {
+        const displayDmg = Math.round(e.burnDmgAcc);
+        if (displayDmg >= 1) {
+          const burnColor = e.acidBurnEvolved ? '#00cec9' : '#a29bfe';
+          addDamageText(e.x, e.y - (e.radius || 14) * 0.5, displayDmg, false, burnColor);
+          createHitParticles(e.x, e.y, burnColor, 1);
+        }
+        e.burnDmgAcc = 0;
+        e.burnTickTimer = 0;
+      }
+      if (e.acidBurnTimer <= 0) {
+        e.acidBurnEvolved = false;
+      }
+    }
+
+    if (e.stunTimer > 0) {
+      e.stunTimer -= dt;
+      continue;
+    }
 
     if (freezeTimer <= 0) {
       const isConfused = ((player.invisTimer > 0) || (e.confusedTimer > 0)) && !e.isBoss;

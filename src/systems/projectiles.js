@@ -62,18 +62,26 @@ export function updateProjectiles(dt) {
             if (player.executeBonus > 0 && e.maxHp && (e.hp / e.maxHp) < 0.30) {
               impactDmg *= (1 + player.executeBonus);
             }
+            // Passiva de Corrosão da Valéria (+6% por stack até +30%)
+            if (e.acidStacks > 0) {
+              impactDmg *= (1 + e.acidStacks * 0.06);
+            }
             if (e.baseType === 'LITOCISTO') {
               impactDmg *= 4.0;
             } else if ((e.isBoss || e.isMiniBoss) && !e.isBossSubTarget) {
-              // Resistência de Chefes contra múltiplos impactos simultâneos de frascos
-              impactDmg *= 0.60;
+              // Resiliência de carapaça contra impacto direto de estilhaços de vidro (-25%)
+              impactDmg *= 0.75;
             }
             e.hp -= impactDmg;
             e.hitFlash = 4;
             addDamageText(e.x, e.y, Math.round(impactDmg), isCrit || isKaelExecute, isKaelExecute ? '#00cec9' : (isCrit ? '#f1c40f' : (b.isEvolved ? '#00cec9' : '#2ecc71')));
             createHitParticles(e.x, e.y, isKaelExecute ? '#00cec9' : (b.isEvolved ? '#00cec9' : '#2ecc71'), isKaelExecute ? 5 : 3);
 
-            // Ataques e poções da Valéria não causam knockback para manter os inimigos concentrados dentro do veneno
+            // FIXAÇÃO CÁUSTICA (Caminhos 1 e 3): O frasco quebra diretamente no alvo, aplicando veneno aderente
+            e.acidStacks = Math.min(5, (e.acidStacks || 0) + 1);
+            e.acidStackTimer = 200;
+            e.acidBurnTimer = Math.max(e.acidBurnTimer || 0, 180);
+            if (b.isEvolved) e.acidBurnEvolved = true;
           }
         }
 
@@ -81,8 +89,8 @@ export function updateProjectiles(dt) {
           x: b.x,
           y: b.y,
           radius: puddleRadius,
-          damage: (b.damage * 0.45) * 0.80, // 2: Dano da área envenenada 20% menor
-          life: puddleLife, // 3: Some 1,5x mais rápido
+          damage: (b.damage || 20) * 0.40,
+          life: puddleLife,
           maxLife: puddleLife,
           isAlchemist: true,
           isEvolved: !!b.isEvolved
@@ -152,6 +160,11 @@ export function updateProjectiles(dt) {
         }
         if (player.executeBonus > 0 && e.maxHp && (e.hp / e.maxHp) < 0.30) {
           finalDmg *= (1 + player.executeBonus);
+        }
+
+        // Passiva de Corrosão da Valéria (+6% por stack até +30%)
+        if (e.acidStacks > 0) {
+          finalDmg *= (1 + e.acidStacks * 0.06);
         }
 
         // Bloqueio Frontal Ativo do Guardião Blindado (SHIELDED) e Centurião da Guarda (PHALANX_LEADER)
@@ -295,6 +308,8 @@ export function updateProjectiles(dt) {
 export function updateAcidPuddles(dt) {
   // Mapa para Anti-Stacking: consolida o dano por monstro no frame
   const enemyPuddleOverlap = new Map();
+  let playerInAlchemistPuddle = false;
+  let alchemistPuddleEvolved = false;
 
   for (let i = acidPuddles.length - 1; i >= 0; i--) {
     const p = acidPuddles[i];
@@ -314,7 +329,7 @@ export function updateAcidPuddles(dt) {
         const dx = e.x - p.x;
         const dy = e.y - p.y;
         if (dx * dx + dy * dy < (p.radius + e.radius) ** 2) {
-          let baseDmg = p.isAlchemist ? ((p.damage || 18) * 0.08 * 0.80) : 0.55;
+          let baseDmg = p.isAlchemist ? ((p.damage || 18) * 0.045) : 0.55;
           if (p.isAlchemist && e.baseType === 'LITOCISTO') {
             baseDmg *= 4.0;
           }
@@ -336,21 +351,13 @@ export function updateAcidPuddles(dt) {
       }
     }
 
-    // Regeneração de vida da Valéria ao permanecer sobre as próprias poças de veneno violetas
+    // Detecção de permanência da Valéria sobre o miasma aliado (sem empilhar cura por poça)
     if (p.isAlchemist && selectedHeroKey === 'ALCHEMIST') {
       const pdx = player.x - p.x;
       const pdy = player.y - p.y;
       if ((pdx * pdx + pdy * pdy) < (p.radius + player.radius) ** 2) {
-        p.healTickTimer = (p.healTickTimer || 0) + dt;
-        if (p.healTickTimer >= 22) { // a cada ~0.36s (~2.7 HP por segundo)
-          p.healTickTimer = 0;
-          if (player.hp < player.maxHp) {
-            const healAmount = p.isEvolved ? 2 : 1;
-            player.hp = Math.min(player.maxHp, player.hp + healAmount);
-            addDamageText(player.x, player.y, `+${healAmount}`, false, '#a29bfe');
-            createHitParticles(player.x, player.y, '#d6a2e8', 2);
-          }
-        }
+        playerInAlchemistPuddle = true;
+        if (p.isEvolved) alchemistPuddleEvolved = true;
       }
     }
 
@@ -378,18 +385,18 @@ export function updateAcidPuddles(dt) {
     }
   }
 
-  // Aplicação consolidada de dano com Anti-Stacking e Resistência de Chefes
+  // Aplicação consolidada de dano com Anti-Stacking e Passiva de Corrosão
   for (const [e, data] of enemyPuddleOverlap.entries()) {
     if (e.hp <= 0) continue;
 
     // Anti-Stacking: 100% da poça principal + 15% por poça adicional (teto de +45%)
-    // Evita que 5 poças sobrepostas multipliquem o dano por 5x
+    // Evita que poças sobrepostas multipliquem o dano descontroladamente
     const stackBonus = Math.min(0.45, data.extraPuddles * 0.15);
     let finalDot = data.maxBaseDmg * (1 + stackBonus) * dt;
 
-    // 50% de resistência natural a veneno/ácido para Chefes e Minichefes
-    if ((e.isBoss || e.isMiniBoss) && !e.isBossSubTarget) {
-      finalDot *= 0.50;
+    // Passiva de Corrosão da Valéria (+6% por stack até +30%)
+    if (e.acidStacks > 0) {
+      finalDot *= (1 + e.acidStacks * 0.06);
     }
 
     e.hp -= finalDot;
@@ -398,6 +405,11 @@ export function updateAcidPuddles(dt) {
     if (data.isAlchemist) {
       e.slowTimer = Math.max(e.slowTimer || 0, 40);
       e.slowFactor = data.isEvolved ? 0.65 : 0.45;
+      
+      // Ao permanecer na poça, renova o veneno aderente e a duração dos stacks
+      e.acidBurnTimer = Math.max(e.acidBurnTimer || 0, 150);
+      e.acidStackTimer = 200;
+      if (data.isEvolved) e.acidBurnEvolved = true;
       if (Math.random() < 0.02 * dt) {
         createHitParticles(e.x, e.y, data.isEvolved ? '#d6a2e8' : '#a29bfe', 1);
       }
@@ -415,5 +427,23 @@ export function updateAcidPuddles(dt) {
         e.acidDotTimer = 0;
       }
     }
+  }
+
+  // Regeneração Global da Valéria (Opção A: Anti-Stacking Absoluto)
+  // Calibrado para recuperar 100% da vida (105 HP) em exatamente 20 segundos
+  // 105 HP / 20s = 5.25 HP/s -> +2 HP a cada 23 frames (~0.38s = 5.22 HP/s)
+  if (playerInAlchemistPuddle && selectedHeroKey === 'ALCHEMIST') {
+    player.alchemistHealTimer = (player.alchemistHealTimer || 0) + dt;
+    if (player.alchemistHealTimer >= 23) {
+      player.alchemistHealTimer = 0;
+      if (player.hp < player.maxHp) {
+        const healAmount = alchemistPuddleEvolved ? 3 : 2;
+        player.hp = Math.min(player.maxHp, player.hp + healAmount);
+        addDamageText(player.x, player.y, `+${healAmount}`, false, '#a29bfe');
+        createHitParticles(player.x, player.y, '#d6a2e8', 2);
+      }
+    }
+  } else if (player.alchemistHealTimer > 0) {
+    player.alchemistHealTimer = Math.max(0, player.alchemistHealTimer - dt);
   }
 }

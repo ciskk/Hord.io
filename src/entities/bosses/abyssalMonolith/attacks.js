@@ -10,69 +10,153 @@ import { triggerDeath } from '../../../systems/ui.js';
 import { MONOLITH_STATES, MONOLITH_SKILLS } from './constants.js';
 
 /**
- * Seleciona a próxima habilidade com base na distância até o jogador, fase e histórico recente.
+ * Seleciona a próxima habilidade com base em avaliação tática situacional (Envelope Anti-Whiff, Distância Real e Combos).
+ * Elimina o problema de conjurar golpes de curto alcance no vazio quando o jogador está distante.
  * @param {Object} e Entidade do chefe.
  * @param {number} dist Distância euclidiana até o jogador.
+ * @param {Object} [player=null] Entidade do jogador (opcional, para leitura de movimento).
  */
-export function selectNextSkill(e, dist) {
+export function selectNextSkill(e, dist, player = null) {
   const isEnraged = e.isEnraged;
   const isP3 = e.isPhase3;
-  const rand = Math.random();
 
-  // Em alcance Melee (< 190px):
-  if (dist < 190) {
-    // 50% Esmagamento Frontal (com zona cega nas costas)
-    // 30% Erupção do Epicentro (solo sob o boss racha)
-    // 20% Varredura de Placas 360° (evita que melee fique colado passivamente)
-    if (e.lastUsedSkill !== MONOLITH_SKILLS.TECTONIC_SLAM && (rand < 0.50 || e.lastUsedSkill === MONOLITH_SKILLS.EPICENTER_SURGE)) {
+  // 1. Verificação de Combo Sequencial (Ex: Pós-Vórtice Magmático)
+  if (e.comboNext) {
+    const nextSkill = e.comboNext;
+    e.comboNext = null;
+
+    // Se o jogador foi puxado e está em alcance de esmagamento (<= 220px)
+    if (nextSkill === MONOLITH_SKILLS.TECTONIC_SLAM && dist <= 220) {
       e.currentSkill = MONOLITH_SKILLS.TECTONIC_SLAM;
       e.actionState = MONOLITH_STATES.WINDUP_SLAM;
-      e.actionTimer = isP3 ? 34 : (isEnraged ? 40 : 48);
-    } else if (rand < 0.80) {
-      e.currentSkill = MONOLITH_SKILLS.EPICENTER_SURGE;
-      e.actionState = MONOLITH_STATES.WINDUP_EPICENTER;
-      e.actionTimer = isP3 ? 126 : (isEnraged ? 144 : 168);
-    } else {
-      e.currentSkill = MONOLITH_SKILLS.PLATE_WHIRL;
-      e.actionState = MONOLITH_STATES.WINDUP_WHIRL;
-      e.actionTimer = isP3 ? 28 : (isEnraged ? 32 : 38);
-    }
-  }
-  // Em alcance Médio (190px a 550px):
-  else if (dist <= 550) {
-    if (rand < 0.40 && e.lastUsedSkill !== MONOLITH_SKILLS.EPICENTER_SURGE) {
-      e.currentSkill = MONOLITH_SKILLS.EPICENTER_SURGE;
-      e.actionState = MONOLITH_STATES.WINDUP_EPICENTER;
-      e.actionTimer = isP3 ? 126 : (isEnraged ? 144 : 168);
-    } else if (rand < 0.70) {
-      e.currentSkill = MONOLITH_SKILLS.VOLCANIC_FISSURE;
-      e.actionState = MONOLITH_STATES.WINDUP_FISSURE;
-      e.actionTimer = isP3 ? 26 : (isEnraged ? 30 : 38);
-    } else {
-      e.currentSkill = MONOLITH_SKILLS.BASALT_BARRAGE;
-      e.actionState = MONOLITH_STATES.WINDUP_BARRAGE;
-      e.actionTimer = isP3 ? 24 : (isEnraged ? 28 : 36);
-    }
-  }
-  // Em Longa Distância (> 450px):
-  else {
-    if ((isEnraged || isP3) && rand < 0.45 && e.lastUsedSkill !== MONOLITH_SKILLS.MAGMA_SIPHON) {
-      e.currentSkill = MONOLITH_SKILLS.MAGMA_SIPHON;
-      e.actionState = MONOLITH_STATES.CHANNELING_SIPHON;
-      e.pullTimer = isP3 ? 60 : (isEnraged ? 70 : 82);
-      e.pullMaxTimer = e.pullTimer;
-    } else if (rand < 0.75) {
-      e.currentSkill = MONOLITH_SKILLS.BASALT_BARRAGE;
-      e.actionState = MONOLITH_STATES.WINDUP_BARRAGE;
-      e.actionTimer = isP3 ? 24 : (isEnraged ? 28 : 36);
-    } else {
-      e.currentSkill = MONOLITH_SKILLS.VOLCANIC_FISSURE;
-      e.actionState = MONOLITH_STATES.WINDUP_FISSURE;
-      e.actionTimer = isP3 ? 26 : (isEnraged ? 30 : 38);
+      e.actionTimer = isP3 ? 28 : (isEnraged ? 34 : 40); // Windup ágil pós-combo
+      e.lastUsedSkill = e.currentSkill;
+      return;
     }
   }
 
-  e.lastUsedSkill = e.currentSkill;
+  // 2. Tabela de Avaliação de Pesos Táticos (Utility Scoring)
+  // Cada habilidade recebe um peso. Fora de seu alcance efetivo (Envelope Anti-Whiff), recebe 0 estrito.
+  const weights = {
+    [MONOLITH_SKILLS.PLATE_WHIRL]: 0,
+    [MONOLITH_SKILLS.TECTONIC_SLAM]: 0,
+    [MONOLITH_SKILLS.EPICENTER_SURGE]: 0,
+    [MONOLITH_SKILLS.VOLCANIC_FISSURE]: 0,
+    [MONOLITH_SKILLS.BASALT_BARRAGE]: 0,
+    [MONOLITH_SKILLS.MAGMA_SIPHON]: 0
+  };
+
+  // CÁLCULO DOS PESOS BASE POR FAIXA DE DISTÂNCIA
+  if (dist < 125) {
+    // Zona 0: Colado / Abraço Melee (< 125px)
+    // Prioridade máxima no giro 360° para punir quem tenta circular o chefe colado
+    weights[MONOLITH_SKILLS.PLATE_WHIRL] = 50;
+    weights[MONOLITH_SKILLS.TECTONIC_SLAM] = 35;
+    weights[MONOLITH_SKILLS.EPICENTER_SURGE] = 25;
+  } else if (dist <= 220) {
+    // Zona 1: Alcance Melee Efetivo (125px a 220px)
+    // Tectonic Slam atinge 185px + 20px de avanço = 205px.
+    // Epicenter Surge atinge o anel externo de 140px a 245px.
+    // Plate Whirl NÃO alcança (raio 110px) -> peso permanece 0.
+    weights[MONOLITH_SKILLS.TECTONIC_SLAM] = 55;
+    weights[MONOLITH_SKILLS.EPICENTER_SURGE] = 30;
+    weights[MONOLITH_SKILLS.VOLCANIC_FISSURE] = 15;
+    weights[MONOLITH_SKILLS.BASALT_BARRAGE] = 10;
+  } else if (dist <= 420) {
+    // Zona 2: Médio Alcance (220px a 420px)
+    // CRÍTICO: Epicenter Surge e Plate Whirl são estritamente 0 aqui! Fim dos golpes no vazio.
+    weights[MONOLITH_SKILLS.VOLCANIC_FISSURE] = 50;
+    weights[MONOLITH_SKILLS.BASALT_BARRAGE] = 45;
+    if (dist >= 280) {
+      weights[MONOLITH_SKILLS.MAGMA_SIPHON] = 32;
+    }
+  } else {
+    // Zona 3: Longo Alcance / Fuga / Kiting (> 420px)
+    // Prioridade total em puxar o jogador com Magma Siphon ou bombardear com artilharia pesada
+    weights[MONOLITH_SKILLS.MAGMA_SIPHON] = 55;
+    weights[MONOLITH_SKILLS.BASALT_BARRAGE] = 35;
+    weights[MONOLITH_SKILLS.VOLCANIC_FISSURE] = 30;
+  }
+
+  // 3. Leitura Comportamental do Jogador
+  if (player && player.isMoving) {
+    const pdx = player.x - e.x;
+    const pdy = player.y - e.y;
+    const pvx = player.vx || (player.pushVx || 0);
+    const pvy = player.vy || (player.pushVy || 0);
+    const isRetreating = (pvx * pdx + pvy * pdy) > 0;
+
+    if (isRetreating && dist > 260) {
+      // Jogador correndo para longe: intensifica a urgência do puxão gravitacional
+      weights[MONOLITH_SKILLS.MAGMA_SIPHON] *= 1.45;
+      weights[MONOLITH_SKILLS.VOLCANIC_FISSURE] *= 1.25;
+    }
+  }
+
+  // 4. Anti-Spam: Reduz fortemente a chance de repetir a exata mesma habilidade
+  if (e.lastUsedSkill && weights[e.lastUsedSkill] > 0) {
+    weights[e.lastUsedSkill] *= 0.20;
+  }
+
+  // 5. Sorteio Ponderado por Roleta
+  let totalWeight = 0;
+  for (const skillKey in weights) {
+    totalWeight += weights[skillKey];
+  }
+
+  if (totalWeight <= 0) {
+    weights[MONOLITH_SKILLS.VOLCANIC_FISSURE] = 1;
+    totalWeight = 1;
+  }
+
+  let roll = Math.random() * totalWeight;
+  let chosenSkill = MONOLITH_SKILLS.VOLCANIC_FISSURE;
+
+  for (const skillKey in weights) {
+    roll -= weights[skillKey];
+    if (roll <= 0) {
+      chosenSkill = skillKey;
+      break;
+    }
+  }
+
+  // 6. Aplicação do Estado de Execução da Habilidade Escolhida
+  e.currentSkill = chosenSkill;
+
+  switch (chosenSkill) {
+    case MONOLITH_SKILLS.TECTONIC_SLAM:
+      e.actionState = MONOLITH_STATES.WINDUP_SLAM;
+      e.actionTimer = isP3 ? 34 : (isEnraged ? 40 : 48);
+      break;
+
+    case MONOLITH_SKILLS.EPICENTER_SURGE:
+      e.actionState = MONOLITH_STATES.WINDUP_EPICENTER;
+      e.actionTimer = isP3 ? 126 : (isEnraged ? 144 : 168);
+      break;
+
+    case MONOLITH_SKILLS.PLATE_WHIRL:
+      e.actionState = MONOLITH_STATES.WINDUP_WHIRL;
+      e.actionTimer = isP3 ? 28 : (isEnraged ? 32 : 38);
+      break;
+
+    case MONOLITH_SKILLS.VOLCANIC_FISSURE:
+      e.actionState = MONOLITH_STATES.WINDUP_FISSURE;
+      e.actionTimer = isP3 ? 26 : (isEnraged ? 30 : 38);
+      break;
+
+    case MONOLITH_SKILLS.BASALT_BARRAGE:
+      e.actionState = MONOLITH_STATES.WINDUP_BARRAGE;
+      e.actionTimer = isP3 ? 24 : (isEnraged ? 28 : 36);
+      break;
+
+    case MONOLITH_SKILLS.MAGMA_SIPHON:
+      e.actionState = MONOLITH_STATES.CHANNELING_SIPHON;
+      e.pullTimer = isP3 ? 60 : (isEnraged ? 70 : 80);
+      e.pullMaxTimer = e.pullTimer;
+      break;
+  }
+
+  e.lastUsedSkill = chosenSkill;
 }
 
 /**
@@ -341,8 +425,9 @@ export function executeMagmaSiphonRelease(e, context) {
     });
   }
 
+  e.comboNext = MONOLITH_SKILLS.TECTONIC_SLAM;
   e.actionState = MONOLITH_STATES.POST_ATTACK_RECOVERY;
-  e.actionTimer = 38;
+  e.actionTimer = 34;
 }
 
 /**

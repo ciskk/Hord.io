@@ -8,7 +8,7 @@
 import { dpr, viewW, viewH } from '../../../main.js';
 import { getHudBottom } from '../../../core/responsive.js';
 import { player } from '../../player.js';
-import { REAPER_STATES } from './constants.js';
+import { REAPER_STATES, REAPER_CONFIG, REAPER_SKILLS } from './constants.js';
 
 // ============================================================================
 // 1. BANNER CINEMATOGRÁFICO DE APRESENTAÇÃO EM TELA CHEIA
@@ -161,7 +161,7 @@ export function drawCinematicScreenTitle(ctx, e, frameCount) {
 // ============================================================================
 
 /**
- * Renderiza a encenação gráfica em 4 atos da Introdução do Ceifador.
+ * Renderiza a encenação gráfica em 4 atos da Introdução do Ceifador Supremo.
  * @param {CanvasRenderingContext2D} ctx
  * @param {Object} e Entidade do chefe.
  * @param {number} frameCount
@@ -171,72 +171,227 @@ export function drawReaperSpawnIntro(ctx, e, frameCount) {
   const progress = Math.max(0, Math.min(1, 1 - (e.introTimer / introMax)));
 
   // =========================================================================
-  // ATO 1: O FRIO SEPULCRAL & FENDA NO VÉU (0.00 <= progress < 0.24)
+  // ATO 1: O FRIO SEPULCRAL & SELO RÚNICO DE ALMAS (0.00 <= progress < 0.25)
   // =========================================================================
-  if (progress < 0.24) {
-    const act1Prog = progress / 0.24;
-    const riftR = 30 + act1Prog * 65;
+  if (progress < 0.25) {
+    const act1Prog = progress / 0.25;
+    const runeAngle = e.introRuneAngle || (frameCount * 0.03);
 
     ctx.save();
-    ctx.translate(0, 38);
-    ctx.scale(1, 0.45);
 
-    const riftGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, riftR);
-    riftGrad.addColorStop(0, 'rgba(0, 206, 201, 0.85)');
-    riftGrad.addColorStop(0.35, 'rgba(6, 24, 34, 0.7)');
-    riftGrad.addColorStop(0.8, 'rgba(2, 6, 12, 0.4)');
-    riftGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    // 1. Vinheta Obscura Radial no Solo
+    const vignetteR = 40 + act1Prog * 80;
+    const vGrad = ctx.createRadialGradient(0, 38, 4, 0, 38, vignetteR * 1.5);
+    vGrad.addColorStop(0, 'rgba(2, 6, 12, 0.85)');
+    vGrad.addColorStop(0.5, 'rgba(4, 18, 26, 0.60)');
+    vGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = vGrad;
+    ctx.fillRect(-vignetteR * 1.5, -vignetteR, vignetteR * 3, vignetteR * 2.5);
 
-    ctx.fillStyle = riftGrad;
+    // 2. Selo Rúnico de Invocação no Chão (Perspectiva Isométrica)
+    ctx.translate(0, 40);
+    ctx.scale(1, 0.44);
+
+    const sealR = 35 + act1Prog * 60;
+
+    // Círculo base de névoa de almas
+    const sealGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, sealR);
+    sealGrad.addColorStop(0, 'rgba(0, 206, 201, 0.85)');
+    sealGrad.addColorStop(0.4, 'rgba(6, 28, 38, 0.70)');
+    sealGrad.addColorStop(0.85, 'rgba(2, 8, 14, 0.45)');
+    sealGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = sealGrad;
     ctx.beginPath();
-    ctx.arc(0, 0, riftR, 0, Math.PI * 2);
+    ctx.arc(0, 0, sealR, 0, Math.PI * 2);
     ctx.fill();
 
-    // Fratura rúnica central
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2.5;
+    // Anel externo com traços rúnicos giratórios
+    ctx.strokeStyle = '#00cec9';
+    ctx.lineWidth = 2.8;
     ctx.beginPath();
-    ctx.moveTo(-riftR * 0.75, 0);
-    ctx.lineTo(-riftR * 0.2, -6);
-    ctx.lineTo(riftR * 0.2, 6);
-    ctx.lineTo(riftR * 0.75, 0);
+    ctx.arc(0, 0, sealR, 0, Math.PI * 2);
     ctx.stroke();
 
-    ctx.strokeStyle = '#00cec9';
-    ctx.lineWidth = 4.5;
+    ctx.strokeStyle = '#81ecec';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(0, 0, sealR * 0.78, 0, Math.PI * 2);
     ctx.stroke();
+
+    // Glifos e Runas ao redor do perímetro
+    const glyphCount = 10;
+    for (let g = 0; g < glyphCount; g++) {
+      const ga = runeAngle + (g * Math.PI * 2 / glyphCount);
+      const gx = Math.cos(ga) * (sealR * 0.89);
+      const gy = Math.sin(ga) * (sealR * 0.89);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(gx - 2, gy - 2, 4, 4);
+    }
+
+    // Estrela Necromântica de 5 Pontas Invertida
+    ctx.strokeStyle = 'rgba(0, 206, 201, 0.65)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    for (let p = 0; p < 5; p++) {
+      const pa = runeAngle + (p * Math.PI * 4 / 5);
+      const px = Math.cos(pa) * (sealR * 0.75);
+      const py = Math.sin(pa) * (sealR * 0.75);
+      if (p === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    // Filamentos em espiral puxando essência vital para o núcleo
+    const spiralArms = 4;
+    for (let s = 0; s < spiralArms; s++) {
+      const sBase = -runeAngle * 2 + (s * Math.PI * 2 / spiralArms);
+      ctx.strokeStyle = 'rgba(129, 236, 236, 0.45)';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      for (let step = 0; step < 12; step++) {
+        const sr = sealR * (1 - step / 12);
+        const sa = sBase + step * 0.28;
+        const sx = Math.cos(sa) * sr;
+        const sy = Math.sin(sa) * sr;
+        if (step === 0) ctx.moveTo(sx, sy);
+        else ctx.lineTo(sx, sy);
+      }
+      ctx.stroke();
+    }
+
     ctx.restore();
+
+    // Silhueta fantasmagórica tremeluzindo no vórtice
+    ctx.save();
+    ctx.globalAlpha = act1Prog * 0.35;
+    ctx.fillStyle = '#020509';
+    ctx.beginPath();
+    ctx.ellipse(0, -6, 20, 36, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
     return;
   }
 
   // =========================================================================
-  // ATO 2: CONVOCAÇÃO DAS LANTERNAS & GAIOLAS DE ALMAS (0.24 <= progress < 0.50)
+  // ATO 2: A QUEDA DA FOICE MONUMENTAL & DESPERTAR DAS LANTERNAS (0.25 <= progress < 0.50)
   // =========================================================================
   if (progress < 0.50) {
-    const act2Prog = (progress - 0.24) / 0.26;
-    const colHeight = 140 * act2Prog;
-    const colWidth = 40 + Math.sin(frameCount * 0.18) * 8;
+    const act2Norm = (progress - 0.25) / 0.25;
 
     ctx.save();
-    // Coluna vertical de ectoplasma e névoa da morte
-    const colGrad = ctx.createLinearGradient(-colWidth, 0, colWidth, 0);
-    colGrad.addColorStop(0, 'rgba(2, 6, 12, 0)');
-    colGrad.addColorStop(0.2, 'rgba(6, 24, 34, 0.85)');
-    colGrad.addColorStop(0.5, 'rgba(0, 206, 201, 0.95)');
-    colGrad.addColorStop(0.8, 'rgba(6, 24, 34, 0.85)');
-    colGrad.addColorStop(1, 'rgba(2, 6, 12, 0)');
-    ctx.fillStyle = colGrad;
-    ctx.fillRect(-colWidth, -colHeight + 25, colWidth * 2, colHeight);
 
-    // Silhueta do Ceifador condensando no centro
-    ctx.globalAlpha = act2Prog * 0.85;
+    // 1. Selo Rúnico no Chão Pulsando com Alta Energia
+    ctx.save();
+    ctx.translate(0, 40);
+    ctx.scale(1, 0.44);
+
+    const sealR = 95;
+    const sealGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, sealR);
+    sealGrad.addColorStop(0, 'rgba(0, 206, 201, 0.95)');
+    sealGrad.addColorStop(0.45, 'rgba(6, 28, 38, 0.85)');
+    sealGrad.addColorStop(0.9, 'rgba(2, 8, 14, 0.5)');
+    sealGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = sealGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, sealR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#00cec9';
+    ctx.lineWidth = 3.2;
+    ctx.beginPath();
+    ctx.arc(0, 0, sealR, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Se a foice já colidiu com o solo: Fissuras Radiais no Solo
+    if (e.introScytheEmbedded || act2Norm >= 0.35) {
+      const crackAngles = [0.15, 0.78, 1.45, 2.25, 3.05, 3.85, 4.65, 5.55];
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.2;
+      for (let ca of crackAngles) {
+        const cLen = 45 + Math.sin(ca * 5) * 25;
+        const cMid = cLen * 0.55;
+        const cMidJitter = (Math.sin(ca * 12) * 8);
+        ctx.beginPath();
+        ctx.moveTo(18, 0);
+        ctx.lineTo(18 + Math.cos(ca) * cMid + cMidJitter, Math.sin(ca) * cMid);
+        ctx.lineTo(18 + Math.cos(ca) * cLen, Math.sin(ca) * cLen);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = '#00cec9';
+      ctx.lineWidth = 4.5;
+      for (let ca of crackAngles) {
+        const cLen = 45 + Math.sin(ca * 5) * 25;
+        ctx.beginPath();
+        ctx.moveTo(18, 0);
+        ctx.lineTo(18 + Math.cos(ca) * cLen, Math.sin(ca) * cLen);
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+
+    // 2. Coluna Vertical de Energia Espectral Ascendente
+    const colWidth = 36 + Math.sin(frameCount * 0.2) * 6;
+    const colGrad = ctx.createLinearGradient(-colWidth, 0, colWidth, 0);
+    colGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    colGrad.addColorStop(0.3, 'rgba(6, 28, 38, 0.75)');
+    colGrad.addColorStop(0.5, 'rgba(0, 206, 201, 0.9)');
+    colGrad.addColorStop(0.7, 'rgba(6, 28, 38, 0.75)');
+    colGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = colGrad;
+    ctx.fillRect(-colWidth, -160, colWidth * 2, 200);
+
+    // 3. Correntes de Almas Conectando as Lanternas em Ascensão
+    if (e.lanterns) {
+      for (let l of e.lanterns) {
+        const lx = Math.cos(l.angle) * (l.dist * act2Norm);
+        const ly = Math.sin(l.angle) * (l.dist * 0.48 * act2Norm);
+
+        ctx.strokeStyle = 'rgba(0, 206, 201, 0.75)';
+        ctx.lineWidth = 2.2;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(0, 30);
+        ctx.lineTo(lx, ly);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Lanterna flutuando na extremidade
+        ctx.save();
+        ctx.translate(lx, ly);
+        ctx.fillStyle = '#0d1821';
+        ctx.fillRect(-6, -8, 12, 16);
+        ctx.strokeStyle = '#00cec9';
+        ctx.lineWidth = 1.6;
+        ctx.strokeRect(-6, -8, 12, 16);
+        ctx.fillStyle = '#81ecec';
+        ctx.beginPath();
+        ctx.arc(0, 0, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // 4. Foice Monumental Despencando ou Cravada no Solo
+    const scytheY = e.introScytheY !== undefined ? e.introScytheY : (-600 * Math.max(0, 1 - act2Norm * 2.8));
+    ctx.save();
+    ctx.translate(18 - 36, Math.min(22, scytheY) + 10);
+    ctx.rotate(0.24); // Levemente inclinada ao penetrar a terra
+    const fakeBoss = { scytheAngle: 0, scytheGlow: 1.0, crankAngle: 0 };
+    drawOrnateScythe(ctx, fakeBoss, 0, false, false, 0);
+    ctx.restore();
+
+    // 5. Silhueta do Ceifador Condensando no Cabo da Foice
+    ctx.globalAlpha = 0.35 + act2Norm * 0.55;
     ctx.fillStyle = '#020509';
     ctx.beginPath();
     ctx.ellipse(0, -10, 26, 46, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Olhos de fogo fátuo abrindo e cortando as trevas
-    if (act2Prog > 0.35) {
+    // Olhos de Fogo Fátuo Abrindo e Cortando as Trevas
+    if (act2Norm > 0.35) {
       const eyeFlare = Math.sin(frameCount * 0.3) * 3;
       ctx.fillStyle = '#00cec9';
       ctx.beginPath();
@@ -258,42 +413,74 @@ export function drawReaperSpawnIntro(ctx, e, frameCount) {
       ctx.stroke();
     }
 
-    // Correntes emergindo do chão conectando as lanternas em ascensão
-    if (e.lanterns) {
-      for (let l of e.lanterns) {
-        const lx = Math.cos(l.angle) * (l.dist * act2Prog);
-        const ly = Math.sin(l.angle) * (l.dist * 0.48 * act2Prog);
-        ctx.strokeStyle = 'rgba(0, 206, 201, 0.7)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(0, 25);
-        ctx.lineTo(lx, ly);
-        ctx.stroke();
-      }
-    }
+    ctx.restore();
+    return;
+  }
+
+  // =========================================================================
+  // ATO 3: DESDOBRAR DO SERAFIM DA MORTE & BANNER IMPERIAL (0.50 <= progress < 0.75)
+  // =========================================================================
+  if (progress < 0.75) {
+    const act3Norm = (progress - 0.50) / 0.25;
+    const wingSpan = 0.35 + act3Norm * 1.05; // 0.35 a 1.4x
+    const flap = Math.sin(frameCount * 0.16) * 10 * (1 - act3Norm * 0.3);
+    const bob = Math.sin(frameCount * 0.08) * 4;
+
+    ctx.save();
+
+    // Névoa condensando ao redor
+    const mistAlpha = (1 - act3Norm) * 0.55;
+    ctx.fillStyle = `rgba(3, 10, 18, ${mistAlpha})`;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 75, 95, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    drawReaperShadow(ctx, e, bob, false, 0);
+    drawSpectralWings(ctx, e, bob, false, false, flap, wingSpan);
+    drawReaperRobe(ctx, e, bob, frameCount, false, false, 0, 0);
+    drawRibcageAndCore(ctx, bob, frameCount, false, false, 0);
+    drawMaskAndEyes(ctx, e, bob, frameCount, false, false, 0);
+    drawOrnateScythe(ctx, e, bob, false, false, 0);
+    drawGothicLanterns(ctx, e, bob, frameCount, false);
 
     ctx.restore();
     return;
   }
 
   // =========================================================================
-  // ATO 3: DESDOBRAR DO SERAFIM DA MORTE & BANNER IMPERIAL (0.50 <= progress < 0.76)
-  // ATO 4: GOLPE DO JULGAMENTO & IMPACTO (0.76 <= progress <= 1.00)
+  // ATO 4: GOLPE DO JULGAMENTO & LIMPEZA DA NÉVOA (0.75 <= progress <= 1.00)
   // =========================================================================
-  const wingProg = (progress - 0.50) / 0.50;
-  const wingSpan = 0.35 + Math.min(1.0, wingProg * 1.5) * 1.1;
-  const flap = Math.sin(frameCount * 0.16) * 10 * (1 - wingProg * 0.3);
+  const act4Norm = (progress - 0.75) / 0.25;
+  const wingSpan = 1.45;
+  const flap = Math.sin(frameCount * 0.12) * 8;
   const bob = Math.sin(frameCount * 0.08) * 4;
 
   ctx.save();
-  if (progress < 0.76) {
-    const mistAlpha = Math.max(0, 1 - (progress - 0.5) / 0.26);
-    ctx.fillStyle = `rgba(3, 10, 18, ${mistAlpha * 0.55})`;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 60, 80, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
 
+  // 1. Névoa Sendo Soprada e Dissipada pela Força do Golpe
+  const mistRadius = 80 + act4Norm * 380;
+  const mistAlpha = Math.max(0, (1 - act4Norm) * 0.65);
+  ctx.strokeStyle = `rgba(0, 206, 201, ${mistAlpha})`;
+  ctx.lineWidth = 3.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, mistRadius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 2. Rastro de Corte em 360 Graus da Lâmina Monumental
+  const sweepAngle = Math.PI * 2 * act4Norm;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0, 206, 201, 0.85)';
+  ctx.lineWidth = 4.2;
+  ctx.beginPath();
+  ctx.arc(0, 0, 210, -Math.PI * 0.5, -Math.PI * 0.5 + sweepAngle);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2.0;
+  ctx.stroke();
+  ctx.restore();
+
+  // 3. Renderização Plena de Thanatos em Prontidão de Batalha
   drawReaperShadow(ctx, e, bob, false, 0);
   drawSpectralWings(ctx, e, bob, false, false, flap, wingSpan);
   drawReaperRobe(ctx, e, bob, frameCount, false, false, 0, 0);
@@ -1574,6 +1761,523 @@ export function drawSoulTetherBeam(ctx, e, bob) {
   ctx.restore();
 }
 
+/**
+ * Desenha as chamas e orbes de plasma necromântico nas mãos de Thanatos quando desarmado.
+ */
+export function drawUnarmedSoulFlames(ctx, e, bob, frameCount) {
+  const hands = [
+    { x: 32, y: -8 + bob, facing: 1 },
+    { x: -22, y: 2 + bob, facing: -1 }
+  ];
+
+  ctx.save();
+
+  // 1. Arco elétrico conectando as duas mãos
+  if (Math.floor(frameCount) % 2 === 0) {
+    const midX = (hands[0].x + hands[1].x) * 0.5 + (Math.random() - 0.5) * 8;
+    const midY = (hands[0].y + hands[1].y) * 0.5 + (Math.random() - 0.5) * 8;
+    ctx.strokeStyle = 'rgba(129, 236, 236, 0.85)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(hands[1].x, hands[1].y);
+    ctx.lineTo(midX, midY);
+    ctx.lineTo(hands[0].x, hands[0].y);
+    ctx.stroke();
+  }
+
+  // 2. Esferas de Fogo Fátuo / Plasma Necromântico nas Palmas
+  for (let i = 0; i < hands.length; i++) {
+    const h = hands[i];
+    const pulse = Math.sin(frameCount * 0.22 + i * 2) * 3;
+    const flameR = 14 + pulse;
+
+    const flameGrad = ctx.createRadialGradient(h.x, h.y, 1, h.x, h.y, flameR);
+    flameGrad.addColorStop(0, '#ffffff');
+    flameGrad.addColorStop(0.3, '#81ecec');
+    flameGrad.addColorStop(0.7, '#00cec9');
+    flameGrad.addColorStop(1, 'rgba(0, 206, 201, 0)');
+
+    ctx.fillStyle = flameGrad;
+    ctx.beginPath();
+    ctx.arc(h.x, h.y, flameR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Línguas de chamas ondulando para cima
+    ctx.fillStyle = 'rgba(129, 236, 236, 0.65)';
+    ctx.beginPath();
+    ctx.moveTo(h.x - 5, h.y);
+    ctx.quadraticCurveTo(
+      h.x + (Math.sin(frameCount * 0.3 + i) * 4),
+      h.y - 14 - pulse,
+      h.x,
+      h.y - 20 - pulse
+    );
+    ctx.quadraticCurveTo(
+      h.x + 5,
+      h.y - 10,
+      h.x + 5,
+      h.y
+    );
+    ctx.closePath();
+    ctx.fill();
+
+    // Micro-fagulhas orbitais
+    for (let p = 0; p < 2; p++) {
+      const pAng = frameCount * 0.15 + p * Math.PI + i;
+      const px = h.x + Math.cos(pAng) * 11;
+      const py = h.y + Math.sin(pAng) * 11;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(px - 1.5, py - 1.5, 3, 3);
+    }
+  }
+
+  // 3. Flash de Disparo de Dardos de Alma
+  if (e.unarmedDartTimer !== undefined && e.unarmedDartTimer <= 6) {
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(hands[0].x + 6, hands[0].y, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#00cec9';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(hands[0].x, hands[0].y);
+    ctx.lineTo(hands[0].x + 28, hands[0].y);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Desenha a Foice Bumerangue arremessada por Thanatos voando, moendo e retornando.
+ */
+export function drawBoomerangScythe(ctx, e, frameCount) {
+  const S = e.boomerangScythe;
+  if (!S || !S.active) return;
+
+  ctx.save();
+  ctx.translate(S.x, S.y);
+
+  // 1. Rastros de Movimento Espectrais (Ghost Trails / Motion Blur)
+  for (let ghost = 2; ghost >= 1; ghost--) {
+    ctx.save();
+    ctx.rotate(S.angle - ghost * 0.28);
+    ctx.globalAlpha = 0.16 / ghost;
+    ctx.translate(-36 * 0.7, 10 * 0.7);
+    ctx.scale(0.7, 0.7);
+    const ghostBoss = { scytheAngle: 0, scytheGlow: 0.5, crankAngle: 0 };
+    drawOrnateScythe(ctx, ghostBoss, 0, false, false, 0);
+    ctx.restore();
+  }
+
+  // 2. Anel Periférico de Velocidade Rotacional
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0, 206, 201, 0.45)';
+  ctx.lineWidth = 2.4;
+  ctx.setLineDash([12, 8]);
+  ctx.lineDashOffset = -frameCount * 4;
+  ctx.beginPath();
+  ctx.arc(0, 0, S.radius || 34, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // 3. Efeito Especial de Moedor Giratório (GRINDING State)
+  if (S.state === 'GRINDING') {
+    ctx.save();
+    const grindPulse = Math.sin(frameCount * 0.4) * 4;
+    const grindR = (S.radius || 34) + grindPulse;
+
+    // Disco de Fricção e Plasma de Alta Rotação
+    const sawGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, grindR);
+    sawGrad.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
+    sawGrad.addColorStop(0.35, 'rgba(129, 236, 236, 0.65)');
+    sawGrad.addColorStop(0.75, 'rgba(0, 206, 201, 0.45)');
+    sawGrad.addColorStop(1.0, 'rgba(0, 206, 201, 0)');
+    ctx.fillStyle = sawGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, grindR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Dentes Radiais de Serra de Corte Rápido
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.2;
+    const teeth = 12;
+    const tRot = frameCount * 0.45;
+    for (let t = 0; t < teeth; t++) {
+      const ta = tRot + (t * Math.PI * 2) / teeth;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(ta) * (grindR * 0.6), Math.sin(ta) * (grindR * 0.6));
+      ctx.lineTo(Math.cos(ta) * grindR, Math.sin(ta) * grindR);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // 4. Slipstream de Retorno Conectando a Thanatos (RETURNING State)
+  if (S.state === 'RETURNING') {
+    ctx.save();
+    const toBossAng = Math.atan2(e.y - S.y, e.x - S.x);
+    ctx.strokeStyle = 'rgba(0, 206, 201, 0.55)';
+    ctx.lineWidth = 3.2;
+    ctx.setLineDash([8, 6]);
+    ctx.lineDashOffset = -frameCount * 3;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(Math.cos(toBossAng) * 60, Math.sin(toBossAng) * 60);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 5. Corpo Principal da Foice Monumental Girando
+  ctx.save();
+  ctx.rotate(S.angle);
+  ctx.translate(-36 * 0.7, 10 * 0.7);
+  ctx.scale(0.7, 0.7);
+  const spinningBoss = {
+    scytheAngle: 0,
+    scytheGlow: S.state === 'GRINDING' ? 1.0 : 0.8,
+    crankAngle: Math.sin(frameCount * 0.3) * 0.5
+  };
+  drawOrnateScythe(ctx, spinningBoss, 0, false, false, 0);
+  ctx.restore();
+
+  ctx.restore();
+}
+
+/**
+ * Desenha os Poços de Almas (círculos rúnicos que detonam em geysers e deixam miasma).
+ */
+export function drawSoulWells(ctx, e, frameCount) {
+  if (!e.soulWells || e.soulWells.length === 0) return;
+
+  for (let well of e.soulWells) {
+    ctx.save();
+    ctx.translate(well.x, well.y);
+
+    if (!well.detonated) {
+      const chargeProg = Math.max(0, Math.min(1, 1 - (well.timer / well.maxTimer)));
+      const pulse = Math.sin(frameCount * 0.25) * 3;
+      const wellR = well.radius || 44;
+
+      // 1. Círculo Rúnico no Chão (Perspectiva Isométrica)
+      ctx.save();
+      ctx.scale(1, 0.48);
+
+      // Fundo abissal do poço
+      const poolGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, wellR);
+      poolGrad.addColorStop(0, 'rgba(0, 206, 201, 0.40)');
+      poolGrad.addColorStop(0.65, 'rgba(5, 20, 28, 0.60)');
+      poolGrad.addColorStop(1, 'rgba(2, 6, 12, 0)');
+      ctx.fillStyle = poolGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, wellR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Borda Rúnica Ciano
+      ctx.strokeStyle = chargeProg > 0.80 ? '#ffffff' : '#00cec9';
+      ctx.lineWidth = chargeProg > 0.80 ? 3.0 : 2.0;
+      ctx.beginPath();
+      ctx.arc(0, 0, wellR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Runas e dentes ao redor do anel
+      const runeCount = 8;
+      const rAng = frameCount * 0.04;
+      ctx.strokeStyle = '#81ecec';
+      ctx.lineWidth = 1.4;
+      for (let k = 0; k < runeCount; k++) {
+        const a = rAng + (k * Math.PI * 2 / runeCount);
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * (wellR - 5), Math.sin(a) * (wellR - 5));
+        ctx.lineTo(Math.cos(a) * (wellR + 4), Math.sin(a) * (wellR + 4));
+        ctx.stroke();
+      }
+
+      // Anel de Contração (Tempo até detonação)
+      const shrinkR = Math.max(4, wellR * (1 - chargeProg));
+      ctx.strokeStyle = chargeProg > 0.80 ? '#ffffff' : '#81ecec';
+      ctx.lineWidth = chargeProg > 0.80 ? 3.2 : 1.8;
+      ctx.beginPath();
+      ctx.arc(0, 0, shrinkR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Glifo Central das Almas
+      ctx.fillStyle = chargeProg > 0.80 ? '#ffffff' : '#00cec9';
+      ctx.beginPath();
+      ctx.arc(0, 0, 4 + pulse * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+
+      // 2. Fagulhas e Vapores Ascendentes (Espaço Vertical)
+      const wispCount = 4;
+      for (let w = 0; w < wispCount; w++) {
+        const wPhase = (frameCount * 0.06 + w * 0.25) % 1;
+        const wX = Math.sin(frameCount * 0.1 + w * 1.5) * (wellR * 0.55);
+        const wY = -wPhase * 45;
+        const wAlpha = Math.sin(wPhase * Math.PI) * 0.8;
+        ctx.fillStyle = `rgba(129, 236, 236, ${wAlpha})`;
+        ctx.beginPath();
+        ctx.arc(wX, wY, 2.5 * (1 - wPhase * 0.4), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      // Estado Detonado: Miasma Residual no Chão
+      const miasmaProg = Math.max(0, Math.min(1, well.miasmaTimer / 140));
+      const wellR = well.radius || 44;
+
+      ctx.save();
+      ctx.scale(1, 0.48);
+
+      const miasmaGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, wellR);
+      miasmaGrad.addColorStop(0, `rgba(0, 206, 201, ${0.45 * miasmaProg})`);
+      miasmaGrad.addColorStop(0.5, `rgba(6, 32, 40, ${0.35 * miasmaProg})`);
+      miasmaGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = miasmaGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, wellR, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = `rgba(0, 206, 201, ${0.35 * miasmaProg})`;
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.arc(0, 0, wellR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.restore();
+
+      // Bolhas e fumaça tóxica
+      for (let b = 0; b < 3; b++) {
+        const bPhase = (frameCount * 0.04 + b * 0.33) % 1;
+        const bx = Math.cos(b * 2.1) * (wellR * 0.4);
+        const by = -bPhase * 30;
+        ctx.fillStyle = `rgba(0, 206, 201, ${0.35 * miasmaProg * (1 - bPhase)})`;
+        ctx.beginPath();
+        ctx.arc(bx, by, 3 * (1 - bPhase * 0.5), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    ctx.restore();
+  }
+}
+
+/**
+ * Desenha a Guilhotina Celestial e a telegrafia de Marca da Morte com retículo de travamento.
+ */
+export function drawDeathMarkExecution(ctx, e, frameCount) {
+  const mark = e.deathMark;
+  if (!mark || !mark.active) return;
+
+  const targetX = mark.locked ? mark.lockedX : mark.x;
+  const targetY = mark.locked ? mark.lockedY : mark.y;
+  const prog = Math.max(0, Math.min(1, 1 - (mark.timer / mark.maxTimer)));
+  const radius = mark.radius || 46;
+
+  ctx.save();
+  ctx.translate(targetX, targetY);
+
+  // 1. Círculo de Mira no Solo (Perspectiva Isométrica)
+  ctx.save();
+  ctx.scale(1, 0.50);
+
+  if (!mark.locked) {
+    // Fase de Rastreamento (Ciano)
+    const rot = frameCount * 0.05;
+    ctx.strokeStyle = 'rgba(0, 206, 201, 0.75)';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 4 Marcadores de Mira Cardinais
+    ctx.fillStyle = '#81ecec';
+    for (let k = 0; k < 4; k++) {
+      const ka = rot + (k * Math.PI / 2);
+      ctx.beginPath();
+      ctx.arc(Math.cos(ka) * radius, Math.sin(ka) * radius, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Retículo em cruz no centro
+    ctx.strokeStyle = '#81ecec';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(-16, 0);
+    ctx.lineTo(16, 0);
+    ctx.moveTo(0, -16);
+    ctx.lineTo(0, 16);
+    ctx.stroke();
+  } else {
+    // Alvo Travado: Alerta Vermelho Carmesim de Execução Iminente!
+    const flash = Math.sin(frameCount * 0.45) * 0.25 + 0.75;
+    const redGlow = `rgba(255, 71, 87, ${flash})`;
+
+    // Área de Perigo Fatal
+    ctx.fillStyle = `rgba(255, 71, 87, ${0.28 * flash})`;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Anel Externo Carmesim
+    ctx.strokeStyle = '#ff4757';
+    ctx.lineWidth = 3.6;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Dentes de aviso para o centro
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.0;
+    const teeth = 8;
+    for (let t = 0; t < teeth; t++) {
+      const ta = (t * Math.PI * 2) / teeth;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(ta) * radius, Math.sin(ta) * radius);
+      ctx.lineTo(Math.cos(ta) * (radius - 9), Math.sin(ta) * (radius - 9));
+      ctx.stroke();
+    }
+
+    // Crânio / Marca da Morte Central
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(0, -2, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(-4, 3, 8, 4);
+    ctx.fillStyle = '#ff4757';
+    ctx.fillRect(-3, -3, 2, 3);
+    ctx.fillRect(1, -3, 2, 3);
+
+    // Prévia das Fissuras em Cruz nos 4 Eixos Cardinais
+    ctx.strokeStyle = redGlow;
+    ctx.lineWidth = 2.8;
+    ctx.setLineDash([10, 8]);
+    ctx.lineDashOffset = -frameCount * 2;
+    ctx.beginPath();
+    ctx.moveTo(-260, 0);
+    ctx.lineTo(260, 0);
+    ctx.moveTo(0, -260);
+    ctx.lineTo(0, 260);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  ctx.restore();
+
+  // 2. Guilhotina Celestial Descendendo dos Céus (Espaço Vertical)
+  const beamGrad = ctx.createLinearGradient(0, -350, 0, 0);
+  beamGrad.addColorStop(0, 'rgba(255, 71, 87, 0)');
+  beamGrad.addColorStop(0.7, mark.locked ? 'rgba(255, 71, 87, 0.45)' : 'rgba(0, 206, 201, 0.35)');
+  beamGrad.addColorStop(1, mark.locked ? 'rgba(255, 71, 87, 0.85)' : 'rgba(0, 206, 201, 0.6)');
+  ctx.fillStyle = beamGrad;
+  ctx.fillRect(-10, -350, 20, 350);
+
+  // Lâmina da Guilhotina Caindo do Céu
+  const dropAltitude = -360 * Math.max(0, 1 - prog * 1.3);
+  ctx.save();
+  ctx.translate(0, dropAltitude);
+
+  // Lâmina de Guilhotina Monumental
+  ctx.fillStyle = '#141a1f';
+  ctx.beginPath();
+  ctx.moveTo(-28, -60);
+  ctx.lineTo(28, -60);
+  ctx.lineTo(28, -15);
+  ctx.lineTo(-28, 12);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = mark.locked ? '#ff4757' : '#00cec9';
+  ctx.lineWidth = 2.4;
+  ctx.stroke();
+
+  // Fio afiado prateado de corte
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 3.2;
+  ctx.beginPath();
+  ctx.moveTo(28, -15);
+  ctx.lineTo(-28, 12);
+  ctx.stroke();
+
+  // Runa central na lâmina
+  ctx.fillStyle = mark.locked ? '#ff4757' : '#81ecec';
+  ctx.beginPath();
+  ctx.arc(0, -30, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+
+  ctx.restore();
+}
+
+/**
+ * Desenha as réplicas espectrais e cones de corte convergente da Tríade das Sombras.
+ */
+export function drawTriadClones(ctx, e, frameCount) {
+  if (!e.triadClones || e.triadClones.length === 0) return;
+
+  for (let clone of e.triadClones) {
+    ctx.save();
+    ctx.translate(clone.x, clone.y);
+    ctx.globalAlpha = clone.alpha !== undefined ? clone.alpha : 1.0;
+
+    const cloneFacing = Math.cos(clone.slashAngle) >= 0 ? 1 : -1;
+    ctx.scale(cloneFacing, 1);
+
+    const cBob = Math.sin(frameCount * 0.12) * 4;
+
+    // 1. Sombra e Manto Espectral da Réplica
+    drawReaperShadow(ctx, e, cBob, false, 0);
+
+    // Asas Espectrais do Clone
+    drawSpectralWings(ctx, e, cBob, false, false, 0, 0.95);
+
+    // Manto Espectral Translúcido
+    ctx.save();
+    ctx.fillStyle = 'rgba(4, 24, 34, 0.75)';
+    ctx.beginPath();
+    ctx.ellipse(0, -6 + cBob, 26, 44, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#00cec9';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+    ctx.restore();
+
+    // Máscara e Olhos Brilhantes
+    drawMaskAndEyes(ctx, e, cBob, frameCount, false, false, 0);
+
+    // Foice Espectral erguida pronta para o corte
+    ctx.save();
+    ctx.translate(28, -12 + cBob);
+    ctx.rotate(0.35);
+    const cloneBoss = { scytheAngle: 0.2, scytheGlow: 1.0, crankAngle: 0 };
+    drawOrnateScythe(ctx, cloneBoss, 0, false, false, 0);
+    ctx.restore();
+
+    // 2. Telegrafia do Corte Convergente (Cone de Corte Iminente)
+    if (!clone.slashed) {
+      ctx.save();
+      const relAngle = cloneFacing === -1 ? (Math.PI - clone.slashAngle) : clone.slashAngle;
+      const coneR = 175;
+      const coneArc = Math.PI * 0.45;
+
+      ctx.fillStyle = 'rgba(0, 206, 201, 0.16)';
+      ctx.strokeStyle = 'rgba(129, 236, 236, 0.75)';
+      ctx.lineWidth = 2.0;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, coneR, relAngle - coneArc / 2, relAngle + coneArc / 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+}
+
 // ============================================================================
 // 4. FUNÇÃO MESTRE DE RENDERIZAÇÃO GRÁFICA DO CHEFE
 // ============================================================================
@@ -1601,7 +2305,13 @@ export function drawSupremeReaper(ctx, e, frameCount) {
 
   const isVuln = e.isVulnerable;
   const isEnraged = e.isEnraged || e.isPhase3;
-  const isWindup = e.actionState === REAPER_STATES.WINDUP;
+  const isWindup = (
+    e.actionState === REAPER_STATES.WINDUP ||
+    e.actionState === REAPER_STATES.WINDUP_BOOMERANG ||
+    e.actionState === REAPER_STATES.WINDUP_EXECUTION ||
+    e.actionState === REAPER_STATES.WINDUP_SOUL_WELLS ||
+    e.actionState === REAPER_STATES.WINDUP_TRIAD_SLASH
+  );
   const isHarvest = e.actionState === REAPER_STATES.VORTEX_HARVEST;
   const isAimingBlink = e.actionState === REAPER_STATES.BLINK_AIM;
 
@@ -1613,6 +2323,15 @@ export function drawSupremeReaper(ctx, e, frameCount) {
   if (e.facing === -1) {
     ctx.scale(-1, 1);
   }
+
+  // Elementos do Mundo em Coordenadas Globais Absolutas
+  ctx.save();
+  ctx.translate(-e.x, -e.y);
+  drawSoulWells(ctx, e, frameCount);
+  drawBoomerangScythe(ctx, e, frameCount);
+  drawDeathMarkExecution(ctx, e, frameCount);
+  drawTriadClones(ctx, e, frameCount);
+  ctx.restore();
 
   if (isHarvest) {
     drawHarvestField(ctx, e, frameCount);
@@ -1651,7 +2370,13 @@ export function drawSupremeReaper(ctx, e, frameCount) {
   drawReaperRobe(ctx, e, bob, frameCount, isVuln, isEnraged, e.tilt || 0, collapseProg);
   drawRibcageAndCore(ctx, bob, frameCount, isVuln, isEnraged, collapseProg);
   drawMaskAndEyes(ctx, e, bob, frameCount, isVuln, isEnraged, collapseProg);
-  drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg);
+
+  // Quando desarmado (Foice arremessada), renderiza chamas espirituais nas mãos
+  if (e.isUnarmed) {
+    drawUnarmedSoulFlames(ctx, e, bob, frameCount);
+  } else {
+    drawOrnateScythe(ctx, e, bob, isVuln, isEnraged, collapseProg);
+  }
 
   ctx.restore();
 }
