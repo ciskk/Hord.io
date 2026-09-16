@@ -382,11 +382,12 @@ export function checkSynergies() {
 }
 
 /**
- * Concede 50 níveis e upgrades aleatórios imediatos ao herói (Ferramenta Dev W+5).
+ * Concede N níveis e upgrades aleatórios imediatos ao herói (Console Dev W+5).
  * Ativa automaticamente evoluções de armas/sinergias e restaura vida cheia.
+ * @param {number} count Quantidade de níveis a conceder (1 a 100).
  */
-export function grant50Upgrades() {
-  const targetLevels = 50;
+export function grantLevels(count = 50) {
+  const targetLevels = Math.max(1, Math.min(100, Math.floor(count)));
 
   for (let i = 0; i < targetLevels; i++) {
     // 1. Aplica qualquer sinergia/fusão disponível
@@ -419,4 +420,8 @@ export function grant50Upgrades() {
 
   // 5. Restaura vida máxima total do herói
   player.hp = player.maxHp;
+}
+
+export function grant50Upgrades() {
+  grantLevels(50);
 }

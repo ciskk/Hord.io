@@ -6,6 +6,7 @@ import { player, selectedHeroKey } from '../entities/player.js';
 import { enemies, triggerShake } from '../main.js';
 import { addDamageText, createHitParticles } from './combat.js';
 import { playSfx, triggerHaptic } from '../core/audio.js';
+import { getNeighborIndices } from '../core/spatialGrid.js';
 
 export const bullets = [];
 export const enemyBullets = [];
@@ -302,12 +303,16 @@ export function updateProjectiles(dt) {
   }
 }
 
+// Estruturas Zero-Alloc estáticas para consolidação de dano de poças
+let _puddleFrameSeq = 0;
+const _affectedEnemies = [];
+
 /**
  * Atualiza poças de ácido, lodo alquímico e chamas residuais.
  */
 export function updateAcidPuddles(dt) {
-  // Mapa para Anti-Stacking: consolida o dano por monstro no frame
-  const enemyPuddleOverlap = new Map();
+  _puddleFrameSeq++;
+  _affectedEnemies.length = 0;
   let playerInAlchemistPuddle = false;
   let alchemistPuddleEvolved = false;
 
@@ -321,9 +326,11 @@ export function updateAcidPuddles(dt) {
     }
 
     if (p.isFire || p.isAlchemist) {
-      for (let j = 0; j < enemies.length; j++) {
-        const e = enemies[j];
-        if (e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
+      const candidates = getNeighborIndices(p.x, p.y, p.radius + 35);
+      const candLen = candidates.length;
+      for (let j = 0; j < candLen; j++) {
+        const e = enemies[candidates[j]];
+        if (!e || e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
         if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
         if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
         const dx = e.x - p.x;
@@ -334,18 +341,18 @@ export function updateAcidPuddles(dt) {
             baseDmg *= 4.0;
           }
 
-          const entry = enemyPuddleOverlap.get(e);
-          if (!entry) {
-            enemyPuddleOverlap.set(e, {
-              maxBaseDmg: baseDmg,
-              extraPuddles: 0,
-              isAlchemist: !!p.isAlchemist,
-              isEvolved: !!p.isEvolved
-            });
+          if (e._puddleFrame !== _puddleFrameSeq) {
+            e._puddleFrame = _puddleFrameSeq;
+            e._puddleMaxDmg = baseDmg;
+            e._puddleExtra = 0;
+            e._puddleAlchemist = !!p.isAlchemist;
+            e._puddleEvolved = !!p.isEvolved;
+            _affectedEnemies.push(e);
           } else {
-            entry.maxBaseDmg = Math.max(entry.maxBaseDmg, baseDmg);
-            entry.extraPuddles++;
-            if (p.isEvolved) entry.isEvolved = true;
+            if (baseDmg > e._puddleMaxDmg) e._puddleMaxDmg = baseDmg;
+            e._puddleExtra++;
+            if (p.isEvolved) e._puddleEvolved = true;
+            if (p.isAlchemist) e._puddleAlchemist = true;
           }
         }
       }
@@ -385,14 +392,16 @@ export function updateAcidPuddles(dt) {
     }
   }
 
-  // Aplicação consolidada de dano com Anti-Stacking e Passiva de Corrosão
-  for (const [e, data] of enemyPuddleOverlap.entries()) {
+  // Aplicação consolidada de dano com Anti-Stacking e Passiva de Corrosão (Zero-Alloc)
+  const affectedCount = _affectedEnemies.length;
+  for (let idx = 0; idx < affectedCount; idx++) {
+    const e = _affectedEnemies[idx];
     if (e.hp <= 0) continue;
 
     // Anti-Stacking: 100% da poça principal + 15% por poça adicional (teto de +45%)
     // Evita que poças sobrepostas multipliquem o dano descontroladamente
-    const stackBonus = Math.min(0.45, data.extraPuddles * 0.15);
-    let finalDot = data.maxBaseDmg * (1 + stackBonus) * dt;
+    const stackBonus = Math.min(0.45, e._puddleExtra * 0.15);
+    let finalDot = e._puddleMaxDmg * (1 + stackBonus) * dt;
 
     // Passiva de Corrosão da Valéria (+6% por stack até +30%)
     if (e.acidStacks > 0) {
@@ -402,16 +411,16 @@ export function updateAcidPuddles(dt) {
     e.hp -= finalDot;
     e.hitFlash = Math.max(e.hitFlash || 0, 1);
 
-    if (data.isAlchemist) {
+    if (e._puddleAlchemist) {
       e.slowTimer = Math.max(e.slowTimer || 0, 40);
-      e.slowFactor = data.isEvolved ? 0.65 : 0.45;
+      e.slowFactor = e._puddleEvolved ? 0.65 : 0.45;
       
       // Ao permanecer na poça, renova o veneno aderente e a duração dos stacks
       e.acidBurnTimer = Math.max(e.acidBurnTimer || 0, 150);
       e.acidStackTimer = 200;
-      if (data.isEvolved) e.acidBurnEvolved = true;
+      if (e._puddleEvolved) e.acidBurnEvolved = true;
       if (Math.random() < 0.02 * dt) {
-        createHitParticles(e.x, e.y, data.isEvolved ? '#d6a2e8' : '#a29bfe', 1);
+        createHitParticles(e.x, e.y, e._puddleEvolved ? '#d6a2e8' : '#a29bfe', 1);
       }
 
       // Feedback visual periódico de dano contínuo (DoT) para as poças da Valéria
@@ -420,7 +429,7 @@ export function updateAcidPuddles(dt) {
       if (e.acidDotTimer >= 22) {
         const displayDmg = Math.round(e.acidDotAcc);
         if (displayDmg >= 1) {
-          const dotColor = data.isEvolved ? '#a29bfe' : '#9b59b6';
+          const dotColor = e._puddleEvolved ? '#a29bfe' : '#9b59b6';
           addDamageText(e.x, e.y - (e.radius || 14) * 0.5, displayDmg, false, dotColor);
         }
         e.acidDotAcc = 0;

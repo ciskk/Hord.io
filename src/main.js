@@ -16,7 +16,7 @@ import {
   getPersistentGold 
 } from './entities/player.js';
 import { inputX, inputY } from './core/input.js';
-import { getNeighborIndices } from './core/spatialGrid.js';
+import { getNeighborIndices, rebuildSpatialGrid } from './core/spatialGrid.js';
 import { resolveWorldPhysics } from './systems/physics.js';
 import { 
   damageTexts, 
@@ -68,6 +68,7 @@ import { playSfx, triggerHaptic, resetDeathAudioFilter } from './core/audio.js';
 import { updateBoss } from './entities/bosses/bossRegistry.js';
 import { updateMiniBoss } from './entities/minibossController.js';
 import { initResponsive, layoutMetrics, updateLayoutMetrics, getHudBottom } from './core/responsive.js';
+import { devCheats } from './systems/devtools.js';
 
 // Reexportações diretas das variáveis de combate e projéteis
 export { 
@@ -95,8 +96,17 @@ export let dpr = 1;
 export let viewW = window.innerWidth;
 export let viewH = window.innerHeight;
 
-// Redução de ~20% no campo de visão (câmera aproximada em 1.25x: 1 / 1.25 = 0.80)
-export const CAMERA_ZOOM = 1.25;
+export function calculateCameraZoom(w, h) {
+  const minDim = Math.min(w, h);
+  // Em telas amplas (PC 1080p, 720p, laptops com minDim >= 650), mantém exatamente o zoom padrão de 1.25x
+  // Em smartphones e telas compactas (minDim < 650), calibra o FOV para manter visibilidade de combate equilibrada (~520px de mundo)
+  if (minDim >= 650) {
+    return 1.25;
+  }
+  return Math.min(1.25, Math.max(0.65, minDim / 520));
+}
+
+export let CAMERA_ZOOM = typeof window !== 'undefined' ? calculateCameraZoom(window.innerWidth, window.innerHeight) : 1.25;
 export let cameraViewW = viewW / CAMERA_ZOOM;
 export let cameraViewH = viewH / CAMERA_ZOOM;
 
@@ -109,9 +119,10 @@ export function resize() {
   }
   if (!canvas) return;
 
-  dpr = layoutMetrics.dpr || ((window.devicePixelRatio || 1) >= 2.0 ? 2.0 : 1.0);
+  dpr = layoutMetrics.dpr || Math.min(window.devicePixelRatio || 1, 2.0);
   viewW = layoutMetrics.viewW || window.innerWidth;
   viewH = layoutMetrics.viewH || window.innerHeight;
+  CAMERA_ZOOM = calculateCameraZoom(viewW, viewH);
   cameraViewW = viewW / CAMERA_ZOOM;
   cameraViewH = viewH / CAMERA_ZOOM;
   canvas.width = Math.floor(viewW * dpr);
@@ -158,6 +169,9 @@ let ghostHpTimer = 0;
 let bossGhostHp = 0;
 let bossGhostHpTimer = 0;
 let _lastBossGhostHp = -1;
+
+let cachedFreezeOverlay = null;
+let isFreezeOverlayVisible = false;
 
 export function setLastTime(t) { lastTime = t; }
 export function resetSpawnTimer() { spawnTimer = 999; }
@@ -211,6 +225,62 @@ export function getGemConfig(xp) {
   } else {
     return { radius: 3.5, color: '#00d2d3', isSuper: false };
   }
+}
+
+/**
+ * Funções utilitárias integradas do Console Secreto DevTools (W + 5)
+ */
+export function purgeAllNormalEnemies() {
+  let count = 0;
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    const e = enemies[i];
+    if (!e.isBoss && !e.isMiniBoss && !e.isBossSubTarget) {
+      createHitParticles(e.x, e.y, '#e056fd', 8);
+      addDamageText(e.x, e.y, 9999, true, '#e056fd');
+      if (e.xp > 0) {
+        gems.push({
+          x: e.x,
+          y: e.y,
+          value: e.xp,
+          ...getGemConfig(e.xp),
+          forcedPull: true
+        });
+      }
+      addBloodSplat(e.x, e.y);
+      enemies.splice(i, 1);
+      count++;
+    }
+  }
+  playSfx('kill');
+  return count;
+}
+
+export function triggerSuperMagnet() {
+  let count = gems.length;
+  for (let i = 0; i < gems.length; i++) {
+    gems[i].forcedPull = true;
+  }
+  playSfx('chest_rare');
+  return count;
+}
+
+export function warpToWaveTime(targetWaveIndex) {
+  const waveTimes = {
+    1: 0,
+    2: 25,
+    3: 55,
+    4: 90,
+    5: 130,
+    6: 170,
+    7: 210,
+    8: 250,
+    9: 290,
+    10: 330
+  };
+  const targetSec = waveTimes[targetWaveIndex] !== undefined ? waveTimes[targetWaveIndex] : 0;
+  frameCount = targetSec * 60;
+  lastAnnouncedWaveIndex = 0;
+  playSfx('level');
 }
 
 // Cache de nós estáticos do DOM para eliminar chamadas a document.getElementById e evitar Layout Thrashing
@@ -402,6 +472,7 @@ export function resetGame() {
 
   hideEl('boss-hud');
   hideEl('freeze-overlay');
+  isFreezeOverlayVisible = false;
   hideEl('death-modal');
   hideEl('victory-modal');
   hideEl('chest-modal');
@@ -437,6 +508,16 @@ export function resetGame() {
 }
 
 function update(dt) {
+  if (typeof devCheats !== 'undefined') {
+    if (devCheats.godMode && player) {
+      player.hp = player.maxHp;
+      player.iFrames = 60;
+    }
+    if (devCheats.zeroCooldown && player) {
+      player.skillCd = 0;
+    }
+  }
+
   frameCount += dt;
   const seconds = Math.floor(frameCount / 60);
   const hordeSeconds = getEffectiveHordeSeconds(seconds);
@@ -465,12 +546,17 @@ function update(dt) {
 
   if (screenShake > 0) screenShake = Math.max(0, screenShake - 0.7 * dt);
 
-  const freezeOverlay = document.getElementById('freeze-overlay');
   if (freezeTimer > 0) {
     freezeTimer -= dt;
-    if (freezeOverlay) freezeOverlay.style.display = 'block';
-  } else {
-    if (freezeOverlay) freezeOverlay.style.display = 'none';
+    if (!isFreezeOverlayVisible) {
+      if (!cachedFreezeOverlay) cachedFreezeOverlay = document.getElementById('freeze-overlay');
+      if (cachedFreezeOverlay) cachedFreezeOverlay.style.display = 'block';
+      isFreezeOverlayVisible = true;
+    }
+  } else if (isFreezeOverlayVisible) {
+    if (!cachedFreezeOverlay) cachedFreezeOverlay = document.getElementById('freeze-overlay');
+    if (cachedFreezeOverlay) cachedFreezeOverlay.style.display = 'none';
+    isFreezeOverlayVisible = false;
   }
 
   // Timers do Jogador e Sincronização de Estados Reativos
@@ -859,6 +945,7 @@ function update(dt) {
   cinematicCamera.letterboxProgress += (targetLetterbox - cinematicCamera.letterboxProgress) * (1 - Math.pow(1 - 0.08, dt));
 
   player.weapons.forEach(w => { w.timer += dt; });
+  rebuildSpatialGrid(enemies);
   fireWeapons();
   updateSpinningAxes(dt);
 
@@ -2989,7 +3076,8 @@ function loop(now) {
   if (!now) now = performance.now();
   const rawDt = (now - lastTime) / (1000 / 60);
   lastTime = now;
-  const dt = Math.min(Math.max(rawDt, 0.1), 2.5);
+  const speed = (typeof devCheats !== 'undefined' && devCheats.gameSpeed) ? devCheats.gameSpeed : 1.0;
+  const dt = Math.min(Math.max(rawDt, 0.1), 2.5) * speed;
 
   if (!gameState.isPaused && !gameState.isDead && !gameState.isWon) {
     update(dt);

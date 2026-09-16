@@ -20,6 +20,17 @@ export function clearSpatialGrid() {
   spatialGrid.clear();
 }
 
+export function rebuildSpatialGrid(enemies) {
+  clearSpatialGrid();
+  const count = enemies.length;
+  for (let i = 0; i < count; i++) {
+    const e = enemies[i];
+    if (e && e.hp > 0) {
+      insertIntoGrid(e, i);
+    }
+  }
+}
+
 export function insertIntoGrid(e, index) {
   const cx = Math.floor(e.x / SPATIAL_CELL_SIZE);
   const cy = Math.floor(e.y / SPATIAL_CELL_SIZE);

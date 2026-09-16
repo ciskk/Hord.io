@@ -2,7 +2,7 @@
  * src/systems/physics.js
  * Módulo de Simulação Física e Resolução de Colisões Espaciais (Fases 1.1 e 2.1)
  */
-import { clearSpatialGrid, insertIntoGrid, getNeighborIndices } from '../core/spatialGrid.js';
+import { clearSpatialGrid, insertIntoGrid, getNeighborIndices, rebuildSpatialGrid } from '../core/spatialGrid.js';
 import { inputX, inputY } from '../core/input.js';
 
 /**
@@ -21,15 +21,12 @@ export function resolveWorldPhysics(player, enemies, dt) {
   const enemyCount = enemies.length;
 
   // 1. População da Malha Espacial
-  clearSpatialGrid();
-  for (let i = 0; i < enemyCount; i++) {
-    const e = enemies[i];
-    if (e && e.hp > 0) {
-      insertIntoGrid(e, i);
-    }
-  }
+  rebuildSpatialGrid(enemies);
 
   // 2. Separação Elástica Mútua: Inimigo vs. Inimigo (50% / 50%)
+  // Mobs a mais de 750px do jogador dispensam separação mútua até se aproximarem da visão
+  const maxSimDistSq = 750 * 750;
+
   for (let i = 0; i < enemyCount; i++) {
     const e1 = enemies[i];
     if (
@@ -41,6 +38,9 @@ export function resolveWorldPhysics(player, enemies, dt) {
     ) {
       continue;
     }
+
+    const pDistSq1 = (e1.x - player.x) * (e1.x - player.x) + (e1.y - player.y) * (e1.y - player.y);
+    if (pDistSq1 > maxSimDistSq && !e1.isBoss && !e1.isMiniBoss) continue;
 
     const neighbors = getNeighborIndices(e1.x, e1.y, e1.radius * 2);
     const nLen = neighbors.length;
@@ -79,9 +79,9 @@ export function resolveWorldPhysics(player, enemies, dt) {
     }
   }
 
-  // 3. Separação Física Jogador vs. Inimigos (Crowd Parting Dinâmico, Berserk Shove e Hiperarmadura)
+  // 3. Separação Física Jogador vs. Inimigos (Spatial Grid Otimizada, Crowd Parting Dinâmico e Hiperarmadura)
   const isPhasing = !!(player.isPhasing || (player.invisTimer > 0));
-  const moveLen = Math.hypot(inputX, inputY);
+  const moveLen = Math.sqrt(inputX * inputX + inputY * inputY);
   const isPlayerMoving = !!(player.isMoving && moveLen > 0.01);
   const pDirX = isPlayerMoving ? (inputX / moveLen) : (player.facing || 1);
   const pDirY = isPlayerMoving ? (inputY / moveLen) : 0;
@@ -92,17 +92,22 @@ export function resolveWorldPhysics(player, enemies, dt) {
   let accumAttackPushY = 0;
   let attackingCount = 0;
 
-  for (let i = 0; i < enemyCount; i++) {
-    const e = enemies[i];
+  // Consulta apenas as células espaciais ao redor do jogador (raio de 95px)
+  const playerNeighbors = getNeighborIndices(player.x, player.y, 95);
+  const pnCount = playerNeighbors.length;
+
+  for (let k = 0; k < pnCount; k++) {
+    const e = enemies[playerNeighbors[k]];
     if (!e || e.hp <= 0 || e.isBossSubTarget) continue;
     if (e.isBoss && (e.mistState === 'DASHING' || e.actionState === 'TELEPORTING')) continue;
 
     const dx = player.x - e.x;
     const dy = player.y - e.y;
-    const dist = Math.hypot(dx, dy);
+    const distSq = dx * dx + dy * dy;
     const rSum = player.radius + e.radius;
 
-    if (dist < rSum && dist > 0.0001) {
+    if (distSq < rSum * rSum && distSq > 0.0001) {
+      const dist = Math.sqrt(distSq);
       const nx = dx / dist; // vetor do monstro para o jogador
       const ny = dy / dist;
       const overlap = rSum - dist;
@@ -119,15 +124,12 @@ export function resolveWorldPhysics(player, enemies, dt) {
         player.y += ny * overlap;
       } else {
         // Hiperarmadura: se o monstro iniciou WINDUP ou STRIKE, ele resiste ao empurrão
-        // para garantir que o seu ataque não seja cancelado nem saia do alcance (strikeLimit)
         const isAttacking = e.combatState === 'WINDUP' || e.combatState === 'STRIKE';
 
         if (isAttacking) {
-          // O monstro resiste ao empurrão com 79% da força para manter o alcance do golpe
           e.x -= nx * (overlap * 0.79);
           e.y -= ny * (overlap * 0.79);
 
-          // Força de contra-empurrão/retenção no jogador coletada sem acúmulo multiplicativo
           const singlePush = overlap * 0.21;
           if (singlePush > maxSingleAttackPush) {
             maxSingleAttackPush = singlePush;
@@ -136,8 +138,6 @@ export function resolveWorldPhysics(player, enemies, dt) {
           accumAttackPushY += ny * singlePush;
           attackingCount++;
         } else {
-          // Monstro em perseguição, recuperação ou atordoamento:
-          // Aplica deslocamento radial acentuado e dispersão tangencial lateral (abrir caminho)
           const berserkMult = isBerserk ? 1.75 : 1.0;
           const eliteWeight = e.isElite ? 0.55 : 1.0;
 
@@ -148,7 +148,7 @@ export function resolveWorldPhysics(player, enemies, dt) {
           player.x += nx * (overlap * 0.15);
           player.y += ny * (overlap * 0.15);
 
-          // 2. Dispersão lateral tangencial (desvia o mob para as laterais da passada do jogador)
+          // 2. Dispersão lateral tangencial
           if (isPlayerMoving) {
             const perpX = -pDirY;
             const perpY = pDirX;
@@ -166,11 +166,9 @@ export function resolveWorldPhysics(player, enemies, dt) {
     }
   }
 
-  // Aplicação da força de ataque não-cumulativa:
-  // Mesmo que 3 ou mais mobs estejam atacando ao mesmo tempo,
-  // apenas a força equivalente a 1 único mob "segurando" o jogador é de fato aplicada.
+  // Aplicação da força de ataque não-cumulativa
   if (attackingCount > 0) {
-    const totalAttackPushLen = Math.hypot(accumAttackPushX, accumAttackPushY);
+    const totalAttackPushLen = Math.sqrt(accumAttackPushX * accumAttackPushX + accumAttackPushY * accumAttackPushY);
     if (totalAttackPushLen > maxSingleAttackPush && totalAttackPushLen > 0.0001) {
       const clampFactor = maxSingleAttackPush / totalAttackPushLen;
       accumAttackPushX *= clampFactor;

@@ -495,23 +495,48 @@ export function initSkillUI() {
   });
 }
 
+let _cachedSkillContainer = null;
+let _cachedSkillMask = null;
+let _cachedSkillText = null;
+let _lastSkillReady = null;
+let _lastSkillDeg = -1;
+let _lastSkillTextStr = null;
+
 export function updateSkillUI() {
-  const skillContainer = document.getElementById('skill-btn-container');
-  const skillMask = document.getElementById('skill-cooldown-mask');
-  const skillText = document.getElementById('skill-timer-text');
+  if (!_cachedSkillContainer) {
+    _cachedSkillContainer = document.getElementById('skill-btn-container');
+    _cachedSkillMask = document.getElementById('skill-cooldown-mask');
+    _cachedSkillText = document.getElementById('skill-timer-text');
+  }
 
-  if (!skillContainer || !skillMask || !skillText) return;
+  if (!_cachedSkillContainer || !_cachedSkillMask || !_cachedSkillText) return;
 
-  if (player.skillCd <= 0) {
-    skillMask.style.background = 'transparent';
-    skillText.innerText = '';
-    skillContainer.classList.add('ready');
+  const isReady = player.skillCd <= 0;
+  if (isReady) {
+    if (_lastSkillReady !== true) {
+      _lastSkillReady = true;
+      _lastSkillDeg = 0;
+      _lastSkillTextStr = '';
+      _cachedSkillMask.style.background = 'transparent';
+      _cachedSkillText.innerText = '';
+      _cachedSkillContainer.classList.add('ready');
+    }
   } else {
-    skillContainer.classList.remove('ready');
+    if (_lastSkillReady !== false) {
+      _lastSkillReady = false;
+      _cachedSkillContainer.classList.remove('ready');
+    }
     const ratio = player.skillCd / player.skillMaxCd;
     const deg = Math.floor(ratio * 360);
-    skillMask.style.background = `conic-gradient(rgba(10, 12, 18, 0.82) ${deg}deg, transparent ${deg}deg)`;
-    skillText.innerText = (player.skillCd / 60).toFixed(1) + 's';
+    if (deg !== _lastSkillDeg) {
+      _lastSkillDeg = deg;
+      _cachedSkillMask.style.background = `conic-gradient(rgba(10, 12, 18, 0.82) ${deg}deg, transparent ${deg}deg)`;
+    }
+    const textStr = (player.skillCd / 60).toFixed(1) + 's';
+    if (textStr !== _lastSkillTextStr) {
+      _lastSkillTextStr = textStr;
+      _cachedSkillText.innerText = textStr;
+    }
   }
 }
 
@@ -684,6 +709,8 @@ export function triggerHeroSkill() {
   player.skillCd = player.skillMaxCd;
 }
 
+const _axeCandidates = [];
+
 export function updateSpinningAxes(dt) {
   if (player.axeCount <= 0) return;
 
@@ -701,14 +728,29 @@ export function updateSpinningAxes(dt) {
   const count = player.evolvedAxe ? Math.max(player.axeCount, 6) : player.axeCount;
   const hitRadius = player.evolvedAxe ? 28 : 22;
 
+  // Consulta espacial consolidada uma única vez para o anel orbital completo
+  _axeCandidates.length = 0;
+  const ringNeighbors = getNeighborIndices(player.x, player.y, effectiveRadius + hitRadius + 45);
+  const ringCount = ringNeighbors.length;
+  for (let k = 0; k < ringCount; k++) {
+    _axeCandidates.push(ringNeighbors[k]);
+  }
+
+  const maxReachBullet = effectiveRadius + hitRadius + 14;
+  const maxReachBulletSq = maxReachBullet * maxReachBullet;
+
   for (let i = 0; i < count; i++) {
     const angle = player.axeAngle + (i * (Math.PI * 2 / count));
     const ax = player.x + Math.cos(angle) * effectiveRadius;
     const ay = player.y + Math.sin(angle) * effectiveRadius;
 
-    // Destruição de projéteis ao longo da cápsula
+    // Destruição de projéteis ao longo da cápsula com bounding radial rápido
     for (let bIdx = enemyBullets.length - 1; bIdx >= 0; bIdx--) {
       const eb = enemyBullets[bIdx];
+      const bdx = eb.x - player.x;
+      const bdy = eb.y - player.y;
+      if (bdx * bdx + bdy * bdy > maxReachBulletSq) continue;
+
       const bSeg = distToSegment(eb.x, eb.y, player.x, player.y, ax, ay);
       if (bSeg.dist < (hitRadius + eb.radius)) {
         createHitParticles(eb.x, eb.y, '#f1c40f', 5);
@@ -717,13 +759,9 @@ export function updateSpinningAxes(dt) {
       }
     }
 
-    const midX = (player.x + ax) * 0.5;
-    const midY = (player.y + ay) * 0.5;
-    const queryR = (effectiveRadius * 0.5) + hitRadius + 60;
-    const nearbyIndices = getNeighborIndices(midX, midY, queryR);
-
-    for (let k = 0; k < nearbyIndices.length; k++) {
-      const e = enemies[nearbyIndices[k]];
+    const candLen = _axeCandidates.length;
+    for (let k = 0; k < candLen; k++) {
+      const e = enemies[_axeCandidates[k]];
       if (!e || (e.axeHitCd || 0) > 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
       if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
       if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
@@ -874,10 +912,11 @@ export function fireWeapons() {
     let bestDistSq = rangeSq;
     let bestSubDistSq = rangeSq;
 
-    const enemyCount = enemies.length;
-    for (let i = 0; i < enemyCount; i++) {
-      const e = enemies[i];
-      if (e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
+    const candidateIndices = getNeighborIndices(player.x, player.y, weaponRange);
+    const candidateCount = candidateIndices.length;
+    for (let k = 0; k < candidateCount; k++) {
+      const e = enemies[candidateIndices[k]];
+      if (!e || e.hp <= 0 || e.isTargetable === false || (e.emergeTimer || 0) > 0) continue;
       if (e.isBoss && (e.actionState === 'SPAWN_INTRO' || e.isTargetable === false)) continue;
       if (e.isBossSubTarget && (!e.active || e.isTargetable === false || (e.parentBoss && (e.parentBoss.actionState === 'SPAWN_INTRO' || e.parentBoss.isTargetable === false)))) continue;
 

@@ -128,7 +128,7 @@ export function distToSegment(px, py, x1, y1, x2, y2) {
   if (l2 < 0.000001) {
     const ddx = px - x1;
     const ddy = py - y1;
-    _segmentResult.dist = Math.hypot(ddx, ddy);
+    _segmentResult.dist = Math.sqrt(ddx * ddx + ddy * ddy);
     _segmentResult.closestX = x1;
     _segmentResult.closestY = y1;
     _segmentResult.t = 0;
@@ -142,7 +142,9 @@ export function distToSegment(px, py, x1, y1, x2, y2) {
 
   _segmentResult.closestX = x1 + t * dx;
   _segmentResult.closestY = y1 + t * dy;
-  _segmentResult.dist = Math.hypot(px - _segmentResult.closestX, py - _segmentResult.closestY);
+  const cdx = px - _segmentResult.closestX;
+  const cdy = py - _segmentResult.closestY;
+  _segmentResult.dist = Math.sqrt(cdx * cdx + cdy * cdy);
   _segmentResult.t = t;
 
   return _segmentResult;

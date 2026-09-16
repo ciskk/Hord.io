@@ -304,7 +304,7 @@ export function render() {
     ctx.restore();
   }
 
-  // 2. Renderização das Orbes de XP (Gems) - Sobrepostas às poças com alto relevo visual
+  // 2. Renderização das Orbes de XP (Gems) - Sobrepostas às poças com alto relevo visual (Zero-Save/Restore)
   for (let i = 0; i < gems.length; i++) {
     const g = gems[i];
     if (g.x < viewLeft || g.x > viewRight || g.y < viewTop || g.y > viewBottom) continue;
@@ -315,8 +315,8 @@ export function render() {
     const pulse = Math.sin(frameCount * 0.16 + pulseOffset) * (g.isSuper ? 2.2 : 1.2);
     const rad = Math.max(3, baseR + pulse);
 
-    ctx.save();
-    ctx.translate(g.x, g.y);
+    const gx = g.x;
+    const gy = g.y;
 
     // 1. Halo Luminoso / Aura Radiante Pulsante
     let haloColor = 'rgba(0, 210, 211, 0.38)';
@@ -326,7 +326,7 @@ export function render() {
 
     ctx.fillStyle = haloColor;
     ctx.beginPath();
-    ctx.arc(0, 0, rad * 2.2, 0, Math.PI * 2);
+    ctx.arc(gx, gy, rad * 2.2, 0, Math.PI * 2);
     ctx.fill();
 
     // 2. Geometria de Cristal Facetado em Losango / Gema Lapidada
@@ -336,18 +336,18 @@ export function render() {
     // Faceta Esquerda (Tom Base)
     ctx.fillStyle = baseColor;
     ctx.beginPath();
-    ctx.moveTo(0, -ry);
-    ctx.lineTo(-rx, 0);
-    ctx.lineTo(0, ry);
+    ctx.moveTo(gx, gy - ry);
+    ctx.lineTo(gx - rx, gy);
+    ctx.lineTo(gx, gy + ry);
     ctx.closePath();
     ctx.fill();
 
     // Faceta Direita (Reflexo Lapidado Mais Claro)
     ctx.fillStyle = g.isSuper ? '#f3a4fc' : (baseColor === '#f1c40f' ? '#f9ca24' : (baseColor === '#2ecc71' ? '#55efc4' : '#81ecec'));
     ctx.beginPath();
-    ctx.moveTo(0, -ry);
-    ctx.lineTo(rx, 0);
-    ctx.lineTo(0, ry);
+    ctx.moveTo(gx, gy - ry);
+    ctx.lineTo(gx + rx, gy);
+    ctx.lineTo(gx, gy + ry);
     ctx.closePath();
     ctx.fill();
 
@@ -355,17 +355,17 @@ export function render() {
     ctx.strokeStyle = g.isSuper ? '#ffffff' : 'rgba(255, 255, 255, 0.85)';
     ctx.lineWidth = 1.3;
     ctx.beginPath();
-    ctx.moveTo(0, -ry);
-    ctx.lineTo(rx, 0);
-    ctx.lineTo(0, ry);
-    ctx.lineTo(-rx, 0);
+    ctx.moveTo(gx, gy - ry);
+    ctx.lineTo(gx + rx, gy);
+    ctx.lineTo(gx, gy + ry);
+    ctx.lineTo(gx - rx, gy);
     ctx.closePath();
     ctx.stroke();
 
     // Núcleo Incandescente Central
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.ellipse(0, 0, rx * 0.32, ry * 0.32, 0, 0, Math.PI * 2);
+    ctx.ellipse(gx, gy, rx * 0.32, ry * 0.32, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // 3. Ponto Especular e Cintilação Estelar (Sparkle Glint)
@@ -373,20 +373,23 @@ export function render() {
     if (glintPhase > 0.3) {
       const glintSize = (g.isSuper ? 4.5 : 3.0) * glintPhase;
       ctx.fillStyle = '#ffffff';
+      const glintCenterX = gx - rx * 0.22;
+      const glintCenterY = gy - ry * 0.35;
+
       // Brilho em cruz de 4 pontas
       ctx.beginPath();
-      ctx.moveTo(-rx * 0.22, -ry * 0.35 - glintSize);
-      ctx.lineTo(-rx * 0.22 + glintSize * 0.28, -ry * 0.35);
-      ctx.lineTo(-rx * 0.22, -ry * 0.35 + glintSize);
-      ctx.lineTo(-rx * 0.22 - glintSize * 0.28, -ry * 0.35);
+      ctx.moveTo(glintCenterX, glintCenterY - glintSize);
+      ctx.lineTo(glintCenterX + glintSize * 0.28, glintCenterY);
+      ctx.lineTo(glintCenterX, glintCenterY + glintSize);
+      ctx.lineTo(glintCenterX - glintSize * 0.28, glintCenterY);
       ctx.closePath();
       ctx.fill();
 
       ctx.beginPath();
-      ctx.moveTo(-rx * 0.22 - glintSize, -ry * 0.35);
-      ctx.lineTo(-rx * 0.22, -ry * 0.35 - glintSize * 0.28);
-      ctx.lineTo(-rx * 0.22 + glintSize, -ry * 0.35);
-      ctx.lineTo(-rx * 0.22, -ry * 0.35 + glintSize * 0.28);
+      ctx.moveTo(glintCenterX - glintSize, glintCenterY);
+      ctx.lineTo(glintCenterX, glintCenterY - glintSize * 0.28);
+      ctx.lineTo(glintCenterX + glintSize, glintCenterY);
+      ctx.lineTo(glintCenterX, glintCenterY + glintSize * 0.28);
       ctx.closePath();
       ctx.fill();
     }
@@ -397,17 +400,15 @@ export function render() {
       const sparkDist = rad * 1.8;
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(Math.cos(sparkAng) * sparkDist, Math.sin(sparkAng) * sparkDist, 1.6, 0, Math.PI * 2);
+      ctx.arc(gx + Math.cos(sparkAng) * sparkDist, gy + Math.sin(sparkAng) * sparkDist, 1.6, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
       ctx.lineWidth = 0.9;
       ctx.beginPath();
-      ctx.arc(0, 0, sparkDist, 0, Math.PI * 2);
+      ctx.arc(gx, gy, sparkDist, 0, Math.PI * 2);
       ctx.stroke();
     }
-
-    ctx.restore();
   }
 
   // Renderização precisa dos telégrafos de chefes (cones, faixas, crateras de queda e fissuras)
@@ -1778,22 +1779,23 @@ export function render() {
     }
   }
 
-  for (let i = 0; i < damageTexts.length; i++) {
-    const dtItem = damageTexts[i];
-    if (dtItem.x < viewLeft || dtItem.x > viewRight || dtItem.y < viewTop || dtItem.y > viewBottom) continue;
-    const alpha = Math.max(0, dtItem.life / dtItem.maxLife);
-    ctx.save();
-    ctx.fillStyle = dtItem.color;
-    ctx.globalAlpha = alpha;
-    ctx.font = dtItem.isCrit ? 'bold 16px sans-serif' : 'bold 12px sans-serif';
+  if (damageTexts.length > 0) {
     ctx.textAlign = 'center';
-    if (dtItem.isCrit) {
-      ctx.strokeStyle = '#d35400';
-      ctx.lineWidth = 2.5;
-      ctx.strokeText(dtItem.text, dtItem.x, dtItem.y);
+    for (let i = 0; i < damageTexts.length; i++) {
+      const dtItem = damageTexts[i];
+      if (dtItem.x < viewLeft || dtItem.x > viewRight || dtItem.y < viewTop || dtItem.y > viewBottom) continue;
+      const alpha = Math.max(0, dtItem.life / dtItem.maxLife);
+      ctx.fillStyle = dtItem.color;
+      ctx.globalAlpha = alpha;
+      ctx.font = dtItem.isCrit ? 'bold 16px sans-serif' : 'bold 12px sans-serif';
+      if (dtItem.isCrit) {
+        ctx.strokeStyle = '#d35400';
+        ctx.lineWidth = 2.5;
+        ctx.strokeText(dtItem.text, dtItem.x, dtItem.y);
+      }
+      ctx.fillText(dtItem.text, dtItem.x, dtItem.y);
     }
-    ctx.fillText(dtItem.text, dtItem.x, dtItem.y);
-    ctx.restore();
+    ctx.globalAlpha = 1.0;
   }
 
   ctx.restore();

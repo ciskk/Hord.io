@@ -15,7 +15,8 @@ import {
   triggerHeroSurge 
 } from '../render/characterPreview.js';
 import { BOSS_TYPES, MINI_BOSS_TYPES } from '../config/enemies.js';
-import { getRandomUpgrades, checkSynergies, grant50Upgrades } from '../config/upgrades.js';
+import { getRandomUpgrades, checkSynergies, grant50Upgrades, grantLevels } from '../config/upgrades.js';
+import { renderDevToolsModal } from './devtools.js';
 import { checkIsSynergyIngredient, getSynergyTrackerList } from '../config/items.js';
 import { triggerBossEncounter, spawnMiniBoss } from '../entities/enemies.js';
 import { 
@@ -92,20 +93,20 @@ const UPGRADE_ICONS = {
 
 export function isBossSelectAllowed() {
   if (gameState.isDead || gameState.isWon) return false;
-
-  const charModal = document.getElementById('char-modal');
-  const pauseModal = document.getElementById('pause-modal');
-
-  const isCharOpen = charModal && charModal.style.display === 'flex';
-  const isPauseOpen = pauseModal && pauseModal.style.display === 'flex';
-
-  return !!(isCharOpen || isPauseOpen);
+  return true;
 }
 
 export function openBossSelectModal() {
   const modal = document.getElementById('boss-select-modal');
   if (!modal) return;
-  renderBossSelectModal();
+
+  const charModal = document.getElementById('char-modal');
+  const isCharOpen = charModal && charModal.style.display === 'flex';
+  if (!isCharOpen) {
+    gameState.isPaused = true;
+  }
+
+  renderDevToolsModal();
   modal.style.display = 'flex';
   playSfx('level');
 }
@@ -113,9 +114,19 @@ export function openBossSelectModal() {
 export function closeBossSelectModal() {
   const modal = document.getElementById('boss-select-modal');
   if (modal) modal.style.display = 'none';
+
+  const charModal = document.getElementById('char-modal');
+  const isCharOpen = charModal && charModal.style.display === 'flex';
+  const pauseModal = document.getElementById('pause-modal');
+  const isPauseOpen = pauseModal && pauseModal.style.display === 'flex';
+
+  if (!isCharOpen && !isPauseOpen) {
+    gameState.isPaused = false;
+    setLastTime(performance.now());
+  }
 }
 
-export function launchBossTest(bossId, grantLevels = false) {
+export function launchBossTest(bossId, levelCount = 0) {
   closeBossSelectModal();
 
   const charModal = document.getElementById('char-modal');
@@ -131,8 +142,9 @@ export function launchBossTest(bossId, grantLevels = false) {
     setLastTime(performance.now());
   }
 
-  if (grantLevels) {
-    grant50Upgrades();
+  const levelsToGrant = typeof levelCount === 'boolean' ? (levelCount ? 50 : 0) : Number(levelCount || 0);
+  if (levelsToGrant > 0) {
+    grantLevels(levelsToGrant);
   }
 
   setActiveBoss(null);
@@ -142,7 +154,7 @@ export function launchBossTest(bossId, grantLevels = false) {
   triggerBossEncounter(bossId);
 }
 
-export function launchMiniBossTest(miniBossType, grantLevels = false) {
+export function launchMiniBossTest(miniBossType, levelCount = 0) {
   closeBossSelectModal();
 
   const charModal = document.getElementById('char-modal');
@@ -158,123 +170,16 @@ export function launchMiniBossTest(miniBossType, grantLevels = false) {
     setLastTime(performance.now());
   }
 
-  if (grantLevels) {
-    grant50Upgrades();
+  const levelsToGrant = typeof levelCount === 'boolean' ? (levelCount ? 50 : 0) : Number(levelCount || 0);
+  if (levelsToGrant > 0) {
+    grantLevels(levelsToGrant);
   }
 
   spawnMiniBoss(miniBossType);
 }
 
 export function renderBossSelectModal() {
-  const container = document.getElementById('boss-select-list');
-  if (!container) return;
-  container.innerHTML = '';
-
-  // 1. Chefes Principais de Fase
-  const bossHeader = document.createElement('div');
-  bossHeader.style.cssText = "font-family:'Cinzel',serif; color:#e056fd; font-size:11px; font-weight:bold; margin-bottom:4px; letter-spacing:1px;";
-  bossHeader.innerText = "CHEFES SUPREMOS DE FASE (1 A 4):";
-  container.appendChild(bossHeader);
-
-  Object.keys(BOSS_TYPES).forEach(id => {
-    const boss = BOSS_TYPES[id];
-    const card = document.createElement('div');
-    card.className = 'boss-dev-card';
-    card.style.borderLeftColor = boss.color || '#e056fd';
-
-    const info = document.createElement('div');
-    info.className = 'boss-dev-info';
-    info.innerHTML = `
-      <div class="boss-dev-name">${boss.name}</div>
-      <div class="boss-dev-meta">
-        Boss #${id} • HP: ${boss.hp.toLocaleString('pt-BR')} • Dano: ${boss.damage}${boss.isFinalBoss ? ' • <b style="color:#e74c3c">FINAL</b>' : ''}
-      </div>
-    `;
-
-    const actions = document.createElement('div');
-    actions.className = 'boss-dev-actions';
-
-    const normalBtn = document.createElement('button');
-    normalBtn.className = 'boss-dev-btn-normal';
-    normalBtn.type = 'button';
-    normalBtn.title = 'Testar no nível atual / nível 1';
-    normalBtn.innerText = '⚔️ Normal';
-    normalBtn.onclick = (e) => {
-      e.stopPropagation();
-      launchBossTest(Number(id), false);
-    };
-
-    const boostBtn = document.createElement('button');
-    boostBtn.className = 'boss-dev-btn-boost';
-    boostBtn.type = 'button';
-    boostBtn.title = 'Receber 50 upgrades aleatórios e evoluções imediatas';
-    boostBtn.innerText = '⚡ +50 Níveis';
-    boostBtn.onclick = (e) => {
-      e.stopPropagation();
-      launchBossTest(Number(id), true);
-    };
-
-    actions.appendChild(normalBtn);
-    actions.appendChild(boostBtn);
-
-    card.appendChild(info);
-    card.appendChild(actions);
-
-    container.appendChild(card);
-  });
-
-  // 2. Minibosses de Elite (16 Arquétipos)
-  const mbHeader = document.createElement('div');
-  mbHeader.style.cssText = "font-family:'Cinzel',serif; color:#f1c40f; font-size:11px; font-weight:bold; margin:10px 0 4px 0; padding-top:6px; border-top:1px solid rgba(241,196,15,0.25); letter-spacing:1px;";
-  mbHeader.innerText = "MINIBOSSES DE ELITE (16 ARQUÉTIPOS):";
-  container.appendChild(mbHeader);
-
-  Object.keys(MINI_BOSS_TYPES).forEach(key => {
-    const mb = MINI_BOSS_TYPES[key];
-    const card = document.createElement('div');
-    card.className = 'boss-dev-card';
-    card.style.borderLeftColor = mb.color || '#f1c40f';
-
-    const info = document.createElement('div');
-    info.className = 'boss-dev-info';
-    info.innerHTML = `
-      <div class="boss-dev-name" style="color:#f1c40f;">${mb.name}</div>
-      <div class="boss-dev-meta">
-        ${key} • HP: ${mb.hp.toLocaleString('pt-BR')} • Dano: ${mb.damage}
-      </div>
-    `;
-
-    const actions = document.createElement('div');
-    actions.className = 'boss-dev-actions';
-
-    const spawnBtn = document.createElement('button');
-    spawnBtn.className = 'boss-dev-btn-normal';
-    spawnBtn.type = 'button';
-    spawnBtn.title = `Invocar ${mb.name} agora`;
-    spawnBtn.innerText = '⚔️ Invocar';
-    spawnBtn.onclick = (e) => {
-      e.stopPropagation();
-      launchMiniBossTest(key, false);
-    };
-
-    const spawnBoostBtn = document.createElement('button');
-    spawnBoostBtn.className = 'boss-dev-btn-boost';
-    spawnBoostBtn.type = 'button';
-    spawnBoostBtn.title = `Invocar ${mb.name} com +50 Níveis`;
-    spawnBoostBtn.innerText = '⚡ +50';
-    spawnBoostBtn.onclick = (e) => {
-      e.stopPropagation();
-      launchMiniBossTest(key, true);
-    };
-
-    actions.appendChild(spawnBtn);
-    actions.appendChild(spawnBoostBtn);
-
-    card.appendChild(info);
-    card.appendChild(actions);
-
-    container.appendChild(card);
-  });
+  renderDevToolsModal();
 }
 
 /**

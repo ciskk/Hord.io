@@ -89,7 +89,7 @@ export function updateLayoutMetrics() {
 
   layoutMetrics.viewW = Math.max(280, w);
   layoutMetrics.viewH = Math.max(280, h);
-  layoutMetrics.dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+  layoutMetrics.dpr = Math.min(window.devicePixelRatio || 1, 2.0);
   layoutMetrics.aspectRatio = layoutMetrics.viewW / layoutMetrics.viewH;
 
   layoutMetrics.isPortrait = layoutMetrics.viewH > layoutMetrics.viewW;

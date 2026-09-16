@@ -235,7 +235,7 @@ export function resetEnvironment() {
 }
 
 export const ambientEmbers = [];
-for (let i = 0; i < 48; i++) {
+for (let i = 0; i < 24; i++) {
   ambientEmbers.push({
     x: Math.random() * 2000 - 1000,
     y: Math.random() * 2000 - 1000,
@@ -1130,62 +1130,42 @@ export function renderEnvironment(ctx) {
     }
   }
 
-  // 3. POÇAS DE SANGUE E ÁCIDO
-  bloodSplats.forEach(b => {
-    ctx.fillStyle = b.color;
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-    ctx.fill();
-  });
+  // 3. POÇAS DE SANGUE (Com Frustum Culling e Zero-Allocation)
+  const splatPad = 32;
+  const sViewLeft = camera.x - splatPad;
+  const sViewRight = camera.x + cameraViewW + splatPad;
+  const sViewTop = camera.y - splatPad;
+  const sViewBottom = camera.y + cameraViewH + splatPad;
 
-  acidPuddles.forEach(p => {
-    const pulse = Math.sin(frameCount * 0.15) * 3;
-    if (p.isFire) {
-      ctx.fillStyle = 'rgba(230, 126, 34, 0.35)';
-      ctx.strokeStyle = '#e67e22';
-    } else if (p.isAlchemist) {
-      // Brilho volumétrico violeta/roxo para as poças da Valéria
-      ctx.fillStyle = p.isEvolved ? 'rgba(162, 155, 254, 0.35)' : 'rgba(142, 68, 173, 0.35)';
-      ctx.strokeStyle = p.isEvolved ? 'rgba(214, 162, 232, 0.75)' : 'rgba(155, 89, 182, 0.75)';
-    } else {
-      ctx.fillStyle = 'rgba(46, 204, 113, 0.28)';
-      ctx.strokeStyle = 'rgba(46, 204, 113, 0.7)';
+  for (let i = 0; i < bloodSplats.length; i++) {
+    const b = bloodSplats[i];
+    if (b.x >= sViewLeft && b.x <= sViewRight && b.y >= sViewTop && b.y <= sViewBottom) {
+      ctx.fillStyle = b.color;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fill();
     }
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.radius + pulse, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  });
+  }
 
-  // 4. PARTÍCULAS ATMOSFÉRICAS ADAPTATIVAS (Chispas, Cinzas e Cristais de Sal)
-  for (let s of ambientEmbers) {
+  // 4. PARTÍCULAS ATMOSFÉRICAS ADAPTATIVAS (Chispas, Cinzas e Cristais de Sal - Otimizado)
+  const emberLen = ambientEmbers.length;
+  for (let i = 0; i < emberLen; i++) {
+    const s = ambientEmbers[i];
     const floatY = s.y - (frameCount * 0.3 * s.speed);
     const sway = Math.sin(frameCount * 0.03 + s.y) * 8;
-    let sx = (((s.x + sway) - camera.x * s.speed) % cameraViewW + cameraViewW) % cameraViewW;
-    let sy = ((floatY - camera.y * s.speed) % cameraViewH + cameraViewH) % cameraViewH;
+    const sx = (((s.x + sway) - camera.x * s.speed) % cameraViewW + cameraViewW) % cameraViewW;
+    const sy = ((floatY - camera.y * s.speed) % cameraViewH + cameraViewH) % cameraViewH;
 
     const pulse = Math.sin(frameCount * 0.05 + s.x) * 0.35 + 0.65;
-    ctx.fillStyle = `rgba(${pal.emberR}, ${pal.emberG}, ${pal.emberB}, ${s.alpha * 0.25 * pulse})`;
-    ctx.beginPath();
-    ctx.arc(camera.x + sx, camera.y + sy, s.r * 2.8, 0, Math.PI * 2);
-    ctx.fill();
-
     ctx.fillStyle = `rgba(${pal.accentR}, ${pal.accentG}, ${pal.accentB}, ${s.alpha * pulse})`;
     ctx.beginPath();
-    ctx.arc(camera.x + sx, camera.y + sy, s.r, 0, Math.PI * 2);
+    ctx.arc(camera.x + sx, camera.y + sy, s.r * 1.5, 0, Math.PI * 2);
     ctx.fill();
   }
 
   // 5. NÉVOA VOLUMÉTRICA RASTEIRA TRANSLÚCIDA (Camada Única Otimizada)
   ctx.fillStyle = pal.mistBase;
   ctx.fillRect(camera.x, camera.y, cameraViewW, cameraViewH);
-
-  // 6. VINHETA PERIFÉRICA SUAVE (Pré-renderizada em Canvas Offscreen Cacheado)
-  updateVignetteCache(cameraViewW, cameraViewH);
-  if (cachedVignetteCanvas) {
-    ctx.drawImage(cachedVignetteCanvas, camera.x, camera.y);
-  }
 }
 
 /**

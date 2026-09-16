@@ -13,6 +13,31 @@ import { CHARACTERS } from '../config/characters.js';
  * Renderiza a Aura Sagrada / Santuário Celestial com fade radial inverso,
  * alta transparência na arena, geometria sagrada tênue e ondas de purificação.
  */
+const auraGradCache = {};
+
+function getAuraGradient(c, isEvolved, radius) {
+  const quantRadius = Math.round(radius / 8) * 8;
+  const key = `${isEvolved ? 1 : 0}_${quantRadius}`;
+  if (auraGradCache[key]) return auraGradCache[key];
+
+  const grad = c.createRadialGradient(0, 0, 4, 0, 0, quantRadius);
+  if (isEvolved) {
+    grad.addColorStop(0.00, 'rgba(255, 245, 200, 0.22)');
+    grad.addColorStop(0.20, 'rgba(255, 215, 0, 0.14)');
+    grad.addColorStop(0.50, 'rgba(243, 156, 18, 0.05)');
+    grad.addColorStop(0.80, 'rgba(241, 196, 15, 0.015)');
+    grad.addColorStop(1.00, 'rgba(241, 196, 15, 0.00)');
+  } else {
+    grad.addColorStop(0.00, 'rgba(255, 240, 180, 0.16)');
+    grad.addColorStop(0.25, 'rgba(255, 215, 0, 0.09)');
+    grad.addColorStop(0.55, 'rgba(241, 196, 15, 0.03)');
+    grad.addColorStop(0.85, 'rgba(241, 196, 15, 0.008)');
+    grad.addColorStop(1.00, 'rgba(241, 196, 15, 0.00)');
+  }
+  auraGradCache[key] = grad;
+  return grad;
+}
+
 export function drawPlayerAura() {
   if (player.auraLvl <= 0 && !player.evolvedAura) return;
 
@@ -22,34 +47,20 @@ export function drawPlayerAura() {
   const auraRadius = Math.max(10, baseRadius + breathing);
 
   ctx.save();
+  ctx.translate(player.x, player.y);
 
-  // 1. Campo de Luz Celestial com Gradiente Radial (Fade Inverso)
-  // Próximo ao herói: brilho áureo mais presente e acolhedor.
-  // Distanciando-se: transição suave e etérea, tornando-se 100% translúcida na borda.
-  const auraGrad = ctx.createRadialGradient(player.x, player.y, 4, player.x, player.y, auraRadius);
-  if (isEvolved) {
-    auraGrad.addColorStop(0.00, 'rgba(255, 245, 200, 0.22)');
-    auraGrad.addColorStop(0.20, 'rgba(255, 215, 0, 0.14)');
-    auraGrad.addColorStop(0.50, 'rgba(243, 156, 18, 0.05)');
-    auraGrad.addColorStop(0.80, 'rgba(241, 196, 15, 0.015)');
-    auraGrad.addColorStop(1.00, 'rgba(241, 196, 15, 0.00)');
-  } else {
-    auraGrad.addColorStop(0.00, 'rgba(255, 240, 180, 0.16)');
-    auraGrad.addColorStop(0.25, 'rgba(255, 215, 0, 0.09)');
-    auraGrad.addColorStop(0.55, 'rgba(241, 196, 15, 0.03)');
-    auraGrad.addColorStop(0.85, 'rgba(241, 196, 15, 0.008)');
-    auraGrad.addColorStop(1.00, 'rgba(241, 196, 15, 0.00)');
-  }
+  // 1. Campo de Luz Celestial com Gradiente Radial em Cache
+  const auraGrad = getAuraGradient(ctx, isEvolved, auraRadius);
   ctx.fillStyle = auraGrad;
   ctx.beginPath();
-  ctx.arc(player.x, player.y, auraRadius, 0, Math.PI * 2);
+  ctx.arc(0, 0, auraRadius, 0, Math.PI * 2);
   ctx.fill();
 
   // 2. Anel Periférico Delicado com Traço Tênue (Não ofusca o piso da arena)
   ctx.strokeStyle = isEvolved ? 'rgba(241, 196, 15, 0.28)' : 'rgba(241, 196, 15, 0.18)';
   ctx.lineWidth = isEvolved ? 1.6 : 1.0;
   ctx.beginPath();
-  ctx.arc(player.x, player.y, auraRadius, 0, Math.PI * 2);
+  ctx.arc(0, 0, auraRadius, 0, Math.PI * 2);
   ctx.stroke();
 
   // 3. Anel Rúnico Interno Tênue e Marcadores Cardeais Celestes
@@ -59,7 +70,7 @@ export function drawPlayerAura() {
   ctx.strokeStyle = isEvolved ? 'rgba(255, 215, 0, 0.14)' : 'rgba(241, 196, 15, 0.09)';
   ctx.lineWidth = 0.8;
   ctx.beginPath();
-  ctx.arc(player.x, player.y, innerRingR, 0, Math.PI * 2);
+  ctx.arc(0, 0, innerRingR, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
 
@@ -67,8 +78,8 @@ export function drawPlayerAura() {
   const cardAngle = frameCount * 0.008;
   for (let k = 0; k < 4; k++) {
     const ang = cardAngle + (k * Math.PI / 2);
-    const nx = player.x + Math.cos(ang) * auraRadius;
-    const ny = player.y + Math.sin(ang) * auraRadius;
+    const nx = Math.cos(ang) * auraRadius;
+    const ny = Math.sin(ang) * auraRadius;
     ctx.fillStyle = isEvolved ? 'rgba(255, 235, 150, 0.35)' : 'rgba(241, 196, 15, 0.25)';
     ctx.beginPath();
     ctx.arc(nx, ny, isEvolved ? 2.2 : 1.5, 0, Math.PI * 2);
@@ -83,18 +94,18 @@ export function drawPlayerAura() {
     ctx.strokeStyle = isEvolved ? `rgba(255, 235, 150, ${waveAlpha})` : `rgba(241, 196, 15, ${waveAlpha})`;
     ctx.lineWidth = 1.6;
     ctx.beginPath();
-    ctx.arc(player.x, player.y, waveRadius, 0, Math.PI * 2);
+    ctx.arc(0, 0, waveRadius, 0, Math.PI * 2);
     ctx.stroke();
   }
 
-  // 5. Centelhas Divinas Flutuantes (Ambientação procedimental etérea sem alocação)
-  const sparkCount = isEvolved ? 6 : 4;
+  // 5. Centelhas Divinas Flutuantes (Otimizadas: 2 a 4 faíscas)
+  const sparkCount = isEvolved ? 4 : 2;
   for (let s = 0; s < sparkCount; s++) {
     const seed = s * 73.13;
     const sparkDist = ((frameCount * 0.45 + seed * 19) % (auraRadius * 0.72)) + 14;
     const sparkAng = seed + Math.sin(frameCount * 0.015 + s) * 0.6;
-    const sx = player.x + Math.cos(sparkAng) * sparkDist;
-    const sy = player.y + Math.sin(sparkAng) * sparkDist - ((frameCount * 0.3 + seed) % 18);
+    const sx = Math.cos(sparkAng) * sparkDist;
+    const sy = Math.sin(sparkAng) * sparkDist - ((frameCount * 0.3 + seed) % 18);
     const lifeRatio = sparkDist / (auraRadius * 0.72);
     const sparkAlpha = Math.sin(lifeRatio * Math.PI) * (isEvolved ? 0.32 : 0.20);
     if (sparkAlpha > 0.02) {
@@ -108,7 +119,6 @@ export function drawPlayerAura() {
   // 6. Santuário Celestial (Detalhe exclusivo da Evolução: Runa Estelar no Solo)
   if (isEvolved) {
     ctx.save();
-    ctx.translate(player.x, player.y);
     ctx.rotate(frameCount * 0.003);
     ctx.strokeStyle = 'rgba(255, 215, 0, 0.06)';
     ctx.lineWidth = 0.8;
@@ -128,6 +138,235 @@ export function drawPlayerAura() {
   }
 
   ctx.restore();
+}
+
+// Cache estático de sprites pré-renderizados para Tomos Orbitais e Machados de Kragdor
+const bookSpriteCache = {};
+const axeSpriteCache = {};
+
+function getBookSprite(isEvolved) {
+  const key = isEvolved ? 1 : 0;
+  if (bookSpriteCache[key]) return bookSpriteCache[key];
+
+  const off = document.createElement('canvas');
+  off.width = 64;
+  off.height = 64;
+  const c = off.getContext('2d');
+  
+  c.save();
+  c.translate(32, 32);
+
+  const bookW = isEvolved ? 26 : 22;
+  const bookH = isEvolved ? 18 : 15;
+  const halfW = bookW / 2;
+  const halfH = bookH / 2;
+  const haloRadius = isEvolved ? 26 : 20;
+
+  // Halo de Luz Sagrada ao redor do livro
+  const haloGrad = c.createRadialGradient(0, 0, 2, 0, 0, haloRadius);
+  haloGrad.addColorStop(0, isEvolved ? 'rgba(241, 196, 15, 0.35)' : 'rgba(52, 152, 219, 0.30)');
+  haloGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  c.fillStyle = haloGrad;
+  c.beginPath();
+  c.arc(0, 0, haloRadius, 0, Math.PI * 2);
+  c.fill();
+
+  // 1. Capa de Couro Mística Externa (ângulo aberto)
+  c.fillStyle = isEvolved ? '#b7791f' : '#1b3a4b';
+  c.beginPath();
+  c.roundRect(-halfW - 1, -halfH - 1, bookW + 2, bookH + 2, 2);
+  c.fill();
+  c.strokeStyle = isEvolved ? '#f1c40f' : '#3498db';
+  c.lineWidth = 1;
+  c.stroke();
+
+  // 2. Páginas de Pergaminho Abertas
+  // Página Esquerda
+  const pageGradLeft = c.createLinearGradient(-halfW, 0, 0, 0);
+  pageGradLeft.addColorStop(0, '#e8e2d5');
+  pageGradLeft.addColorStop(1, '#fcfbfa');
+  c.fillStyle = pageGradLeft;
+  c.beginPath();
+  c.roundRect(-halfW, -halfH, halfW - 0.5, bookH, [2, 0, 0, 2]);
+  c.fill();
+
+  // Página Direita
+  const pageGradRight = c.createLinearGradient(0, 0, halfW, 0);
+  pageGradRight.addColorStop(0, '#fcfbfa');
+  pageGradRight.addColorStop(1, '#e8e2d5');
+  c.fillStyle = pageGradRight;
+  c.beginPath();
+  c.roundRect(0.5, -halfH, halfW - 0.5, bookH, [0, 2, 2, 0]);
+  c.fill();
+
+  // 3. Linhas de Encantamento / Texto Rúnico
+  c.strokeStyle = isEvolved ? 'rgba(217, 119, 6, 0.45)' : 'rgba(41, 128, 185, 0.40)';
+  c.lineWidth = 0.8;
+  c.beginPath();
+  c.moveTo(-halfW + 2, -3); c.lineTo(-2, -3);
+  c.moveTo(-halfW + 2, 0);  c.lineTo(-2, 0);
+  c.moveTo(-halfW + 2, 3);  c.lineTo(-2, 3);
+  c.moveTo(2, -3); c.lineTo(halfW - 2, -3);
+  c.moveTo(2, 0);  c.lineTo(halfW - 2, 0);
+  c.moveTo(2, 3);  c.lineTo(halfW - 2, 3);
+  c.stroke();
+
+  // 4. Lombada Central
+  c.fillStyle = isEvolved ? '#78350f' : '#0f172a';
+  c.fillRect(-0.75, -halfH - 1, 1.5, bookH + 2);
+
+  // 5. Cruz Sagrada / Runa Luminosa
+  c.fillStyle = isEvolved ? '#fef08a' : '#38bdf8';
+  c.fillRect(-0.75, -4, 1.5, 8);
+  c.fillRect(-3, -2, 6, 1.5);
+
+  // Ponto de luz divino
+  c.fillStyle = '#ffffff';
+  c.beginPath();
+  c.arc(0, -1.25, 1, 0, Math.PI * 2);
+  c.fill();
+
+  c.restore();
+  bookSpriteCache[key] = off;
+  return off;
+}
+
+function getAxeSprite(isEvolved, isBerserk) {
+  const key = `${isEvolved ? 1 : 0}_${isBerserk ? 1 : 0}`;
+  if (axeSpriteCache[key]) return axeSpriteCache[key];
+
+  const off = document.createElement('canvas');
+  off.width = 64;
+  off.height = 64;
+  const c = off.getContext('2d');
+  
+  c.save();
+  c.translate(32, 24);
+
+  const shaftWood = '#3d271d';
+  const steelDark = '#2c3e50';
+  const steelMid = isEvolved ? '#d35400' : (isBerserk ? '#c0392b' : '#7f8c8d');
+  const steelLight = isEvolved ? '#f39c12' : (isBerserk ? '#e74c3c' : '#bdc3c7');
+  const edgeGlow = isEvolved ? '#ffffff' : (isBerserk ? '#ffffff' : '#f1c40f');
+
+  // Cabo de Madeira Rústico voltado para o centro orbital (local +Y)
+  c.fillStyle = shaftWood;
+  c.fillRect(-2.5, -12, 5, 38);
+
+  // Tiras de Couro Cruzadas no Cabo
+  c.strokeStyle = '#1e130c';
+  c.lineWidth = 1.4;
+  c.beginPath();
+  for (let w = -4; w <= 20; w += 6) {
+    c.moveTo(-2.5, w);
+    c.lineTo(2.5, w + 3.5);
+  }
+  c.stroke();
+
+  // Pomo Inferior de Ferro com Espigão de Contrapeso
+  c.fillStyle = steelDark;
+  c.fillRect(-3.5, 23, 7, 3.5);
+  c.beginPath();
+  c.moveTo(-2, 26.5);
+  c.lineTo(2, 26.5);
+  c.lineTo(0, 30.5);
+  c.closePath();
+  c.fill();
+
+  // Braçadeira de Fixação da Cabeça do Machado (Eye / Collar)
+  c.fillStyle = steelDark;
+  c.fillRect(-3.5, -14, 7, 10);
+  c.fillStyle = '#f1c40f';
+  c.fillRect(-1.0, -11, 2, 2);
+
+  // --- Cabeça do Machado (Lâmina Nórdica Assimétrica / Bearded Axe) ---
+  c.fillStyle = steelMid;
+  c.beginPath();
+  c.moveTo(2.5, -14);
+  c.lineTo(15, -18);                                 // Ponta superior afiada
+  c.quadraticCurveTo(20, -9, 14, 2);                 // Curva pronunciada da barba nórdica
+  c.quadraticCurveTo(8, -1, 2.5, -5);                // Reentrância inferior voltando ao cabo
+  c.closePath();
+  c.fill();
+  c.strokeStyle = steelDark;
+  c.lineWidth = 1.4;
+  c.stroke();
+
+  // Bisel de Desbaste Interno da Lâmina
+  c.fillStyle = steelLight;
+  c.beginPath();
+  c.moveTo(4, -13);
+  c.lineTo(14, -16.5);
+  c.quadraticCurveTo(18, -9, 13, 0.5);
+  c.lineTo(5, -4.5);
+  c.closePath();
+  c.fill();
+
+  // Gume de Corte Afiado (Sweet Spot: Corte Crítico e Cura da Passiva)
+  c.strokeStyle = edgeGlow;
+  c.lineWidth = isBerserk || isEvolved ? 2.8 : 2.0;
+  c.beginPath();
+  c.moveTo(15, -18);
+  c.quadraticCurveTo(20, -9, 14, 2);
+  c.stroke();
+
+  // Runas Mágicas Entalhadas na Lâmina
+  c.strokeStyle = isBerserk ? '#ffffff' : (isEvolved ? '#ffffff' : '#f39c12');
+  c.lineWidth = 1.4;
+  c.beginPath();
+  c.moveTo(7, -12);
+  c.lineTo(11, -9);
+  c.lineTo(8, -6);
+  c.stroke();
+
+  // --- Espigão / Quebra-Armaduras Traseiro (Local -X) ---
+  if (isEvolved) {
+    // Na Tempestade de Aço, o machado torna-se de Lâmina Dupla Titânica
+    c.fillStyle = steelMid;
+    c.beginPath();
+    c.moveTo(-2.5, -14);
+    c.lineTo(-15, -18);
+    c.quadraticCurveTo(-20, -9, -14, 2);
+    c.quadraticCurveTo(-8, -1, -2.5, -5);
+    c.closePath();
+    c.fill();
+    c.strokeStyle = steelDark;
+    c.lineWidth = 1.4;
+    c.stroke();
+
+    c.fillStyle = steelLight;
+    c.beginPath();
+    c.moveTo(-4, -13);
+    c.lineTo(-14, -16.5);
+    c.quadraticCurveTo(-18, -9, -13, 0.5);
+    c.lineTo(-5, -4.5);
+    c.closePath();
+    c.fill();
+
+    c.strokeStyle = edgeGlow;
+    c.lineWidth = 2.8;
+    c.beginPath();
+    c.moveTo(-15, -18);
+    c.quadraticCurveTo(-20, -9, -14, 2);
+    c.stroke();
+  } else {
+    // Machado Padrão: Espigão Quebra-Crânios Rústico na Traseira
+    c.fillStyle = steelDark;
+    c.beginPath();
+    c.moveTo(-2.5, -13);
+    c.lineTo(-9.5, -10);
+    c.lineTo(-2.5, -7);
+    c.closePath();
+    c.fill();
+
+    c.strokeStyle = steelLight;
+    c.lineWidth = 1.2;
+    c.stroke();
+  }
+
+  c.restore();
+  axeSpriteCache[key] = off;
+  return off;
 }
 
 /**
@@ -189,109 +428,40 @@ export function drawPlayerOrbitals() {
     ctx.restore();
   }
 
-  // 3. Renderização de Cada Tomo Celestial Aberto e seus Rastros
-  const bookW = isEvolved ? 26 : 22;
-  const bookH = isEvolved ? 18 : 15;
-  const halfW = bookW / 2;
-  const halfH = bookH / 2;
+  // 3. Renderização de Cada Tomo Celestial Aberto e seus Rastros (Via Sprite Cache)
+  const bookSprite = getBookSprite(isEvolved);
 
   for (let oIdx = 0; oIdx < player.orbitals; oIdx++) {
     const angle = player.orbitalAngle + (oIdx * (Math.PI * 2 / player.orbitals));
     const ox = player.x + Math.cos(angle) * orbDist;
     const oy = player.y + Math.sin(angle) * orbDist;
 
-    // Rastro Estelar (Trail) atrás do tomo
-    const trailLength = isEvolved ? 0.38 : 0.24;
-    const trailSteps = 5;
-    for (let s = 1; s <= trailSteps; s++) {
-      const tAngle = angle - (trailLength * (s / trailSteps));
+    // Rastro Estelar conciso atrás do tomo (2 passos otimizados sem flood de arcos)
+    const trailLength = isEvolved ? 0.36 : 0.22;
+    for (let s = 1; s <= 2; s++) {
+      const tAngle = angle - (trailLength * (s / 2));
       const tx = player.x + Math.cos(tAngle) * orbDist;
       const ty = player.y + Math.sin(tAngle) * orbDist;
-      const alpha = (1 - s / trailSteps) * (isEvolved ? 0.35 : 0.22);
+      const alpha = (1 - s / 2.5) * (isEvolved ? 0.30 : 0.20);
       ctx.fillStyle = isEvolved 
         ? `rgba(241, 196, 15, ${alpha})` 
         : `rgba(0, 206, 201, ${alpha})`;
       ctx.beginPath();
-      ctx.arc(tx, ty, (isEvolved ? 6.5 : 4.5) * (1 - s / trailSteps), 0, Math.PI * 2);
+      ctx.arc(tx, ty, (isEvolved ? 5.5 : 4.0) * (1 - s / 2.5), 0, Math.PI * 2);
       ctx.fill();
     }
 
     ctx.save();
     ctx.translate(ox, oy);
     ctx.rotate(angle + Math.PI / 2);
-
-    // Halo de Luz Sagrada ao redor do livro
-    const haloRadius = isEvolved ? 26 : 20;
-    const haloGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, haloRadius);
-    haloGrad.addColorStop(0, isEvolved ? 'rgba(241, 196, 15, 0.35)' : 'rgba(52, 152, 219, 0.30)');
-    haloGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = haloGrad;
-    ctx.beginPath();
-    ctx.arc(0, 0, haloRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 1. Capa de Couro Mística Externa (ângulo aberto)
-    ctx.fillStyle = isEvolved ? '#b7791f' : '#1b3a4b';
-    ctx.beginPath();
-    ctx.roundRect(-halfW - 1, -halfH - 1, bookW + 2, bookH + 2, 2);
-    ctx.fill();
-    ctx.strokeStyle = isEvolved ? '#f1c40f' : '#3498db';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // 2. Páginas de Pergaminho Abertas
-    // Página Esquerda
-    const pageGradLeft = ctx.createLinearGradient(-halfW, 0, 0, 0);
-    pageGradLeft.addColorStop(0, '#e8e2d5');
-    pageGradLeft.addColorStop(1, '#fcfbfa');
-    ctx.fillStyle = pageGradLeft;
-    ctx.beginPath();
-    ctx.roundRect(-halfW, -halfH, halfW - 0.5, bookH, [2, 0, 0, 2]);
-    ctx.fill();
-
-    // Página Direita
-    const pageGradRight = ctx.createLinearGradient(0, 0, halfW, 0);
-    pageGradRight.addColorStop(0, '#fcfbfa');
-    pageGradRight.addColorStop(1, '#e8e2d5');
-    ctx.fillStyle = pageGradRight;
-    ctx.beginPath();
-    ctx.roundRect(0.5, -halfH, halfW - 0.5, bookH, [0, 2, 2, 0]);
-    ctx.fill();
-
-    // 3. Linhas de Encantamento / Texto Rúnico
-    ctx.strokeStyle = isEvolved ? 'rgba(217, 119, 6, 0.45)' : 'rgba(41, 128, 185, 0.40)';
-    ctx.lineWidth = 0.8;
-    ctx.beginPath();
-    ctx.moveTo(-halfW + 2, -3); ctx.lineTo(-2, -3);
-    ctx.moveTo(-halfW + 2, 0);  ctx.lineTo(-2, 0);
-    ctx.moveTo(-halfW + 2, 3);  ctx.lineTo(-2, 3);
-    ctx.moveTo(2, -3); ctx.lineTo(halfW - 2, -3);
-    ctx.moveTo(2, 0);  ctx.lineTo(halfW - 2, 0);
-    ctx.moveTo(2, 3);  ctx.lineTo(halfW - 2, 3);
-    ctx.stroke();
-
-    // 4. Lombada Central
-    ctx.fillStyle = isEvolved ? '#78350f' : '#0f172a';
-    ctx.fillRect(-0.75, -halfH - 1, 1.5, bookH + 2);
-
-    // 5. Cruz Sagrada / Runa Luminosa
-    ctx.fillStyle = isEvolved ? '#fef08a' : '#38bdf8';
-    ctx.fillRect(-0.75, -4, 1.5, 8);
-    ctx.fillRect(-3, -2, 6, 1.5);
-
-    // Ponto de luz divino
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(0, -1.25, 1, 0, Math.PI * 2);
-    ctx.fill();
-
+    ctx.drawImage(bookSprite, -32, -32);
     ctx.restore();
   }
 }
 
 /**
- * Renderiza os Machados Giratórios Nórdicos de Kragdor, arcos de vento,
- * esteiras de corte (ribbons) e indicação visual do gume afiado (sweet spot).
+ * Renderiza os Machados Giratórios Nórdicos de Kragdor, arcos de corte otimizados
+ * e blit acelerado via Sprite Cache pré-renderizado.
  */
 export function drawSpinningAxes() {
   if (player.axeCount <= 0) return;
@@ -310,161 +480,32 @@ export function drawSpinningAxes() {
   ctx.arc(player.x, player.y, r, 0, Math.PI * 2);
   ctx.stroke();
 
+  // Sprite pré-renderizado de alta resolução do Machado
+  const axeSprite = getAxeSprite(isEvolved, isBerserk);
+
   // 2. Renderização de cada Machado Nórdico e seu Rastro de Corte
   for (let i = 0; i < count; i++) {
     const angle = player.axeAngle + (i * (Math.PI * 2 / count));
     const ax = player.x + Math.cos(angle) * r;
     const ay = player.y + Math.sin(angle) * r;
 
-    // 2.1 Esteira Dinâmica de Corte em Arco (Motion Ribbon com Sweet Spot na ponta)
-    const trailLength = isBerserk ? 0.72 : (isEvolved ? 0.58 : 0.44);
+    // 2.1 Esteira Dinâmica de Corte em Arco (1 único traço nítido e luminoso ao invés de 2 arcos pesados de 9px e 18px)
+    const trailLength = isBerserk ? 0.65 : (isEvolved ? 0.52 : 0.38);
     const ribbonStart = angle - trailLength;
 
-    // Faixa exterior incandescente (indica o gume afiado do corte no arco orbital)
     ctx.strokeStyle = isBerserk 
-      ? 'rgba(231, 76, 60, 0.65)' 
-      : (isEvolved ? 'rgba(243, 156, 18, 0.60)' : 'rgba(241, 196, 15, 0.40)');
-    ctx.lineWidth = isEvolved ? 9 : (isBerserk ? 8 : 5);
+      ? 'rgba(231, 76, 60, 0.70)' 
+      : (isEvolved ? 'rgba(243, 156, 18, 0.65)' : 'rgba(241, 196, 15, 0.45)');
+    ctx.lineWidth = isEvolved ? 4.5 : (isBerserk ? 4.0 : 3.0);
     ctx.beginPath();
-    ctx.arc(player.x, player.y, r + 4, ribbonStart, angle);
+    ctx.arc(player.x, player.y, r + 2, ribbonStart, angle);
     ctx.stroke();
 
-    // Faixa de fogo/plasma estendida no vácuo de corte
-    ctx.strokeStyle = isBerserk 
-      ? 'rgba(243, 156, 18, 0.35)' 
-      : (isEvolved ? 'rgba(230, 126, 34, 0.35)' : 'rgba(241, 196, 15, 0.18)');
-    ctx.lineWidth = isEvolved ? 18 : 12;
-    ctx.beginPath();
-    ctx.arc(player.x, player.y, r, ribbonStart + 0.08, angle);
-    ctx.stroke();
-
-    // 2.2 Desenho do Machado de Guerra Nórdico (Bearded Greataxe)
+    // 2.2 Desenho Acelerado via Sprite Blit
     ctx.save();
     ctx.translate(ax, ay);
     ctx.rotate(angle + Math.PI / 2);
-
-    const shaftWood = '#3d271d';
-    const steelDark = '#2c3e50';
-    const steelMid = isEvolved ? '#d35400' : (isBerserk ? '#c0392b' : '#7f8c8d');
-    const steelLight = isEvolved ? '#f39c12' : (isBerserk ? '#e74c3c' : '#bdc3c7');
-    const edgeGlow = isEvolved ? '#ffffff' : (isBerserk ? '#ffffff' : '#f1c40f');
-
-    // Cabo de Madeira Rústico voltado para o centro orbital (local +Y)
-    ctx.fillStyle = shaftWood;
-    ctx.fillRect(-2.5, -12, 5, 38);
-
-    // Tiras de Couro Cruzadas no Cabo
-    ctx.strokeStyle = '#1e130c';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    for (let w = -4; w <= 20; w += 6) {
-      ctx.moveTo(-2.5, w);
-      ctx.lineTo(2.5, w + 3.5);
-    }
-    ctx.stroke();
-
-    // Pomo Inferior de Ferro com Espigão de Contrapeso
-    ctx.fillStyle = steelDark;
-    ctx.fillRect(-3.5, 23, 7, 3.5);
-    ctx.beginPath();
-    ctx.moveTo(-2, 26.5);
-    ctx.lineTo(2, 26.5);
-    ctx.lineTo(0, 30.5);
-    ctx.closePath();
-    ctx.fill();
-
-    // Braçadeira de Fixação da Cabeça do Machado (Eye / Collar)
-    ctx.fillStyle = steelDark;
-    ctx.fillRect(-3.5, -14, 7, 10);
-    ctx.fillStyle = '#f1c40f';
-    ctx.fillRect(-1.0, -11, 2, 2);
-
-    // --- Cabeça do Machado (Lâmina Nórdica Assimétrica / Bearded Axe) ---
-    // Lâmina Frontal (Voltada para a direção do corte orbital, local +X)
-    ctx.fillStyle = steelMid;
-    ctx.beginPath();
-    ctx.moveTo(2.5, -14);
-    ctx.lineTo(15, -18);                                 // Ponta superior afiada
-    ctx.quadraticCurveTo(20, -9, 14, 2);                 // Curva pronunciada da barba nórdica
-    ctx.quadraticCurveTo(8, -1, 2.5, -5);                // Reentrância inferior voltando ao cabo
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = steelDark;
-    ctx.lineWidth = 1.4;
-    ctx.stroke();
-
-    // Bisel de Desbaste Interno da Lâmina
-    ctx.fillStyle = steelLight;
-    ctx.beginPath();
-    ctx.moveTo(4, -13);
-    ctx.lineTo(14, -16.5);
-    ctx.quadraticCurveTo(18, -9, 13, 0.5);
-    ctx.lineTo(5, -4.5);
-    ctx.closePath();
-    ctx.fill();
-
-    // Gume de Corte Afiado (Sweet Spot: Corte Crítico e Cura da Passiva)
-    ctx.strokeStyle = edgeGlow;
-    ctx.lineWidth = isBerserk || isEvolved ? 2.8 : 2.0;
-    ctx.beginPath();
-    ctx.moveTo(15, -18);
-    ctx.quadraticCurveTo(20, -9, 14, 2);
-    ctx.stroke();
-
-    // Runas Mágicas Entalhadas na Lâmina
-    ctx.strokeStyle = isBerserk ? '#ffffff' : (isEvolved ? '#ffffff' : '#f39c12');
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.moveTo(7, -12);
-    ctx.lineTo(11, -9);
-    ctx.lineTo(8, -6);
-    ctx.stroke();
-
-    // --- Espigão / Quebra-Armaduras Traseiro (Local -X) ---
-    if (isEvolved) {
-      // Na Tempestade de Aço, o machado torna-se de Lâmina Dupla Titânica
-      ctx.fillStyle = steelMid;
-      ctx.beginPath();
-      ctx.moveTo(-2.5, -14);
-      ctx.lineTo(-15, -18);
-      ctx.quadraticCurveTo(-20, -9, -14, 2);
-      ctx.quadraticCurveTo(-8, -1, -2.5, -5);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = steelDark;
-      ctx.lineWidth = 1.4;
-      ctx.stroke();
-
-      ctx.fillStyle = steelLight;
-      ctx.beginPath();
-      ctx.moveTo(-4, -13);
-      ctx.lineTo(-14, -16.5);
-      ctx.quadraticCurveTo(-18, -9, -13, 0.5);
-      ctx.lineTo(-5, -4.5);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.strokeStyle = edgeGlow;
-      ctx.lineWidth = 2.8;
-      ctx.beginPath();
-      ctx.moveTo(-15, -18);
-      ctx.quadraticCurveTo(-20, -9, -14, 2);
-      ctx.stroke();
-    } else {
-      // Machado Padrão: Espigão Quebra-Crânios Rústico na Traseira
-      ctx.fillStyle = steelDark;
-      ctx.beginPath();
-      ctx.moveTo(-2.5, -13);
-      ctx.lineTo(-9.5, -10);
-      ctx.lineTo(-2.5, -7);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.strokeStyle = steelLight;
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
-    }
-
+    ctx.drawImage(axeSprite, -32, -24);
     ctx.restore();
   }
 }
