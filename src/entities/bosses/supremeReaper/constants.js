@@ -42,7 +42,7 @@ export const REAPER_CONFIG = Object.freeze({
   TETHER_DURATION: 160,
 
   // Colapso Espiritual
-  RECOVERY_DURATION: 360, // 6.0 segundos
+  RECOVERY_DURATION: 120, // 2.0 segundos (reduzido em 3x de 6.0s)
 
   // Limiares de Fases
   ENRAGE_HP_RATIO: 0.45,

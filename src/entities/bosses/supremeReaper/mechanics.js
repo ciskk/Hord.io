@@ -117,7 +117,7 @@ export function destroyLantern(boss, lantern, lx, ly, context) {
   context.addDamageText(boss.x, boss.y, backlashDmg, true, '#f1c40f');
   context.addDamageText(lx, ly, "LANTERNA DESTRUÍDA!", true, '#00cec9');
 
-  // Ao destruir a última lanterna da fase: Colapso por 6.0 segundos
+  // Ao destruir a última lanterna da fase: Colapso por 2.0 segundos
   const activeCount = boss.lanterns.filter(o => o.active).length;
   if (activeCount === 0 && boss.actionState !== REAPER_STATES.RECOVERY && boss.actionState !== REAPER_STATES.ENRAGE_TRANSITION) {
     if (boss.actionState === REAPER_STATES.SPAWN_INTRO) {
@@ -131,7 +131,7 @@ export function destroyLantern(boss, lantern, lx, ly, context) {
       context.triggerShake(16);
       triggerHaptic('heavy');
       playSfx('boss');
-      context.addDamageText(boss.x, boss.y, "COLAPSO ESPIRITUAL (6.0s)!", true, '#81ecec');
+      context.addDamageText(boss.x, boss.y, "COLAPSO ESPIRITUAL (2.0s)!", true, '#81ecec');
     }
   }
 }

@@ -339,7 +339,7 @@ export function updateSupremeReaper(e, dt, context) {
           triggerShake(16);
           triggerHaptic('heavy');
           playSfx('boss');
-          addDamageText(e.x, e.y, "COLAPSO ESPIRITUAL (6.0s)!", true, '#81ecec');
+          addDamageText(e.x, e.y, "COLAPSO ESPIRITUAL (2.0s)!", true, '#81ecec');
         } else {
           e.actionState = REAPER_STATES.CHASE;
           e.skillCooldown = 75;

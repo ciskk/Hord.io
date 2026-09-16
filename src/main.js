@@ -2787,7 +2787,7 @@ function update(dt) {
   for (let i = 0; i < enemies.length; i++) {
     const e = enemies[i];
     let keep = true;
-    if (!e.isBoss && !e.isMiniBoss) {
+    if (!e.isBoss && !e.isMiniBoss && !e.isBossSubTarget) {
       const dx = e.x - player.x;
       const dy = e.y - player.y;
       if (dx * dx + dy * dy >= despawnDistSq) keep = false;

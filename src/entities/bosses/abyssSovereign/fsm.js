@@ -436,7 +436,7 @@ export function updateAbyssSovereign(e, dt, context) {
         addDamageText(e.x, e.y - e.radius - 22, "O SOBERANO DESPERTOU!", true, '#00cec9');
         addDamageText(e.x, e.y - e.radius - 42, "O FIM DOS TEMPOS COMEÇOU", false, '#e84393');
 
-        spawnRiftAnchors(e, 3, 5000);
+        spawnRiftAnchors(e, 3, 2200);
       }
       break;
     }
@@ -487,7 +487,7 @@ export function updateAbyssSovereign(e, dt, context) {
           });
 
           if (e.phase === 2) {
-            spawnRiftAnchors(e, 3, 6500);
+            spawnRiftAnchors(e, 3, 3000);
           }
         }
       } else {
@@ -877,6 +877,11 @@ export function updateAbyssSovereign(e, dt, context) {
       e.actionState = SOVEREIGN_STATES.HOVER_CHASE;
       break;
     }
+  }
+
+  // Salvaguarda Invariante: Fora da introdução cinematográfica, o chefe deve permanecer sempre alvejável
+  if (e.actionState !== SOVEREIGN_STATES.SPAWN_INTRO && e.actionState !== SOVEREIGN_STATES.DEATH_COLLAPSE) {
+    e.isTargetable = true;
   }
 
   clampBossToArena(e);

@@ -182,8 +182,8 @@ export function prepareNextAttack(boss, context) {
     }
 
     case 'SINGULARITY_IMPLOSION': {
-      boss.windupTimer = 58;
-      boss.windupMax = 58;
+      boss.windupTimer = Math.round(58 * 1.7); // 99 frames (~1.65s, ampliado em 1,7x para reação justa)
+      boss.windupMax = boss.windupTimer;
       boss.implosionX = player.x;
       boss.implosionY = player.y;
       boss.implosionRadius = boss.implosionMaxRadius;
