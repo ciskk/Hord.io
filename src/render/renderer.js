@@ -11,6 +11,7 @@ import { drawEnemyShape, drawDyingEnemyShape } from './enemiesRenderer.js';
 import { drawPlayerCharacter, drawPlayerEquipment } from './playerRenderer.js';
 import { drawBossVictoryOverlay } from '../entities/bosses/abyssSovereign/render.js';
 import { getHudBottom, layoutMetrics } from '../core/responsive.js';
+import { player } from '../entities/player.js';
 import {
   ctx,
   dpr,
@@ -1767,6 +1768,7 @@ export function render() {
   }
 
   drawPlayerCharacter();
+  drawPlayerChestArrows(ctx);
 
   for (let i = 0; i < particles.length; i++) {
     const p = particles[i];
@@ -1841,6 +1843,9 @@ export function render() {
       ctx.restore();
     }
   }
+
+  // Radar Periférico de Baús de Miniboss e Boss Fora de Tela
+  drawOffscreenChestRadar(ctx);
 
   // 2. Banner Cinematográfico de Transição de Onda (In-Game Wave Announcement)
   if (waveAnnouncement && waveAnnouncement.timer > 0) {
@@ -1969,4 +1974,176 @@ export function render() {
   }
 
   ctx.restore();
+}
+
+/**
+ * Renderiza o sistema de setas direcionais místicas que emanam do herói apontando
+ * com precisão matemática para os baús dropados por Minibosses e Bosses.
+ * - Seta Azul Safira / Ciano Etéreo para baú de Miniboss.
+ * - Seta Dourada Rúnica Imperial para baú de Boss.
+ * - Inclui feixe pulsante de energia saindo do perímetro do herói e fade-out de proximidade.
+ */
+function drawPlayerChestArrows(ctx) {
+  if (!chests || chests.length === 0 || !player) return;
+
+  for (let i = 0; i < chests.length; i++) {
+    const ch = chests[i];
+    const dx = ch.x - player.x;
+    const dy = ch.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist <= 0) continue;
+
+    // Fade-out suave quando o jogador se aproxima do baú (< 70px)
+    const proximityAlpha = Math.max(0, Math.min(1, (dist - 40) / 30));
+    if (proximityAlpha <= 0) continue;
+
+    const angle = Math.atan2(dy, dx);
+    const isMini = ch.tier === 'MINI_BOSS';
+
+    const primaryColor = isMini ? '#00cec9' : '#f1c40f';
+    const glowColor = isMini ? 'rgba(0, 206, 201, 0.85)' : 'rgba(241, 196, 15, 0.9)';
+    const trailAlpha = (0.55 + Math.sin(frameCount * 0.12) * 0.25) * proximityAlpha;
+
+    // 1. Feixe de Luz Místico saindo do jogador em direção ao baú
+    ctx.save();
+    const startR = 18;
+    const orbitR = 44 + Math.sin(frameCount * 0.15) * 3.5;
+    const x1 = player.x + Math.cos(angle) * startR;
+    const y1 = player.y + Math.sin(angle) * startR;
+    const x2 = player.x + Math.cos(angle) * (orbitR - 6);
+    const y2 = player.y + Math.sin(angle) * (orbitR - 6);
+
+    const beamGrad = ctx.createLinearGradient(x1, y1, x2, y2);
+    beamGrad.addColorStop(0, 'rgba(255, 255, 255, 0.05)');
+    beamGrad.addColorStop(0.4, isMini ? 'rgba(9, 132, 227, 0.45)' : 'rgba(230, 126, 34, 0.45)');
+    beamGrad.addColorStop(0.85, primaryColor);
+    beamGrad.addColorStop(1, '#ffffff');
+
+    ctx.strokeStyle = beamGrad;
+    ctx.lineWidth = isMini ? 2.2 : 2.8;
+    ctx.lineCap = 'round';
+    ctx.globalAlpha = trailAlpha;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.restore();
+
+    // 2. Seta Rúnica em Formato de Lança / Chevron na Órbita
+    ctx.save();
+    const arrowX = player.x + Math.cos(angle) * orbitR;
+    const arrowY = player.y + Math.sin(angle) * orbitR;
+    ctx.translate(arrowX, arrowY);
+    ctx.rotate(angle);
+    ctx.globalAlpha = (0.9 + Math.sin(frameCount * 0.18) * 0.1) * proximityAlpha;
+
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = isMini ? 9 : 14;
+
+    // Corpo pontiagudo da seta
+    ctx.fillStyle = primaryColor;
+    ctx.beginPath();
+    ctx.moveTo(11, 0);       // Ponta frontal
+    ctx.lineTo(-7, -7);      // Aresta superior
+    ctx.lineTo(-3, 0);       // Chanfro traseiro
+    ctx.lineTo(-7, 7);       // Aresta inferior
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // Runa central de navegação
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-1, 0, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+}
+
+/**
+ * Radar Periférico na Borda da Tela para Baús Fora de Campo (Offscreen).
+ * Exibe seta direcional na borda, badge estilizado e distância em metros até o baú.
+ */
+function drawOffscreenChestRadar(ctx) {
+  if (!chests || chests.length === 0 || !player) return;
+
+  for (let i = 0; i < chests.length; i++) {
+    const ch = chests[i];
+    const sx = (ch.x - camera.x) * CAMERA_ZOOM;
+    const sy = (ch.y - camera.y) * CAMERA_ZOOM;
+    const pad = 46;
+    const isOffscreen = sx < pad || sx > viewW - pad || sy < pad || sy > viewH - pad;
+
+    if (!isOffscreen) continue;
+
+    const centerX = viewW / 2;
+    const centerY = viewH / 2;
+    const angle = Math.atan2(sy - centerY, sx - centerX);
+    const clampX = Math.max(pad, Math.min(viewW - pad, sx));
+    const clampY = Math.max(pad, Math.min(viewH - pad, sy));
+    const isMini = ch.tier === 'MINI_BOSS';
+
+    const primaryColor = isMini ? '#00cec9' : '#f1c40f';
+    const glowColor = isMini ? 'rgba(0, 206, 201, 0.85)' : 'rgba(241, 196, 15, 0.9)';
+    const pulse = Math.sin(frameCount * 0.16) * 3;
+
+    const dx = ch.x - player.x;
+    const dy = ch.y - player.y;
+    const distMeters = Math.max(1, Math.round(Math.hypot(dx, dy) / 22));
+
+    ctx.save();
+    ctx.translate(clampX, clampY);
+
+    // Seta periférica apontando para fora
+    ctx.save();
+    ctx.rotate(angle);
+    ctx.fillStyle = primaryColor;
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = isMini ? 8 : 12;
+
+    ctx.beginPath();
+    ctx.moveTo(12 + pulse, 0);
+    ctx.lineTo(-7, -8);
+    ctx.lineTo(-3, 0);
+    ctx.lineTo(-7, 8);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
+    ctx.restore();
+
+    // Etiqueta com Distância Rúnica
+    const textLabel = `${distMeters}m`;
+    ctx.font = 'bold 10px Outfit, sans-serif';
+    const textW = ctx.measureText(textLabel).width;
+    const badgeW = textW + 14;
+    const badgeH = 16;
+
+    const badgeOffsetX = -Math.cos(angle) * 22;
+    const badgeOffsetY = -Math.sin(angle) * 22;
+
+    ctx.save();
+    ctx.translate(badgeOffsetX, badgeOffsetY);
+    ctx.fillStyle = 'rgba(10, 14, 22, 0.88)';
+    ctx.strokeStyle = primaryColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(-badgeW / 2, -badgeH / 2, badgeW, badgeH, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(textLabel, 0, 1);
+    ctx.restore();
+
+    ctx.restore();
+  }
 }

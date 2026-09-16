@@ -340,6 +340,8 @@ export function updateAbyssSovereign(e, dt, context) {
       const hpPercent = Math.min(100, Math.round(progress * 100));
       const bossHpFill = document.getElementById('boss-hp-fill');
       if (bossHpFill) bossHpFill.style.width = `${hpPercent}%`;
+      const bossHpGhostFill = document.getElementById('boss-hp-ghost-fill');
+      if (bossHpGhostFill) bossHpGhostFill.style.width = `${hpPercent}%`;
       const bossHpVal = document.getElementById('boss-hp-val');
       if (bossHpVal) bossHpVal.innerText = `${hpPercent}%`;
 

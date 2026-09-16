@@ -155,6 +155,10 @@ export let lastAnnouncedWaveIndex = 0;
 let ghostHp = 120;
 let ghostHpTimer = 0;
 
+let bossGhostHp = 0;
+let bossGhostHpTimer = 0;
+let _lastBossGhostHp = -1;
+
 export function setLastTime(t) { lastTime = t; }
 export function resetSpawnTimer() { spawnTimer = 999; }
 export function setCurrentArenaTheme(theme) { currentArenaTheme = theme; }
@@ -226,6 +230,7 @@ const hudDom = {
   goldVal: null,
   waveBanner: null,
   bossHud: null,
+  bossHpGhostFill: null,
   bossHpFill: null,
   bossHpVal: null,
   timerVal: null
@@ -248,6 +253,7 @@ function ensureHudElementsCached() {
     hudDom.goldVal = document.getElementById('gold-val');
     hudDom.waveBanner = document.getElementById('wave-banner');
     hudDom.bossHud = document.getElementById('boss-hud');
+    hudDom.bossHpGhostFill = document.getElementById('boss-hp-ghost-fill');
     hudDom.bossHpFill = document.getElementById('boss-hp-fill');
     hudDom.bossHpVal = document.getElementById('boss-hp-val');
     hudDom.timerVal = document.getElementById('timer-val');
@@ -405,13 +411,29 @@ export function resetGame() {
   hideEl('boss-select-modal');
 
   const bossHud = document.getElementById('boss-hud');
-  if (bossHud) bossHud.style.display = 'none';
+  if (bossHud) {
+    bossHud.style.display = 'none';
+    bossHud.classList.remove('enraged');
+  }
 
   const bossHpFill = document.getElementById('boss-hp-fill');
   if (bossHpFill) {
     bossHpFill.style.background = '';
     bossHpFill.style.boxShadow = '';
+    bossHpFill.style.width = '100%';
   }
+
+  const bossHpGhostFill = document.getElementById('boss-hp-ghost-fill');
+  if (bossHpGhostFill) {
+    bossHpGhostFill.style.transition = 'none';
+    bossHpGhostFill.style.width = '100%';
+  }
+
+  bossGhostHp = 0;
+  bossGhostHpTimer = 0;
+  _lastBossGhostHp = -1;
+  _lastBossHpPct = -1;
+  _lastBossEnraged = null;
 }
 
 function update(dt) {
@@ -2483,6 +2505,14 @@ function update(dt) {
               bossHpFill.style.transition = 'none';
               bossHpFill.style.width = '0%';
             }
+            const bossHpGhostFill = document.getElementById('boss-hp-ghost-fill');
+            if (bossHpGhostFill) {
+              bossHpGhostFill.style.transition = 'none';
+              bossHpGhostFill.style.width = '0%';
+            }
+            bossGhostHp = 0;
+            bossGhostHpTimer = 0;
+            _lastBossGhostHp = 0;
             const bossHpVal = document.getElementById('boss-hp-val');
             if (bossHpVal) bossHpVal.innerText = 'EXPURGADO';
           }
@@ -2521,6 +2551,14 @@ function update(dt) {
           bossHpFill.style.transition = 'none';
           bossHpFill.style.width = '0%';
         }
+        const bossHpGhostFill = document.getElementById('boss-hp-ghost-fill');
+        if (bossHpGhostFill) {
+          bossHpGhostFill.style.transition = 'none';
+          bossHpGhostFill.style.width = '0%';
+        }
+        bossGhostHp = 0;
+        bossGhostHpTimer = 0;
+        _lastBossGhostHp = 0;
         const bossHpVal = document.getElementById('boss-hp-val');
         if (bossHpVal) bossHpVal.innerText = '0%';
 
@@ -2860,6 +2898,23 @@ function update(dt) {
     const bossHpPct = Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100);
     const roundedBossHpPct = Math.ceil(bossHpPct);
 
+    // Inicializa ghostHp se desatualizado ou inicial
+    if (bossGhostHp <= 0 || bossGhostHp > activeBoss.maxHp) {
+      bossGhostHp = activeBoss.hp;
+    }
+
+    if (activeBoss.hp < bossGhostHp) {
+      bossGhostHpTimer += dt;
+      if (bossGhostHpTimer > 18) {
+        bossGhostHp = Math.max(activeBoss.hp, bossGhostHp - (activeBoss.maxHp * 0.015) * dt);
+      }
+    } else {
+      bossGhostHp = activeBoss.hp;
+      bossGhostHpTimer = 0;
+    }
+
+    const bossGhostHpPct = Math.max(0, (bossGhostHp / activeBoss.maxHp) * 100);
+
     if (bossHpPct !== _lastBossHpPct || activeBoss.isEnraged !== _lastBossEnraged) {
       _lastBossHpPct = bossHpPct;
       _lastBossEnraged = activeBoss.isEnraged;
@@ -2874,7 +2929,22 @@ function update(dt) {
           hudDom.bossHpFill.style.boxShadow = '';
         }
       }
+      if (hudDom.bossHud) {
+        if (activeBoss.isEnraged) {
+          hudDom.bossHud.classList.add('enraged');
+        } else {
+          hudDom.bossHud.classList.remove('enraged');
+        }
+      }
       if (hudDom.bossHpVal) hudDom.bossHpVal.innerText = `${roundedBossHpPct}%`;
+    }
+
+    const roundedBossGhost = Math.round(bossGhostHpPct);
+    if (roundedBossGhost !== _lastBossGhostHp) {
+      _lastBossGhostHp = roundedBossGhost;
+      if (hudDom.bossHpGhostFill) {
+        hudDom.bossHpGhostFill.style.width = `${bossGhostHpPct}%`;
+      }
     }
   }
 

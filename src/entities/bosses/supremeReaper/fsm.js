@@ -218,6 +218,8 @@ export function updateSupremeReaper(e, dt, context) {
       const hpPercent = Math.min(100, Math.round(progress * 100));
       const bossHpFill = document.getElementById('boss-hp-fill');
       if (bossHpFill) bossHpFill.style.width = `${hpPercent}%`;
+      const bossHpGhostFill = document.getElementById('boss-hp-ghost-fill');
+      if (bossHpGhostFill) bossHpGhostFill.style.width = `${hpPercent}%`;
       const bossHpVal = document.getElementById('boss-hp-val');
       if (bossHpVal) bossHpVal.innerText = `${hpPercent}%`;
 
@@ -323,6 +325,8 @@ export function updateSupremeReaper(e, dt, context) {
         }
         const finalHpFill = document.getElementById('boss-hp-fill');
         if (finalHpFill) finalHpFill.style.width = '100%';
+        const finalHpGhostFill = document.getElementById('boss-hp-ghost-fill');
+        if (finalHpGhostFill) finalHpGhostFill.style.width = '100%';
         const finalHpVal = document.getElementById('boss-hp-val');
         if (finalHpVal) finalHpVal.innerText = '100%';
 

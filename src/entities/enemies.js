@@ -466,6 +466,12 @@ export function triggerBossEncounter(bossId) {
     bossHpFill.style.boxShadow = '';
   }
 
+  const bossHpGhostFill = document.getElementById('boss-hp-ghost-fill');
+  if (bossHpGhostFill) {
+    bossHpGhostFill.style.transition = '';
+    bossHpGhostFill.style.width = (boss.bossId === 1 || boss.bossId === 3 || boss.bossId === 4) ? '0%' : '100%';
+  }
+
   const bossHpVal = document.getElementById('boss-hp-val');
   if (bossHpVal) bossHpVal.innerText = (boss.bossId === 1 || boss.bossId === 3 || boss.bossId === 4) ? '0%' : '100%';
 
