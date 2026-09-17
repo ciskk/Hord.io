@@ -127,8 +127,8 @@ export function resize() {
   cameraViewH = viewH / CAMERA_ZOOM;
   canvas.width = Math.floor(viewW * dpr);
   canvas.height = Math.floor(viewH * dpr);
-  canvas.style.width = viewW + 'px';
-  canvas.style.height = viewH + 'px';
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
 }
 
 initResponsive(() => {
