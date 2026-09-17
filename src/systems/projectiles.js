@@ -96,7 +96,7 @@ export function updateProjectiles(dt) {
           isAlchemist: true,
           isEvolved: !!b.isEvolved
         });
-        playSfx('acid');
+        playSfx('potion_shatter');
         createHitParticles(b.x, b.y, b.isEvolved ? '#d6a2e8' : '#9b59b6', 6);
         triggerShake(3);
       }
@@ -195,11 +195,22 @@ export function updateProjectiles(dt) {
           e.pushVy = (e.pushVy || 0) + Math.sin(impactAngle) * totalPush;
         }
 
-        if (isCrit || isMeleeAdrenaline || isKaelExecute) {
-          playSfx('crit');
-          triggerHaptic('light');
+        if (b.type === 'HAMMER_SLAM') {
+          playSfx('hammer_hit');
+          if (isCrit || isMeleeAdrenaline || isKaelExecute) playSfx('crit');
+        } else if (b.type === 'STAFF') {
+          playSfx('fire_hit');
+          if (isCrit || isMeleeAdrenaline || isKaelExecute) playSfx('crit');
+        } else if (b.type === 'SWORD') {
+          playSfx('blade_hit');
+          if (isCrit || isMeleeAdrenaline || isKaelExecute) playSfx('crit');
         } else {
-          playSfx('hit');
+          if (isCrit || isMeleeAdrenaline || isKaelExecute) {
+            playSfx('crit');
+            triggerHaptic('light');
+          } else {
+            playSfx('hit');
+          }
         }
 
         let dmgTextColor = '#ffffff';

@@ -557,7 +557,7 @@ export function triggerHeroSkill() {
     if (Math.abs(player.dashVx) > 0.1) {
       player.facing = player.dashVx >= 0 ? 1 : -1;
     }
-    playSfx('boss');
+    playSfx('holy_charge');
     triggerShake(9);
     triggerHaptic('heavy');
   } else if (selectedHeroKey === 'MAGE') {
@@ -576,7 +576,7 @@ export function triggerHeroSkill() {
     }
 
     // Ponto de Ignição: Rugido térmico, dispersão de partículas e anulação de projéteis hostis
-    playSfx('boss');
+    playSfx('flame_dash');
     triggerShake(9);
     triggerHaptic('heavy');
     createHitParticles(player.x, player.y, '#ffffff', 16);
@@ -599,7 +599,7 @@ export function triggerHeroSkill() {
     player.iFrames = 25;
     player.bossIFrames = 25;
     
-    playSfx('evolution');
+    playSfx('smoke_bomb');
     triggerShake(7);
     triggerHaptic('medium');
 
@@ -621,7 +621,7 @@ export function triggerHeroSkill() {
     }
   } else if (selectedHeroKey === 'BARBARIAN') {
     triggerShake(18);
-    playSfx('boss');
+    playSfx('barbarian_roar');
     triggerHaptic('heavy');
     createHitParticles(player.x, player.y, '#e67e22', 36);
 
@@ -666,7 +666,7 @@ export function triggerHeroSkill() {
     player.berserkTimer = 300;
   } else if (selectedHeroKey === 'ALCHEMIST') {
     triggerShake(8);
-    playSfx('acid');
+    playSfx('acid_explosion');
     triggerHaptic('medium');
     createHitParticles(player.x, player.y, '#2ecc71', 20);
     player.potionThrowTimer = 24;
@@ -754,7 +754,7 @@ export function updateSpinningAxes(dt) {
       const bSeg = distToSegment(eb.x, eb.y, player.x, player.y, ax, ay);
       if (bSeg.dist < (hitRadius + eb.radius)) {
         createHitParticles(eb.x, eb.y, '#f1c40f', 5);
-        playSfx('hit');
+        playSfx('parry_slice');
         enemyBullets.splice(bIdx, 1);
       }
     }
@@ -843,7 +843,7 @@ export function updateSpinningAxes(dt) {
         const cdFrames = Math.max(6, Math.floor(18 / (currentSpinSpeed / 0.085)));
         e.axeHitCd = cdFrames;
 
-        playSfx('hit');
+        playSfx('axe_cleave');
         if (isCrit || isMeleeAdrenaline || isKaelExecute) playSfx('crit');
         
         const dmgColor = isMeleeAdrenaline ? '#f1c40f' : (isKaelExecute ? '#00cec9' : (isOuterZone ? '#e67e22' : '#f39c12'));
@@ -952,7 +952,7 @@ export function fireWeapons() {
     w.timer = 0;
 
     if (w.type === 'SWORD') {
-      playSfx('shoot');
+      playSfx('blade_throw');
       const count = player.evolvedSword ? 6 : w.count;
       const baseAngle = Math.atan2(closestEnemy.y - player.y, closestEnemy.x - player.x);
 
@@ -976,7 +976,7 @@ export function fireWeapons() {
         });
       }
     } else if (w.type === 'STAFF') {
-      playSfx('shoot');
+      playSfx('fire_cast');
       const count = player.evolvedStaff ? Math.max(w.count, 4) : w.count;
       player.facing = closestEnemy.x >= player.x ? 1 : -1;
       player.staffCastTimer = 11;
@@ -1008,7 +1008,7 @@ export function fireWeapons() {
         });
       }
     } else if (w.type === 'POTION') {
-      playSfx('acid');
+      playSfx('potion_throw');
       player.potionThrowTimer = 16;
       
       const rawDx = closestEnemy.x - player.x;
@@ -1064,7 +1064,7 @@ export function fireWeapons() {
         });
       }
     } else if (w.type === 'HAMMER') {
-      playSfx('hit');
+      playSfx('hammer_slam');
       triggerShake(10);
 
       const targetAngle = Math.atan2(closestEnemy.y - player.y, closestEnemy.x - player.x);

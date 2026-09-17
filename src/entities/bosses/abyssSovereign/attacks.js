@@ -100,6 +100,7 @@ export function prepareNextAttack(boss, context) {
       boss.beamDir = Math.random() < 0.5 ? 1 : -1;
       boss.beamRotSpeed = boss.phase === 3 ? 0.015 : 0.01375;
       boss.beamHasReversed = false;
+      boss.inversionFlashTimer = 0;
       playSfx('charge');
       break;
     }
@@ -182,12 +183,15 @@ export function prepareNextAttack(boss, context) {
     }
 
     case 'SINGULARITY_IMPLOSION': {
-      boss.windupTimer = Math.round(58 * 1.7); // 99 frames (~1.65s, ampliado em 1,7x para reação justa)
+      boss.windupTimer = 148; // 148 frames (~2.47s: 35f tracking, 35f gravidade intensa, 78f soltura para fuga justa)
       boss.windupMax = boss.windupTimer;
       boss.implosionX = player.x;
       boss.implosionY = player.y;
-      boss.implosionRadius = boss.implosionMaxRadius;
+      boss.implosionMaxRadius = 175;
+      boss.implosionRadius = 175;
       boss.implosionLocked = false;
+      boss.implosionReleased = false;
+      boss.implosionSnapRing = 0;
       playSfx('singularity');
       break;
     }
@@ -314,14 +318,14 @@ export function startSkillCast(boss, context) {
       playSfx('boss');
       break;
     case 'SINGULARITY_IMPLOSION': {
-      boss.castDuration = 22;
+      boss.castDuration = 24;
       boss.activeAttacks.push({
         type: 'VOID_IMPLOSION_CORE',
         x: boss.implosionX,
         y: boss.implosionY,
-        radius: boss.implosionMaxRadius,
-        timer: 22,
-        maxTimer: 22
+        radius: boss.implosionMaxRadius || 140,
+        timer: 24,
+        maxTimer: 24
       });
       break;
     }

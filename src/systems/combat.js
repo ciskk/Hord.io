@@ -153,6 +153,25 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
     if (e.attackRecoveryFrames === undefined) e.attackRecoveryFrames = 40;
     if (e.attackCooldownMax === undefined) e.attackCooldownMax = 30;
 
+    // Se o jogador estiver invisível (Kael sob Manto de Fumaça), os mobs não o detectam para atacar nem renderizam telegraphs
+    if (isKaelIntangible) {
+      if (e.combatState === 'WINDUP' || e.combatState === 'STRIKE') {
+        e.combatState = 'CHASE';
+        e.attackTimer = 0;
+      } else if (e.combatState === 'RECOVERY') {
+        e.attackTimer -= dt;
+        if (e.attackTimer <= 0) {
+          e.combatState = 'CHASE';
+          e.attackCooldown = e.attackCooldownMax;
+          e.attackTimer = 0;
+        }
+      }
+      if (e.attackCooldown > 0) {
+        e.attackCooldown -= dt;
+      }
+      continue;
+    }
+
     const dx = player.x - e.x;
     const dy = player.y - e.y;
     const distSq = dx * dx + dy * dy;
@@ -262,6 +281,7 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
                 }
                 e.hp -= reflectDmg;
                 e.hitFlash = 4;
+                playSfx('retaliation_clang');
                 addDamageText(e.x, e.y, Math.round(reflectDmg), !isRetaliationBlocked && distToEnemy <= 130, isRetaliationBlocked ? '#74b9ff' : (distToEnemy <= 130 ? '#f1c40f' : '#ffffff'));
               }
 

@@ -1618,7 +1618,7 @@ function drawActiveSovereignAttacks(ctx, e, frameCount) {
     const progress = Math.max(0, Math.min(1, 1 - (atk.timer / (atk.maxTimer || 1))));
 
     if (atk.type === 'DIMENSIONAL_SLASH') {
-      // FEIXE DE LUZ CELESTIAL PARTINDO DIRETO DO CORPO DO SOBERANO (0, 0)
+      // FEIXE DE LUZ CELESTIAL COM FRATURA DIMENSIONAL (Feixe único P1-P2 / Tríplice P3)
       const angles = atk.angles || [e.cleaveAngle || 0];
       const alpha = Math.max(0, 1 - progress);
       const len = atk.length || 1500;
@@ -1635,51 +1635,146 @@ function drawActiveSovereignAttacks(ctx, e, frameCount) {
         const tipY = sinA * len;
         const isMain = a === 0;
         const beamW = isMain ? mainW : sideW;
+        const perpX = -sinA;
+        const perpY = cosA;
 
-        // 1. Halo volumétrico externo de dispersão de luz
-        ctx.strokeStyle = `rgba(0, 206, 201, ${alpha * 0.55})`;
-        ctx.lineWidth = beamW * (1 - progress * 0.35);
+        // 1. Halo de ionização atmosférica dimensional (dispersão de calor volumétrica)
+        const haloW = beamW * (1 - progress * 0.25) + Math.sin(frameCount * 0.3 + a * 2) * 6;
+        ctx.strokeStyle = `rgba(0, 206, 201, ${alpha * 0.42})`;
+        ctx.lineWidth = haloW;
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.lineTo(tipX, tipY);
         ctx.stroke();
 
-        // 2. Feixe intermediário de plasma estelar
-        ctx.strokeStyle = `rgba(232, 67, 147, ${alpha * 0.75})`;
-        ctx.lineWidth = beamW * 0.45;
+        // 2. Bainha intermediária de plasma estelar pulsante
+        ctx.strokeStyle = `rgba(232, 67, 147, ${alpha * 0.72})`;
+        ctx.lineWidth = beamW * 0.45 + Math.sin(frameCount * 0.5 + a) * 3;
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.lineTo(tipX, tipY);
         ctx.stroke();
 
-        // 3. Feixe central superaquecido incandescente
+        // 3. Hélice dupla ondulante de energia dimensional
+        const segCount = 22;
+        // Fita A
+        ctx.beginPath();
+        for (let s = 0; s <= segCount; s++) {
+          const d = (s / segCount) * len;
+          const wave = Math.sin(d * 0.028 - frameCount * 0.4 + a * 1.3) * (isMain ? 14 : 8) * alpha;
+          const wx = cosA * d + perpX * wave;
+          const wy = sinA * d + perpY * wave;
+          if (s === 0) ctx.moveTo(wx, wy);
+          else ctx.lineTo(wx, wy);
+        }
+        ctx.strokeStyle = `rgba(129, 236, 236, ${alpha * 0.85})`;
+        ctx.lineWidth = 2.2;
+        ctx.stroke();
+
+        // Fita B (oposta)
+        ctx.beginPath();
+        for (let s = 0; s <= segCount; s++) {
+          const d = (s / segCount) * len;
+          const wave = -Math.sin(d * 0.028 - frameCount * 0.4 + a * 1.3) * (isMain ? 14 : 8) * alpha;
+          const wx = cosA * d + perpX * wave;
+          const wy = sinA * d + perpY * wave;
+          if (s === 0) ctx.moveTo(wx, wy);
+          else ctx.lineTo(wx, wy);
+        }
+        ctx.strokeStyle = `rgba(224, 86, 253, ${alpha * 0.7})`;
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        // 4. Núcleo incandescente superaquecido (branco puro)
         ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
-        ctx.lineWidth = Math.max(3, beamW * 0.2);
+        ctx.lineWidth = Math.max(4, beamW * 0.2);
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.lineTo(tipX, tipY);
         ctx.stroke();
 
-        // 4. Fraturas e partículas estelares disparadas ao longo do feixe
-        const sparkCount = 6;
-        ctx.fillStyle = '#ffffff';
+        // 5. Nódulos de energia de alta velocidade fluindo pelo feixe
+        for (let n = 0; n < 5; n++) {
+          const nodeProg = ((frameCount * 0.06 + n * 0.2 + a * 0.08) % 1.0);
+          const nDist = nodeProg * len;
+          const nx = cosA * nDist;
+          const ny = sinA * nDist;
+          const nLen = isMain ? 55 : 35;
+          ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.95})`;
+          ctx.lineWidth = isMain ? 10 : 7;
+          ctx.beginPath();
+          ctx.moveTo(nx, ny);
+          ctx.lineTo(nx + cosA * nLen, ny + sinA * nLen);
+          ctx.stroke();
+        }
+
+        // 6. Fissuras dimensionais e centelhas estelares de alta velocidade
+        const sparkCount = isMain ? 10 : 6;
         for (let s = 1; s <= sparkCount; s++) {
-          const sDist = (s / (sparkCount + 1)) * len * (progress * 1.3);
+          const sDist = (s / (sparkCount + 1)) * len * Math.min(1, progress * 1.4);
           if (sDist <= len) {
             const sx = cosA * sDist;
             const sy = sinA * sDist;
-            const perp = (s % 2 === 0 ? 1 : -1) * (14 * (1 - progress));
-            ctx.fillRect(sx - sinA * perp - 3, sy + cosA * perp - 3, 6, 6);
+            const perpDist = (s % 2 === 0 ? 1 : -1) * (22 * (1 - progress));
+            const sparkLen = 20 + (s * 3.5) * (1 - progress);
+
+            // Centelha estelar esticada em arco
+            ctx.strokeStyle = s % 2 === 0 ? `rgba(0, 206, 201, ${alpha * 0.9})` : `rgba(255, 255, 255, ${alpha * 0.85})`;
+            ctx.lineWidth = 2.5 * alpha;
+            ctx.beginPath();
+            ctx.moveTo(sx + perpX * perpDist, sy + perpY * perpDist);
+            ctx.lineTo(sx + perpX * perpDist + cosA * sparkLen, sy + perpY * perpDist + sinA * sparkLen);
+            ctx.stroke();
+
+            // Micro-fissura dimensional perpendicular ao feixe
+            if (s % 2 === 0) {
+              ctx.strokeStyle = `rgba(232, 67, 147, ${alpha * 0.75})`;
+              ctx.lineWidth = 1.4;
+              const fissLen = perpDist * 2.0;
+              const fissJitter = Math.sin(s * 2.7 + frameCount * 0.15) * 6;
+              ctx.beginPath();
+              ctx.moveTo(sx, sy);
+              ctx.lineTo(sx + perpX * fissLen + cosA * fissJitter, sy + perpY * fissLen + sinA * fissJitter);
+              ctx.stroke();
+            }
+          }
+        }
+
+        // 7. Descargas elétricas transversais (arcos de matéria escura)
+        if (isMain) {
+          const arcSeed = Math.floor(frameCount * 0.3) + a * 7;
+          for (let arcIdx = 0; arcIdx < 2; arcIdx++) {
+            const seed = arcSeed + arcIdx * 11;
+            if (seed % 3 === 0) {
+              const arcDist = ((seed * 197) % (len - 300)) + 100;
+              const arcSide = ((seed + arcIdx) % 4 > 1) ? 1 : -1;
+              const abx = cosA * arcDist;
+              const aby = sinA * arcDist;
+              const arcLen = 22 + (seed % 18);
+              const mx = abx + perpX * (arcSide * arcLen * 0.55) + cosA * 10;
+              const my = aby + perpY * (arcSide * arcLen * 0.55) + sinA * 10;
+              const ex = abx + perpX * (arcSide * arcLen);
+              const ey = aby + perpY * (arcSide * arcLen);
+
+              ctx.strokeStyle = `rgba(129, 236, 236, ${alpha * 0.85})`;
+              ctx.lineWidth = 1.6;
+              ctx.beginPath();
+              ctx.moveTo(abx, aby);
+              ctx.lineTo(mx, my);
+              ctx.lineTo(ex, ey);
+              ctx.stroke();
+            }
           }
         }
       }
 
-      // Detonação esférica brilhante no centro do corpo do Soberano (0, 0)
-      const flareR = Math.max(0, 52 * (1 - progress));
-      const flareGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, Math.max(6, flareR));
+      // Epicentro estelar de convergência no corpo do Soberano (0, 0)
+      const flareR = Math.max(0, 58 * (1 - progress * 0.85));
+      const flareGrad = ctx.createRadialGradient(0, 0, 3, 0, 0, Math.max(6, flareR));
       flareGrad.addColorStop(0, '#ffffff');
-      flareGrad.addColorStop(0.35, 'rgba(0, 206, 201, 0.95)');
-      flareGrad.addColorStop(0.75, 'rgba(232, 67, 147, 0.7)');
+      flareGrad.addColorStop(0.25, 'rgba(0, 206, 201, 0.95)');
+      flareGrad.addColorStop(0.55, 'rgba(232, 67, 147, 0.75)');
+      flareGrad.addColorStop(0.85, 'rgba(142, 68, 173, 0.4)');
       flareGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = flareGrad;
       ctx.beginPath();
@@ -1692,37 +1787,62 @@ function drawActiveSovereignAttacks(ctx, e, frameCount) {
       const relX = atk.x - e.x;
       const relY = atk.y - e.y;
       const alpha = Math.max(0, 1 - progress);
-      const curR = Math.max(4, (atk.radius || 180) * (1 - progress * 0.7));
+      const R = atk.radius || 175;
 
       ctx.save();
-      ctx.fillStyle = `rgba(142, 68, 173, ${alpha * 0.35})`;
+
+      // 1. Flash de Vácuo Negativo e Campo de Gravidade Residual
+      const burstR = R * Math.min(1, progress * 1.35);
+      const burstGrad = ctx.createRadialGradient(relX, relY, 0, relX, relY, Math.max(1, burstR));
+      burstGrad.addColorStop(0, `rgba(5, 2, 12, ${alpha * 0.95})`);
+      burstGrad.addColorStop(0.4, `rgba(142, 68, 173, ${alpha * 0.75})`);
+      burstGrad.addColorStop(0.85, `rgba(0, 206, 201, ${alpha * 0.45})`);
+      burstGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = burstGrad;
       ctx.beginPath();
-      ctx.arc(relX, relY, curR * 1.4, 0, Math.PI * 2);
+      ctx.arc(relX, relY, burstR, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = '#000000';
+      // 2. Anel de Choque Implosivo com Aberração Cromática
+      const ringR = R * Math.min(1, progress * 1.12);
+      ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.95})`;
+      ctx.lineWidth = 4.0 * alpha;
       ctx.beginPath();
-      ctx.arc(relX, relY, curR, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = `rgba(224, 86, 253, ${alpha})`;
-      ctx.lineWidth = 3;
+      ctx.arc(relX, relY, ringR, 0, Math.PI * 2);
       ctx.stroke();
 
-      const rayCount = 8;
-      ctx.strokeStyle = `rgba(0, 206, 201, ${alpha * 0.6})`;
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = `rgba(224, 86, 253, ${alpha * 0.85})`;
+      ctx.lineWidth = 2.5 * alpha;
+      ctx.beginPath();
+      ctx.arc(relX, relY, Math.max(1, ringR - 5), 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 3. Fissuras Elétricas de Matéria Escura (12 Relâmpagos Abissais no solo)
+      const rayCount = 12;
+      ctx.strokeStyle = `rgba(0, 206, 201, ${alpha * 0.9})`;
+      ctx.lineWidth = 1.8 * alpha;
       for (let r = 0; r < rayCount; r++) {
-        const ra = (r * Math.PI * 2) / rayCount + frameCount * 0.15;
-        const rx1 = relX + Math.cos(ra) * curR;
-        const ry1 = relY + Math.sin(ra) * curR;
-        const rx2 = relX + Math.cos(ra) * (curR * 1.6);
-        const ry2 = relY + Math.sin(ra) * (curR * 1.6);
+        const ra = (r * Math.PI * 2) / rayCount + Math.sin(r * 3.1) * 0.15;
+        const reach = R * (0.65 + 0.45 * Math.sin(r * 4.7 + frameCount * 0.1));
+        const mx = relX + Math.cos(ra) * (reach * 0.5) + Math.sin(r * 2.3) * 10;
+        const my = relY + Math.sin(ra) * (reach * 0.5) + Math.cos(r * 2.9) * 10;
+        const ex = relX + Math.cos(ra) * reach;
+        const ey = relY + Math.sin(ra) * reach;
+
         ctx.beginPath();
-        ctx.moveTo(rx1, ry1);
-        ctx.lineTo(rx2, ry2);
+        ctx.moveTo(relX, relY);
+        ctx.lineTo(mx, my);
+        ctx.lineTo(ex, ey);
         ctx.stroke();
       }
+
+      // 4. Epicentro Superdenso Residual
+      const centerR = Math.max(2, 22 * (1 - progress));
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(relX, relY, centerR, 0, Math.PI * 2);
+      ctx.fill();
+
       ctx.restore();
     } else if (atk.type === 'SUPERNOVA_FLASH') {
       // Clarão cósmico expansivo centrado no chefe (0, 0)
@@ -1931,53 +2051,209 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
     ctx.restore();
   }
 
-  // 4. Telegrafia do Crucifixo
+  // 4. Telegrafia do Crucifixo (Convergência de Luz e Alinhamento de Perigo)
   if (isWindup && e.currentSkill === 'VOID_CRUCIFIX') {
     const armCount = 4;
+    const ratio = 1 - (e.windupTimer / (e.windupMax || 50));
     ctx.save();
-    ctx.strokeStyle = 'rgba(232, 67, 147, 0.55)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([8, 6]);
+
+    // 4.1 Vórtice de convergência de fótons no núcleo (0, 0)
+    const chargeR = 12 + ratio * 24;
+    const coreGlow = ctx.createRadialGradient(0, 0, 4, 0, 0, chargeR);
+    coreGlow.addColorStop(0, '#ffffff');
+    coreGlow.addColorStop(0.4, e.phase === 3 ? 'rgba(0, 206, 201, 0.8)' : 'rgba(232, 67, 147, 0.8)');
+    coreGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = coreGlow;
+    ctx.beginPath();
+    ctx.arc(0, 0, chargeR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 4.2 Feixes guias e corredores de aviso dos 4 braços
+    const isImminent = e.windupTimer <= 14;
+    const strobe = isImminent && Math.sin(frameCount * 0.6) > 0;
 
     for (let arm = 0; arm < armCount; arm++) {
       const rayAng = e.beamAngle + (arm * (Math.PI * 2 / armCount));
+      const cosA = Math.cos(rayAng);
+      const sinA = Math.sin(rayAng);
+      const len = 1300;
+      const perpX = -sinA;
+      const perpY = cosA;
+
+      // Corredor translúcido de aviso (largura proporcional à hitbox de 40px)
+      const warningHalfW = 20 * ratio;
+      ctx.fillStyle = e.phase === 3 
+        ? (strobe ? 'rgba(0, 206, 201, 0.22)' : 'rgba(0, 206, 201, 0.08)') 
+        : (strobe ? 'rgba(232, 67, 147, 0.22)' : 'rgba(232, 67, 147, 0.08)');
+      ctx.beginPath();
+      ctx.moveTo(perpX * warningHalfW, perpY * warningHalfW);
+      ctx.lineTo(cosA * len + perpX * warningHalfW, sinA * len + perpY * warningHalfW);
+      ctx.lineTo(cosA * len - perpX * warningHalfW, sinA * len - perpY * warningHalfW);
+      ctx.lineTo(-perpX * warningHalfW, -perpY * warningHalfW);
+      ctx.closePath();
+      ctx.fill();
+
+      // Linha laser guia de alta precisão
+      ctx.strokeStyle = strobe ? '#ffffff' : (e.phase === 3 ? 'rgba(0, 206, 201, 0.8)' : 'rgba(232, 67, 147, 0.8)');
+      ctx.lineWidth = strobe ? 3.0 : 1.8;
+      ctx.setLineDash([14, 7]);
+      ctx.lineDashOffset = -frameCount * 2.0;
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.lineTo(Math.cos(rayAng) * 1300, Math.sin(rayAng) * 1300);
+      ctx.lineTo(cosA * len, sinA * len);
       ctx.stroke();
+      ctx.setLineDash([]);
     }
-    ctx.setLineDash([]);
     ctx.restore();
   }
 
-  // 5. Feixes do Crucifixo do Vácuo
+  // 5. Feixes do Crucifixo do Vácuo (Lasers de Plasma Cósmico & Fratura Dimensional)
   if (isCasting && e.currentSkill === 'VOID_CRUCIFIX') {
     const armCount = 4;
+    const len = 1300;
+    const isP3 = e.phase === 3;
+    const primaryCol = isP3 ? 'rgba(0, 206, 201, ' : 'rgba(232, 67, 147, ';
+    const secondaryCol = isP3 ? 'rgba(129, 236, 236, ' : 'rgba(224, 86, 253, ';
+    const accentCol = isP3 ? '#81ecec' : '#fd79a8';
+
     ctx.save();
 
     for (let arm = 0; arm < armCount; arm++) {
       const rayAng = e.beamAngle + (arm * (Math.PI * 2 / armCount));
-      const rx = Math.cos(rayAng) * 1300;
-      const ry = Math.sin(rayAng) * 1300;
+      const cosA = Math.cos(rayAng);
+      const sinA = Math.sin(rayAng);
+      const perpX = -sinA;
+      const perpY = cosA;
 
-      ctx.strokeStyle = e.phase === 3 ? 'rgba(0, 206, 201, 0.45)' : 'rgba(232, 67, 147, 0.45)';
-      ctx.lineWidth = 14;
+      // 5.1 Halo de Ionização Atmosférica (Largura 44px - cobre a hitbox real)
+      const haloW = 42 + Math.sin(frameCount * 0.35 + arm * 1.5) * 4;
+      ctx.strokeStyle = primaryCol + (0.24 + Math.sin(frameCount * 0.2 + arm) * 0.06) + ')';
+      ctx.lineWidth = haloW;
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.lineTo(rx, ry);
+      ctx.lineTo(cosA * len, sinA * len);
       ctx.stroke();
 
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 4;
+      // 5.2 Bainha Intermediária de Plasma Cósmico
+      const plasmaW = 20 + Math.sin(frameCount * 0.5 + arm) * 3;
+      ctx.strokeStyle = secondaryCol + '0.65)';
+      ctx.lineWidth = plasmaW;
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.lineTo(rx, ry);
+      ctx.lineTo(cosA * len, sinA * len);
+      ctx.stroke();
+
+      // 5.3 Dupla Hélice de Plasma Ondulante (Serpenteamento de Energia Viva)
+      // Fita 1
+      ctx.beginPath();
+      const segCount = 26;
+      for (let s = 0; s <= segCount; s++) {
+        const d = (s / segCount) * len;
+        const wave = Math.sin(d * 0.032 - frameCount * 0.35 + arm) * 10;
+        const wx = cosA * d + perpX * wave;
+        const wy = sinA * d + perpY * wave;
+        if (s === 0) ctx.moveTo(wx, wy);
+        else ctx.lineTo(wx, wy);
+      }
+      ctx.strokeStyle = secondaryCol + '0.85)';
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+
+      // Fita 2 (oposta)
+      ctx.beginPath();
+      for (let s = 0; s <= segCount; s++) {
+        const d = (s / segCount) * len;
+        const wave = -Math.sin(d * 0.032 - frameCount * 0.35 + arm) * 10;
+        const wx = cosA * d + perpX * wave;
+        const wy = sinA * d + perpY * wave;
+        if (s === 0) ctx.moveTo(wx, wy);
+        else ctx.lineTo(wx, wy);
+      }
+      ctx.strokeStyle = primaryCol + '0.75)';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+
+      // 5.4 Núcleo Incandescente Superaquecido
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 5.5;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(cosA * len, sinA * len);
+      ctx.stroke();
+
+      // 5.5 Nódulos de Pulso de Alta Velocidade (Fluxo Contínuo de Luz)
+      for (let n = 0; n < 4; n++) {
+        const nodeProg = ((frameCount * 0.05 + n * 0.25 + arm * 0.07) % 1.0);
+        const nDist = nodeProg * len;
+        const nx = cosA * nDist;
+        const ny = sinA * nDist;
+        const nLen = 42;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 8.5;
+        ctx.beginPath();
+        ctx.moveTo(nx, ny);
+        ctx.lineTo(nx + cosA * nLen, ny + sinA * nLen);
+        ctx.stroke();
+      }
+
+      // 5.6 Descargas Elétricas / Micro-Arcos Transversais
+      const arcSeed = Math.floor(frameCount * 0.35) + arm * 5;
+      if (arcSeed % 2 === 0) {
+        const arcDist = ((arcSeed * 179) % (len - 250)) + 80;
+        const arcSide = (arcSeed % 4 > 1) ? 1 : -1;
+        const arcBaseX = cosA * arcDist;
+        const arcBaseY = sinA * arcDist;
+        const arcLen = 16 + (arcSeed % 14);
+        const midX = arcBaseX + perpX * (arcSide * arcLen * 0.6) + cosA * 8;
+        const midY = arcBaseY + perpY * (arcSide * arcLen * 0.6) + sinA * 8;
+        const endX = arcBaseX + perpX * (arcSide * arcLen);
+        const endY = arcBaseY + perpY * (arcSide * arcLen);
+
+        ctx.strokeStyle = accentCol;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(arcBaseX, arcBaseY);
+        ctx.lineTo(midX, midY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+      }
+    }
+
+    // 5.7 Núcleo Emissor Central e Lente de Convergência no Chefe (0, 0)
+    const emitR = 36 + Math.sin(frameCount * 0.4) * 6;
+    const emitGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, emitR);
+    emitGrad.addColorStop(0, '#ffffff');
+    emitGrad.addColorStop(0.35, isP3 ? 'rgba(0, 206, 201, 0.95)' : 'rgba(232, 67, 147, 0.95)');
+    emitGrad.addColorStop(0.7, isP3 ? 'rgba(129, 236, 236, 0.6)' : 'rgba(224, 86, 253, 0.6)');
+    emitGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = emitGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, emitR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 5.8 Clarão Dramático de Inversão ("INVERSÃO!")
+    if (e.inversionFlashTimer && e.inversionFlashTimer > 0) {
+      const invRatio = 1 - (e.inversionFlashTimer / 18);
+      const invR = 20 + invRatio * 160;
+      const invAlpha = Math.max(0, 1 - invRatio);
+
+      ctx.strokeStyle = `rgba(255, 255, 255, ${invAlpha})`;
+      ctx.lineWidth = 4.0;
+      ctx.beginPath();
+      ctx.arc(0, 0, invR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = `rgba(255, 118, 117, ${invAlpha * 0.8})`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, Math.max(1, invR - 8), 0, Math.PI * 2);
       ctx.stroke();
     }
+
     ctx.restore();
   }
 
-  // Telegrafia do Corte Dimensional: Feixe de mira partindo DIRETO do corpo do Soberano (0, 0)
+  // Telegrafia do Corte Dimensional: Feixe de mira com convergência de energia e corredor dinâmico
   if (isWindup && e.currentSkill === 'DIMENSIONAL_CLEAVE') {
     ctx.save();
     const isLocked = e.cleaveLocked;
@@ -1985,67 +2261,283 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
     const baseAng = e.cleaveAngle || 0;
     const aimAngles = isPhase3 ? [baseAng, baseAng - 0.28, baseAng + 0.28] : [baseAng];
     const beamLen = 1500;
+    const ratio = 1 - (e.windupTimer / (e.windupMax || 48));
+    const isImminent = e.windupTimer <= 10;
+    const strobe = isImminent && Math.sin(frameCount * 0.7) > 0;
 
     for (let l = 0; l < aimAngles.length; l++) {
       const ang = aimAngles[l];
       const cosA = Math.cos(ang);
       const sinA = Math.sin(ang);
       const isMain = l === 0;
+      const perpX = -sinA;
+      const perpY = cosA;
 
-      // Linha guia de mira partindo de (0, 0) em direção ao jogador
-      ctx.strokeStyle = isLocked 
-        ? (isMain ? '#ffffff' : 'rgba(232, 67, 147, 0.85)') 
-        : (isMain ? 'rgba(0, 206, 201, 0.75)' : 'rgba(0, 206, 201, 0.45)');
-      ctx.lineWidth = isLocked ? (isMain ? 3.5 : 2.0) : (isMain ? 2.0 : 1.2);
-      ctx.setLineDash(isLocked ? [12, 6] : [6, 6]);
+      // Corredor de perigo com gradiente de profundidade dimensional
+      const halfVisualW = (isMain ? (isPhase3 ? 35 : 54) : 23) * Math.min(1, ratio * 1.5);
+      if (halfVisualW > 2) {
+        ctx.fillStyle = isLocked
+          ? (strobe ? 'rgba(232, 67, 147, 0.28)' : 'rgba(232, 67, 147, 0.14)')
+          : `rgba(0, 206, 201, ${0.04 + ratio * 0.08})`;
+        ctx.beginPath();
+        ctx.moveTo(perpX * halfVisualW, perpY * halfVisualW);
+        ctx.lineTo(cosA * beamLen + perpX * halfVisualW, sinA * beamLen + perpY * halfVisualW);
+        ctx.lineTo(cosA * beamLen - perpX * halfVisualW, sinA * beamLen - perpY * halfVisualW);
+        ctx.lineTo(-perpX * halfVisualW, -perpY * halfVisualW);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Fio guia central com dash animado fluindo para fora
+      ctx.strokeStyle = isLocked
+        ? (isMain ? (strobe ? '#ffffff' : '#e84393') : 'rgba(232, 67, 147, 0.85)')
+        : (isMain ? 'rgba(0, 206, 201, 0.85)' : 'rgba(0, 206, 201, 0.5)');
+      ctx.lineWidth = isLocked ? (isMain ? 3.5 : 2.0) : (isMain ? 2.2 : 1.4);
+      ctx.setLineDash(isLocked ? [14, 5] : [8, 6]);
+      ctx.lineDashOffset = -frameCount * 2.5;
       ctx.beginPath();
       ctx.moveTo(0, 0);
       ctx.lineTo(cosA * beamLen, sinA * beamLen);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Corredor de perigo translúcido
-      ctx.fillStyle = isLocked ? 'rgba(232, 67, 147, 0.12)' : 'rgba(0, 206, 201, 0.07)';
-      ctx.beginPath();
-      const halfVisualW = isMain ? (isPhase3 ? 35 : 54) : 23;
-        const perpX = -sinA * halfVisualW;
-        const perpY = cosA * halfVisualW;
-      ctx.moveTo(perpX, perpY);
-      ctx.lineTo(cosA * beamLen + perpX, sinA * beamLen + perpY);
-      ctx.lineTo(cosA * beamLen - perpX, sinA * beamLen - perpY);
-      ctx.lineTo(-perpX, -perpY);
-      ctx.closePath();
-      ctx.fill();
+      // Nódulos de convergência viajando do exterior para o chefe (sugando energia para o corte)
+      if (isMain) {
+        for (let n = 0; n < 5; n++) {
+          const nProg = ((frameCount * 0.04 + n * 0.2) % 1.0);
+          const nDist = (1 - nProg) * beamLen * 0.7;
+          const nAlpha = Math.sin(nProg * Math.PI) * 0.8;
+          const nSize = 3.5 + (1 - nProg) * 3;
+          ctx.fillStyle = isLocked ? `rgba(232, 67, 147, ${nAlpha})` : `rgba(0, 206, 201, ${nAlpha})`;
+          ctx.beginPath();
+          ctx.arc(cosA * nDist, sinA * nDist, nSize, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Bordas laterais de fissura dimensional (aparecem progressivamente)
+      if (ratio > 0.3 && isMain) {
+        const edgeAlpha = (ratio - 0.3) * 1.4;
+        ctx.strokeStyle = `rgba(232, 67, 147, ${Math.min(0.6, edgeAlpha)})`;
+        ctx.lineWidth = 1.2;
+        for (let side = -1; side <= 1; side += 2) {
+          ctx.beginPath();
+          for (let seg = 0; seg <= 14; seg++) {
+            const d = (seg / 14) * beamLen * 0.9;
+            const jitter = Math.sin(d * 0.018 + frameCount * 0.2 + side) * 3;
+            const edgeX = cosA * d + perpX * (halfVisualW + jitter) * side;
+            const edgeY = sinA * d + perpY * (halfVisualW + jitter) * side;
+            if (seg === 0) ctx.moveTo(edgeX, edgeY);
+            else ctx.lineTo(edgeX, edgeY);
+          }
+          ctx.stroke();
+        }
+      }
     }
 
-    // Ponto de foco de energia incandescente no centro do chefe
-    const chargeR = 14 + Math.sin(frameCount * 0.3) * 4;
-    ctx.fillStyle = isLocked ? '#ffffff' : '#00cec9';
+    // Disco focal de carga pré-corte no centro do chefe
+    const chargeR = 12 + ratio * 28 + Math.sin(frameCount * 0.45) * 5;
+    const focusGrad = ctx.createRadialGradient(0, 0, 3, 0, 0, chargeR);
+    focusGrad.addColorStop(0, '#ffffff');
+    focusGrad.addColorStop(0.3, isLocked ? 'rgba(232, 67, 147, 0.95)' : 'rgba(0, 206, 201, 0.9)');
+    focusGrad.addColorStop(0.7, isLocked ? 'rgba(142, 68, 173, 0.5)' : 'rgba(108, 92, 231, 0.4)');
+    focusGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = focusGrad;
     ctx.beginPath();
     ctx.arc(0, 0, chargeR, 0, Math.PI * 2);
     ctx.fill();
 
+    // Arco de energia concentrada na direção do corte (apenas para o feixe principal)
+    if (ratio > 0.5) {
+      const arcAlpha = (ratio - 0.5) * 2;
+      ctx.strokeStyle = `rgba(255, 255, 255, ${arcAlpha * 0.85})`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, chargeR + 6, baseAng - 0.4, baseAng + 0.4);
+      ctx.stroke();
+    }
+
     ctx.restore();
   }
 
-  // 6. Colapso de Matéria Escura
+  // 6. Colapso de Matéria Escura / Singularidade Primordial (Reformulação Cósmica em 3 Atos)
   if (isWindup && e.currentSkill === 'SINGULARITY_IMPLOSION') {
     const relX = e.implosionX - e.x;
     const relY = e.implosionY - e.y;
+    const R = e.implosionMaxRadius || 175;
+    const elapsed = (e.windupMax || 148) - e.windupTimer;
+    const isReleased = e.implosionReleased;
+    const isLocked = e.implosionLocked;
 
     ctx.save();
-    ctx.strokeStyle = e.implosionLocked ? 'rgba(224, 86, 253, 0.9)' : 'rgba(142, 68, 173, 0.8)';
-    ctx.lineWidth = e.implosionLocked ? 3.5 : 2.5;
-    ctx.setLineDash([6, 6]);
-    ctx.beginPath();
-    ctx.arc(relX, relY, Math.max(10, e.implosionRadius), 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
 
-    ctx.fillStyle = e.implosionLocked ? 'rgba(224, 86, 253, 0.25)' : 'rgba(142, 68, 173, 0.15)';
+    // 6.1 Gradiente do Horizonte de Eventos (Vácuo Abissal no solo)
+    const voidGrad = ctx.createRadialGradient(relX, relY, 10, relX, relY, R);
+    if (isReleased) {
+      // Ato 3: Sobrecarga crítica / Alerta máximo
+      const flashAlpha = 0.28 + Math.sin(frameCount * 0.4) * 0.12;
+      voidGrad.addColorStop(0, 'rgba(5, 2, 12, 0.85)');
+      voidGrad.addColorStop(0.45, `rgba(224, 86, 253, ${flashAlpha})`);
+      voidGrad.addColorStop(0.85, `rgba(0, 206, 201, ${flashAlpha * 0.7})`);
+      voidGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    } else if (isLocked) {
+      // Ato 2: Poço Gravitacional intenso
+      voidGrad.addColorStop(0, 'rgba(5, 2, 12, 0.80)');
+      voidGrad.addColorStop(0.5, 'rgba(142, 68, 173, 0.32)');
+      voidGrad.addColorStop(0.9, 'rgba(0, 206, 201, 0.12)');
+      voidGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    } else {
+      // Ato 1: Gênese suave
+      voidGrad.addColorStop(0, 'rgba(5, 2, 12, 0.65)');
+      voidGrad.addColorStop(0.6, 'rgba(142, 68, 173, 0.18)');
+      voidGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    }
+    ctx.fillStyle = voidGrad;
     ctx.beginPath();
-    ctx.arc(relX, relY, Math.max(10, e.implosionRadius), 0, Math.PI * 2);
+    ctx.arc(relX, relY, R, 0, Math.PI * 2);
     ctx.fill();
+
+    // 6.2 Perímetro do Horizonte de Eventos (Borda nítida do raio letal de 140px)
+    if (isReleased) {
+      // Estroboscópio de ruptura / Alerta final de fuga
+      const isStrobe = Math.sin(frameCount * 0.5) > 0;
+      ctx.strokeStyle = isStrobe ? '#ffffff' : '#00cec9';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.arc(relX, relY, R, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(232, 67, 147, 0.85)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.arc(relX, relY, R + 4, frameCount * 0.08, frameCount * 0.08 + Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else if (isLocked) {
+      // Borda gravada com runas orbitantes no Ato 2
+      ctx.strokeStyle = 'rgba(224, 86, 253, 0.85)';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(relX, relY, R, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Runas / Marcadores orbitais no perímetro de perigo
+      const runeCount = 6;
+      ctx.fillStyle = '#00cec9';
+      for (let rn = 0; rn < runeCount; rn++) {
+        const rAng = (rn * Math.PI * 2) / runeCount + frameCount * 0.03;
+        const rx = relX + Math.cos(rAng) * R;
+        const ry = relY + Math.sin(rAng) * R;
+        ctx.beginPath();
+        ctx.arc(rx, ry, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      // Anel tracejado suave no Ato 1
+      ctx.strokeStyle = 'rgba(142, 68, 173, 0.65)';
+      ctx.lineWidth = 2.0;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.arc(relX, relY, R, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // 6.3 Onda de Choque da Ruptura Gravitacional (Pulso no início do Ato 3)
+    if (e.implosionSnapRing && e.implosionSnapRing > 0) {
+      const snapAlpha = Math.max(0, 1 - e.implosionSnapRing / (R * 1.5));
+      ctx.strokeStyle = `rgba(255, 255, 255, ${snapAlpha})`;
+      ctx.lineWidth = 3.0;
+      ctx.beginPath();
+      ctx.arc(relX, relY, e.implosionSnapRing, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = `rgba(0, 206, 201, ${snapAlpha * 0.7})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(relX, relY, Math.max(1, e.implosionSnapRing - 8), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // 6.4 Disco de Acreção e Filamentos Espirais (Rotação Diferencial)
+    const armCount = 3;
+    const spinSpeed = isReleased ? 0.14 : (isLocked ? 0.08 : 0.04);
+    for (let a = 0; a < armCount; a++) {
+      const armBaseAng = (a * Math.PI * 2) / armCount + frameCount * spinSpeed;
+      ctx.beginPath();
+      for (let s = 0; s <= 22; s++) {
+        const t = s / 22;
+        const curDist = 16 + (R - 16) * t;
+        const spiralAng = armBaseAng + (1 - t) * 2.6;
+        const sx = relX + Math.cos(spiralAng) * curDist;
+        const sy = relY + Math.sin(spiralAng) * curDist;
+        if (s === 0) ctx.moveTo(sx, sy);
+        else ctx.lineTo(sx, sy);
+      }
+      ctx.strokeStyle = a % 2 === 0
+        ? `rgba(0, 206, 201, ${isReleased ? 0.75 : 0.5})`
+        : `rgba(224, 86, 253, ${isReleased ? 0.75 : 0.5})`;
+      ctx.lineWidth = isReleased ? 2.2 : 1.6;
+      ctx.stroke();
+    }
+
+    // 6.5 Partículas Estelares Sendo Ingeridas (Ativas enquanto a gravidade puxa)
+    if (!isReleased) {
+      for (let p = 0; p < 8; p++) {
+        const pProgress = ((frameCount * 2.4 + p * 32) % R) / R;
+        const pDist = R * (1 - pProgress);
+        const pAng = (p * 2.399) + (pProgress * 3.0) + frameCount * 0.04;
+        const px = relX + Math.cos(pAng) * pDist;
+        const py = relY + Math.sin(pAng) * pDist;
+        ctx.fillStyle = p % 2 === 0 ? '#81ecec' : '#e056fd';
+        ctx.beginPath();
+        ctx.arc(px, py, 1.8 + (1 - pProgress) * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // 6.6 Núcleo da Singularidade (Buraco Negro com Lente Gravitacional)
+    let coreJitterX = 0;
+    let coreJitterY = 0;
+    let coreRadius = 18;
+
+    if (isReleased) {
+      // Ato 3: vibração caótica de alta frequência e contração pré-implosão
+      const collapseProgress = Math.min(1, Math.max(0, (elapsed - 70) / 65));
+      coreRadius = Math.max(4, 18 * (1 - collapseProgress * 0.8));
+      coreJitterX = (Math.sin(frameCount * 1.9) + Math.cos(frameCount * 2.7)) * 2.2;
+      coreJitterY = (Math.cos(frameCount * 2.1) + Math.sin(frameCount * 1.7)) * 2.2;
+    } else {
+      coreRadius = 16 + Math.sin(frameCount * 0.15) * 2;
+    }
+
+    const cx = relX + coreJitterX;
+    const cy = relY + coreJitterY;
+
+    // Halo Incandescente do Anel de Fótons
+    const photonGrad = ctx.createRadialGradient(cx, cy, coreRadius * 0.8, cx, cy, coreRadius * 1.9);
+    photonGrad.addColorStop(0, '#ffffff');
+    photonGrad.addColorStop(0.3, isReleased ? '#e056fd' : '#00cec9');
+    photonGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = photonGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, coreRadius * 1.9, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Esfera Negra Absoluta Central
+    ctx.fillStyle = '#05020a';
+    ctx.beginPath();
+    ctx.arc(cx, cy, coreRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Borda afiada de horizonte óptico
+    ctx.strokeStyle = isReleased ? '#ffffff' : '#81ecec';
+    ctx.lineWidth = isReleased ? 2.5 : 1.8;
+    ctx.beginPath();
+    ctx.arc(cx, cy, coreRadius, 0, Math.PI * 2);
+    ctx.stroke();
+
     ctx.restore();
   }
 

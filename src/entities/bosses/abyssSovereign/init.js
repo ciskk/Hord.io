@@ -64,13 +64,16 @@ export function initAbyssSovereign(boss) {
   boss.beamRotSpeed = 0.014;
   boss.beamDir = 1;
   boss.beamHasReversed = false;
+  boss.inversionFlashTimer = 0;
   boss.salvoSpiralAngle = 0;
 
   boss.implosionX = 0;
   boss.implosionY = 0;
-  boss.implosionRadius = 0;
-  boss.implosionMaxRadius = 220;
+  boss.implosionRadius = 175;
+  boss.implosionMaxRadius = 175;
   boss.implosionLocked = false;
+  boss.implosionReleased = false;
+  boss.implosionSnapRing = 0;
   boss.cleaveAngle = 0;
   boss.cleaveLocked = false;
 

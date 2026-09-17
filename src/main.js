@@ -1067,7 +1067,7 @@ function update(dt) {
           e.hp -= finalDmg;
           e.hitFlash = 4;
           e.orbitalHitCd = player.evolvedOrbitals ? 8 : 12;
-          playSfx('hit');
+          playSfx('tome_impact');
           if (isCrit || isKaelExecute) playSfx('crit');
 
           // Knockback Sagrado Suave: 80% menos empurrão (micro-stagger que interrompe o avanço sem catapultar monstros); Chefe Final imune (0.00)
@@ -2735,6 +2735,7 @@ function update(dt) {
         });
       }
 
+      playSfx('kill');
       enemies.splice(i, 1);
     }
   }

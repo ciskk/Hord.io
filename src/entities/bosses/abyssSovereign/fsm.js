@@ -595,34 +595,61 @@ export function updateAbyssSovereign(e, dt, context) {
           triggerShake(1.5 + ratio * 4);
         }
       } else if (e.currentSkill === 'SINGULARITY_IMPLOSION') {
-        const ratio = 1 - (e.windupTimer / e.windupMax);
-        e.implosionRadius = e.implosionMaxRadius * (1 - ratio);
+        const elapsed = (e.windupMax || 148) - e.windupTimer;
+        e.implosionRadius = e.implosionMaxRadius || 175;
 
-        if (ratio < 0.35) {
+        // Ato 1: Gênese & Tracking suave (frames 0 a 35)
+        if (elapsed < 35) {
           const trackDx = player.x - e.implosionX;
           const trackDy = player.y - e.implosionY;
           const trackDist = Math.hypot(trackDx, trackDy);
           if (trackDist > 0.1) {
-            // Segue o jogador bem mais devagar (max 1.8 px/frame), permitindo que o jogador se distancie facilmente
-            const trackSpeed = Math.min(1.8 * dt, trackDist * 0.03 * dt);
+            const trackSpeed = Math.min(3.0 * dt, trackDist * 0.06 * dt);
             e.implosionX += (trackDx / trackDist) * trackSpeed;
             e.implosionY += (trackDy / trackDist) * trackSpeed;
           }
         } else if (!e.implosionLocked) {
+          // Trava no solo no início do Ato 2 (frame 35)
           e.implosionLocked = true;
           playSfx('singularity');
           triggerHaptic('medium');
+          triggerShake(4);
         }
 
-        const vdx = e.implosionX - player.x;
-        const vdy = e.implosionY - player.y;
-        const vDist = Math.hypot(vdx, vdy);
-        if (vDist < e.implosionMaxRadius && vDist > 15) {
-          // Atração suave enquanto persegue, intensificando somente após a mira travar no solo
-          const pullBase = e.implosionLocked ? 0.45 : 0.15;
-          const pullForce = (pullBase + ratio * 0.65) * dt;
-          player.x += (vdx / vDist) * pullForce;
-          player.y += (vdy / vDist) * pullForce;
+        // Ato 3: Ruptura da Gravidade / Soltura (a partir do frame 70 - Janela exata de 65 frames / 1,08s)
+        if (elapsed >= 70) {
+          if (!e.implosionReleased) {
+            e.implosionReleased = true;
+            e.implosionSnapRing = 1; // Inicia onda de choque visual de ruptura
+            playSfx('warp');
+            triggerHaptic('heavy');
+            triggerShake(10);
+          }
+        }
+
+        // Expansão da onda de choque visual da ruptura gravitacional
+        if (e.implosionSnapRing > 0) {
+          e.implosionSnapRing += 4.5 * dt;
+          if (e.implosionSnapRing > (e.implosionMaxRadius || 175) * 1.5) {
+            e.implosionSnapRing = 0;
+          }
+        }
+
+        // FÍSICA DE ATRAÇÃO GRAVITACIONAL:
+        // Ativa durante os Atos 1 e 2 (elapsed < 70).
+        // NO ATO 3 (elapsed >= 70), A ATRAÇÃO É COMPLETAMENTE ZERADA (Soltura 100% garantida).
+        if (!e.implosionReleased) {
+          const vdx = e.implosionX - player.x;
+          const vdy = e.implosionY - player.y;
+          const vDist = Math.hypot(vdx, vdy);
+          if (vDist < e.implosionMaxRadius && vDist > 15) {
+            // Ato 1 (perseguindo): atração suave (0.4 px/f)
+            // Ato 2 (travado): poço gravitacional intenso e palpável (1.6 px/f)
+            const pullBase = e.implosionLocked ? 3.2 : 0.8;
+            const pullForce = pullBase * dt;
+            player.x += (vdx / vDist) * pullForce;
+            player.y += (vdy / vDist) * pullForce;
+          }
         }
       }
 
@@ -654,10 +681,15 @@ export function updateAbyssSovereign(e, dt, context) {
         if (!e.beamHasReversed && progress >= 0.5) {
           e.beamHasReversed = true;
           e.beamDir *= -1;
+          e.inversionFlashTimer = 18;
           playSfx('charge');
-          triggerShake(10);
-          triggerHaptic('medium');
+          triggerShake(14);
+          triggerHaptic('heavy');
           addDamageText(e.x, e.y - e.radius - 16, "INVERSÃO!", true, '#ff7675');
+        }
+
+        if (e.inversionFlashTimer > 0) {
+          e.inversionFlashTimer -= dt;
         }
 
         const rotSpeed = (e.phase === 3 ? 0.02625 : (e.phase === 2 ? 0.02375 : 0.01875)) * e.beamDir;
@@ -775,23 +807,28 @@ export function updateAbyssSovereign(e, dt, context) {
           playSfx('charge');
         }
       } else if (e.currentSkill === 'SINGULARITY_IMPLOSION' && e.stateTimer < dt * 2) {
-        triggerShake(16);
+        triggerShake(20);
         triggerHaptic('heavy');
         playSfx('singularity');
 
+        // Onda de choque atmosférica pura com DANO 0 e repulsão tática:
+        // Quem conseguiu escapar do horizonte letal (140px) NÃO toma dano punitivo surpresa
         bossShockwaves.push({
           x: e.implosionX,
           y: e.implosionY,
-          radius: 12,
-          maxRadius: e.implosionMaxRadius + 30,
-          speed: 7.5,
-          damage: Math.round(e.damage * 0.45),
+          radius: 14,
+          maxRadius: (e.implosionMaxRadius || 175) + 90,
+          speed: 8.5,
+          damage: 0,
+          knockback: 6.0,
           hitPlayer: false,
           colorRgb: '142, 68, 173'
         });
 
-        createHitParticles(e.implosionX, e.implosionY, '#8e44ad', 28);
-        createHitParticles(e.implosionX, e.implosionY, '#e056fd', 18);
+        createHitParticles(e.implosionX, e.implosionY, '#8e44ad', 38);
+        createHitParticles(e.implosionX, e.implosionY, '#00cec9', 26);
+        createHitParticles(e.implosionX, e.implosionY, '#e056fd', 20);
+        createHitParticles(e.implosionX, e.implosionY, '#ffffff', 14);
       }
 
       if (e.castDuration <= 0) {

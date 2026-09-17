@@ -467,22 +467,24 @@ export function updateActiveAttacks(boss, dt, context) {
         }
       }
     } else if (atk.type === 'VOID_IMPLOSION_CORE') {
-      // Dano direto no epicentro do buraco negro caso o jogador esteja dentro do núcleo
-      if (atk.timer > atk.maxTimer - 12 && player.iFrames <= 0) {
+      // Dano direto no epicentro do buraco negro caso o jogador esteja dentro do horizonte letal
+      if (atk.timer > atk.maxTimer - 12 && player.iFrames <= 0 && player.bossIFrames <= 0) {
         const pdx = player.x - atk.x;
         const pdy = player.y - atk.y;
         const distSq = pdx * pdx + pdy * pdy;
-        const hitR = (atk.radius || 180) * 0.75 + (player.radius || 14);
+        const hitR = (atk.radius || 175) + (player.radius || 14);
         if (distSq <= hitR * hitR) {
-          const coreDmg = Math.round((boss.damage || 270) * 0.42);
+          const coreDmg = Math.round((boss.damage || 270) * 0.46);
           player.hp -= coreDmg;
           player.iFrames = 26;
-          triggerShake(16);
+          player.bossIFrames = 26;
+          triggerShake(20);
           playSfx('hit');
           triggerHaptic('heavy');
           addDamageText(player.x, player.y, `-${coreDmg}`, false, '#8e44ad');
-          createHitParticles(player.x, player.y, '#8e44ad', 18);
-          createHitParticles(player.x, player.y, '#ffffff', 8);
+          createHitParticles(player.x, player.y, '#8e44ad', 24);
+          createHitParticles(player.x, player.y, '#00cec9', 16);
+          createHitParticles(player.x, player.y, '#ffffff', 10);
         }
       }
     } else if (atk.type === 'SUPERNOVA_FLASH') {
