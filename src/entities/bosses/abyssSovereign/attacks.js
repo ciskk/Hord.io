@@ -323,7 +323,7 @@ export function startSkillCast(boss, context) {
         type: 'VOID_IMPLOSION_CORE',
         x: boss.implosionX,
         y: boss.implosionY,
-        radius: boss.implosionMaxRadius || 140,
+        radius: boss.implosionMaxRadius || 175,
         timer: 24,
         maxTimer: 24
       });

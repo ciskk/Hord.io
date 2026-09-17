@@ -1620,6 +1620,7 @@ function drawActiveSovereignAttacks(ctx, e, frameCount) {
     if (atk.type === 'DIMENSIONAL_SLASH') {
       // FEIXE DE LUZ CELESTIAL COM FRATURA DIMENSIONAL (Feixe único P1-P2 / Tríplice P3)
       const angles = atk.angles || [e.cleaveAngle || 0];
+      const isTriple = angles.length > 1; // Diferenciação visual entre Feixe Único e Feixe Triplo
       const alpha = Math.max(0, 1 - progress);
       const len = atk.length || 1500;
       const mainW = atk.width || 108;
@@ -1627,6 +1628,45 @@ function drawActiveSovereignAttacks(ctx, e, frameCount) {
 
       ctx.save();
 
+      // =========================================================================
+      // 1. ARCOS DE RESSONÂNCIA DIMENSIONAL CRUZADA (Exclusivo do Feixe Triplo)
+      // =========================================================================
+      if (isTriple) {
+        const centerAng = angles[0];
+        const leftAng = angles[1];
+        const rightAng = angles[2];
+
+        // Arcos de plasma e pontes elétricas saltando entre o feixe central e os laterais
+        const bridgeCount = 8;
+        for (let b = 1; b <= bridgeCount; b++) {
+          const bDist = (b / (bridgeCount + 1)) * len * Math.min(1, progress * 1.5);
+          const cx = Math.cos(centerAng) * bDist;
+          const cy = Math.sin(centerAng) * bDist;
+
+          for (let sideAng of [leftAng, rightAng]) {
+            if (sideAng === undefined) continue;
+            const sx = Math.cos(sideAng) * bDist;
+            const sy = Math.sin(sideAng) * bDist;
+            const midJitterX = (Math.sin(b * 3.7 + frameCount * 0.5) * 22) * alpha;
+            const midJitterY = (Math.cos(b * 3.1 + frameCount * 0.5) * 22) * alpha;
+
+            // Ponte de plasma instável entre os feixes
+            ctx.strokeStyle = (b % 2 === 0)
+              ? `rgba(0, 206, 201, ${alpha * 0.85})`
+              : `rgba(232, 67, 147, ${alpha * 0.75})`;
+            ctx.lineWidth = 2.0 * alpha;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo((cx + sx) * 0.5 + midJitterX, (cy + sy) * 0.5 + midJitterY);
+            ctx.lineTo(sx, sy);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // =========================================================================
+      // 2. RENDERIZAÇÃO DOS FEIXES DE LUZ (Individual para cada ângulo de disparo)
+      // =========================================================================
       for (let a = 0; a < angles.length; a++) {
         const ang = angles[a];
         const cosA = Math.cos(ang);
@@ -1638,100 +1678,137 @@ function drawActiveSovereignAttacks(ctx, e, frameCount) {
         const perpX = -sinA;
         const perpY = cosA;
 
-        // 1. Halo de ionização atmosférica dimensional (dispersão de calor volumétrica)
-        const haloW = beamW * (1 - progress * 0.25) + Math.sin(frameCount * 0.3 + a * 2) * 6;
-        ctx.strokeStyle = `rgba(0, 206, 201, ${alpha * 0.42})`;
+        // 2.1 Cicatriz abissal no solo (fenda preta sob o feixe com bordas queimadas)
+        const scorchW = beamW * 0.65;
+        ctx.strokeStyle = `rgba(5, 2, 12, ${alpha * 0.85})`;
+        ctx.lineWidth = scorchW;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(tipX, tipY);
+        ctx.stroke();
+
+        // 2.2 Halo volumétrico de ionização atmosférica (dispersão volumétrica)
+        const haloPulse = Math.sin(frameCount * 0.35 + a * 2) * 6;
+        const haloW = beamW * (1 - progress * 0.22) + haloPulse;
+        ctx.strokeStyle = isTriple
+          ? (isMain ? `rgba(0, 206, 201, ${alpha * 0.5})` : `rgba(0, 206, 201, ${alpha * 0.35})`)
+          : `rgba(232, 67, 147, ${alpha * 0.48})`;
         ctx.lineWidth = haloW;
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.lineTo(tipX, tipY);
         ctx.stroke();
 
-        // 2. Bainha intermediária de plasma estelar pulsante
-        ctx.strokeStyle = `rgba(232, 67, 147, ${alpha * 0.72})`;
-        ctx.lineWidth = beamW * 0.45 + Math.sin(frameCount * 0.5 + a) * 3;
+        // 2.3 Bainha intermediária de plasma cósmico
+        ctx.strokeStyle = isTriple
+          ? (isMain ? `rgba(129, 236, 236, ${alpha * 0.8})` : `rgba(224, 86, 253, ${alpha * 0.65})`)
+          : `rgba(224, 86, 253, ${alpha * 0.75})`;
+        ctx.lineWidth = beamW * 0.48;
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.lineTo(tipX, tipY);
         ctx.stroke();
 
-        // 3. Hélice dupla ondulante de energia dimensional
-        const segCount = 22;
-        // Fita A
+        // 2.4 Anéis de compressão de choque (Mach Cones / Diamantes de Choque)
+        const machCount = isMain ? (isTriple ? 6 : 8) : 4;
+        for (let m = 1; m <= machCount; m++) {
+          const mDist = (m / (machCount + 1)) * len;
+          const mx = cosA * mDist;
+          const my = sinA * mDist;
+          const diamondW = (beamW * 0.38) * alpha;
+          const diamondL = 16 * alpha;
+
+          ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.85})`;
+          ctx.beginPath();
+          ctx.moveTo(mx - cosA * diamondL, my - sinA * diamondL);
+          ctx.lineTo(mx + perpX * diamondW, my + perpY * diamondW);
+          ctx.lineTo(mx + cosA * diamondL, my + sinA * diamondL);
+          ctx.lineTo(mx - perpX * diamondW, my - perpY * diamondW);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // 2.5 Hélice dupla de plasma vivo entrelaçado
+        const segCount = isMain ? 28 : 20;
+        const waveAmp = (isMain ? (isTriple ? 12 : 16) : 8) * alpha;
+        // Fita 1
         ctx.beginPath();
         for (let s = 0; s <= segCount; s++) {
           const d = (s / segCount) * len;
-          const wave = Math.sin(d * 0.028 - frameCount * 0.4 + a * 1.3) * (isMain ? 14 : 8) * alpha;
+          const wave = Math.sin(d * 0.03 - frameCount * 0.45 + a * 1.5) * waveAmp;
           const wx = cosA * d + perpX * wave;
           const wy = sinA * d + perpY * wave;
           if (s === 0) ctx.moveTo(wx, wy);
           else ctx.lineTo(wx, wy);
         }
-        ctx.strokeStyle = `rgba(129, 236, 236, ${alpha * 0.85})`;
-        ctx.lineWidth = 2.2;
+        ctx.strokeStyle = isTriple ? `rgba(0, 206, 201, ${alpha * 0.9})` : `rgba(255, 255, 255, ${alpha * 0.9})`;
+        ctx.lineWidth = isMain ? 2.6 : 1.8;
         ctx.stroke();
 
-        // Fita B (oposta)
+        // Fita 2 (oposta)
         ctx.beginPath();
         for (let s = 0; s <= segCount; s++) {
           const d = (s / segCount) * len;
-          const wave = -Math.sin(d * 0.028 - frameCount * 0.4 + a * 1.3) * (isMain ? 14 : 8) * alpha;
+          const wave = -Math.sin(d * 0.03 - frameCount * 0.45 + a * 1.5) * waveAmp;
           const wx = cosA * d + perpX * wave;
           const wy = sinA * d + perpY * wave;
           if (s === 0) ctx.moveTo(wx, wy);
           else ctx.lineTo(wx, wy);
         }
-        ctx.strokeStyle = `rgba(224, 86, 253, ${alpha * 0.7})`;
-        ctx.lineWidth = 1.8;
+        ctx.strokeStyle = isTriple ? `rgba(224, 86, 253, ${alpha * 0.75})` : `rgba(232, 67, 147, ${alpha * 0.75})`;
+        ctx.lineWidth = isMain ? 2.0 : 1.5;
         ctx.stroke();
 
-        // 4. Núcleo incandescente superaquecido (branco puro)
+        // 2.6 Núcleo incandescente superaquecido branco
         ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
-        ctx.lineWidth = Math.max(4, beamW * 0.2);
+        ctx.lineWidth = Math.max(4, beamW * 0.22);
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.lineTo(tipX, tipY);
         ctx.stroke();
 
-        // 5. Nódulos de energia de alta velocidade fluindo pelo feixe
-        for (let n = 0; n < 5; n++) {
-          const nodeProg = ((frameCount * 0.06 + n * 0.2 + a * 0.08) % 1.0);
+        // 2.7 Nódulos de energia correndo pelo feixe (Fluxo Contínuo)
+        const nodeCount = isMain ? 5 : 3;
+        for (let n = 0; n < nodeCount; n++) {
+          const nodeProg = ((frameCount * 0.065 + n * 0.22 + a * 0.09) % 1.0);
           const nDist = nodeProg * len;
           const nx = cosA * nDist;
           const ny = sinA * nDist;
-          const nLen = isMain ? 55 : 35;
-          ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.95})`;
-          ctx.lineWidth = isMain ? 10 : 7;
+          const nLen = isMain ? 52 : 32;
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = (isMain ? 10 : 6) * alpha;
           ctx.beginPath();
           ctx.moveTo(nx, ny);
           ctx.lineTo(nx + cosA * nLen, ny + sinA * nLen);
           ctx.stroke();
         }
 
-        // 6. Fissuras dimensionais e centelhas estelares de alta velocidade
-        const sparkCount = isMain ? 10 : 6;
+        // 2.8 Fissuras dimensionais e centelhas estelares de alta velocidade
+        const sparkCount = isMain ? (isTriple ? 14 : 10) : 7;
         for (let s = 1; s <= sparkCount; s++) {
           const sDist = (s / (sparkCount + 1)) * len * Math.min(1, progress * 1.4);
           if (sDist <= len) {
             const sx = cosA * sDist;
             const sy = sinA * sDist;
-            const perpDist = (s % 2 === 0 ? 1 : -1) * (22 * (1 - progress));
-            const sparkLen = 20 + (s * 3.5) * (1 - progress);
+            const perpDist = (s % 2 === 0 ? 1 : -1) * (24 * (1 - progress));
+            const sparkLen = 22 + (s * 4) * (1 - progress);
 
-            // Centelha estelar esticada em arco
-            ctx.strokeStyle = s % 2 === 0 ? `rgba(0, 206, 201, ${alpha * 0.9})` : `rgba(255, 255, 255, ${alpha * 0.85})`;
-            ctx.lineWidth = 2.5 * alpha;
+            // Centelha estelar esticada em alta velocidade
+            ctx.strokeStyle = s % 2 === 0
+              ? (isTriple ? `rgba(0, 206, 201, ${alpha * 0.95})` : `rgba(255, 255, 255, ${alpha * 0.95})`)
+              : `rgba(232, 67, 147, ${alpha * 0.9})`;
+            ctx.lineWidth = 2.4 * alpha;
             ctx.beginPath();
             ctx.moveTo(sx + perpX * perpDist, sy + perpY * perpDist);
             ctx.lineTo(sx + perpX * perpDist + cosA * sparkLen, sy + perpY * perpDist + sinA * sparkLen);
             ctx.stroke();
 
-            // Micro-fissura dimensional perpendicular ao feixe
+            // Micro-fissura dimensional perpendicular rasgando o tecido da realidade
             if (s % 2 === 0) {
-              ctx.strokeStyle = `rgba(232, 67, 147, ${alpha * 0.75})`;
-              ctx.lineWidth = 1.4;
-              const fissLen = perpDist * 2.0;
-              const fissJitter = Math.sin(s * 2.7 + frameCount * 0.15) * 6;
+              ctx.strokeStyle = `rgba(224, 86, 253, ${alpha * 0.8})`;
+              ctx.lineWidth = 1.6;
+              const fissLen = perpDist * 1.8;
+              const fissJitter = Math.sin(s * 2.7 + frameCount * 0.2) * 8;
               ctx.beginPath();
               ctx.moveTo(sx, sy);
               ctx.lineTo(sx + perpX * fissLen + cosA * fissJitter, sy + perpY * fissLen + sinA * fissJitter);
@@ -1739,47 +1816,33 @@ function drawActiveSovereignAttacks(ctx, e, frameCount) {
             }
           }
         }
-
-        // 7. Descargas elétricas transversais (arcos de matéria escura)
-        if (isMain) {
-          const arcSeed = Math.floor(frameCount * 0.3) + a * 7;
-          for (let arcIdx = 0; arcIdx < 2; arcIdx++) {
-            const seed = arcSeed + arcIdx * 11;
-            if (seed % 3 === 0) {
-              const arcDist = ((seed * 197) % (len - 300)) + 100;
-              const arcSide = ((seed + arcIdx) % 4 > 1) ? 1 : -1;
-              const abx = cosA * arcDist;
-              const aby = sinA * arcDist;
-              const arcLen = 22 + (seed % 18);
-              const mx = abx + perpX * (arcSide * arcLen * 0.55) + cosA * 10;
-              const my = aby + perpY * (arcSide * arcLen * 0.55) + sinA * 10;
-              const ex = abx + perpX * (arcSide * arcLen);
-              const ey = aby + perpY * (arcSide * arcLen);
-
-              ctx.strokeStyle = `rgba(129, 236, 236, ${alpha * 0.85})`;
-              ctx.lineWidth = 1.6;
-              ctx.beginPath();
-              ctx.moveTo(abx, aby);
-              ctx.lineTo(mx, my);
-              ctx.lineTo(ex, ey);
-              ctx.stroke();
-            }
-          }
-        }
       }
 
-      // Epicentro estelar de convergência no corpo do Soberano (0, 0)
-      const flareR = Math.max(0, 58 * (1 - progress * 0.85));
+      // =========================================================================
+      // 3. EPICENTRO DE DISPARO NO CORPO DO SOBERANO (0, 0)
+      // =========================================================================
+      const flareR = Math.max(0, (isTriple ? 74 : 58) * (1 - progress * 0.85));
       const flareGrad = ctx.createRadialGradient(0, 0, 3, 0, 0, Math.max(6, flareR));
       flareGrad.addColorStop(0, '#ffffff');
-      flareGrad.addColorStop(0.25, 'rgba(0, 206, 201, 0.95)');
-      flareGrad.addColorStop(0.55, 'rgba(232, 67, 147, 0.75)');
+      flareGrad.addColorStop(0.25, isTriple ? 'rgba(0, 206, 201, 0.95)' : 'rgba(232, 67, 147, 0.95)');
+      flareGrad.addColorStop(0.55, isTriple ? 'rgba(129, 236, 236, 0.75)' : 'rgba(224, 86, 253, 0.75)');
       flareGrad.addColorStop(0.85, 'rgba(142, 68, 173, 0.4)');
       flareGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = flareGrad;
       ctx.beginPath();
       ctx.arc(0, 0, flareR, 0, Math.PI * 2);
       ctx.fill();
+
+      // Anéis de choque de recuo na saída do disparo
+      if (progress < 0.45) {
+        const recoilR = (progress / 0.45) * (isTriple ? 98 : 75);
+        const recoilAlpha = (1 - progress / 0.45);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${recoilAlpha * 0.8})`;
+        ctx.lineWidth = 3.0;
+        ctx.beginPath();
+        ctx.arc(0, 0, recoilR, 0, Math.PI * 2);
+        ctx.stroke();
+      }
 
       ctx.restore();
     } else if (atk.type === 'VOID_IMPLOSION_CORE') {
@@ -2253,17 +2316,42 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
     ctx.restore();
   }
 
-  // Telegrafia do Corte Dimensional: Feixe de mira com convergência de energia e corredor dinâmico
+  // Telegrafia do Corte Dimensional: Feixe Único (P1-P2) vs Feixe Triplo em Tridente (P3)
   if (isWindup && e.currentSkill === 'DIMENSIONAL_CLEAVE') {
     ctx.save();
     const isLocked = e.cleaveLocked;
     const isPhase3 = e.phase === 3;
     const baseAng = e.cleaveAngle || 0;
-    const aimAngles = isPhase3 ? [baseAng, baseAng - 0.28, baseAng + 0.28] : [baseAng];
-    const beamLen = 1500;
     const ratio = 1 - (e.windupTimer / (e.windupMax || 48));
     const isImminent = e.windupTimer <= 10;
     const strobe = isImminent && Math.sin(frameCount * 0.7) > 0;
+    const beamLen = 1500;
+
+    // No Feixe Triplo, as miras laterais se abrem suavemente no início (efeito de refração em prisma)
+    const sideSpread = isPhase3 ? Math.min(0.28, Math.max(0.05, ratio * 0.7) * 0.28) : 0;
+    const aimAngles = isPhase3 ? [baseAng, baseAng - sideSpread, baseAng + sideSpread] : [baseAng];
+
+    // Arcos elétricos pré-disparo entre as miras do Feixe Triplo
+    if (isPhase3 && ratio > 0.25) {
+      for (let bridge = 1; bridge <= 5; bridge++) {
+        const bDist = bridge * 220;
+        const cx = Math.cos(baseAng) * bDist;
+        const cy = Math.sin(baseAng) * bDist;
+        for (let s of [-sideSpread, sideSpread]) {
+          const sx = Math.cos(baseAng + s) * bDist;
+          const sy = Math.sin(baseAng + s) * bDist;
+          if (Math.sin(frameCount * 0.35 + bridge) > 0.15) {
+            ctx.strokeStyle = `rgba(0, 206, 201, ${0.45 * ratio})`;
+            ctx.lineWidth = 1.3;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo((cx + sx) * 0.5 + Math.sin(bridge * 2.1) * 14, (cy + sy) * 0.5 + Math.cos(bridge * 2.1) * 14);
+            ctx.lineTo(sx, sy);
+            ctx.stroke();
+          }
+        }
+      }
+    }
 
     for (let l = 0; l < aimAngles.length; l++) {
       const ang = aimAngles[l];
@@ -2273,12 +2361,14 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
       const perpX = -sinA;
       const perpY = cosA;
 
-      // Corredor de perigo com gradiente de profundidade dimensional
+      // Corredor de perigo com gradiente dimensional
       const halfVisualW = (isMain ? (isPhase3 ? 35 : 54) : 23) * Math.min(1, ratio * 1.5);
       if (halfVisualW > 2) {
         ctx.fillStyle = isLocked
           ? (strobe ? 'rgba(232, 67, 147, 0.28)' : 'rgba(232, 67, 147, 0.14)')
-          : `rgba(0, 206, 201, ${0.04 + ratio * 0.08})`;
+          : (isPhase3 
+              ? (isMain ? `rgba(0, 206, 201, ${0.05 + ratio * 0.09})` : `rgba(0, 206, 201, ${0.03 + ratio * 0.06})`)
+              : `rgba(232, 67, 147, ${0.04 + ratio * 0.08})`);
         ctx.beginPath();
         ctx.moveTo(perpX * halfVisualW, perpY * halfVisualW);
         ctx.lineTo(cosA * beamLen + perpX * halfVisualW, sinA * beamLen + perpY * halfVisualW);
@@ -2288,43 +2378,44 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
         ctx.fill();
       }
 
-      // Fio guia central com dash animado fluindo para fora
+      // Fio guia central de alta voltagem com dash dinâmico
       ctx.strokeStyle = isLocked
-        ? (isMain ? (strobe ? '#ffffff' : '#e84393') : 'rgba(232, 67, 147, 0.85)')
-        : (isMain ? 'rgba(0, 206, 201, 0.85)' : 'rgba(0, 206, 201, 0.5)');
-      ctx.lineWidth = isLocked ? (isMain ? 3.5 : 2.0) : (isMain ? 2.2 : 1.4);
+        ? (isMain ? (strobe ? '#ffffff' : (isPhase3 ? '#00cec9' : '#e84393')) : 'rgba(232, 67, 147, 0.85)')
+        : (isMain ? (isPhase3 ? 'rgba(0, 206, 201, 0.9)' : 'rgba(232, 67, 147, 0.9)') : 'rgba(0, 206, 201, 0.55)');
+      ctx.lineWidth = isLocked ? (isMain ? 3.5 : 2.0) : (isMain ? 2.4 : 1.5);
       ctx.setLineDash(isLocked ? [14, 5] : [8, 6]);
-      ctx.lineDashOffset = -frameCount * 2.5;
+      ctx.lineDashOffset = -frameCount * 2.8;
       ctx.beginPath();
       ctx.moveTo(0, 0);
       ctx.lineTo(cosA * beamLen, sinA * beamLen);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Nódulos de convergência viajando do exterior para o chefe (sugando energia para o corte)
-      if (isMain) {
-        for (let n = 0; n < 5; n++) {
-          const nProg = ((frameCount * 0.04 + n * 0.2) % 1.0);
-          const nDist = (1 - nProg) * beamLen * 0.7;
-          const nAlpha = Math.sin(nProg * Math.PI) * 0.8;
-          const nSize = 3.5 + (1 - nProg) * 3;
-          ctx.fillStyle = isLocked ? `rgba(232, 67, 147, ${nAlpha})` : `rgba(0, 206, 201, ${nAlpha})`;
+      // Nódulos de convergência viajando para o chefe (sucção de fótons)
+      if (isMain || isPhase3) {
+        const nodeCount = isMain ? 5 : 3;
+        for (let n = 0; n < nodeCount; n++) {
+          const nProg = ((frameCount * 0.045 + n * 0.2 + l * 0.1) % 1.0);
+          const nDist = (1 - nProg) * beamLen * 0.75;
+          const nAlpha = Math.sin(nProg * Math.PI) * 0.85;
+          const nSize = (isMain ? 3.8 : 2.6) + (1 - nProg) * 2.5;
+          ctx.fillStyle = isPhase3 ? `rgba(0, 206, 201, ${nAlpha})` : `rgba(232, 67, 147, ${nAlpha})`;
           ctx.beginPath();
           ctx.arc(cosA * nDist, sinA * nDist, nSize, 0, Math.PI * 2);
           ctx.fill();
         }
       }
 
-      // Bordas laterais de fissura dimensional (aparecem progressivamente)
-      if (ratio > 0.3 && isMain) {
-        const edgeAlpha = (ratio - 0.3) * 1.4;
-        ctx.strokeStyle = `rgba(232, 67, 147, ${Math.min(0.6, edgeAlpha)})`;
-        ctx.lineWidth = 1.2;
+      // Bordas laterais de fissura dimensional (revelam a largura exata de impacto)
+      if (ratio > 0.25) {
+        const edgeAlpha = Math.min(0.65, (ratio - 0.25) * 1.5);
+        ctx.strokeStyle = isPhase3 ? `rgba(0, 206, 201, ${edgeAlpha})` : `rgba(232, 67, 147, ${edgeAlpha})`;
+        ctx.lineWidth = 1.3;
         for (let side = -1; side <= 1; side += 2) {
           ctx.beginPath();
           for (let seg = 0; seg <= 14; seg++) {
-            const d = (seg / 14) * beamLen * 0.9;
-            const jitter = Math.sin(d * 0.018 + frameCount * 0.2 + side) * 3;
+            const d = (seg / 14) * beamLen * 0.92;
+            const jitter = Math.sin(d * 0.018 + frameCount * 0.22 + side) * 3;
             const edgeX = cosA * d + perpX * (halfVisualW + jitter) * side;
             const edgeY = sinA * d + perpY * (halfVisualW + jitter) * side;
             if (seg === 0) ctx.moveTo(edgeX, edgeY);
@@ -2336,24 +2427,36 @@ export function drawAbyssSovereign(ctx, e, frameCount) {
     }
 
     // Disco focal de carga pré-corte no centro do chefe
-    const chargeR = 12 + ratio * 28 + Math.sin(frameCount * 0.45) * 5;
+    const chargeR = 14 + ratio * 30 + Math.sin(frameCount * 0.45) * 5;
     const focusGrad = ctx.createRadialGradient(0, 0, 3, 0, 0, chargeR);
     focusGrad.addColorStop(0, '#ffffff');
-    focusGrad.addColorStop(0.3, isLocked ? 'rgba(232, 67, 147, 0.95)' : 'rgba(0, 206, 201, 0.9)');
-    focusGrad.addColorStop(0.7, isLocked ? 'rgba(142, 68, 173, 0.5)' : 'rgba(108, 92, 231, 0.4)');
+    focusGrad.addColorStop(0.3, isPhase3 ? 'rgba(0, 206, 201, 0.95)' : 'rgba(232, 67, 147, 0.95)');
+    focusGrad.addColorStop(0.7, isPhase3 ? 'rgba(129, 236, 236, 0.55)' : 'rgba(142, 68, 173, 0.5)');
     focusGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = focusGrad;
     ctx.beginPath();
     ctx.arc(0, 0, chargeR, 0, Math.PI * 2);
     ctx.fill();
 
-    // Arco de energia concentrada na direção do corte (apenas para o feixe principal)
-    if (ratio > 0.5) {
-      const arcAlpha = (ratio - 0.5) * 2;
-      ctx.strokeStyle = `rgba(255, 255, 255, ${arcAlpha * 0.85})`;
-      ctx.lineWidth = 2.5;
+    // No Feixe Triplo, desenha 3 focos de plasma satélites na lente de disparo
+    if (isPhase3) {
+      for (let l = 0; l < aimAngles.length; l++) {
+        const satAng = aimAngles[l];
+        const satDist = chargeR * 0.75;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(Math.cos(satAng) * satDist, Math.sin(satAng) * satDist, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Arco de energia concentrada na direção do corte
+    if (ratio > 0.45) {
+      const arcAlpha = (ratio - 0.45) * 2;
+      ctx.strokeStyle = `rgba(255, 255, 255, ${arcAlpha * 0.9})`;
+      ctx.lineWidth = 2.8;
       ctx.beginPath();
-      ctx.arc(0, 0, chargeR + 6, baseAng - 0.4, baseAng + 0.4);
+      ctx.arc(0, 0, chargeR + 6, baseAng - (isPhase3 ? 0.55 : 0.35), baseAng + (isPhase3 ? 0.55 : 0.35));
       ctx.stroke();
     }
 
