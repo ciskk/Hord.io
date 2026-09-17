@@ -289,10 +289,11 @@ function renderStage() {
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.scale(dpr, dpr);
 
-  const isCompact = height < 260 || width < 260;
+  const isCompact = height < 250 || width < 250;
+  const isTall = height >= 310;
   const centerX = width / 2;
-  const centerY = isCompact ? height * 0.60 : height * 0.58;
-  const pedestalOffsetY = isCompact ? 26 : 36;
+  const centerY = isCompact ? height * 0.60 : (isTall ? height * 0.54 : height * 0.58);
+  const pedestalOffsetY = isCompact ? 26 : (isTall ? 38 : 36);
 
   const colors = THEME_COLORS[currentHeroKey] || THEME_COLORS.KNIGHT;
 
@@ -302,8 +303,8 @@ function renderStage() {
   // Halo atmosférico radial ao redor do herói
   const bgGlow = c.createRadialGradient(centerX, centerY - 20, 10, centerX, centerY - 10, width * 0.65);
   bgGlow.addColorStop(0, colors.glow);
-  bgGlow.addColorStop(0.55, 'rgba(10, 14, 24, 0.65)');
-  bgGlow.addColorStop(1, 'rgba(6, 8, 14, 0)');
+  bgGlow.addColorStop(0.55, 'rgba(18, 10, 36, 0.50)');
+  bgGlow.addColorStop(1, 'rgba(4, 5, 8, 0)');
   c.fillStyle = bgGlow;
   c.fillRect(0, 0, width, height);
 
@@ -316,13 +317,13 @@ function renderStage() {
   // 4. Partículas Elementais Flutuantes
   drawAtmosphericParticles(c, centerX, centerY + (isCompact ? 14 : 20), colors);
 
-  // 5. Renderização do Modelo do Herói em 3.0x (ou 2.45x em compact/mobile)
-  drawHeroInstance(c, centerX, centerY, colors, isCompact);
+  // 5. Renderização do Modelo do Herói em escala ampliada
+  drawHeroInstance(c, centerX, centerY, colors, isCompact, isTall);
 
   // Efeito de Vinheta Suave nas Bordas
   const vignette = c.createRadialGradient(centerX, height / 2, width * 0.45, centerX, height / 2, width * 0.75);
   vignette.addColorStop(0, 'rgba(0,0,0,0)');
-  vignette.addColorStop(1, 'rgba(7, 9, 15, 0.75)');
+  vignette.addColorStop(1, 'rgba(4, 5, 8, 0.75)');
   c.fillStyle = vignette;
   c.fillRect(0, 0, width, height);
 }
@@ -599,7 +600,7 @@ function drawAtmosphericParticles(c, x, y, colors) {
 /**
  * Renderiza o campeão central ampliado com todas as camadas e estados de postura.
  */
-function drawHeroInstance(c, x, y, colors, isCompact = false) {
+function drawHeroInstance(c, x, y, colors, isCompact = false, isTall = false) {
   const isSkill = currentPose === 'skill';
   const isCombat = currentPose === 'combat';
 
@@ -611,8 +612,8 @@ function drawHeroInstance(c, x, y, colors, isCompact = false) {
   const plumeSway = Math.sin(t * 0.07) * 2.8;
   const hairSway = Math.sin(t * 0.07) * 3.0;
 
-  // Escala ampliada (adaptável para telas menores)
-  const heroScale = isCompact ? 2.45 : 3.1;
+  // Escala ampliada (adaptável para telas menores e ampliada em telas verticais de destaque)
+  const heroScale = isCompact ? 2.5 : (isTall ? 3.35 : 3.1);
 
   // Pulso de energia da aura
   if (isSkill || surgeTimer > 0) {

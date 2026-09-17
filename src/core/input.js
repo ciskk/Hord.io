@@ -143,9 +143,22 @@ window.addEventListener('keydown', e => {
   initAudio();
   activeKeyCodes.add(e.code);
 
-  // Pausa com Esc ou P (ou fechar menu de bosses se estiver aberto)
+  // Pausa com Esc ou P (ou fechar menu de bosses/astrolábio se estiver aberto)
   if (e.code === 'Escape' || e.code === 'KeyP') {
     e.preventDefault();
+    const blessingsDrawer = document.getElementById('blessings-summary-drawer');
+    if (blessingsDrawer && blessingsDrawer.style.display === 'block') {
+      blessingsDrawer.style.display = 'none';
+      return;
+    }
+    const talentsModal = document.getElementById('talents-modal');
+    if (talentsModal && talentsModal.style.display !== 'none' && !talentsModal.classList.contains('modal-hidden')) {
+      const closeTalentsBtn = document.getElementById('close-talents-btn');
+      if (closeTalentsBtn) {
+        closeTalentsBtn.click();
+        return;
+      }
+    }
     const bossModal = document.getElementById('boss-select-modal');
     if (bossModal && bossModal.style.display === 'flex') {
       closeBossSelectModal();

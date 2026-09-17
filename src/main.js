@@ -467,7 +467,11 @@ export function resetGame() {
 
   const hideEl = id => {
     const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
+    if (el) {
+      el.classList.add('modal-hidden');
+      el.style.setProperty('display', 'none', 'important');
+      el.style.display = 'none';
+    }
   };
 
   hideEl('boss-hud');

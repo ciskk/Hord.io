@@ -130,10 +130,10 @@ export function launchBossTest(bossId, levelCount = 0) {
   closeBossSelectModal();
 
   const charModal = document.getElementById('char-modal');
-  const isCharOpen = charModal && charModal.style.display === 'flex';
+  const isCharOpen = charModal && charModal.style.display === 'flex' && !charModal.classList.contains('modal-hidden');
 
   if (isCharOpen) {
-    if (charModal) charModal.style.display = 'none';
+    closeCharSelectModal();
     resetGame();
   } else {
     const pauseModal = document.getElementById('pause-modal');
@@ -158,10 +158,10 @@ export function launchMiniBossTest(miniBossType, levelCount = 0) {
   closeBossSelectModal();
 
   const charModal = document.getElementById('char-modal');
-  const isCharOpen = charModal && charModal.style.display === 'flex';
+  const isCharOpen = charModal && charModal.style.display === 'flex' && !charModal.classList.contains('modal-hidden');
 
   if (isCharOpen) {
-    if (charModal) charModal.style.display = 'none';
+    closeCharSelectModal();
     resetGame();
   } else {
     const pauseModal = document.getElementById('pause-modal');
@@ -926,13 +926,27 @@ export function isMobileScreen() {
          /Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
 }
 
+export function closeCharSelectModal() {
+  stopPreview();
+  const charModal = document.getElementById('char-modal');
+  if (charModal) {
+    charModal.classList.add('modal-hidden');
+    charModal.style.setProperty('display', 'none', 'important');
+    charModal.style.display = 'none';
+  }
+}
+
 export function openCharacterSelect() {
   resetDeathAudioFilter();
   const bloodFilter = document.getElementById('blood-screen-filter');
   if (bloodFilter) bloodFilter.classList.remove('active');
 
   const talentsModal = document.getElementById('talents-modal');
-  if (talentsModal) talentsModal.style.display = 'none';
+  if (talentsModal) {
+    talentsModal.classList.add('modal-hidden');
+    talentsModal.style.setProperty('display', 'none', 'important');
+    talentsModal.style.display = 'none';
+  }
 
   const deathModal = document.getElementById('death-modal');
   if (deathModal) deathModal.style.display = 'none';
@@ -950,6 +964,10 @@ export function openCharacterSelect() {
   const pedestalsContainer = document.getElementById('char-pedestals');
   const showcaseContainer = document.getElementById('char-showcase');
   if (!charModal || !pedestalsContainer || !showcaseContainer) return;
+
+  charModal.classList.remove('modal-hidden');
+  charModal.style.removeProperty('display');
+  charModal.style.display = 'flex';
 
   // Detecção e aplicação de classe mobile para layout responsivo exclusivo
   const isMobile = isMobileScreen();
@@ -998,8 +1016,8 @@ export function openCharacterSelect() {
     if (badge) {
       badge.innerText = char.title.toUpperCase();
       badge.style.color = profile.themeColor;
-      badge.style.borderColor = `${profile.themeColor}88`;
-      badge.style.boxShadow = `0 0 14px ${profile.themeColor}33`;
+      badge.style.borderColor = `${profile.themeColor}aa`;
+      badge.style.boxShadow = `0 0 18px ${profile.themeColor}66`;
     }
 
     showcaseContainer.style.setProperty('--showcase-color', profile.themeColor);
@@ -1028,62 +1046,98 @@ export function openCharacterSelect() {
         <div class="showcase-role-tag">Função: <b>${char.role || 'Guerreiro'}</b></div>
       </div>
 
-      <!-- Bento Box Tático (Sem abas ocultas, tudo visível com clareza instantânea) -->
-      <div class="bento-tactical-grid">
-        <!-- Card 1: Arma Inicial -->
-        <div class="bento-card bento-card-weapon">
-          <div class="bento-card-top">
-            <span class="bento-type-tag">${renderIcon(WEAPON_ICONS[char.startingWeapon] || 'sword', { size: 10, color: profile.themeColor })} ARMA INICIAL</span>
-            <span class="bento-spec-badge" style="color: ${profile.themeColor}; border-color: ${profile.themeColor}55;">${char.weapon?.type || profile.weaponName}</span>
-          </div>
-          <div class="bento-card-title" style="color: ${profile.themeColor};">${char.weapon?.name || profile.weaponName}</div>
-          <div class="bento-card-desc">${char.weapon?.desc || ''}</div>
-        </div>
-
-        <!-- Card 2: Poder Ancestral -->
-        <div class="bento-card bento-card-skill">
-          <div class="bento-card-top">
-            <span class="bento-type-tag">${renderIcon('damage', { size: 10, color: profile.themeColor })} PODER ANCESTRAL</span>
-            <span class="bento-spec-badge bento-cd-badge">${renderIcon('timer', { size: 9 })} ${char.skill?.cooldown || '7s'}</span>
-          </div>
-          <div class="bento-card-title" style="color: ${profile.themeColor};">${char.skill?.name || 'Habilidade'}</div>
-          <div class="bento-card-desc">${char.skill?.desc || ''}</div>
-        </div>
-
-        <!-- Card 3: Bênção Passiva -->
-        <div class="bento-card bento-card-passive" style="border-color: ${profile.themeColor}35;">
-          <div class="bento-card-top">
-            <span class="bento-type-tag">${renderIcon('armor', { size: 10, color: profile.themeColor })} BÊNÇÃO PASSIVA</span>
-            <span class="bento-inline-title" style="color: ${profile.themeColor};">${char.passive?.name || 'Aura'}</span>
-          </div>
-          <div class="bento-card-desc">${char.passive?.desc || ''}</div>
-        </div>
-
-        <!-- Mini-Métricas de Biometria -->
-        <div class="bento-stats-container">
-          <div class="bento-attr-item"><span>DANO</span>${renderSegments(profile.levels.dano)}</div>
-          <div class="bento-attr-item"><span>ÁREA</span>${renderSegments(profile.levels.area)}</div>
-          <div class="bento-attr-item"><span>VEL</span>${renderSegments(profile.levels.vel)}</div>
-          <div class="bento-attr-item"><span>RES</span>${renderSegments(profile.levels.res)}</div>
-        </div>
+      <!-- Navegador Tático Mobile Exclusivo -->
+      <div class="showcase-mobile-nav">
+        <button class="showcase-tab-btn ${activeMobileTab === 'skills' ? 'active' : ''}" data-tab="skills">
+          ${renderIcon('sword', { size: 11, color: activeMobileTab === 'skills' ? profile.themeColor : '#8c94a8' })} COMBATE
+        </button>
+        <button class="showcase-tab-btn ${activeMobileTab === 'stats' ? 'active' : ''}" data-tab="stats">
+          ${renderIcon('armor', { size: 11, color: activeMobileTab === 'stats' ? profile.themeColor : '#8c94a8' })} BIOGRAFIA & LORE
+        </button>
       </div>
 
-      <!-- Citação de Lore (Desktop) -->
-      <div class="showcase-lore-quote desktop-only-lore">
-        “${char.lore || ''}”
+      <!-- Bento Box Tático Responsivo -->
+      <div class="bento-tactical-grid" data-active-tab="${activeMobileTab}">
+        <!-- Bloco 1: Arsenal & Habilidades -->
+        <div class="bento-tab-pane bento-pane-skills ${activeMobileTab === 'skills' ? 'tab-visible' : ''}">
+          <!-- Card 1: Arma Inicial -->
+          <div class="bento-card bento-card-weapon">
+            <div class="bento-card-top">
+              <span class="bento-type-tag">${renderIcon(WEAPON_ICONS[char.startingWeapon] || 'sword', { size: 10, color: profile.themeColor })} ARMA INICIAL</span>
+              <span class="bento-spec-badge" style="color: ${profile.themeColor}; border-color: ${profile.themeColor}55;">${char.weapon?.type || profile.weaponName}</span>
+            </div>
+            <div class="bento-card-title" style="color: ${profile.themeColor};">${char.weapon?.name || profile.weaponName}</div>
+            <div class="bento-card-desc">${char.weapon?.desc || ''}</div>
+          </div>
+
+          <!-- Card 2: Poder Ancestral -->
+          <div class="bento-card bento-card-skill">
+            <div class="bento-card-top">
+              <span class="bento-type-tag">${renderIcon('damage', { size: 10, color: profile.themeColor })} PODER ANCESTRAL</span>
+              <span class="bento-spec-badge bento-cd-badge">${renderIcon('timer', { size: 9 })} ${char.skill?.cooldown || '7s'}</span>
+            </div>
+            <div class="bento-card-title" style="color: ${profile.themeColor};">${char.skill?.name || 'Habilidade'}</div>
+            <div class="bento-card-desc">${char.skill?.desc || ''}</div>
+          </div>
+
+          <!-- Card 3: Bênção Passiva -->
+          <div class="bento-card bento-card-passive" style="border-color: ${profile.themeColor}35;">
+            <div class="bento-card-top">
+              <span class="bento-type-tag">${renderIcon('armor', { size: 10, color: profile.themeColor })} BÊNÇÃO PASSIVA</span>
+              <span class="bento-inline-title" style="color: ${profile.themeColor};">${char.passive?.name || 'Aura'}</span>
+            </div>
+            <div class="bento-card-desc">${char.passive?.desc || ''}</div>
+          </div>
+
+          <!-- Card 4 (Mobile Unificado): Medidores Rápidos de Atributos -->
+          <div class="bento-mobile-stats-row">
+            <div class="bento-stats-container bento-stats-compact">
+              <div class="bento-attr-item"><span>DANO</span>${renderSegments(profile.levels.dano)}</div>
+              <div class="bento-attr-item"><span>ÁREA</span>${renderSegments(profile.levels.area)}</div>
+              <div class="bento-attr-item"><span>VEL</span>${renderSegments(profile.levels.vel)}</div>
+              <div class="bento-attr-item"><span>RES</span>${renderSegments(profile.levels.res)}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bloco 2: Atributos & Biometria -->
+        <div class="bento-tab-pane bento-pane-stats ${activeMobileTab === 'stats' ? 'tab-visible' : ''}">
+          <div class="bento-stats-container">
+            <div class="bento-attr-item"><span>DANO</span>${renderSegments(profile.levels.dano)}</div>
+            <div class="bento-attr-item"><span>ÁREA</span>${renderSegments(profile.levels.area)}</div>
+            <div class="bento-attr-item"><span>VEL</span>${renderSegments(profile.levels.vel)}</div>
+            <div class="bento-attr-item"><span>RES</span>${renderSegments(profile.levels.res)}</div>
+          </div>
+
+          <!-- Citação de Lore Imersiva -->
+          <div class="showcase-lore-quote">
+            “${char.lore || ''}”
+          </div>
+        </div>
       </div>
 
       <button class="card-btn btn-summon-hero" id="confirm-hero-btn">
-        ${renderIcon('damage', { size: 12, style: 'margin-right:4px;' })} DESPERTAR NA ARENA ${renderIcon('damage', { size: 12, style: 'margin-left:4px;' })}
+        ${renderIcon('damage', { size: 13, style: 'margin-right:6px;' })} DESPERTAR NO VÁCUO ${renderIcon('damage', { size: 13, style: 'margin-left:6px;' })}
       </button>
     `;
 
+    // Eventos das Abas Mobile
+    const tabBtns = showcaseContainer.querySelectorAll('.showcase-tab-btn');
+    tabBtns.forEach(tBtn => {
+      tBtn.onclick = () => {
+        activeMobileTab = tBtn.getAttribute('data-tab');
+        try { playSfx('card_hover'); } catch(e) {}
+        triggerHaptic('light');
+        renderShowcase(heroKey);
+      };
+    });
+
     const confirmBtn = document.getElementById('confirm-hero-btn');
     if (confirmBtn) {
+      confirmBtn.style.setProperty('--btn-theme-color', profile.themeColor);
       confirmBtn.onclick = () => {
-        stopPreview();
         setSelectedHeroKey(heroKey);
-        charModal.style.display = 'none';
+        closeCharSelectModal();
         resetGame();
         try { playSfx('warp'); } catch(e) {}
       };
@@ -1106,6 +1160,7 @@ export function openCharacterSelect() {
     const btn = document.createElement('div');
     btn.className = `char-pedestal-btn ${key === activeShowcaseHeroKey ? 'active' : ''}`;
     btn.setAttribute('data-hero', key);
+    btn.setAttribute('title', `${c.name} (${c.title})`);
     btn.style.setProperty('--btn-theme-color', profile.themeColor);
     btn.innerHTML = `
       <div class="char-pedestal-emblem" style="border-color: ${profile.themeColor}; color: ${profile.themeColor};">
@@ -1116,12 +1171,16 @@ export function openCharacterSelect() {
         <div class="char-pedestal-name">${c.name}</div>
         <div class="char-pedestal-role-mini">${c.role || ''} · <span class="mini-diff" style="color: ${profile.themeColor};">${miniDots}</span></div>
       </div>
-      <div class="pedestal-active-glow" style="background: ${profile.themeColor};"></div>
+      <div class="pedestal-active-glow" style="background: ${profile.themeColor}; box-shadow: 0 0 12px ${profile.themeColor};"></div>
     `;
 
     btn.onclick = () => {
       try { playSfx('card_hover'); } catch(e) {}
+      triggerHaptic('light');
       renderShowcase(key);
+      if (btn.scrollIntoView) {
+        btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
     };
 
     pedestalsContainer.appendChild(btn);
@@ -1358,22 +1417,22 @@ const ASTROLABE_NODE_COORDS = {
 // Coordenadas Mobile: Pilares Celestes Verticais Ergonômicos (Toque Amplo & Sem Embolamento)
 const ASTROLABE_MOBILE_COORDS = {
   // Guerra (Pilar de 4 nós)
-  damage:   { x: 50, y: 76, parentId: null },
-  crit:     { x: 26, y: 46, parentId: 'damage' },
-  cooldown: { x: 74, y: 46, parentId: 'damage' },
-  execute:  { x: 50, y: 16, parentId: 'crit' },
+  damage:   { x: 50, y: 78, parentId: null },
+  crit:     { x: 28, y: 48, parentId: 'damage' },
+  cooldown: { x: 72, y: 48, parentId: 'damage' },
+  execute:  { x: 50, y: 18, parentId: 'crit' },
 
   // Égide (Pilar de 5 nós)
-  hp:       { x: 50, y: 78, parentId: null },
-  armor:    { x: 26, y: 50, parentId: 'hp' },
-  speed:    { x: 74, y: 50, parentId: 'hp' },
+  hp:       { x: 50, y: 80, parentId: null },
+  armor:    { x: 26, y: 52, parentId: 'hp' },
+  speed:    { x: 74, y: 52, parentId: 'hp' },
   regen:    { x: 26, y: 22, parentId: 'armor' },
   phoenix:  { x: 74, y: 18, parentId: 'speed' },
 
   // Destino (Pilar de 5 nós)
-  magnet:   { x: 50, y: 78, parentId: null },
-  gold:     { x: 26, y: 50, parentId: 'magnet' },
-  xp:       { x: 74, y: 50, parentId: 'magnet' },
+  magnet:   { x: 50, y: 80, parentId: null },
+  gold:     { x: 26, y: 52, parentId: 'magnet' },
+  xp:       { x: 74, y: 52, parentId: 'magnet' },
   reroll:   { x: 26, y: 22, parentId: 'gold' },
   transmute:{ x: 74, y: 18, parentId: 'xp' }
 };
@@ -1382,9 +1441,7 @@ let selectedAstrolabeNodeId = 'damage';
 let activeConstellationFilter = 'all'; // 'all' | 'guerra' | 'egide' | 'destino'
 
 export function openTalentsModal() {
-  stopPreview();
-  const charModal = document.getElementById('char-modal');
-  if (charModal) charModal.style.display = 'none';
+  closeCharSelectModal();
 
   const modal = document.getElementById('talents-modal');
   const nodesContainer = document.getElementById('astrolabe-nodes-container');
@@ -1399,6 +1456,8 @@ export function openTalentsModal() {
 
   if (isMobile && (activeConstellationFilter === 'all' || !activeConstellationFilter)) {
     activeConstellationFilter = 'guerra';
+    const firstInConst = META_TALENTS.find(t => t.constellation === 'guerra');
+    if (firstInConst) selectedAstrolabeNodeId = firstInConst.id;
   }
 
   // Configuração das Abas de Constelação
@@ -1423,7 +1482,10 @@ export function openTalentsModal() {
   });
 
   function renderAstrolabe() {
-    if (goldVal) goldVal.innerText = getPersistentGold();
+    const currentGold = getPersistentGold();
+    if (goldVal) goldVal.innerText = currentGold;
+    const coreGold = document.getElementById('talents-core-gold-val');
+    if (coreGold) coreGold.innerText = currentGold;
     nodesContainer.innerHTML = '';
 
     const levels = getMetaLevels();
@@ -1431,6 +1493,13 @@ export function openTalentsModal() {
     const coordsMap = isMobileNow ? ASTROLABE_MOBILE_COORDS : ASTROLABE_NODE_COORDS;
     const centerX = 50;
     const centerY = 50;
+
+    // Se for mobile e ainda estiver 'all', redirecionar para 'guerra'
+    if (isMobileNow && activeConstellationFilter === 'all') {
+      activeConstellationFilter = 'guerra';
+      const firstInConst = META_TALENTS.find(t => t.constellation === 'guerra');
+      if (firstInConst) selectedAstrolabeNodeId = firstInConst.id;
+    }
 
     // Se for mobile, focar na constelação ativa para manter o pilar despoluído e legível
     const talentsToRender = (isMobileNow && activeConstellationFilter !== 'all')
@@ -1440,16 +1509,28 @@ export function openTalentsModal() {
     // Atualiza badges numéricas das abas com contagem de níveis investidos
     tabBtns.forEach(btn => {
       const c = btn.getAttribute('data-constellation');
+      btn.classList.toggle('active', c === activeConstellationFilter);
       if (c && c !== 'all') {
         const cTalents = META_TALENTS.filter(t => t.constellation === c);
         const spent = cTalents.reduce((acc, t) => acc + (levels[t.id] || 0), 0);
         const max = cTalents.reduce((acc, t) => acc + t.maxLvl, 0);
         const countSpan = btn.querySelector('.tab-prog-badge');
         if (countSpan) {
-          countSpan.innerText = `(${spent}/${max})`;
+          countSpan.innerText = isMobileNow ? `${spent}/${max}` : `${spent}/${max} Níveis`;
         }
       }
     });
+
+    const stageBadge = document.getElementById('astrolabe-active-const-badge');
+    if (stageBadge) {
+      const badgeNames = {
+        all: 'PLANETÁRIO CELESTE',
+        guerra: 'CONSTELAÇÃO DA GUERRA',
+        egide: 'CONSTELAÇÃO DA ÉGIDE',
+        destino: 'CONSTELAÇÃO DO DESTINO'
+      };
+      stageBadge.innerText = badgeNames[activeConstellationFilter] || 'PLANETÁRIO CELESTE';
+    }
 
     // 1. Renderização das linhas de filamento SVG interconectadas
     if (filamentsSvg) {
@@ -1547,10 +1628,22 @@ export function openTalentsModal() {
     const cost = getMetaUpgradeCost(activeTalent.id, curLvl);
     const canAfford = getPersistentGold() >= cost && !isMax && !isLocked;
 
+    // Cores dinâmicas da constelação para a identidade visual Void Astral
+    const constColors = {
+      guerra: '#e74c3c',
+      egide: '#2ecc71',
+      destino: '#a855f7'
+    };
+    const activeColor = constColors[activeTalent.constellation] || '#ffd166';
+    modal.style.setProperty('--showcase-color', activeColor);
+    modal.style.setProperty('--constellation-color', activeColor);
+
     const constBadge = document.getElementById('forge-constellation-badge');
     const tierBadge = document.getElementById('forge-tier-badge');
     const nameElem = document.getElementById('forge-node-name');
     const descElem = document.getElementById('forge-node-desc');
+    const statBadge = document.getElementById('forge-stat-badge');
+    const levelLabel = document.getElementById('forge-node-level-label');
     const loreElem = document.getElementById('forge-node-lore');
     const compCur = document.getElementById('forge-comp-current');
     const compNext = document.getElementById('forge-comp-next');
@@ -1561,32 +1654,49 @@ export function openTalentsModal() {
       const names = { guerra: 'CONSTELAÇÃO DA GUERRA', egide: 'CONSTELAÇÃO DA ÉGIDE', destino: 'CONSTELAÇÃO DO DESTINO' };
       const iconKey = activeTalent.constellation === 'guerra' ? 'constellation_guerra' : (activeTalent.constellation === 'egide' ? 'constellation_egide' : 'constellation_destino');
       constBadge.innerHTML = `${renderIcon(iconKey, { size: 13, style: 'margin-right:5px;' })} ${names[activeTalent.constellation] || 'CONSTELAÇÃO ASTRAL'}`;
-      constBadge.className = `forge-constellation-badge badge-${activeTalent.constellation}`;
+      constBadge.className = `showcase-archetype-pill badge-${activeTalent.constellation}`;
+      constBadge.style.color = activeColor;
+      constBadge.style.borderColor = activeColor;
     }
 
     if (tierBadge) {
       tierBadge.innerHTML = activeTalent.isKeystone 
-        ? `${renderIcon('keystone', { size: 12, color: '#f1c40f', style: 'margin-right:4px;' })} TALENTO MESTRE (KEYSTONE)` 
-        : `TIER ${activeTalent.tier} · NÍVEL ${curLvl}/${activeTalent.maxLvl}`;
+        ? `${renderIcon('keystone', { size: 12, color: '#f1c40f', style: 'margin-right:4px;' })} TALENTO MESTRE` 
+        : `TIER ${activeTalent.tier}`;
+    }
+
+    if (statBadge) {
+      statBadge.innerText = activeTalent.statLabel ? activeTalent.statLabel.toUpperCase() : 'BÊNÇÃO';
+      statBadge.style.color = activeColor;
+      statBadge.style.borderColor = `${activeColor}66`;
+    }
+
+    if (levelLabel) {
+      levelLabel.innerText = isMax ? 'APOGEU (MÁX)' : `NÍVEL ${curLvl}/${activeTalent.maxLvl}`;
     }
 
     if (nameElem) nameElem.innerText = activeTalent.name;
     if (descElem) descElem.innerText = activeTalent.desc;
     if (loreElem) loreElem.innerText = activeTalent.lore ? `“${activeTalent.lore}”` : '';
+    const loreCard = document.getElementById('forge-node-lore-card');
+    if (loreCard) {
+      loreCard.style.display = activeTalent.lore ? 'flex' : 'none';
+    }
 
     if (compCur) compCur.innerText = activeTalent.formatVal(curLvl);
-    if (compNext) compNext.innerText = isMax ? 'APOGEU (MÁX)' : activeTalent.formatVal(curLvl + 1);
+    if (compNext) compNext.innerText = isMax ? 'MÁX' : activeTalent.formatVal(curLvl + 1);
 
     if (meterElem) {
-      let meterHtml = '<div class="forge-diamonds-bar">';
+      let meterHtml = '<div class="segmented-meter">';
       for (let i = 1; i <= activeTalent.maxLvl; i++) {
-        meterHtml += `<div class="forge-diamond-pip ${i <= curLvl ? 'filled' : ''}"></div>`;
+        meterHtml += `<div class="segment-cell ${i <= curLvl ? 'filled' : ''}"></div>`;
       }
       meterHtml += '</div>';
       meterElem.innerHTML = meterHtml;
     }
 
     if (buyBtn) {
+      buyBtn.style.setProperty('--btn-theme-color', activeColor);
       if (isLocked) {
         buyBtn.disabled = true;
         const parentT = META_TALENTS.find(p => p.id === activeTalent.parent);
@@ -1597,8 +1707,8 @@ export function openTalentsModal() {
       } else {
         buyBtn.disabled = !canAfford;
         buyBtn.innerHTML = canAfford
-          ? `${renderIcon('damage', { size: 13, style: 'margin-right:4px;' })} FUNDIR ALMAS • ${renderIcon('soul_coin', { size: 12, color: '#f1c40f', style: 'margin-right:2px;' })} ${cost}`
-          : `${renderIcon('soul_coin', { size: 12, color: '#f1c40f', style: 'margin-right:2px;' })} ${cost} (FALTAM ${cost - getPersistentGold()} ALMAS)`;
+          ? `${renderIcon('damage', { size: 13, style: 'margin-right:4px;' })} FUNDIR ALMAS • ${renderIcon('soul_coin', { size: 12, color: '#ffd166', style: 'margin-right:2px;' })} ${cost}`
+          : `${renderIcon('soul_coin', { size: 12, color: '#ffd166', style: 'margin-right:2px;' })} ${cost} (FALTAM ${cost - getPersistentGold()} ALMAS)`;
         buyBtn.onclick = () => {
           if (buyMetaUpgrade(activeTalent.id)) {
             try { playSfx('level'); } catch(e) {}
@@ -1612,6 +1722,8 @@ export function openTalentsModal() {
 
   activeRenderAstrolabe = renderAstrolabe;
   renderAstrolabe();
+  modal.classList.remove('modal-hidden');
+  modal.style.removeProperty('display');
   modal.style.display = 'flex';
 }
 
@@ -1673,7 +1785,11 @@ export function initUI() {
   bindClick('close-talents-btn', () => {
     activeRenderAstrolabe = null;
     const talentsModal = document.getElementById('talents-modal');
-    if (talentsModal) talentsModal.style.display = 'none';
+    if (talentsModal) {
+      talentsModal.classList.add('modal-hidden');
+      talentsModal.style.setProperty('display', 'none', 'important');
+      talentsModal.style.display = 'none';
+    }
     const blessingsDrawer = document.getElementById('blessings-summary-drawer');
     if (blessingsDrawer) blessingsDrawer.style.display = 'none';
     openCharacterSelect();
