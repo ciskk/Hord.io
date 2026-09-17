@@ -588,8 +588,8 @@ function update(dt) {
       const ventX = player.x - player.facing * 9;
       const ventY = player.y - 14;
       const pColor = (player.alchemistSkillTimer > 0 || (player.alchemistBuffTimer || 0) > 0)
-        ? (player.evolvedPotion ? '#81ecec' : '#55efc4')
-        : (player.evolvedPotion ? '#00cec9' : '#2ecc71');
+        ? (player.evolvedPotion ? '#e056fd' : '#d6a2e8')
+        : (player.evolvedPotion ? '#a29bfe' : '#9b59b6');
       createHitParticles(ventX, ventY, pColor, (player.alchemistSkillTimer > 0) ? 3 : 1);
     }
 
@@ -597,7 +597,7 @@ function update(dt) {
     if (player.alchemistBuffTimer > 0) {
       player.alchemistBuffTimer -= dt;
       if (Math.floor(frameCount) % 6 === 0) {
-        createHitParticles(player.x + (Math.random() - 0.5) * 14, player.y + 6, '#55efc4', 1);
+        createHitParticles(player.x + (Math.random() - 0.5) * 14, player.y + 6, '#d6a2e8', 1);
       }
     }
 

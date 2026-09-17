@@ -33,7 +33,7 @@ const THEME_COLORS = {
   MAGE: { primary: '#ff7675', secondary: '#d35400', glow: 'rgba(231, 76, 60, 0.40)' },
   ROGUE: { primary: '#00cec9', secondary: '#16a085', glow: 'rgba(0, 206, 201, 0.38)' },
   BARBARIAN: { primary: '#e74c3c', secondary: '#c0392b', glow: 'rgba(231, 76, 60, 0.45)' },
-  ALCHEMIST: { primary: '#2ecc71', secondary: '#00cec9', glow: 'rgba(46, 204, 113, 0.38)' }
+  ALCHEMIST: { primary: '#9b59b6', secondary: '#8e44ad', glow: 'rgba(155, 89, 182, 0.40)' }
 };
 
 /**
@@ -497,14 +497,14 @@ function drawAtmosphericParticles(c, x, y, colors) {
     c.beginPath();
 
     if (currentHeroKey === 'ALCHEMIST') {
-      // Bolhas químicas iridescent com aro translúcido e reflexo especular
-      c.arc(x + p.x, y + p.y, p.size * 1.2, 0, Math.PI * 2);
-      c.fillStyle = colors.secondary;
-      c.globalAlpha = Math.max(0, p.alpha * 0.35);
+      // Bolhas químicas iridescentes com aro translúcido (alternando esmeralda e violeta)
+      c.arc(x + p.x, y + p.y, p.size * 1.25, 0, Math.PI * 2);
+      c.fillStyle = i % 2 === 0 ? colors.secondary : '#b967ff';
+      c.globalAlpha = Math.max(0, p.alpha * 0.38);
       c.fill();
-      c.strokeStyle = colors.primary;
-      c.lineWidth = 0.9;
-      c.globalAlpha = Math.max(0, p.alpha * 0.75);
+      c.strokeStyle = i % 2 === 0 ? colors.primary : '#d6a2e8';
+      c.lineWidth = 1.0;
+      c.globalAlpha = Math.max(0, p.alpha * 0.85);
       c.stroke();
       // Ponto de luz da bolha
       c.fillStyle = '#ffffff';
@@ -512,9 +512,81 @@ function drawAtmosphericParticles(c, x, y, colors) {
       c.arc(x + p.x - p.size * 0.35, y + p.y - p.size * 0.35, p.size * 0.35, 0, Math.PI * 2);
       c.fill();
     } else if (currentHeroKey === 'MAGE') {
-      // Brasas pontiagudas
-      c.ellipse(x + p.x, y + p.y, p.size * 0.7, p.size * 1.3, 0, 0, Math.PI * 2);
+      // Brasas de Fênix e labaredas em espiral térmica ascendente
+      c.save();
+      c.translate(x + p.x, y + p.y);
+      c.rotate(previewTime * 0.05 + p.seed);
+      const flameS = p.size * 1.15;
+      c.fillStyle = i % 3 === 0 ? '#ff4757' : (i % 3 === 1 ? '#e67e22' : '#f1c40f');
+      c.beginPath();
+      c.moveTo(0, -flameS * 1.5);
+      c.quadraticCurveTo(flameS * 0.9, -flameS * 0.3, flameS * 0.6, flameS * 0.8);
+      c.quadraticCurveTo(0, flameS * 1.2, -flameS * 0.6, flameS * 0.8);
+      c.quadraticCurveTo(-flameS * 0.9, -flameS * 0.3, 0, -flameS * 1.5);
+      c.closePath();
       c.fill();
+      // Núcleo branco incandescente
+      c.fillStyle = '#ffffff';
+      c.beginPath();
+      c.arc(0, flameS * 0.2, flameS * 0.35, 0, Math.PI * 2);
+      c.fill();
+      c.restore();
+    } else if (currentHeroKey === 'BARBARIAN') {
+      // Brasas de fúria e vapor nórdico em rotação
+      c.save();
+      c.translate(x + p.x, y + p.y);
+      c.rotate(previewTime * 0.06 + p.seed);
+      c.fillStyle = i % 3 === 0 ? '#ff7675' : (i % 3 === 1 ? '#f39c12' : '#ffffff');
+      c.fillRect(-p.size * 0.7, -p.size * 0.7, p.size * 1.4, p.size * 1.4);
+      c.restore();
+    } else if (currentHeroKey === 'KNIGHT') {
+      // Centelhas sagradas e poeira estelar dourada (estrelas de 4 pontas reluzentes)
+      c.save();
+      c.translate(x + p.x, y + p.y);
+      c.rotate(previewTime * 0.04 + p.seed);
+      const s = p.size * 1.05;
+      c.fillStyle = i % 3 === 0 ? '#ffeaa7' : (i % 3 === 1 ? '#fbc531' : '#ffffff');
+      c.beginPath();
+      c.moveTo(0, -s * 1.6);
+      c.lineTo(s * 0.45, -s * 0.35);
+      c.lineTo(s * 1.6, 0);
+      c.lineTo(s * 0.45, s * 0.35);
+      c.lineTo(0, s * 1.6);
+      c.lineTo(-s * 0.45, s * 0.35);
+      c.lineTo(-s * 1.6, 0);
+      c.lineTo(-s * 0.45, -s * 0.35);
+      c.closePath();
+      c.fill();
+      c.restore();
+    } else if (currentHeroKey === 'ROGUE') {
+      // Wisps de névoa espectral e fragmentos afiados de lâmina astral
+      c.save();
+      c.translate(x + p.x, y + p.y);
+      c.rotate(previewTime * 0.08 + p.seed);
+      if (i % 2 === 0) {
+        // Fragmento afiado de lâmina astral
+        const ls = p.size * 1.2;
+        c.fillStyle = i % 4 === 0 ? '#00ffff' : '#00cec9';
+        c.beginPath();
+        c.moveTo(0, -ls * 1.8);
+        c.lineTo(ls * 0.4, 0);
+        c.lineTo(0, ls * 1.8);
+        c.lineTo(-ls * 0.4, 0);
+        c.closePath();
+        c.fill();
+        c.fillStyle = '#ffffff';
+        c.fillRect(-0.4, -ls * 0.5, 0.8, ls);
+      } else {
+        // Voluta de névoa espectral em espiral
+        c.fillStyle = 'rgba(0, 206, 201, 0.45)';
+        c.beginPath();
+        c.arc(0, 0, p.size * 1.3, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = '#16a085';
+        c.lineWidth = 0.8;
+        c.stroke();
+      }
+      c.restore();
     } else {
       // Fagulhas circulares
       c.arc(x + p.x, y + p.y, p.size, 0, Math.PI * 2);
@@ -576,6 +648,7 @@ function drawHeroInstance(c, x, y, colors, isCompact = false) {
 
     isBerserk: (isSkill || isCombat) && currentHeroKey === 'BARBARIAN',
     berserkTimer: isSkill && currentHeroKey === 'BARBARIAN' ? 120 : 0,
+    showDorsalAxe: currentHeroKey === 'BARBARIAN',
 
     isPhasing: isSkill && currentHeroKey === 'ROGUE',
     invisTimer: isSkill && currentHeroKey === 'ROGUE' ? 60 : 0,
@@ -589,7 +662,7 @@ function drawHeroInstance(c, x, y, colors, isCompact = false) {
     isAlchemistCombat: isCombat && currentHeroKey === 'ALCHEMIST',
     alchemistSkillTimer: isSkill && currentHeroKey === 'ALCHEMIST' ? 60 : 0,
 
-    fluidColor: isSkill ? '#00cec9' : '#2ecc71',
+    fluidColor: isSkill ? '#a29bfe' : '#9b59b6',
     evolvedPotion: isSkill
   };
 
