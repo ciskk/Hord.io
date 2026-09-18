@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Hord.io">
   <meta name="theme-color" content="#0a0c10">
   <meta name="mobile-web-app-capable" content="yes">
@@ -138,6 +138,17 @@
       </div>
     </div>
   </div>
+  <!-- Banner de Citação Cinemática dos Chefes (Boss Barks) -->
+  <div id="boss-bark-container" class="boss-bark-container" style="display: none;">
+    <div class="boss-bark-box">
+      <div class="boss-bark-speaker-row">
+        <span class="boss-bark-emblem">💀</span>
+        <span id="boss-bark-speaker" class="boss-bark-speaker">LORDE VAMPÍRICO</span>
+        <span id="boss-bark-phase-tag" class="boss-bark-phase-tag">SURGIMENTO</span>
+      </div>
+      <div id="boss-bark-text" class="boss-bark-text">“A noite tem sede... e vosso sangue saciará o trono.”</div>
+    </div>
+  </div>
 </div>
 
 <canvas id="game-canvas"></canvas>
@@ -146,20 +157,28 @@
 <div id="char-modal" class="modal-overlay void-astral-overlay" style="display: flex;">
   <div class="modal-box modal-box-altar void-modal-box">
     <div class="modal-header void-modal-header">
-      <div class="void-header-info">
-        <div class="void-header-eyebrow">
-          <span class="void-pulsing-node"></span> ARQUÉTIPOS ANCESTRAIS
+      <div class="void-header-top-row">
+        <div class="void-header-info">
+          <div class="void-header-eyebrow">
+            <span class="void-pulsing-node"></span> ARQUÉTIPOS ANCESTRAIS
+          </div>
+          <h2 class="modal-header-title void-modal-title">ALTAR DO VÁCUO ASTRAL</h2>
+          <div class="modal-header-sub void-modal-sub">Sintonize com uma entidade primordial para desafiar a horda</div>
         </div>
-        <h2 class="modal-header-title void-modal-title">ALTAR DO VÁCUO ASTRAL</h2>
-        <div class="modal-header-sub void-modal-sub">Sintonize com uma entidade primordial para desafiar a horda</div>
-      </div>
-      <div class="char-modal-header-actions">
         <div class="char-souls-counter void-souls-capsule" title="Almas Cósmicas para o Astrolábio">
           <svg class="inline-gold-icon" viewBox="0 0 24 24"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="#00f5d4" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#00f5d4"/></svg>
           <span id="char-souls-val">0</span>
         </div>
+      </div>
+      <div class="char-modal-header-actions">
+        <button id="open-bestiary-btn" class="hud-btn void-astrolabe-btn btn-bestiary-nav" title="Abrir Códice do Bestiário" style="border-color: #00f5d4aa; color: #00f5d4;">
+          <svg class="inline-gold-icon" viewBox="0 0 24 24" style="margin-right: 4px;"><path fill="none" stroke="#00f5d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path fill="none" stroke="#00f5d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><circle cx="12" cy="9" r="2" fill="#00f5d4"/></svg><span class="nav-btn-label">BESTIÁRIO</span>
+        </button>
+        <button id="open-achievements-btn" class="hud-btn void-astrolabe-btn btn-achievements-nav" title="Abrir Grimório de Conquistas" style="border-color: #a29bfeaa; color: #a29bfe;">
+          <svg class="inline-gold-icon" viewBox="0 0 24 24" style="margin-right: 4px;"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="#a29bfe" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#a29bfe"/></svg><span class="nav-btn-label">CONQUISTAS</span>
+        </button>
         <button id="open-talents-btn" class="hud-btn void-astrolabe-btn" title="Abrir Astrolábio das Almas">
-          <svg class="inline-gold-icon" viewBox="0 0 24 24" style="margin-right: 4px;"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="#ffd166" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#ffd166"/></svg>ASTROLÁBIO
+          <svg class="inline-gold-icon" viewBox="0 0 24 24" style="margin-right: 4px;"><polygon points="12,1 15,9 23,12 15,15 12,23 9,15 1,12 9,9" fill="none" stroke="#ffd166" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#ffd166"/></svg><span class="nav-btn-label">ASTROLÁBIO</span>
         </button>
       </div>
     </div>
@@ -393,6 +412,80 @@
         </button>
       </div>
       <div id="blessings-summary-grid" class="blessings-summary-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal do Grimório de Conquistas & Desbloqueios -->
+<div id="achievements-modal" class="modal-overlay void-astral-overlay" style="display: none;">
+  <div class="modal-box modal-box-altar void-modal-box achievements-void-box">
+    <div class="modal-header void-modal-header achievements-header">
+      <button class="hud-btn void-astrolabe-action-btn btn-void-return" id="close-achievements-btn" title="Retornar ao Altar" aria-label="Voltar">
+        <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="margin-right:4px;"><polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="btn-text-full">RETORNAR</span>
+      </button>
+      <div class="void-header-info achievements-header-info">
+        <div class="void-header-eyebrow">
+          <span class="void-pulsing-node" style="background:#a29bfe; box-shadow: 0 0 8px #a29bfe;"></span> CÓDICE DOS CONDENADOS
+        </div>
+        <h2 class="modal-header-title void-modal-title" style="color: #a29bfe; text-shadow: 0 0 16px rgba(162, 155, 254, 0.5);">GRIMÓRIO DE CONQUISTAS</h2>
+        <div class="modal-header-sub void-modal-sub">Metas ancestrais para libertar novos heróis e consagrar sua lenda</div>
+      </div>
+      <div class="char-modal-header-actions achievements-header-actions">
+        <div class="char-souls-counter void-souls-capsule" title="Conquistas Concluídas">
+          <svg class="inline-gold-icon" viewBox="0 0 24 24"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="#ffd166" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#ffd166"/></svg>
+          <span id="achievements-unlocked-count">0</span> / <span id="achievements-total-count">8</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de Cards de Conquistas com scroll elegante -->
+    <div class="achievements-modal-body">
+      <div id="achievements-list-grid" class="achievements-cards-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal do Códice do Bestiário das Trevas -->
+<div id="bestiary-modal" class="modal-overlay void-astral-overlay modal-hidden" style="display: none;">
+  <div class="modal-box modal-box-altar void-modal-box bestiary-void-box">
+    <div class="modal-header void-modal-header bestiary-header">
+      <button class="hud-btn void-astrolabe-action-btn btn-void-return" id="close-bestiary-btn" title="Retornar ao Altar" aria-label="Voltar">
+        <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="margin-right:4px;"><polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="btn-text-full">RETORNAR</span>
+      </button>
+      <div class="void-header-info bestiary-header-info">
+        <div class="void-header-eyebrow">
+          <span class="void-pulsing-node" style="background:#00f5d4; box-shadow: 0 0 8px #00f5d4;"></span> ARQUIVISTA DAS TREVAS
+        </div>
+        <h2 class="modal-header-title void-modal-title" style="color: #00f5d4; text-shadow: 0 0 16px rgba(0, 245, 212, 0.5);">CÓDICE DO BESTIÁRIO</h2>
+        <div class="modal-header-sub void-modal-sub">Anatomia, fraquezas táticas e origens profanas das abominações do Abismo</div>
+      </div>
+      <div class="char-modal-header-actions bestiary-header-actions">
+        <div class="char-souls-counter void-souls-capsule" title="Criaturas Catalogadas">
+          <svg class="inline-gold-icon" viewBox="0 0 24 24"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="#00f5d4" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#00f5d4"/></svg>
+          <span id="bestiary-discovered-count">0</span> / <span id="bestiary-total-count">30</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navegação de Categorias do Bestiário -->
+    <div class="bestiary-tabs-bar">
+      <button class="bestiary-tab-btn active" data-cat="ALL">TODOS (30)</button>
+      <button class="bestiary-tab-btn" data-cat="HORDE">HORDAS (10)</button>
+      <button class="bestiary-tab-btn" data-cat="MINIBOSS">MINI-CHEFES (16)</button>
+      <button class="bestiary-tab-btn" data-cat="BOSS">CHEFES SUPREMOS (4)</button>
+    </div>
+
+    <!-- Layout Dividido: Grade de Criaturas + Dossiê Detalhado com Preview Canvas -->
+    <div class="bestiary-main-layout">
+      <!-- Coluna Esquerda: Grade de Cards de Monstros -->
+      <div class="bestiary-roster-column">
+        <div id="bestiary-roster-grid" class="bestiary-cards-grid"></div>
+      </div>
+
+      <!-- Coluna Direita: Dossiê e Palco da Criatura -->
+      <div id="bestiary-dossier-panel" class="bestiary-dossier-panel">
+        <!-- Preenchido dinamicamente por renderBestiaryDossier() -->
+      </div>
     </div>
   </div>
 </div>

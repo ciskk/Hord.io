@@ -197,7 +197,7 @@ export function executeTectonicSlam(e, context) {
 
   // Dano somente se estiver no cone frontal (< slamArc) e dentro do alcance (185px)
   if (pDist <= e.slamRadius && angleDiff <= e.slamArc && player.bossIFrames <= 0) {
-    let slamDamage = e.isPhase3 ? 119 : (e.isEnraged ? 111 : 101);
+    let slamDamage = e.isPhase3 ? 161 : (e.isEnraged ? 150 : 136);
     if (selectedHeroKey === 'KNIGHT') slamDamage = Math.round(slamDamage * 0.80);
 
     player.hp -= slamDamage;
@@ -276,7 +276,7 @@ export function executeEpicenterEruption(e, context) {
   // Avaliação de Dano no Epicentro (< 115px)
   const pDist = Math.hypot(player.x - e.x, player.y - e.y);
   if (pDist < 115 && player.bossIFrames <= 0) {
-    let epicenterDmg = e.isPhase3 ? 152 : (e.isEnraged ? 140 : 132);
+    let epicenterDmg = e.isPhase3 ? 205 : (e.isEnraged ? 189 : 178);
     if (selectedHeroKey === 'KNIGHT') epicenterDmg = Math.round(epicenterDmg * 0.80);
     player.hp -= epicenterDmg;
     player.bossIFrames = 20;
@@ -321,7 +321,7 @@ export function executeOuterSurge(e, context) {
   // Avaliação de Dano no Anel Externo (140 a 245px)
   const pDist = Math.hypot(player.x - e.x, player.y - e.y);
   if (pDist >= 140 && pDist <= 245 && player.iFrames <= 0) {
-    let surgeDmg = e.isPhase3 ? 124 : (e.isEnraged ? 116 : 104);
+    let surgeDmg = e.isPhase3 ? 167 : (e.isEnraged ? 157 : 140);
     if (selectedHeroKey === 'KNIGHT') surgeDmg = Math.round(surgeDmg * 0.80);
 
     player.hp -= surgeDmg;
@@ -363,7 +363,7 @@ export function executePlateWhirl(e, context) {
   // Avaliação de Dano no raio das placas giratórias (<= 110px)
   const pDist = Math.hypot(player.x - e.x, player.y - e.y);
   if (pDist <= 110 && player.bossIFrames <= 0) {
-    let whirlDmg = e.isPhase3 ? 51 : (e.isEnraged ? 47 : 45);
+    let whirlDmg = e.isPhase3 ? 69 : (e.isEnraged ? 63 : 61);
     if (selectedHeroKey === 'KNIGHT') whirlDmg = Math.round(whirlDmg * 0.80);
     player.hp -= whirlDmg;
     player.bossIFrames = 22;
@@ -415,7 +415,7 @@ export function executeMagmaSiphonRelease(e, context) {
             vx: Math.cos(sAng) * (4.5 + w * 0.45),
             vy: Math.sin(sAng) * (4.5 + w * 0.45),
             radius: 6.5,
-            damage: 26,
+            damage: 35,
             life: 360, // Alcance 2x adicional: viaja até ~1620px através de toda a arena
             color: '#e67e22',
             isBossProjectile: true
@@ -469,7 +469,7 @@ export function executeVolcanicFissure(e, context) {
         radius: 30,
         timer: 20 + n * 5,
         maxTimer: 20 + n * 5,
-        damage: 42
+        damage: 57
       });
     }
   }
@@ -511,7 +511,7 @@ export function executeBasaltBarrage(e, context) {
       radius: 44,
       timer: 36 + m * 7,
       maxTimer: 36 + m * 7,
-      damage: 48
+      damage: 65
     });
   }
 

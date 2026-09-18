@@ -77,8 +77,8 @@ export function initAbyssSovereign(boss) {
   boss.cleaveAngle = 0;
   boss.cleaveLocked = false;
 
-  if (!boss.damage || boss.damage < 270) {
-    boss.damage = 270;
+  if (!boss.damage || boss.damage < 365) {
+    boss.damage = 365;
   }
 
   boss.idleTimer = 0;

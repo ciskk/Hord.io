@@ -11,8 +11,20 @@ import { playSfx } from '../core/audio.js';
 import { 
   launchBossTest, 
   launchMiniBossTest, 
-  closeBossSelectModal 
+  closeBossSelectModal,
+  openCharacterSelect,
+  renderBestiaryRoster,
+  renderBestiaryDossier,
+  selectedCreatureId
 } from './ui.js';
+import { 
+  unlockAllAchievements, 
+  resetAchievements 
+} from '../config/achievements.js';
+import { 
+  unlockAllBestiary, 
+  resetBestiary 
+} from '../config/bestiary.js';
 import { 
   purgeAllNormalEnemies, 
   triggerSuperMagnet, 
@@ -578,6 +590,46 @@ function renderCheatsTab(container) {
         </div>
         <button class="dev-card-action-btn">+5 Rerolls</button>
       </div>
+
+      <!-- Card Desbloquear Todos os Heróis (Requisito Dev) -->
+      <div class="dev-cheat-card action-card" id="card-unlock-all-heroes">
+        <div class="dev-cheat-icon">🔓</div>
+        <div class="dev-cheat-info">
+          <div class="dev-cheat-name" style="color: #2ecc71;">Desbloquear Todos os Heróis</div>
+          <div class="dev-cheat-desc">Libera instantaneamente todos os 5 arquétipos e completa o Grimório de Conquistas.</div>
+        </div>
+        <button class="dev-card-action-btn" style="background: #2ecc71; color: #000; font-weight: bold;">🔓 Desbloquear Todos</button>
+      </div>
+
+      <!-- Card Resetar Conquistas & Bloqueios -->
+      <div class="dev-cheat-card action-card" id="card-reset-achievements">
+        <div class="dev-cheat-icon">🔒</div>
+        <div class="dev-cheat-info">
+          <div class="dev-cheat-name" style="color: #ff7675;">Resetar Bloqueios de Heróis</div>
+          <div class="dev-cheat-desc">Bloqueia Ignis, Kael, Kragdor e Valéria para testar o fluxo de progressão inicial.</div>
+        </div>
+        <button class="dev-card-action-btn btn-danger">🔒 Resetar Bloqueios</button>
+      </div>
+
+      <!-- Card Desbloquear Todo o Bestiário -->
+      <div class="dev-cheat-card action-card" id="card-unlock-all-bestiary">
+        <div class="dev-cheat-icon">📖</div>
+        <div class="dev-cheat-info">
+          <div class="dev-cheat-name" style="color: #00f5d4;">Desbloquear Códice do Bestiário</div>
+          <div class="dev-cheat-desc">Catalogar instantaneamente todas as 30 criaturas com 100 abates e lore completa.</div>
+        </div>
+        <button class="dev-card-action-btn" style="background: #00f5d4; color: #000; font-weight: bold;">📖 Desbloquear Tudo</button>
+      </div>
+
+      <!-- Card Resetar Bestiário -->
+      <div class="dev-cheat-card action-card" id="card-reset-bestiary">
+        <div class="dev-cheat-icon">👁️</div>
+        <div class="dev-cheat-info">
+          <div class="dev-cheat-name" style="color: #e056fd;">Resetar Bestiário das Trevas</div>
+          <div class="dev-cheat-desc">Restaura todas as criaturas como não catalogadas com silhuetas misteriosas.</div>
+        </div>
+        <button class="dev-card-action-btn btn-danger">🔒 Ocultar Bestiário</button>
+      </div>
     </div>
   `;
 
@@ -599,6 +651,44 @@ function renderCheatsTab(container) {
 
   cheatsSection.querySelector('#card-heal-full').onclick = () => healPlayerFull();
   cheatsSection.querySelector('#card-extra-rerolls').onclick = () => grantExtraRerolls(5);
+
+  cheatsSection.querySelector('#card-unlock-all-heroes').onclick = () => {
+    const count = unlockAllAchievements();
+    showDevToast(`🔓 <b>Todos os ${count} Heróis & Conquistas</b> foram DESBLOQUEADOS!`);
+    const charModal = document.getElementById('char-modal');
+    if (charModal && charModal.style.display !== 'none' && !charModal.classList.contains('modal-hidden')) {
+      openCharacterSelect();
+    }
+  };
+
+  cheatsSection.querySelector('#card-reset-achievements').onclick = () => {
+    resetAchievements();
+    showDevToast(`🔒 <b>Progresso Resetado:</b> Apenas Sir Roland está liberado.`, true);
+    const charModal = document.getElementById('char-modal');
+    if (charModal && charModal.style.display !== 'none' && !charModal.classList.contains('modal-hidden')) {
+      openCharacterSelect();
+    }
+  };
+
+  cheatsSection.querySelector('#card-unlock-all-bestiary').onclick = () => {
+    unlockAllBestiary();
+    showDevToast(`📖 <b>Bestiário Completo:</b> Todas as 30 criaturas foram catalogadas!`);
+    const bestiaryModal = document.getElementById('bestiary-modal');
+    if (bestiaryModal && bestiaryModal.style.display !== 'none' && !bestiaryModal.classList.contains('modal-hidden')) {
+      renderBestiaryRoster();
+      renderBestiaryDossier(selectedCreatureId);
+    }
+  };
+
+  cheatsSection.querySelector('#card-reset-bestiary').onclick = () => {
+    resetBestiary();
+    showDevToast(`🔒 <b>Bestiário Selado:</b> Todas as criaturas retornaram ao véu sombrio.`, true);
+    const bestiaryModal = document.getElementById('bestiary-modal');
+    if (bestiaryModal && bestiaryModal.style.display !== 'none' && !bestiaryModal.classList.contains('modal-hidden')) {
+      renderBestiaryRoster();
+      renderBestiaryDossier(selectedCreatureId);
+    }
+  };
 }
 
 function updateCheatsUI() {

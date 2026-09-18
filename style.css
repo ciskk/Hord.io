@@ -215,6 +215,7 @@ html, body {
   height: 100%;
   min-height: 100vh;
   min-height: 100dvh;
+  height: 100dvh;
   overflow: hidden;
   background: var(--bg-void);
   font-family: var(--font-body);
@@ -1504,6 +1505,12 @@ html, body {
   justify-content: space-between;
   align-items: center;
   flex-shrink: 0;
+}
+
+.void-header-top-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .void-header-info {
@@ -5142,7 +5149,7 @@ html, body {
 /* OTIMIZAÇÃO COMPLETA PARA SMARTPHONES VERTICAIS (PORTRAIT)*/
 /* ======================================================== */
 
-@media (max-width: 768px) {
+@media (max-width: 850px), (orientation: portrait) {
   /* ======================================================== */
   /* 0. HUD DE COMBATE MOBILE (ANTI-SOBREPOSIÇÃO & COMPACTO)   */
   /* ======================================================== */
@@ -5466,22 +5473,32 @@ html, body {
     gap: 3px !important;
   }
 
-  /* 2.1 Top Bar Ultraleve Integrada */
+  /* 2.1 Top Bar Ultraleve Integrada Responsiva (Vertical / Mobile) */
   .void-modal-header {
-    padding: 2px 4px 4px 4px !important;
+    padding: 3px 4px 4px 4px !important;
     margin-bottom: 2px !important;
     border-bottom: 1px solid rgba(0, 245, 212, 0.14) !important;
     display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 4px !important;
     flex-shrink: 0 !important;
     z-index: 30 !important;
+  }
+
+  .void-header-top-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    gap: 6px !important;
   }
 
   .void-header-info {
     display: flex !important;
     flex-direction: column !important;
     gap: 0 !important;
+    min-width: 0 !important;
   }
 
   .void-header-eyebrow {
@@ -5492,35 +5509,56 @@ html, body {
   }
 
   .void-modal-title {
-    font-size: clamp(13px, 3.8vw, 16px) !important;
+    font-size: clamp(12px, 3.8vw, 15px) !important;
     letter-spacing: 1px !important;
     line-height: 1.15 !important;
     color: #f1f5f9 !important;
     text-shadow: 0 0 10px rgba(0, 245, 212, 0.35) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   .void-modal-sub {
     display: none !important;
   }
 
+  .void-souls-capsule {
+    padding: 2px 7px !important;
+    font-size: 9.5px !important;
+    height: 24px !important;
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px) !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Grid de 3 botões de navegação preenchendo 100% da largura horizontal */
   .char-modal-header-actions {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 4px !important;
+    width: 100% !important;
+  }
+
+  .char-modal-header-actions .void-astrolabe-btn {
+    padding: 4px 2px !important;
+    font-size: 9px !important;
+    height: 27px !important;
+    width: 100% !important;
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    justify-content: center !important;
+    text-align: center !important;
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px) !important;
+    letter-spacing: 0.4px !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
   }
 
-  .void-souls-capsule {
-    padding: 3px 8px !important;
-    font-size: 10px !important;
-    height: 26px !important;
-    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px) !important;
-  }
-
-  .void-astrolabe-btn {
-    padding: 3px 8px !important;
-    font-size: 9px !important;
-    height: 26px !important;
-    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px) !important;
+  .char-modal-header-actions .void-astrolabe-btn svg {
+    width: 12px !important;
+    height: 12px !important;
+    margin-right: 3px !important;
+    flex-shrink: 0 !important;
   }
 
   /* 2.2 Estrutura Geral Vertical */
@@ -6852,5 +6890,1339 @@ html, body {
 
   .xp-bezel {
     height: 5px;
+  }
+}
+
+/* ==========================================================================
+   FASE 1: GRIMÓRIO DE CONQUISTAS, DESBLOQUEIOS & SELO PRIMORDIAL
+   ========================================================================== */
+
+#achievements-modal {
+  z-index: 110;
+}
+#achievements-modal.void-astral-overlay,
+#achievements-modal.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, rgba(12, 10, 24, 0.90) 0%, rgba(4, 5, 8, 0.97) 100%);
+  backdrop-filter: blur(8px);
+}
+#achievements-modal[style*="display: none"],
+#achievements-modal.modal-hidden {
+  display: none !important;
+}
+
+.achievements-void-box {
+  max-width: 900px !important;
+  width: 95vw !important;
+  max-height: 88vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: radial-gradient(circle at 50% 10%, #17142b 0%, #0d0b17 75%, #06050a 100%) !important;
+  border: 1.5px solid rgba(162, 155, 254, 0.4) !important;
+  box-shadow: 0 0 45px rgba(162, 155, 254, 0.2), inset 0 0 30px rgba(0, 0, 0, 0.9) !important;
+  padding: 0 !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+.achievements-header {
+  padding: 14px 20px 10px;
+  border-bottom: 1px solid rgba(162, 155, 254, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.achievements-header-info {
+  text-align: center;
+  flex: 1;
+}
+
+.achievements-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(162, 155, 254, 0.3) rgba(10, 12, 16, 0.6);
+}
+
+.achievements-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+  gap: 12px;
+}
+
+.achievement-card {
+  display: flex;
+  gap: 12px;
+  background: rgba(18, 22, 34, 0.85);
+  border: 1px solid rgba(162, 155, 254, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.achievement-card:hover {
+  border-color: rgba(162, 155, 254, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.achievement-card.ach-completed {
+  border-color: rgba(0, 245, 212, 0.45);
+  background: linear-gradient(135deg, rgba(16, 28, 38, 0.9) 0%, rgba(10, 18, 28, 0.95) 100%);
+  box-shadow: inset 0 0 15px rgba(0, 245, 212, 0.08);
+}
+
+.ach-card-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: rgba(10, 12, 18, 0.8);
+  border: 1px solid rgba(162, 155, 254, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.ach-card-icon-wrap.completed {
+  border-color: #00f5d4;
+  background: rgba(0, 245, 212, 0.12);
+  box-shadow: 0 0 12px rgba(0, 245, 212, 0.3);
+}
+
+.ach-card-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ach-card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ach-card-name {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.ach-card-name.name-completed {
+  color: #00f5d4;
+}
+
+.ach-status-badge {
+  font-size: 8.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.ach-status-badge.badge-done {
+  background: rgba(46, 204, 113, 0.2);
+  border: 1px solid #2ecc71;
+  color: #2ecc71;
+}
+
+.ach-status-badge.badge-pending {
+  background: rgba(241, 196, 15, 0.15);
+  border: 1px solid rgba(241, 196, 15, 0.4);
+  color: #f1c40f;
+}
+
+.ach-card-desc {
+  font-size: 10px;
+  color: #94a3b8;
+  line-height: 1.35;
+  margin-bottom: 4px;
+}
+
+.ach-progress-container {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ach-progress-rail {
+  width: 100%;
+  height: 5px;
+  background: rgba(10, 12, 16, 0.9);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ach-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #f1c40f 0%, #00f5d4 100%);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.ach-card-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9px;
+}
+
+.ach-reward-pill {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.ach-hero-reward {
+  background: rgba(162, 155, 254, 0.15);
+  border: 1px solid #a29bfe;
+  color: #a29bfe;
+}
+
+.ach-gold-reward {
+  background: rgba(241, 196, 15, 0.15);
+  border: 1px solid #f1c40f;
+  color: #ffd166;
+}
+
+.ach-pct-text {
+  color: #64748b;
+  font-weight: 700;
+  font-size: 9.5px;
+}
+
+/* Pedestais de Heróis Bloqueados */
+.char-pedestal-btn.hero-locked {
+  filter: grayscale(0.65) brightness(0.7);
+  border-color: rgba(255, 118, 117, 0.3) !important;
+}
+
+.char-pedestal-btn.hero-locked:hover {
+  filter: grayscale(0.25) brightness(0.9);
+}
+
+.pedestal-lock-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  background: #180a10;
+  border: 1px solid #ff7675;
+  border-radius: 50%;
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 6px rgba(255, 118, 117, 0.6);
+  z-index: 2;
+}
+
+/* Showcase Lock Dossier (Banner de Selo Primordial) */
+.showcase-lock-dossier {
+  background: linear-gradient(135deg, rgba(38, 16, 26, 0.92) 0%, rgba(20, 10, 18, 0.97) 100%);
+  border: 1px solid rgba(255, 118, 117, 0.5);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 0 16px rgba(255, 118, 117, 0.18), inset 0 0 12px rgba(0, 0, 0, 0.6);
+  animation: pulse-lock-border 3s infinite ease-in-out;
+}
+
+@keyframes pulse-lock-border {
+  0%, 100% { border-color: rgba(255, 118, 117, 0.4); }
+  50% { border-color: rgba(255, 118, 117, 0.8); }
+}
+
+.lock-dossier-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.lock-icon-lg {
+  font-size: 20px;
+  filter: drop-shadow(0 0 8px rgba(255, 118, 117, 0.7));
+}
+
+.lock-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.lock-eyebrow {
+  font-size: 8.5px;
+  color: #ff7675;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+
+.lock-name {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffd166;
+}
+
+.lock-desc {
+  font-size: 10.5px;
+  color: #cbd5e1;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.lock-progress-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lock-progress-track {
+  width: 100%;
+  height: 6px;
+  background: #0a0c10;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 118, 117, 0.3);
+}
+
+.lock-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff7675 0%, #f1c40f 100%);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.lock-progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #94a3b8;
+}
+
+.lock-cur-val b {
+  color: #00f5d4;
+}
+
+.lock-pct-val {
+  color: #ffd166;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .achievements-void-box {
+    width: 96vw;
+    max-height: 92vh;
+  }
+  .achievements-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .achievements-modal-body {
+    padding: 8px 10px 14px;
+  }
+}
+
+/* ==========================================================================
+   FASE 3: BANNER CINEMÁTICO DE CITAÇÕES DOS CHEFES (BOSS BARKS)
+   ========================================================================== */
+.boss-bark-container {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 95;
+  pointer-events: none;
+  width: 90%;
+  max-width: 620px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.boss-bark-box {
+  background: rgba(10, 12, 18, 0.92);
+  border: 1px solid rgba(255, 209, 102, 0.45);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 71, 87, 0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 10px 18px 12px;
+  text-align: center;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0;
+  transform: translateY(-16px) scale(0.95);
+  width: 100%;
+}
+
+.boss-bark-box.bark-enter {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.boss-bark-box.bark-exit {
+  opacity: 0;
+  transform: translateY(-12px) scale(0.96);
+}
+
+.boss-bark-speaker-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.boss-bark-emblem {
+  font-size: 14px;
+  filter: drop-shadow(0 0 6px rgba(255, 71, 87, 0.8));
+}
+
+.boss-bark-speaker {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.boss-bark-phase-tag {
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.8px;
+  border: 1px solid;
+  text-transform: uppercase;
+}
+
+.boss-bark-text {
+  font-family: 'Outfit', sans-serif;
+  font-style: italic;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #f1f2f6;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  letter-spacing: 0.3px;
+}
+
+/* ==========================================================================
+   FASE 3: CÓDICE DO BESTIÁRIO DAS TREVAS (BESTIARY MODAL)
+   ========================================================================== */
+.bestiary-void-box {
+  width: 94vw;
+  max-width: 1060px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at 50% 10%, #151a24 0%, #0a0d14 75%, #05070a 100%) !important;
+  border: 1px solid rgba(0, 245, 212, 0.35) !important;
+  box-shadow: 0 0 45px rgba(0, 245, 212, 0.12), inset 0 0 40px rgba(0, 0, 0, 0.85) !important;
+  padding: 0 !important;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.bestiary-header {
+  padding: 14px 20px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  background: rgba(10, 13, 20, 0.6);
+}
+
+.bestiary-header-info {
+  text-align: center;
+  flex: 1;
+}
+
+.btn-bestiary-nav {
+  border-color: rgba(0, 245, 212, 0.5) !important;
+  color: #00f5d4 !important;
+}
+
+.btn-bestiary-nav:hover {
+  background: rgba(0, 245, 212, 0.2) !important;
+  border-color: #00f5d4 !important;
+  box-shadow: 0 0 16px rgba(0, 245, 212, 0.45) !important;
+  color: #fff !important;
+}
+
+.btn-achievements-nav {
+  border-color: rgba(162, 155, 254, 0.5) !important;
+  color: #a29bfe !important;
+}
+
+.btn-achievements-nav:hover {
+  background: rgba(162, 155, 254, 0.2) !important;
+  border-color: #a29bfe !important;
+  box-shadow: 0 0 16px rgba(162, 155, 254, 0.45) !important;
+  color: #fff !important;
+}
+
+/* Barra de Abas / Categorias */
+.bestiary-tabs-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(7, 10, 16, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.bestiary-tab-btn {
+  background: rgba(22, 28, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.bestiary-tab-btn:hover {
+  border-color: #00f5d4;
+  color: #e2e8f0;
+  background: rgba(0, 245, 212, 0.1);
+}
+
+.bestiary-tab-btn.active {
+  background: linear-gradient(135deg, rgba(0, 245, 212, 0.25) 0%, rgba(20, 30, 48, 0.8) 100%);
+  border-color: #00f5d4;
+  color: #00f5d4;
+  box-shadow: 0 0 12px rgba(0, 245, 212, 0.25);
+}
+
+/* Layout Principal de 2 Colunas */
+.bestiary-main-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Coluna Esquerda: Grade de Monstros */
+.bestiary-roster-column {
+  overflow-y: auto;
+  padding: 14px 14px 20px;
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(8, 10, 15, 0.5);
+}
+
+.bestiary-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+/* Card Individual de Criatura na Lista */
+.bestiary-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(18, 22, 33, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.bestiary-card:hover {
+  background: rgba(28, 35, 52, 0.75);
+  border-color: rgba(0, 245, 212, 0.4);
+  transform: translateX(3px);
+}
+
+.bestiary-card.active {
+  background: linear-gradient(90deg, rgba(0, 245, 212, 0.18) 0%, rgba(20, 26, 40, 0.85) 100%);
+  border-color: #00f5d4;
+  box-shadow: 0 0 14px rgba(0, 245, 212, 0.2), inset 0 0 10px rgba(0, 245, 212, 0.08);
+}
+
+.bestiary-card.undiscovered {
+  opacity: 0.65;
+  background: rgba(12, 14, 20, 0.5);
+  border-style: dashed;
+}
+
+.bestiary-card.undiscovered:hover {
+  opacity: 0.85;
+}
+
+.bcard-avatar-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  border: 1.5px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+}
+
+.bcard-avatar-icon {
+  font-size: 16px;
+}
+
+.bcard-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bcard-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.bcard-name {
+  font-family: 'Cinzel', serif;
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bcard-name.undiscovered-name {
+  font-style: italic;
+  letter-spacing: 2px;
+}
+
+.bcard-cat-pill {
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.6px;
+  flex-shrink: 0;
+}
+
+.badge-horde {
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.35);
+}
+
+.badge-miniboss {
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  border: 1px solid rgba(243, 156, 18, 0.35);
+}
+
+.badge-boss {
+  background: rgba(155, 89, 182, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.45);
+}
+
+.bcard-sub-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #8395a7;
+}
+
+.bcard-threat {
+  color: #f1c40f;
+  letter-spacing: 1px;
+}
+
+/* Coluna Direita: Dossiê e Palco da Criatura */
+.bestiary-dossier-panel {
+  overflow-y: auto;
+  padding: 16px 22px 24px;
+  background: rgba(5, 7, 12, 0.4);
+}
+
+.dossier-card-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Viewport do Canvas de Prévia */
+.bestiary-preview-viewport {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  background: radial-gradient(circle at 50% 65%, #182030 0%, #0d121c 60%, #06080e 100%);
+  border: 1px solid rgba(0, 245, 212, 0.25);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.8), 0 4px 18px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+#bestiary-preview-canvas {
+  width: 220px;
+  height: 220px;
+}
+
+.bestiary-category-pill {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font-size: 9px;
+  font-weight: 800;
+  font-family: 'Cinzel', serif;
+  background: rgba(5, 8, 14, 0.85);
+  border: 1px solid;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.8px;
+  backdrop-filter: blur(4px);
+}
+
+.bestiary-kills-pill {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #ffd166;
+  background: rgba(5, 8, 14, 0.85);
+  border: 1px solid rgba(255, 209, 102, 0.3);
+  padding: 2px 8px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+}
+
+/* Identidade */
+.dossier-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dossier-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dossier-name {
+  font-family: 'Cinzel', serif;
+  font-size: 20px;
+  font-weight: 900;
+  margin: 0;
+  letter-spacing: 0.8px;
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.9);
+}
+
+.dossier-threat-badge {
+  color: #f1c40f;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  background: rgba(241, 196, 15, 0.1);
+  border: 1px solid rgba(241, 196, 15, 0.3);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.dossier-title {
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-style: italic;
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Grid de Estatísticas */
+.dossier-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.dossier-stat-box {
+  background: rgba(18, 23, 35, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dossier-stat-label {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.6px;
+}
+
+.dossier-stat-value {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #f1f2f6;
+}
+
+/* Blocos de Lore e Fraquezas */
+.dossier-lore-box {
+  background: rgba(14, 18, 28, 0.75);
+  border: 1px solid rgba(0, 245, 212, 0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.dossier-lore-box.is-locked {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(10, 12, 18, 0.5);
+}
+
+.dossier-tactics-box {
+  border-color: rgba(243, 156, 18, 0.25);
+}
+
+.dossier-box-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.dossier-box-icon {
+  font-size: 13px;
+}
+
+.dossier-box-title {
+  font-family: 'Cinzel', serif;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #cbd5e1;
+  letter-spacing: 0.8px;
+}
+
+.dossier-lock-status {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 700;
+  color: #ffd166;
+}
+
+.dossier-box-content {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: #cbd5e1;
+  font-family: 'Outfit', sans-serif;
+}
+
+.dossier-lore-box.is-locked .dossier-box-content {
+  color: #64748b;
+  font-style: italic;
+}
+
+/* Citações / Quotes */
+.dossier-quotes-box {
+  background: rgba(14, 18, 28, 0.65);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.dossier-quotes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dossier-quote-item {
+  font-style: italic;
+  font-size: 11.5px;
+  color: #d8b4fe;
+  line-height: 1.45;
+  padding: 4px 8px;
+  border-left: 2px solid rgba(168, 85, 247, 0.5);
+  background: rgba(168, 85, 247, 0.05);
+}
+
+.dossier-quote-item.locked-quote {
+  color: #64748b;
+  border-left-color: rgba(255, 255, 255, 0.1);
+  background: transparent;
+}
+
+/* ==========================================================================
+   RESPONSIVIDADE VERTICAL / MOBILE (BESTIÁRIO & GRIMÓRIO)
+   ========================================================================== */
+@media (max-width: 850px), (orientation: portrait) {
+  /* 1. Modal do Bestiário */
+  .bestiary-void-box {
+    width: 98vw !important;
+    max-width: 98vw !important;
+    max-height: 96dvh !important;
+    height: 96dvh !important;
+    border-radius: 10px !important;
+    background: radial-gradient(circle at 50% 10%, #151a24 0%, #0a0d14 75%, #05070a 100%) !important;
+    border: 1px solid rgba(0, 245, 212, 0.35) !important;
+    box-shadow: 0 0 45px rgba(0, 245, 212, 0.12), inset 0 0 40px rgba(0, 0, 0, 0.85) !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .bestiary-header {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 6px 10px !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+    border-bottom: 1px solid rgba(0, 245, 212, 0.2) !important;
+    background: rgba(8, 12, 18, 0.95) !important;
+  }
+
+  .bestiary-header .btn-void-return {
+    padding: 4px 8px !important;
+    font-size: 9.5px !important;
+    height: 27px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .bestiary-header-info {
+    text-align: center !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .bestiary-header-info .void-modal-sub {
+    display: none !important;
+  }
+
+  .bestiary-header-info .void-header-eyebrow {
+    font-size: 7.5px !important;
+    letter-spacing: 1.2px !important;
+  }
+
+  .bestiary-header-info .void-modal-title {
+    font-size: 13px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    letter-spacing: 0.8px !important;
+  }
+
+  .bestiary-header-actions .void-souls-capsule {
+    padding: 2px 7px !important;
+    font-size: 9.5px !important;
+    height: 25px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Abas em linha horizontal com rolagem suave */
+  .bestiary-tabs-bar {
+    padding: 5px 8px !important;
+    gap: 4px !important;
+    display: flex !important;
+    overflow-x: auto !important;
+    flex-shrink: 0 !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .bestiary-tabs-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bestiary-tab-btn {
+    padding: 4px 9px !important;
+    font-size: 9px !important;
+    border-radius: 4px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Layout Principal em Coluna Vertical Única */
+  .bestiary-main-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Ribbon Horizontal de Cartões de Monstros (Swipe com Polegar) */
+  .bestiary-roster-column {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    max-height: none !important;
+    padding: 6px 8px !important;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(0, 245, 212, 0.15) !important;
+    background: rgba(7, 9, 14, 0.85) !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: thin !important;
+    -webkit-overflow-scrolling: touch !important;
+    box-sizing: border-box !important;
+  }
+
+  .bestiary-cards-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+    width: max-content !important;
+    padding-bottom: 2px !important;
+  }
+
+  .bestiary-card {
+    flex: 0 0 135px !important;
+    width: 135px !important;
+    padding: 4px 6px !important;
+    gap: 6px !important;
+    border-radius: 6px !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+  }
+
+  .bestiary-card:hover {
+    transform: none !important;
+  }
+
+  .bcard-avatar-wrap {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 4px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .bcard-avatar-icon {
+    font-size: 13px !important;
+  }
+
+  .bcard-info {
+    gap: 1px !important;
+    min-width: 0 !important;
+  }
+
+  .bcard-top-row {
+    gap: 4px !important;
+  }
+
+  .bcard-name {
+    font-size: 9.5px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .bcard-cat-pill {
+    display: none !important;
+  }
+
+  .bcard-sub-row {
+    font-size: 7.5px !important;
+  }
+
+  .bcard-threat {
+    letter-spacing: 0.5px !important;
+  }
+
+  /* Painel Dossiê Completo Rolável Verticalmente */
+  .bestiary-dossier-panel {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding: 8px 10px 24px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: thin !important;
+  }
+
+  .dossier-card-wrap {
+    gap: 8px !important;
+  }
+
+  /* Viewport Compacto do Canvas para Tela Vertical */
+  .bestiary-preview-viewport {
+    height: 160px !important;
+    border-radius: 8px !important;
+  }
+
+  #bestiary-preview-canvas {
+    width: 160px !important;
+    height: 160px !important;
+  }
+
+  .bestiary-category-pill {
+    top: 5px !important;
+    left: 6px !important;
+    font-size: 7.5px !important;
+    padding: 1px 5px !important;
+  }
+
+  .bestiary-kills-pill {
+    top: 5px !important;
+    right: 6px !important;
+    font-size: 8px !important;
+    padding: 1px 5px !important;
+  }
+
+  .dossier-name-row {
+    gap: 8px !important;
+  }
+
+  .dossier-name {
+    font-size: 15px !important;
+  }
+
+  .dossier-title {
+    font-size: 10px !important;
+  }
+
+  .dossier-threat-badge {
+    font-size: 9.5px !important;
+    padding: 1px 5px !important;
+  }
+
+  .dossier-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 4px !important;
+  }
+
+  .dossier-stat-box {
+    padding: 4px 6px !important;
+    border-radius: 5px !important;
+  }
+
+  .dossier-stat-label {
+    font-size: 7px !important;
+  }
+
+  .dossier-stat-value {
+    font-size: 10.5px !important;
+  }
+
+  .dossier-lore-box {
+    padding: 6px 8px !important;
+    border-radius: 6px !important;
+  }
+
+  .dossier-box-header {
+    margin-bottom: 3px !important;
+    gap: 5px !important;
+  }
+
+  .dossier-box-icon {
+    font-size: 11px !important;
+  }
+
+  .dossier-box-title {
+    font-size: 8.5px !important;
+  }
+
+  .dossier-lock-status {
+    font-size: 7.5px !important;
+  }
+
+  .dossier-box-content {
+    font-size: 10px !important;
+    line-height: 1.4 !important;
+  }
+
+  .dossier-quotes-box {
+    padding: 6px 8px !important;
+    border-radius: 6px !important;
+  }
+
+  .dossier-quotes-list {
+    gap: 3px !important;
+  }
+
+  .dossier-quote-item {
+    font-size: 9.5px !important;
+    padding: 3px 6px !important;
+    line-height: 1.35 !important;
+  }
+
+  /* 2. Grimório de Conquistas em Tela Vertical */
+  .achievements-void-box {
+    width: 98vw !important;
+    max-width: 98vw !important;
+    max-height: 96dvh !important;
+    height: 96dvh !important;
+    border-radius: 10px !important;
+    background: radial-gradient(circle at 50% 10%, #17142b 0%, #0d0b17 75%, #06050a 100%) !important;
+    border: 1px solid rgba(162, 155, 254, 0.35) !important;
+    box-shadow: 0 0 35px rgba(162, 155, 254, 0.15), inset 0 0 20px rgba(0, 0, 0, 0.8) !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .achievements-header {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 6px 10px !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+    border-bottom: 1px solid rgba(162, 155, 254, 0.2) !important;
+    background: rgba(15, 12, 25, 0.95) !important;
+  }
+
+  .achievements-header .btn-void-return {
+    padding: 4px 8px !important;
+    font-size: 9.5px !important;
+    height: 27px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .achievements-header-info {
+    text-align: center !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .achievements-header-info .void-modal-sub {
+    display: none !important;
+  }
+
+  .achievements-header-info .void-header-eyebrow {
+    font-size: 7.5px !important;
+    letter-spacing: 1.2px !important;
+  }
+
+  .achievements-header-info .void-modal-title {
+    font-size: 13px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    letter-spacing: 0.8px !important;
+  }
+
+  .achievements-header-actions .void-souls-capsule {
+    padding: 2px 7px !important;
+    font-size: 9.5px !important;
+    height: 25px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .achievements-modal-body {
+    padding: 6px 8px 16px !important;
+  }
+
+  .achievements-cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+
+  .achievement-card {
+    padding: 7px 9px !important;
+    gap: 8px !important;
+    border-radius: 6px !important;
+  }
+
+  .ach-card-icon-wrap {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 14px !important;
+    border-radius: 6px !important;
+  }
+
+  .ach-card-details {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .ach-card-top-row {
+    flex-wrap: nowrap !important;
+    gap: 4px !important;
+  }
+
+  .ach-card-name {
+    font-size: 11px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .ach-status-badge {
+    font-size: 7.5px !important;
+    padding: 1px 4px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .ach-card-desc {
+    font-size: 9px !important;
+    line-height: 1.3 !important;
+    margin-bottom: 4px !important;
+  }
+
+  .ach-reward-pill {
+    font-size: 8px !important;
+    padding: 1px 5px !important;
+  }
+
+  @media (max-width: 450px) {
+    .achievements-header .btn-void-return .btn-text-full,
+    .bestiary-header .btn-void-return .btn-text-full {
+      display: none !important;
+    }
+    .achievements-header .btn-void-return svg,
+    .bestiary-header .btn-void-return svg {
+      margin-right: 0 !important;
+    }
+  }
+
+  /* 3. Banner de Citação dos Chefes (Boss Barks) em Tela Vertical */
+  .boss-bark-container {
+    width: 95% !important;
+    top: 52px !important;
+    max-width: 400px !important;
+  }
+
+  .boss-bark-box {
+    padding: 6px 12px 8px !important;
+  }
+
+  .boss-bark-speaker {
+    font-size: 9.5px !important;
+  }
+
+  .boss-bark-phase-tag {
+    font-size: 7.5px !important;
+  }
+
+  .boss-bark-text {
+    font-size: 11px !important;
   }
 }

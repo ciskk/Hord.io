@@ -25,6 +25,7 @@ import {
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { initBoss } from './bosses/bossRegistry.js';
 import { transitionToArenaTheme } from '../render/environment.js';
+import { triggerBossBark, triggerMiniBossBark } from '../systems/barks.js';
 
 export const MAX_ENEMIES = 150;
 
@@ -385,6 +386,9 @@ export function spawnMiniBoss(miniBossType) {
   triggerHaptic('medium');
 
   enemies.push(miniBoss);
+  if (['CHAOS_HERALD', 'BLOOD_GARGOYLE', 'HIGH_OCCULTIST', 'VOID_CALLER', 'FROST_LICH'].includes(miniBossType)) {
+    triggerMiniBossBark(miniBossType);
+  }
   return miniBoss;
 }
 
@@ -451,6 +455,7 @@ export function triggerBossEncounter(bossId) {
   enemies.push(boss);
   setActiveBoss(boss);
   initBoss(boss);
+  triggerBossBark(bossId, 'SPAWN');
 
   const bossHud = document.getElementById('boss-hud');
   if (bossHud) bossHud.style.display = 'flex';

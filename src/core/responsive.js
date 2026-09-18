@@ -84,16 +84,9 @@ export function getHudBottom() {
 export function updateLayoutMetrics() {
   if (typeof window === 'undefined') return layoutMetrics;
 
-  const w = Math.max(
-    window.innerWidth || 0,
-    window.visualViewport ? Math.round(window.visualViewport.width) : 0,
-    document.documentElement ? document.documentElement.clientWidth : 0
-  );
-  const h = Math.max(
-    window.innerHeight || 0,
-    window.visualViewport ? Math.round(window.visualViewport.height) : 0,
-    document.documentElement ? document.documentElement.clientHeight : 0
-  );
+  const docEl = typeof document !== 'undefined' ? document.documentElement : null;
+  const w = Math.max(window.innerWidth || 0, window.visualViewport ? Math.round(window.visualViewport.width) : 0, docEl ? docEl.clientWidth : 0);
+  const h = Math.max(window.innerHeight || 0, window.visualViewport ? Math.round(window.visualViewport.height) : 0, docEl ? docEl.clientHeight : 0);
 
   layoutMetrics.viewW = Math.max(280, w);
   layoutMetrics.viewH = Math.max(280, h);

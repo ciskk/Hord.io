@@ -4,6 +4,8 @@
  */
 import { triggerBossEncounter, spawnMiniBoss } from '../entities/enemies.js';
 import { activeBoss, gameState } from '../main.js';
+import { recordRunStats } from '../config/achievements.js';
+import { triggerBossBark } from './barks.js';
 
 export const BOSS_QUEUE = [
   { bossId: 1, delay: 60 },
@@ -37,6 +39,10 @@ export function onBossDefeated(deathSeconds) {
   // Desloca o cronograma dos minibosses pendentes com base no tempo de duração da luta
   const bossDuration = Math.max(0, deathSeconds - bossFightStartTime);
   totalBossFightDuration += bossDuration;
+
+  const beatenBossId = BOSS_QUEUE[currentBossIndex] ? BOSS_QUEUE[currentBossIndex].bossId : (currentBossIndex + 1);
+  recordRunStats({ bossDefeated: beatenBossId });
+  triggerBossBark(beatenBossId, 'DEFEAT');
 
   for (let i = 0; i < miniBossSchedule.length; i++) {
     if (!miniBossSchedule[i].spawned) {
@@ -151,9 +157,9 @@ export function getCurrentWave(seconds) {
       name: "Onda 2: Revoada Carmesim",
       allowedSquads: ['HORDE_RUSH', 'SWARM_PINCER'],
       types: ['ZOMBIE', 'BAT'],
-      clusterSize: [5, 7],
-      rate: 84,
-      eliteChance: 0.05
+      clusterSize: [5, 8],
+      rate: 78,
+      eliteChance: 0.06
     };
   } else if (seconds < 90) {
     return {
@@ -161,9 +167,9 @@ export function getCurrentWave(seconds) {
       name: "Onda 3: Batalhão Blindado",
       allowedSquads: ['HORDE_RUSH', 'PHALANX', 'SWARM_PINCER'],
       types: ['ZOMBIE', 'SHIELDED', 'BAT'],
-      clusterSize: [5, 8],
-      rate: 74,
-      eliteChance: 0.08
+      clusterSize: [6, 9],
+      rate: 68,
+      eliteChance: 0.10
     };
   } else if (seconds < 130) {
     return {

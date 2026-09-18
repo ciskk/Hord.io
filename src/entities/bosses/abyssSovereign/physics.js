@@ -474,7 +474,7 @@ export function updateActiveAttacks(boss, dt, context) {
         const distSq = pdx * pdx + pdy * pdy;
         const hitR = (atk.radius || 175) + (player.radius || 14);
         if (distSq <= hitR * hitR) {
-          const coreDmg = Math.round((boss.damage || 270) * 0.46);
+          const coreDmg = Math.round((boss.damage || 365) * 0.46);
           player.hp -= coreDmg;
           player.iFrames = 26;
           player.bossIFrames = 26;
@@ -495,7 +495,7 @@ export function updateActiveAttacks(boss, dt, context) {
         const distSq = pdx * pdx + pdy * pdy;
         const hitR = (atk.maxR || 275) * 0.65 + (player.radius || 14);
         if (distSq <= hitR * hitR) {
-          const flashDmg = Math.round((boss.damage || 270) * 0.38);
+          const flashDmg = Math.round((boss.damage || 365) * 0.38);
           player.hp -= flashDmg;
           player.iFrames = 24;
           triggerShake(18);

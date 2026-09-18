@@ -6,6 +6,16 @@
 
 import { CHARACTERS } from '../config/characters.js';
 import { 
+  ACHIEVEMENTS, 
+  HERO_UNLOCK_MAP, 
+  isHeroUnlocked, 
+  getAchievementStatus, 
+  getUnlockedAchievementIds, 
+  getLifetimeStats, 
+  recordRunStats, 
+  pendingAchievementNotifications 
+} from '../config/achievements.js';
+import { 
   startPreview, 
   stopPreview, 
   resizePreviewCanvas,
@@ -14,6 +24,18 @@ import {
   setPreviewPose, 
   triggerHeroSurge 
 } from '../render/characterPreview.js';
+import { 
+  BESTIARY_ENTRIES, 
+  getCreatureKills, 
+  isCreatureDiscovered, 
+  isLoreUnlocked, 
+  getBestiaryStats 
+} from '../config/bestiary.js';
+import { 
+  startBestiaryPreview, 
+  stopBestiaryPreview, 
+  setBestiaryPreviewCreature 
+} from '../render/bestiaryPreview.js';
 import { BOSS_TYPES, MINI_BOSS_TYPES } from '../config/enemies.js';
 import { getRandomUpgrades, checkSynergies, grant50Upgrades, grantLevels } from '../config/upgrades.js';
 import { renderDevToolsModal } from './devtools.js';
@@ -647,6 +669,7 @@ export function openChestModal(tier = 'BOSS') {
       playSfx('evolution');
       triggerShake(12);
       triggerHaptic('heavy');
+      recordRunStats({ evolution: true });
     } else {
       playSfx('card_hover');
     }
@@ -701,7 +724,22 @@ export function triggerDeath() {
   const time = timerElem ? timerElem.innerText : '00:00';
   const summary = document.getElementById('death-summary');
 
+  const newlyUnlocked = recordRunStats({
+    kills: gameState.kills,
+    runFinished: true
+  });
+
   const killerName = lastAttackerName || 'A Horda do Abismo';
+
+  let achBanner = '';
+  if (newlyUnlocked && newlyUnlocked.length > 0) {
+    achBanner = `
+      <div style="margin-top: 8px; padding: 6px 10px; background: rgba(0, 245, 212, 0.12); border: 1px solid rgba(0, 245, 212, 0.5); border-radius: 4px; text-align: left;">
+        <span style="color: #ffd166; font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">✨ CONQUISTA DESBLOQUEADA!</span><br>
+        ${newlyUnlocked.map(a => `<span style="color: #00f5d4; font-size: 11px;"><b>${a.title}</b>: ${a.heroTitle ? `Despertou <b>${a.heroTitle}</b> no Altar!` : a.desc}</span>`).join('<br>')}
+      </div>
+    `;
+  }
 
   if (summary) {
     summary.innerHTML = `
@@ -713,6 +751,7 @@ export function triggerDeath() {
       Abominações Abatidas: <b style="color:#e74c3c;">${gameState.kills}</b><br>
       Nível de Poder Atingido: <b style="color:#f1c40f;">Nível ${player.level}</b><br>
       Ouro Resgatado para a Alma: <b style="color:#f39c12; display: inline-flex; align-items: center; gap: 3px;">${renderIcon('gold', { size: 11, color: '#f1c40f' })} ${getPersistentGold()}</b>
+      ${achBanner}
     `;
   }
 
@@ -724,6 +763,13 @@ export function finalizeVictoryAndReturnToMenu() {
   gameState.isWon = true;
   gameState.isPaused = false;
   resetInput();
+
+  recordRunStats({
+    kills: gameState.kills,
+    wave: 10,
+    bossDefeated: 4,
+    runFinished: true
+  });
 
   bullets.length = 0;
   enemyBullets.length = 0;
@@ -874,13 +920,13 @@ const CHARACTER_PROFILES = {
     themeColor: '#f1c40f',
     emblemSvg: HERO_EMBLEMS_SVG.PALADIN,
     weaponName: 'Martelo Sagrado',
-    levels: { dano: 4, area: 4, vel: 1, res: 5 }
+    levels: { dano: 3, area: 4, vel: 1, res: 5 }
   },
   PALADIN: {
     themeColor: '#f1c40f',
     emblemSvg: HERO_EMBLEMS_SVG.PALADIN,
     weaponName: 'Martelo dos Titãs',
-    levels: { dano: 4, area: 4, vel: 1, res: 5 }
+    levels: { dano: 3, area: 4, vel: 1, res: 5 }
   },
   MAGE: {
     themeColor: '#ff7675',
@@ -937,6 +983,7 @@ export function closeCharSelectModal() {
 }
 
 export function openCharacterSelect() {
+  gameState.isPaused = true;
   resetDeathAudioFilter();
   const bloodFilter = document.getElementById('blood-screen-filter');
   if (bloodFilter) bloodFilter.classList.remove('active');
@@ -946,6 +993,20 @@ export function openCharacterSelect() {
     talentsModal.classList.add('modal-hidden');
     talentsModal.style.setProperty('display', 'none', 'important');
     talentsModal.style.display = 'none';
+  }
+
+  const achievementsModal = document.getElementById('achievements-modal');
+  if (achievementsModal) {
+    achievementsModal.classList.add('modal-hidden');
+    achievementsModal.style.setProperty('display', 'none', 'important');
+    achievementsModal.style.display = 'none';
+  }
+
+  const bestiaryModal = document.getElementById('bestiary-modal');
+  if (bestiaryModal) {
+    bestiaryModal.classList.add('modal-hidden');
+    bestiaryModal.style.setProperty('display', 'none', 'important');
+    bestiaryModal.style.display = 'none';
   }
 
   const deathModal = document.getElementById('death-modal');
@@ -991,6 +1052,10 @@ export function openCharacterSelect() {
 
   const heroKeys = Object.keys(CHARACTERS);
 
+  if (!isHeroUnlocked(activeShowcaseHeroKey)) {
+    activeShowcaseHeroKey = 'KNIGHT';
+  }
+
   function selectAdjacentHero(step) {
     const curIdx = heroKeys.indexOf(activeShowcaseHeroKey);
     const nextIdx = (curIdx + step + heroKeys.length) % heroKeys.length;
@@ -1009,19 +1074,22 @@ export function openCharacterSelect() {
     activeShowcaseHeroKey = heroKey;
     const char = CHARACTERS[heroKey] || CHARACTERS.KNIGHT;
     const profile = CHARACTER_PROFILES[heroKey] || CHARACTER_PROFILES.KNIGHT;
+    const unlocked = isHeroUnlocked(heroKey);
+    const achId = HERO_UNLOCK_MAP[heroKey];
+    const status = achId ? getAchievementStatus(achId) : null;
 
     setPreviewHero(heroKey);
 
     const badge = document.getElementById('stage-archetype-badge');
     if (badge) {
-      badge.innerText = char.title.toUpperCase();
-      badge.style.color = profile.themeColor;
-      badge.style.borderColor = `${profile.themeColor}aa`;
-      badge.style.boxShadow = `0 0 18px ${profile.themeColor}66`;
+      badge.innerText = char.title.toUpperCase() + (!unlocked ? ' • 🔒' : '');
+      badge.style.color = unlocked ? profile.themeColor : '#747d8c';
+      badge.style.borderColor = unlocked ? `${profile.themeColor}aa` : '#4b5563';
+      badge.style.boxShadow = unlocked ? `0 0 18px ${profile.themeColor}66` : 'none';
     }
 
-    showcaseContainer.style.setProperty('--showcase-color', profile.themeColor);
-    charModal.style.setProperty('--showcase-color', profile.themeColor);
+    showcaseContainer.style.setProperty('--showcase-color', unlocked ? profile.themeColor : '#747d8c');
+    charModal.style.setProperty('--showcase-color', unlocked ? profile.themeColor : '#747d8c');
 
     const diff = char.difficulty || 1;
     let diffDots = '';
@@ -1045,6 +1113,28 @@ export function openCharacterSelect() {
         <div class="showcase-name-v2">${char.name}</div>
         <div class="showcase-role-tag">Função: <b>${char.role || 'Guerreiro'}</b></div>
       </div>
+
+      ${!unlocked && status ? `
+        <div class="showcase-lock-dossier">
+          <div class="lock-dossier-header">
+            <span class="lock-icon-lg">🔒</span>
+            <div class="lock-titles">
+              <span class="lock-eyebrow">SELO PRIMORDIAL • REQUISITO DE DESBLOQUEIO</span>
+              <div class="lock-name">${status.title}</div>
+            </div>
+          </div>
+          <div class="lock-desc">${status.desc}</div>
+          <div class="lock-progress-box">
+            <div class="lock-progress-track">
+              <div class="lock-progress-fill" style="width: ${status.percent}%;"></div>
+            </div>
+            <div class="lock-progress-meta">
+              <span class="lock-cur-val">Progresso: <b>${status.label}</b></span>
+              <span class="lock-pct-val">${status.percent}%</span>
+            </div>
+          </div>
+        </div>
+      ` : ''}
 
       <!-- Navegador Tático Mobile Exclusivo -->
       <div class="showcase-mobile-nav">
@@ -1116,9 +1206,15 @@ export function openCharacterSelect() {
         </div>
       </div>
 
-      <button class="card-btn btn-summon-hero" id="confirm-hero-btn">
-        ${renderIcon('damage', { size: 13, style: 'margin-right:6px;' })} DESPERTAR NO VÁCUO ${renderIcon('damage', { size: 13, style: 'margin-left:6px;' })}
-      </button>
+      ${unlocked ? `
+        <button class="card-btn btn-summon-hero" id="confirm-hero-btn">
+          ${renderIcon('damage', { size: 13, style: 'margin-right:6px;' })} DESPERTAR NO VÁCUO ${renderIcon('damage', { size: 13, style: 'margin-left:6px;' })}
+        </button>
+      ` : `
+        <button class="card-btn btn-summon-hero btn-hero-locked" id="confirm-hero-btn" disabled style="background: #231620; border-color: #ff767555; color: #ff7675; cursor: not-allowed; opacity: 0.9;">
+          🔒 SELO PRIMORDIAL ATIVO (CUMPRA O REQUISITO)
+        </button>
+      `}
     `;
 
     // Eventos das Abas Mobile
@@ -1134,13 +1230,17 @@ export function openCharacterSelect() {
 
     const confirmBtn = document.getElementById('confirm-hero-btn');
     if (confirmBtn) {
-      confirmBtn.style.setProperty('--btn-theme-color', profile.themeColor);
-      confirmBtn.onclick = () => {
-        setSelectedHeroKey(heroKey);
-        closeCharSelectModal();
-        resetGame();
-        try { playSfx('warp'); } catch(e) {}
-      };
+      if (unlocked) {
+        confirmBtn.style.setProperty('--btn-theme-color', profile.themeColor);
+        confirmBtn.onclick = () => {
+          setSelectedHeroKey(heroKey);
+          closeCharSelectModal();
+          resetGame();
+          try { playSfx('warp'); } catch(e) {}
+        };
+      } else {
+        confirmBtn.onclick = null;
+      }
     }
 
     // Atualiza classes ativas nos botões de pedestal
@@ -1156,22 +1256,29 @@ export function openCharacterSelect() {
     const profile = CHARACTER_PROFILES[key] || CHARACTER_PROFILES.KNIGHT;
     const diff = c.difficulty || 1;
     let miniDots = '◆'.repeat(diff) + '◇'.repeat(3 - diff);
+    const unlocked = isHeroUnlocked(key);
 
     const btn = document.createElement('div');
-    btn.className = `char-pedestal-btn ${key === activeShowcaseHeroKey ? 'active' : ''}`;
+    btn.className = `char-pedestal-btn ${key === activeShowcaseHeroKey ? 'active' : ''} ${!unlocked ? 'hero-locked' : ''}`;
     btn.setAttribute('data-hero', key);
-    btn.setAttribute('title', `${c.name} (${c.title})`);
-    btn.style.setProperty('--btn-theme-color', profile.themeColor);
+    btn.setAttribute('title', `${c.name} (${c.title})${!unlocked ? ' • Bloqueado' : ''}`);
+    btn.style.setProperty('--btn-theme-color', unlocked ? profile.themeColor : '#57606f');
     btn.innerHTML = `
-      <div class="char-pedestal-emblem" style="border-color: ${profile.themeColor}; color: ${profile.themeColor};">
+      <div class="char-pedestal-emblem" style="border-color: ${unlocked ? profile.themeColor : '#4b5563'}; color: ${unlocked ? profile.themeColor : '#6b7280'}; position: relative;">
         ${profile.emblemSvg}
+        ${!unlocked ? '<div class="pedestal-lock-badge">🔒</div>' : ''}
       </div>
       <div class="char-pedestal-info">
-        <div class="char-pedestal-title" style="color: ${profile.themeColor};">${c.title}</div>
-        <div class="char-pedestal-name">${c.name}</div>
-        <div class="char-pedestal-role-mini">${c.role || ''} · <span class="mini-diff" style="color: ${profile.themeColor};">${miniDots}</span></div>
+        <div class="char-pedestal-title" style="color: ${unlocked ? profile.themeColor : '#9ca3af'};">${c.title}</div>
+        <div class="char-pedestal-name" style="${!unlocked ? 'color: #9ca3af;' : ''}">${c.name}</div>
+        <div class="char-pedestal-role-mini">
+          ${unlocked 
+            ? `${c.role || ''} · <span class="mini-diff" style="color: ${profile.themeColor};">${miniDots}</span>` 
+            : `<span style="color: #ff7675; font-weight: 700; font-size: 10px;">🔒 BLOQUEADO</span>`
+          }
+        </div>
       </div>
-      <div class="pedestal-active-glow" style="background: ${profile.themeColor}; box-shadow: 0 0 12px ${profile.themeColor};"></div>
+      <div class="pedestal-active-glow" style="background: ${unlocked ? profile.themeColor : '#ff7675'}; box-shadow: 0 0 12px ${unlocked ? profile.themeColor : '#ff7675'};"></div>
     `;
 
     btn.onclick = () => {
@@ -1762,6 +1869,298 @@ function renderBlessingsSummary() {
   `).join('');
 }
 
+export function openAchievementsModal() {
+  closeCharSelectModal();
+
+  const modal = document.getElementById('achievements-modal');
+  const grid = document.getElementById('achievements-list-grid');
+  const unlockedCountEl = document.getElementById('achievements-unlocked-count');
+  const totalCountEl = document.getElementById('achievements-total-count');
+  if (!modal || !grid) return;
+
+  const isMobile = isMobileScreen();
+  modal.classList.toggle('is-mobile-device', isMobile);
+
+  const unlockedIds = getUnlockedAchievementIds();
+  if (unlockedCountEl) unlockedCountEl.innerText = unlockedIds.length;
+  if (totalCountEl) totalCountEl.innerText = ACHIEVEMENTS.length;
+
+  grid.innerHTML = '';
+  ACHIEVEMENTS.forEach(ach => {
+    const status = getAchievementStatus(ach.id);
+    const card = document.createElement('div');
+    card.className = `achievement-card ${status.isCompleted ? 'ach-completed' : 'ach-locked'}`;
+
+    let rewardBadge = '';
+    if (ach.heroTitle) {
+      rewardBadge = `<span class="ach-reward-pill ach-hero-reward">🔓 Desbloqueia: <b>${ach.heroTitle}</b></span>`;
+    } else if (ach.rewardGold > 0) {
+      rewardBadge = `<span class="ach-reward-pill ach-gold-reward">${renderIcon('gold', { size: 10, color: '#f1c40f' })} +${ach.rewardGold} Almas</span>`;
+    }
+
+    card.innerHTML = `
+      <div class="ach-card-icon-wrap ${status.isCompleted ? 'completed' : ''}">
+        <span class="ach-emblem-icon">${status.isCompleted ? '✨' : '🔒'}</span>
+      </div>
+      <div class="ach-card-details">
+        <div class="ach-card-top-row">
+          <div class="ach-card-name ${status.isCompleted ? 'name-completed' : ''}">${ach.title}</div>
+          <span class="ach-status-badge ${status.isCompleted ? 'badge-done' : 'badge-pending'}">
+            ${status.isCompleted ? '✓ CONCLUÍDO' : status.label}
+          </span>
+        </div>
+        <div class="ach-card-desc">${ach.desc}</div>
+        <div class="ach-progress-container">
+          <div class="ach-progress-rail">
+            <div class="ach-progress-bar" style="width: ${status.percent}%;"></div>
+          </div>
+          <div class="ach-card-bottom-row">
+            <div class="ach-reward-wrap">${rewardBadge}</div>
+            <span class="ach-pct-text">${status.percent}%</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    grid.appendChild(card);
+  });
+
+  modal.classList.remove('modal-hidden');
+  modal.style.removeProperty('display');
+  modal.style.display = 'flex';
+  playSfx('level');
+}
+
+export function closeAchievementsModal() {
+  const modal = document.getElementById('achievements-modal');
+  if (modal) {
+    modal.classList.add('modal-hidden');
+    modal.style.setProperty('display', 'none', 'important');
+    modal.style.display = 'none';
+  }
+  openCharacterSelect();
+}
+
+// ========================================================
+// CÓDICE DO BESTIÁRIO DAS TREVAS (Grimório de Criaturas)
+// ========================================================
+export let currentBestiaryCategory = 'ALL';
+export let selectedCreatureId = 'ZOMBIE';
+
+export function openBestiaryModal() {
+  closeCharSelectModal();
+
+  const modal = document.getElementById('bestiary-modal');
+  if (!modal) return;
+
+  const isMobile = isMobileScreen();
+  modal.classList.toggle('is-mobile-device', isMobile);
+
+  renderBestiaryRoster(currentBestiaryCategory);
+  renderBestiaryDossier(selectedCreatureId);
+
+  modal.classList.remove('modal-hidden');
+  modal.style.removeProperty('display');
+  modal.style.display = 'flex';
+  playSfx('level');
+}
+
+export function closeBestiaryModal() {
+  stopBestiaryPreview();
+  const modal = document.getElementById('bestiary-modal');
+  if (modal) {
+    modal.classList.add('modal-hidden');
+    modal.style.setProperty('display', 'none', 'important');
+    modal.style.display = 'none';
+  }
+  openCharacterSelect();
+}
+
+export function selectBestiaryCreature(creatureId) {
+  selectedCreatureId = creatureId;
+  const cards = document.querySelectorAll('.bestiary-card');
+  cards.forEach(c => {
+    const isTarget = c.getAttribute('data-id') === creatureId;
+    c.classList.toggle('active', isTarget);
+    if (isTarget) {
+      try {
+        c.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      } catch (err) {}
+    }
+  });
+  renderBestiaryDossier(creatureId);
+  playSfx('click');
+}
+
+export function renderBestiaryRoster(filterCategory = 'ALL') {
+  const rosterGrid = document.getElementById('bestiary-roster-grid');
+  if (!rosterGrid) return;
+
+  rosterGrid.innerHTML = '';
+
+  let entries = BESTIARY_ENTRIES;
+  if (filterCategory && filterCategory !== 'ALL') {
+    entries = entries.filter(c => c.category === filterCategory);
+  }
+
+  // Atualizar contador de descobertos no cabeçalho
+  const discoveredCount = BESTIARY_ENTRIES.filter(c => isCreatureDiscovered(c.id)).length;
+  const countEl = document.getElementById('bestiary-discovered-count');
+  if (countEl) countEl.innerText = discoveredCount;
+  const totalEl = document.getElementById('bestiary-total-count');
+  if (totalEl) totalEl.innerText = BESTIARY_ENTRIES.length;
+
+  entries.forEach(c => {
+    const isDiscovered = isCreatureDiscovered(c.id);
+    const kills = getCreatureKills(c.id);
+    const isSelected = c.id === selectedCreatureId;
+    const stars = '★'.repeat(c.threat);
+
+    const card = document.createElement('div');
+    card.className = `bestiary-card ${isSelected ? 'active' : ''} ${isDiscovered ? 'discovered' : 'undiscovered'}`;
+    card.setAttribute('data-id', c.id);
+
+    let catBadgeClass = 'badge-horde';
+    let catLabel = 'HORDA';
+    if (c.category === 'BOSS') { 
+      catBadgeClass = 'badge-boss'; 
+      catLabel = 'CHEFE'; 
+    } else if (c.category === 'MINIBOSS') { 
+      catBadgeClass = 'badge-miniboss'; 
+      catLabel = 'MINIBOSS'; 
+    }
+
+    card.innerHTML = `
+      <div class="bcard-avatar-wrap" style="border-color: ${isDiscovered ? (c.color + 'aa') : 'rgba(255,255,255,0.1)'};">
+        <span class="bcard-avatar-icon">${isDiscovered ? (c.category === 'BOSS' ? '👑' : (c.category === 'MINIBOSS' ? '⚡' : '💀')) : '🔒'}</span>
+      </div>
+      <div class="bcard-info">
+        <div class="bcard-top-row">
+          <span class="bcard-name ${isDiscovered ? '' : 'undiscovered-name'}" style="color: ${isDiscovered ? (c.color || '#fff') : '#888'};">
+            ${isDiscovered ? c.name : '???'}
+          </span>
+          <span class="bcard-cat-pill ${catBadgeClass}">${catLabel}</span>
+        </div>
+        <div class="bcard-sub-row">
+          <span class="bcard-kills">${isDiscovered ? `${kills} abates` : 'Não catalogado'}</span>
+          <span class="bcard-threat">${stars}</span>
+        </div>
+      </div>
+    `;
+
+    card.onclick = (e) => {
+      e.stopPropagation();
+      selectBestiaryCreature(c.id);
+    };
+
+    rosterGrid.appendChild(card);
+  });
+}
+
+export function renderBestiaryDossier(creatureId) {
+  const dossierPanel = document.getElementById('bestiary-dossier-panel');
+  if (!dossierPanel) return;
+
+  const c = BESTIARY_ENTRIES.find(x => x.id === creatureId) || BESTIARY_ENTRIES[0];
+  const kills = getCreatureKills(c.id);
+  const isDiscovered = isCreatureDiscovered(c.id);
+  const isLore = isLoreUnlocked(c);
+  const reqKills = c.category === 'HORDE' ? 10 : 1;
+  const stars = '★'.repeat(c.threat) + '☆'.repeat(Math.max(0, 5 - c.threat));
+
+  dossierPanel.innerHTML = `
+    <div class="dossier-card-wrap">
+      <!-- 1. Palco da Prévia em Alta Definição -->
+      <div class="bestiary-preview-viewport">
+        <canvas id="bestiary-preview-canvas" width="220" height="220"></canvas>
+        <div class="bestiary-category-pill" style="border-color:${isDiscovered ? c.color : '#ff4757'}; color:${isDiscovered ? c.color : '#ff7675'};">
+          ${c.category === 'BOSS' ? '👑 CHEFE SUPREMO' : (c.category === 'MINIBOSS' ? '⚡ MINI-CHEFE' : '💀 HORDA DE ENXAME')}
+        </div>
+        <div class="bestiary-kills-pill">
+          ${isDiscovered ? `⚔️ ${kills} Abates` : '🔒 Não Catalogado'}
+        </div>
+      </div>
+
+      <!-- 2. Cabeçalho de Identidade -->
+      <div class="dossier-identity">
+        <div class="dossier-name-row">
+          <h2 class="dossier-name" style="color: ${isDiscovered ? (c.color || '#00f5d4') : '#ff7675'};">
+            ${isDiscovered ? c.name : '???'}
+          </h2>
+          <span class="dossier-threat-badge" title="Nível de Ameaça: ${c.threat}/5">
+            ${stars}
+          </span>
+        </div>
+        <div class="dossier-title">
+          ${isDiscovered ? c.title : 'Espécime Oculto nas Sombras do Abismo'}
+        </div>
+      </div>
+
+      <!-- 3. Parâmetros de Biometria & Combate -->
+      <div class="dossier-stats-grid">
+        <div class="dossier-stat-box">
+          <span class="dossier-stat-label">VIDA BASE</span>
+          <span class="dossier-stat-value">${isDiscovered ? c.hp.toLocaleString('pt-BR') : '???'}</span>
+        </div>
+        <div class="dossier-stat-box">
+          <span class="dossier-stat-label">DANO DE CONTATO</span>
+          <span class="dossier-stat-value">${isDiscovered ? c.damage : '???'}</span>
+        </div>
+        <div class="dossier-stat-box">
+          <span class="dossier-stat-label">VELOCIDADE</span>
+          <span class="dossier-stat-value">${isDiscovered ? c.speed : '???'}</span>
+        </div>
+        <div class="dossier-stat-box">
+          <span class="dossier-stat-label">FUNÇÃO TÁTICA</span>
+          <span class="dossier-stat-value">${isDiscovered ? c.role : '???'}</span>
+        </div>
+      </div>
+
+      <!-- 4. Crônica de Origem Profana (Micro-Lore) -->
+      <div class="dossier-lore-box ${isLore ? '' : 'is-locked'}">
+        <div class="dossier-box-header">
+          <span class="dossier-box-icon">📜</span>
+          <span class="dossier-box-title">CRÔNICA DE ORIGEM PROFANA</span>
+          <span class="dossier-lock-status">${isLore ? 'DESCRIPTOGRAFADO' : `🔒 Requer ${reqKills} ${reqKills === 1 ? 'abate' : 'abates'}`}</span>
+        </div>
+        <div class="dossier-box-content">
+          ${isLore ? c.microLore : (isDiscovered ? `O véu do mistério ainda oculta a origem desta abominação. Abata mais ${Math.max(1, reqKills - kills)} espécimes para decifrar sua história ancestral.` : 'Criatura desconhecida. Elimine-a na arena para iniciar a extração de dados.')}
+        </div>
+      </div>
+
+      <!-- 5. Fraquezas Táticas & Diretrizes de Sobrevivência -->
+      <div class="dossier-lore-box dossier-tactics-box ${isLore ? '' : 'is-locked'}">
+        <div class="dossier-box-header">
+          <span class="dossier-box-icon">⚔️</span>
+          <span class="dossier-box-title">FRAQUEZA & CONDUTA TÁTICA</span>
+          <span class="dossier-lock-status">${isLore ? 'REVELADO' : '🔒 BLOQUEADO'}</span>
+        </div>
+        <div class="dossier-box-content">
+          ${isLore ? c.tactics : 'Fraquezas e pontos vulneráveis desconhecidos.'}
+        </div>
+      </div>
+
+      <!-- 6. Citações e Ecos do Vazio (Quotes / Barks) -->
+      ${c.quotes && c.quotes.length > 0 ? `
+        <div class="dossier-quotes-box ${isLore ? '' : 'is-locked'}">
+          <div class="dossier-box-header">
+            <span class="dossier-box-icon">💬</span>
+            <span class="dossier-box-title">ECOS & CITAÇÕES DA ARENA</span>
+          </div>
+          <div class="dossier-quotes-list">
+            ${isLore ? c.quotes.map(q => `<div class="dossier-quote-item">${q}</div>`).join('') : '<div class="dossier-quote-item locked-quote">“...” (Ecos selados pelo Abismo)</div>'}
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+
+  const previewCanvasEl = document.getElementById('bestiary-preview-canvas');
+  if (previewCanvasEl) {
+    startBestiaryPreview(previewCanvasEl, c, isDiscovered);
+  }
+}
+
 export function initUI() {
   const bindClick = (id, handler) => {
     const el = document.getElementById(id);
@@ -1780,6 +2179,41 @@ export function initUI() {
   bindClick('abandon-btn', openCharacterSelect);
   bindClick('restart-death-btn', openCharacterSelect);
   bindClick('restart-victory-btn', openCharacterSelect);
+
+  bindClick('open-achievements-btn', openAchievementsModal);
+  bindClick('close-achievements-btn', closeAchievementsModal);
+  const achievementsModalEl = document.getElementById('achievements-modal');
+  if (achievementsModalEl) {
+    achievementsModalEl.addEventListener('click', e => {
+      if (e.target === achievementsModalEl) {
+        closeAchievementsModal();
+      }
+    });
+  }
+
+  bindClick('open-bestiary-btn', openBestiaryModal);
+  bindClick('close-bestiary-btn', closeBestiaryModal);
+  const bestiaryModalEl = document.getElementById('bestiary-modal');
+  if (bestiaryModalEl) {
+    bestiaryModalEl.addEventListener('click', e => {
+      if (e.target === bestiaryModalEl) {
+        closeBestiaryModal();
+      }
+    });
+  }
+
+  // Abas de Categoria do Bestiário
+  document.querySelectorAll('.bestiary-tab-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const cat = btn.getAttribute('data-cat') || 'ALL';
+      document.querySelectorAll('.bestiary-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentBestiaryCategory = cat;
+      renderBestiaryRoster(currentBestiaryCategory);
+      playSfx('click');
+    });
+  });
 
   bindClick('open-talents-btn', openTalentsModal);
   bindClick('close-talents-btn', () => {
@@ -1938,6 +2372,17 @@ export function initUI() {
     if (pauseModal && pauseModal.style.display === 'flex') {
       pauseModal.classList.toggle('is-mobile-device', isMobileScreen());
       renderPauseInventory();
+    }
+
+    const achievementsModal = document.getElementById('achievements-modal');
+    if (achievementsModal && achievementsModal.style.display === 'flex') {
+      achievementsModal.classList.toggle('is-mobile-device', isMobileScreen());
+    }
+
+    const bestiaryModal = document.getElementById('bestiary-modal');
+    if (bestiaryModal && bestiaryModal.style.display === 'flex') {
+      bestiaryModal.classList.toggle('is-mobile-device', isMobileScreen());
+      renderBestiaryDossier(selectedCreatureId);
     }
   });
 }

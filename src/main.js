@@ -40,6 +40,7 @@ import {
 } from './systems/projectiles.js';
 import { spawnSquad, spawnMobCluster, spawnProp } from './entities/enemies.js';
 import { ENEMY_TYPES } from './config/enemies.js';
+import { recordRunStats } from './config/achievements.js';
 import { 
   getCurrentWave, 
   getEffectiveHordeSeconds,
@@ -69,6 +70,8 @@ import { updateBoss } from './entities/bosses/bossRegistry.js';
 import { updateMiniBoss } from './entities/minibossController.js';
 import { initResponsive, layoutMetrics, updateLayoutMetrics, getHudBottom } from './core/responsive.js';
 import { devCheats } from './systems/devtools.js';
+import { recordCreatureKill } from './config/bestiary.js';
+import { triggerBossBark, clearActiveBarks } from './systems/barks.js';
 
 // Reexportações diretas das variáveis de combate e projéteis
 export { 
@@ -91,6 +94,10 @@ export {
 
 export let canvas = null;
 export let ctx = null;
+
+export function setMainCtx(newCtx) {
+  ctx = newCtx;
+}
 
 export let dpr = 1;
 export let viewW = window.innerWidth;
@@ -413,6 +420,7 @@ export function resetGame() {
   bossShockwaves.length = 0;
   voidVortices.length = 0;
   activeBoss = null;
+  clearActiveBarks();
 
   resetBossSchedule();
   resetMiniBossSchedule();
@@ -535,6 +543,7 @@ function update(dt) {
     waveAnnouncement.timer = 180;
     waveAnnouncement.maxTimer = 180;
     triggerShake(4);
+    recordRunStats({ wave: currentWave.index });
   }
   if (waveAnnouncement.timer > 0) {
     waveAnnouncement.timer -= dt;
@@ -1729,6 +1738,10 @@ function update(dt) {
       }
 
       if (e.isBoss) {
+        if (!e.enrageBarkTriggered && (e.isEnraged || (e.hp <= e.maxHp * 0.5))) {
+          e.enrageBarkTriggered = true;
+          triggerBossBark(e.bossId, 'ENRAGE');
+        }
         updateBoss(e, dt, {
           player,
           frameCount,
@@ -2572,6 +2585,7 @@ function update(dt) {
           if (e.actionState !== 'DEATH_COLLAPSE') {
             e.hp = 0;
             e.actionState = 'DEATH_COLLAPSE';
+            recordCreatureKill('BOSS_' + (e.bossId || 4));
             e.defeatTimer = 540; // ~9 segundos a 60 FPS
             e.defeatMaxTimer = 540;
             e.isTargetable = false;
@@ -2738,6 +2752,9 @@ function update(dt) {
           pulseOffset: Math.random() * Math.PI * 2
         });
       }
+
+      const creatureKey = e.isBoss ? ('BOSS_' + e.bossId) : (e.baseType || e.type || 'ZOMBIE');
+      recordCreatureKill(creatureKey);
 
       playSfx('kill');
       enemies.splice(i, 1);

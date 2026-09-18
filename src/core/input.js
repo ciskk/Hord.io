@@ -159,6 +159,22 @@ window.addEventListener('keydown', e => {
         return;
       }
     }
+    const achievementsModal = document.getElementById('achievements-modal');
+    if (achievementsModal && achievementsModal.style.display !== 'none' && !achievementsModal.classList.contains('modal-hidden')) {
+      const closeAchievementsBtn = document.getElementById('close-achievements-btn');
+      if (closeAchievementsBtn) {
+        closeAchievementsBtn.click();
+        return;
+      }
+    }
+    const bestiaryModal = document.getElementById('bestiary-modal');
+    if (bestiaryModal && bestiaryModal.style.display !== 'none' && !bestiaryModal.classList.contains('modal-hidden')) {
+      const closeBestiaryBtn = document.getElementById('close-bestiary-btn');
+      if (closeBestiaryBtn) {
+        closeBestiaryBtn.click();
+        return;
+      }
+    }
     const bossModal = document.getElementById('boss-select-modal');
     if (bossModal && bossModal.style.display === 'flex') {
       closeBossSelectModal();
