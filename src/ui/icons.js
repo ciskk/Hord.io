@@ -137,9 +137,7 @@ export const ICONS = {
   `,
 
   lock: `
-    <rect x="5" y="10" width="14" height="11" rx="2" fill="currentColor"/>
-    <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M8 10V6.5a4 4 0 0 1 8 0V10"/>
-    <circle cx="12" cy="15.5" r="1.5" fill="#121622"/>
+    <path fill="currentColor" fill-rule="evenodd" d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 8V7a3 3 0 0 1 6 0v3H9zm3 3a1.75 1.75 0 0 0-1 3.19v2.06a1 1 0 1 0 2 0v-2.06A1.75 1.75 0 0 0 12 13z"/>
   `,
 
   purify: `
@@ -284,6 +282,10 @@ export const ICONS = {
 
   sparkle: `
     <polygon points="12,2 14,8 20,10 14,12 12,18 10,12 4,10 10,8" fill="currentColor"/>
+  `,
+
+  quote: `
+    <path fill="currentColor" d="M6 17h3l2-4V7H5v6h3l-2 4zm8 0h3l2-4V7h-6v6h3l-2 4z"/>
   `
 };
 

@@ -21,8 +21,7 @@ import {
   resizePreviewCanvas,
   setPreviewHero, 
   togglePreviewFacing, 
-  setPreviewPose, 
-  triggerHeroSurge 
+  setPreviewPose 
 } from '../render/characterPreview.js';
 import { 
   BESTIARY_ENTRIES, 
@@ -735,7 +734,7 @@ export function triggerDeath() {
   if (newlyUnlocked && newlyUnlocked.length > 0) {
     achBanner = `
       <div style="margin-top: 8px; padding: 6px 10px; background: rgba(0, 245, 212, 0.12); border: 1px solid rgba(0, 245, 212, 0.5); border-radius: 4px; text-align: left;">
-        <span style="color: #ffd166; font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">✨ CONQUISTA DESBLOQUEADA!</span><br>
+        <span style="color: #ffd166; font-size: 10px; font-weight: bold; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 4px;">${renderIcon('sparkle', { size: 11, color: '#ffd166' })} CONQUISTA DESBLOQUEADA!</span><br>
         ${newlyUnlocked.map(a => `<span style="color: #00f5d4; font-size: 11px;"><b>${a.title}</b>: ${a.heroTitle ? `Despertou <b>${a.heroTitle}</b> no Altar!` : a.desc}</span>`).join('<br>')}
       </div>
     `;
@@ -1082,7 +1081,7 @@ export function openCharacterSelect() {
 
     const badge = document.getElementById('stage-archetype-badge');
     if (badge) {
-      badge.innerText = char.title.toUpperCase() + (!unlocked ? ' • 🔒' : '');
+      badge.innerHTML = `${char.title.toUpperCase()} ${!unlocked ? renderIcon('lock', { size: 10, color: '#ff7675', style: 'margin-left:4px; vertical-align:middle; display:inline-block;' }) : ''}`;
       badge.style.color = unlocked ? profile.themeColor : '#747d8c';
       badge.style.borderColor = unlocked ? `${profile.themeColor}aa` : '#4b5563';
       badge.style.boxShadow = unlocked ? `0 0 18px ${profile.themeColor}66` : 'none';
@@ -1117,7 +1116,7 @@ export function openCharacterSelect() {
       ${!unlocked && status ? `
         <div class="showcase-lock-dossier">
           <div class="lock-dossier-header">
-            <span class="lock-icon-lg">🔒</span>
+            <span class="lock-icon-lg">${renderIcon('lock', { size: 16, color: '#ff7675' })}</span>
             <div class="lock-titles">
               <span class="lock-eyebrow">SELO PRIMORDIAL • REQUISITO DE DESBLOQUEIO</span>
               <div class="lock-name">${status.title}</div>
@@ -1212,7 +1211,7 @@ export function openCharacterSelect() {
         </button>
       ` : `
         <button class="card-btn btn-summon-hero btn-hero-locked" id="confirm-hero-btn" disabled style="background: #231620; border-color: #ff767555; color: #ff7675; cursor: not-allowed; opacity: 0.9;">
-          🔒 SELO PRIMORDIAL ATIVO (CUMPRA O REQUISITO)
+          ${renderIcon('lock', { size: 12, color: '#ff7675', style: 'margin-right:6px; flex-shrink:0;' })} SELO PRIMORDIAL ATIVO (CUMPRA O REQUISITO)
         </button>
       `}
     `;
@@ -1266,7 +1265,7 @@ export function openCharacterSelect() {
     btn.innerHTML = `
       <div class="char-pedestal-emblem" style="border-color: ${unlocked ? profile.themeColor : '#4b5563'}; color: ${unlocked ? profile.themeColor : '#6b7280'}; position: relative;">
         ${profile.emblemSvg}
-        ${!unlocked ? '<div class="pedestal-lock-badge">🔒</div>' : ''}
+        ${!unlocked ? `<div class="pedestal-lock-badge">${renderIcon('lock', { size: 10, color: '#ff7675' })}</div>` : ''}
       </div>
       <div class="char-pedestal-info">
         <div class="char-pedestal-title" style="color: ${unlocked ? profile.themeColor : '#9ca3af'};">${c.title}</div>
@@ -1274,7 +1273,7 @@ export function openCharacterSelect() {
         <div class="char-pedestal-role-mini">
           ${unlocked 
             ? `${c.role || ''} · <span class="mini-diff" style="color: ${profile.themeColor};">${miniDots}</span>` 
-            : `<span style="color: #ff7675; font-weight: 700; font-size: 10px;">🔒 BLOQUEADO</span>`
+            : `<span class="pedestal-locked-label" style="color: #ff7675; font-weight: 700; font-size: 10px; display: inline-flex; align-items: center; gap: 3px;">${renderIcon('lock', { size: 9, color: '#ff7675' })} BLOQUEADO</span>`
           }
         </div>
       </div>
@@ -1363,13 +1362,6 @@ export function openCharacterSelect() {
       setPreviewPose(pose);
     };
   });
-
-  const previewCanvasEl = document.getElementById('char-preview-canvas');
-  if (previewCanvasEl) {
-    previewCanvasEl.onclick = () => {
-      triggerHeroSurge(true);
-    };
-  }
 
   renderShowcase(activeShowcaseHeroKey);
   charModal.style.display = 'flex';
@@ -1893,20 +1885,20 @@ export function openAchievementsModal() {
 
     let rewardBadge = '';
     if (ach.heroTitle) {
-      rewardBadge = `<span class="ach-reward-pill ach-hero-reward">🔓 Desbloqueia: <b>${ach.heroTitle}</b></span>`;
+      rewardBadge = `<span class="ach-reward-pill ach-hero-reward">${renderIcon('lock', { size: 10, color: '#00f5d4', style: 'vertical-align:middle;margin-right:2px;' })} Desbloqueia: <b>${ach.heroTitle}</b></span>`;
     } else if (ach.rewardGold > 0) {
-      rewardBadge = `<span class="ach-reward-pill ach-gold-reward">${renderIcon('gold', { size: 10, color: '#f1c40f' })} +${ach.rewardGold} Almas</span>`;
+      rewardBadge = `<span class="ach-reward-pill ach-gold-reward">${renderIcon('gold', { size: 10, color: '#f1c40f', style: 'vertical-align:middle;margin-right:2px;' })} +${ach.rewardGold} Almas</span>`;
     }
 
     card.innerHTML = `
       <div class="ach-card-icon-wrap ${status.isCompleted ? 'completed' : ''}">
-        <span class="ach-emblem-icon">${status.isCompleted ? '✨' : '🔒'}</span>
+        <span class="ach-emblem-icon">${status.isCompleted ? renderIcon('sparkle', { size: 16, color: '#ffd166' }) : renderIcon('lock', { size: 15, color: '#636e72' })}</span>
       </div>
       <div class="ach-card-details">
         <div class="ach-card-top-row">
           <div class="ach-card-name ${status.isCompleted ? 'name-completed' : ''}">${ach.title}</div>
           <span class="ach-status-badge ${status.isCompleted ? 'badge-done' : 'badge-pending'}">
-            ${status.isCompleted ? '✓ CONCLUÍDO' : status.label}
+            ${status.isCompleted ? `${renderIcon('check', { size: 10, color: '#2ecc71', style: 'vertical-align:middle;margin-right:3px;' })} CONCLUÍDO` : status.label}
           </span>
         </div>
         <div class="ach-card-desc">${ach.desc}</div>
@@ -2032,7 +2024,7 @@ export function renderBestiaryRoster(filterCategory = 'ALL') {
 
     card.innerHTML = `
       <div class="bcard-avatar-wrap" style="border-color: ${isDiscovered ? (c.color + 'aa') : 'rgba(255,255,255,0.1)'};">
-        <span class="bcard-avatar-icon">${isDiscovered ? (c.category === 'BOSS' ? '👑' : (c.category === 'MINIBOSS' ? '⚡' : '💀')) : '🔒'}</span>
+        <span class="bcard-avatar-icon">${isDiscovered ? (c.category === 'BOSS' ? renderIcon('boss_crown', { size: 14, color: '#c084fc' }) : (c.category === 'MINIBOSS' ? renderIcon('damage', { size: 14, color: '#f39c12' }) : renderIcon('skull', { size: 14, color: '#2ecc71' }))) : renderIcon('lock', { size: 13, color: '#636e72' })}</span>
       </div>
       <div class="bcard-info">
         <div class="bcard-top-row">
@@ -2074,10 +2066,10 @@ export function renderBestiaryDossier(creatureId) {
       <div class="bestiary-preview-viewport">
         <canvas id="bestiary-preview-canvas" width="220" height="220"></canvas>
         <div class="bestiary-category-pill" style="border-color:${isDiscovered ? c.color : '#ff4757'}; color:${isDiscovered ? c.color : '#ff7675'};">
-          ${c.category === 'BOSS' ? '👑 CHEFE SUPREMO' : (c.category === 'MINIBOSS' ? '⚡ MINI-CHEFE' : '💀 HORDA DE ENXAME')}
+          ${c.category === 'BOSS' ? `${renderIcon('boss_crown', { size: 12, color: '#c084fc', style: 'vertical-align:middle;margin-right:4px;' })} CHEFE SUPREMO` : (c.category === 'MINIBOSS' ? `${renderIcon('damage', { size: 12, color: '#f39c12', style: 'vertical-align:middle;margin-right:4px;' })} MINI-CHEFE` : `${renderIcon('skull', { size: 12, color: '#2ecc71', style: 'vertical-align:middle;margin-right:4px;' })} HORDA DE ENXAME`)}
         </div>
         <div class="bestiary-kills-pill">
-          ${isDiscovered ? `⚔️ ${kills} Abates` : '🔒 Não Catalogado'}
+          ${isDiscovered ? `${renderIcon('wave_swords', { size: 12, color: '#00f5d4', style: 'vertical-align:middle;margin-right:4px;' })} ${kills} Abates` : `${renderIcon('lock', { size: 11, color: '#ff7675', style: 'vertical-align:middle;margin-right:4px;' })} Não Catalogado`}
         </div>
       </div>
 
@@ -2099,19 +2091,19 @@ export function renderBestiaryDossier(creatureId) {
       <!-- 3. Parâmetros de Biometria & Combate -->
       <div class="dossier-stats-grid">
         <div class="dossier-stat-box">
-          <span class="dossier-stat-label">VIDA BASE</span>
+          <span class="dossier-stat-label">${renderIcon('heart', { size: 10, color: '#ff4757', style: 'vertical-align:middle;margin-right:3px;' })} VIDA BASE</span>
           <span class="dossier-stat-value">${isDiscovered ? c.hp.toLocaleString('pt-BR') : '???'}</span>
         </div>
         <div class="dossier-stat-box">
-          <span class="dossier-stat-label">DANO DE CONTATO</span>
+          <span class="dossier-stat-label">${renderIcon('sword', { size: 10, color: '#f39c12', style: 'vertical-align:middle;margin-right:3px;' })} DANO CONTATO</span>
           <span class="dossier-stat-value">${isDiscovered ? c.damage : '???'}</span>
         </div>
         <div class="dossier-stat-box">
-          <span class="dossier-stat-label">VELOCIDADE</span>
+          <span class="dossier-stat-label">${renderIcon('boot', { size: 10, color: '#00f5d4', style: 'vertical-align:middle;margin-right:3px;' })} VELOCIDADE</span>
           <span class="dossier-stat-value">${isDiscovered ? c.speed : '???'}</span>
         </div>
         <div class="dossier-stat-box">
-          <span class="dossier-stat-label">FUNÇÃO TÁTICA</span>
+          <span class="dossier-stat-label">${renderIcon('execute', { size: 10, color: '#a29bfe', style: 'vertical-align:middle;margin-right:3px;' })} FUNÇÃO TÁTICA</span>
           <span class="dossier-stat-value">${isDiscovered ? c.role : '???'}</span>
         </div>
       </div>
@@ -2119,9 +2111,9 @@ export function renderBestiaryDossier(creatureId) {
       <!-- 4. Crônica de Origem Profana (Micro-Lore) -->
       <div class="dossier-lore-box ${isLore ? '' : 'is-locked'}">
         <div class="dossier-box-header">
-          <span class="dossier-box-icon">📜</span>
+          <span class="dossier-box-icon">${renderIcon('scroll', { size: 13, color: '#ffd166', style: 'display:inline-block;vertical-align:middle;' })}</span>
           <span class="dossier-box-title">CRÔNICA DE ORIGEM PROFANA</span>
-          <span class="dossier-lock-status">${isLore ? 'DESCRIPTOGRAFADO' : `🔒 Requer ${reqKills} ${reqKills === 1 ? 'abate' : 'abates'}`}</span>
+          <span class="dossier-lock-status">${isLore ? 'DESCRIPTOGRAFADO' : `${renderIcon('lock', { size: 10, color: '#ff7675', style: 'vertical-align:middle;margin-right:2px;' })} Requer ${reqKills} ${reqKills === 1 ? 'abate' : 'abates'}`}</span>
         </div>
         <div class="dossier-box-content">
           ${isLore ? c.microLore : (isDiscovered ? `O véu do mistério ainda oculta a origem desta abominação. Abata mais ${Math.max(1, reqKills - kills)} espécimes para decifrar sua história ancestral.` : 'Criatura desconhecida. Elimine-a na arena para iniciar a extração de dados.')}
@@ -2131,9 +2123,9 @@ export function renderBestiaryDossier(creatureId) {
       <!-- 5. Fraquezas Táticas & Diretrizes de Sobrevivência -->
       <div class="dossier-lore-box dossier-tactics-box ${isLore ? '' : 'is-locked'}">
         <div class="dossier-box-header">
-          <span class="dossier-box-icon">⚔️</span>
+          <span class="dossier-box-icon">${renderIcon('sword', { size: 13, color: '#00f5d4', style: 'display:inline-block;vertical-align:middle;' })}</span>
           <span class="dossier-box-title">FRAQUEZA & CONDUTA TÁTICA</span>
-          <span class="dossier-lock-status">${isLore ? 'REVELADO' : '🔒 BLOQUEADO'}</span>
+          <span class="dossier-lock-status">${isLore ? 'REVELADO' : `${renderIcon('lock', { size: 10, color: '#ff7675', style: 'vertical-align:middle;margin-right:2px;' })} BLOQUEADO`}</span>
         </div>
         <div class="dossier-box-content">
           ${isLore ? c.tactics : 'Fraquezas e pontos vulneráveis desconhecidos.'}
@@ -2144,7 +2136,7 @@ export function renderBestiaryDossier(creatureId) {
       ${c.quotes && c.quotes.length > 0 ? `
         <div class="dossier-quotes-box ${isLore ? '' : 'is-locked'}">
           <div class="dossier-box-header">
-            <span class="dossier-box-icon">💬</span>
+            <span class="dossier-box-icon">${renderIcon('quote', { size: 13, color: '#a29bfe', style: 'display:inline-block;vertical-align:middle;' })}</span>
             <span class="dossier-box-title">ECOS & CITAÇÕES DA ARENA</span>
           </div>
           <div class="dossier-quotes-list">
