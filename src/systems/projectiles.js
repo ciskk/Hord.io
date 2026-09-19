@@ -3,10 +3,12 @@
  * Subsistema Balístico, Poças Ambientais e Paridade de Dano Melee (Fase 3 e 5).
  */
 import { player, selectedHeroKey } from '../entities/player.js';
-import { enemies, triggerShake } from '../main.js';
+import { enemies, triggerShake, setLastAttackerInfo } from '../main.js';
 import { addDamageText, createHitParticles } from './combat.js';
 import { playSfx, triggerHaptic } from '../core/audio.js';
 import { getNeighborIndices } from '../core/spatialGrid.js';
+import { addGroundCrater, updateGroundCraters } from '../render/groundCracks.js';
+import { triggerDeath } from './ui.js';
 
 export const bullets = [];
 export const enemyBullets = [];
@@ -33,6 +35,21 @@ export function updateProjectiles(dt) {
       if (!b.trail) b.trail = [];
       b.trail.unshift({ x: b.x, y: b.y });
       if (b.trail.length > 5) b.trail.pop();
+    } else if (b.type === 'STAFF') {
+      if (!b.trail) b.trail = [];
+      b.trail.unshift({ x: b.x, y: b.y });
+      const maxTrail = b.isEvolved ? 12 : 9;
+      if (b.trail.length > maxTrail) b.trail.pop();
+    } else if (b.type === 'SWORD') {
+      if (!b.trail) b.trail = [];
+      b.trail.unshift({ x: b.x, y: b.y });
+      if (b.trail.length > 5) b.trail.pop();
+    } else if (b.type === 'HAMMER_SLAM') {
+      // Durante a fase de preparação (windup), o martelo acompanha o cavaleiro em tempo real
+      if (b.playerRef && !b.hasImpacted) {
+        b.x = b.playerRef.x;
+        b.y = b.playerRef.y;
+      }
     }
 
     b.x += (b.vx || 0) * dt;
@@ -106,6 +123,49 @@ export function updateProjectiles(dt) {
 
     // Poções viajam em arco balístico aéreo e não colidem com inimigos no trajeto
     if (b.type === 'POTION') continue;
+
+    // Martelo Sagrado de Sir Roland: sincronização de windup e impacto sísmico
+    if (b.type === 'HAMMER_SLAM') {
+      const slamProgress = 1 - (b.life / b.maxLife);
+      // Durante o windup (frames 0 a 8), o martelo ainda está no ar sendo erguido
+      if (slamProgress < 0.32) {
+        continue;
+      }
+
+      // No instante exato do impacto com o solo (Frame 8):
+      if (!b.hasImpacted) {
+        b.hasImpacted = true;
+        if (b.playerRef) {
+          b.x = b.playerRef.x;
+          b.y = b.playerRef.y;
+        }
+
+        playSfx('hammer_slam');
+        triggerShake(b.isEvolved ? 6.5 : 4.5);
+        triggerHaptic('heavy');
+
+        // Cumprimento da Lore: Anulação Real de Projéteis Inimigos no Raio Sísmico 360°
+        const cancelRadiusSq = (b.radius + 15) * (b.radius + 15);
+        for (let k = enemyBullets.length - 1; k >= 0; k--) {
+          const eb = enemyBullets[k];
+          if (eb.isBossProjectile) continue; // Tiros de chefe são resilientes
+          const edx = eb.x - b.x;
+          const edy = eb.y - b.y;
+          if (edx * edx + edy * edy <= cancelRadiusSq) {
+            createHitParticles(eb.x, eb.y, '#f1c40f', 3);
+            createHitParticles(eb.x, eb.y, '#ffffff', 2);
+            enemyBullets.splice(k, 1);
+          }
+        }
+
+        // Ondas de partículas sagradas telúricas moderadas (sem saturar buffer de partículas)
+        createHitParticles(b.x, b.y, '#f1c40f', b.isEvolved ? 8 : 6);
+        createHitParticles(b.x, b.y, '#ffffff', b.isEvolved ? 5 : 4);
+
+        // Gera ou re-energiza a cratera e fendas geológicas no solo (anti-stacking por proximidade)
+        addGroundCrater(b.x, b.y, b.angle || 0, b.radius || 50, b.count || 1, !!b.isEvolved, b.damage || 45);
+      }
+    }
 
     const bRadius = b.radius || 6;
 
@@ -285,6 +345,17 @@ export function updateProjectiles(dt) {
       if (selectedHeroKey === 'KNIGHT') finalEbDamage = Math.round(finalEbDamage * 0.80);
       if (player.armor > 0) finalEbDamage = Math.max(1, finalEbDamage - player.armor);
       
+      const projName = eb.isBossProjectile ? 'Projétil de Chefe' : (eb.bulletType === 'SHADOW_ORB' ? 'Orbe Sombrio' : (eb.isHook ? 'Corrente do Flagelador' : 'Projétil Profano'));
+      const projCat = eb.isBossProjectile ? 'BOSS' : (eb.isMiniBoss ? 'MINIBOSS' : 'PROJECTILE');
+      setLastAttackerInfo({
+        name: eb.sourceName || projName,
+        category: projCat,
+        attackName: projName,
+        damage: Math.round(finalEbDamage),
+        color: eb.color || '#9b59b6',
+        tacticTip: "Mantenha esquiva circular constante para que trajetórias balísticas e projéteis teleguiados errem o alvo."
+      });
+
       player.hp -= finalEbDamage;
       
       if (eb.isBossProjectile) {
@@ -303,13 +374,26 @@ export function updateProjectiles(dt) {
 
       const hasSuperArmor = (player.dashDuration > 0) || (player.ignisDashDuration > 0) || (player.invisTimer > 0);
       if (!hasSuperArmor) {
-        const bulletAng = Math.atan2(eb.vy || (player.y - eb.y), eb.vx || (player.x - eb.x));
-        const bulletPush = 6.5 * (player.knockbackReceived !== undefined ? player.knockbackReceived : 1.0);
-        player.pushVx = Math.cos(bulletAng) * bulletPush;
-        player.pushVy = Math.sin(bulletAng) * bulletPush;
+        if (eb.isHook && eb.parentX !== undefined) {
+          const pullAng = Math.atan2(eb.parentY - player.y, eb.parentX - player.x);
+          player.pushVx = Math.cos(pullAng) * 12;
+          player.pushVy = Math.sin(pullAng) * 12;
+          addDamageText(player.x, player.y - 12, "PUXADO!", false, '#e74c3c');
+        } else {
+          const bulletAng = Math.atan2(eb.vy || (player.y - eb.y), eb.vx || (player.x - eb.x));
+          const bulletPush = 6.5 * (player.knockbackReceived !== undefined ? player.knockbackReceived : 1.0);
+          player.pushVx = Math.cos(bulletAng) * bulletPush;
+          player.pushVy = Math.sin(bulletAng) * bulletPush;
+        }
       }
 
       enemyBullets.splice(i, 1);
+
+      if (player.hp <= 0) {
+        player.hp = 0;
+        triggerDeath();
+        return;
+      }
     }
   }
 }
@@ -391,12 +475,26 @@ export function updateAcidPuddles(dt) {
           if (p.tickTimer > 20) {
             p.tickTimer = 0;
             const dmgVal = p.isCaustic ? 4 : 6;
+            setLastAttackerInfo({
+              name: p.isCaustic ? 'Miasma Cáustico' : 'Poça de Ácido',
+              category: 'HAZARD',
+              attackName: 'Corrosão Ácida',
+              damage: dmgVal,
+              color: p.isCaustic ? '#00d2d3' : '#2ecc71',
+              tacticTip: "Evite transitar sobre fluidos tóxicos e poças corrosivas depositadas por rastejadores e chefes."
+            });
             player.hp -= dmgVal;
             player.iFrames = 18;
             triggerShake(2);
             playSfx('acid');
             addDamageText(player.x, player.y, `-${dmgVal}`, false, p.isCaustic ? '#00d2d3' : '#2ecc71');
             createHitParticles(player.x, player.y, p.isCaustic ? '#00d2d3' : '#2ecc71', 3);
+
+            if (player.hp <= 0) {
+              player.hp = 0;
+              triggerDeath();
+              return;
+            }
           }
         }
       }
@@ -466,4 +564,7 @@ export function updateAcidPuddles(dt) {
   } else if (player.alchemistHealTimer > 0) {
     player.alchemistHealTimer = Math.max(0, player.alchemistHealTimer - dt);
   }
+
+  // Atualização do ciclo de vida das crateras e fendas geológicas no solo
+  updateGroundCraters(dt);
 }

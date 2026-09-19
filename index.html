@@ -211,8 +211,8 @@
             <button class="stage-pose-btn active" data-pose="idle" title="Postura Ociosa">
               <span class="pose-dot"></span> Repouso
             </button>
-            <button class="stage-pose-btn" data-pose="combat" title="Postura de Combate">
-              <span class="pose-dot"></span> Combate
+            <button class="stage-pose-btn" data-pose="combat" title="Demonstração de Ataque">
+              <span class="pose-dot"></span> Ataque
             </button>
             <button class="stage-pose-btn" data-pose="skill" title="Postura de Poder / Habilidade">
               <span class="pose-dot"></span> Poder
@@ -461,15 +461,15 @@
       <div class="char-modal-header-actions bestiary-header-actions">
         <div class="char-souls-counter void-souls-capsule" title="Criaturas Catalogadas">
           <svg class="inline-gold-icon" viewBox="0 0 24 24"><polygon points="12,2 15,8 21,9 17,14 18,20 12,17 6,20 7,14 3,9 9,8" fill="none" stroke="#00f5d4" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="#00f5d4"/></svg>
-          <span id="bestiary-discovered-count">0</span> / <span id="bestiary-total-count">30</span>
+          <span id="bestiary-discovered-count">0</span> / <span id="bestiary-total-count">45</span>
         </div>
       </div>
     </div>
 
     <!-- Navegação de Categorias do Bestiário -->
     <div class="bestiary-tabs-bar">
-      <button class="bestiary-tab-btn active" data-cat="ALL">TODOS (30)</button>
-      <button class="bestiary-tab-btn" data-cat="HORDE">HORDAS (10)</button>
+      <button class="bestiary-tab-btn active" data-cat="ALL">TODOS (45)</button>
+      <button class="bestiary-tab-btn" data-cat="HORDE">HORDAS (25)</button>
       <button class="bestiary-tab-btn" data-cat="MINIBOSS">MINI-CHEFES (16)</button>
       <button class="bestiary-tab-btn" data-cat="BOSS">CHEFES SUPREMOS (4)</button>
     </div>
@@ -528,48 +528,181 @@
   </div>
 </div>
 
-<!-- Modal de Pausa com Grimório Tático de Duas Colunas -->
-<div id="pause-modal" class="modal-overlay">
-  <div class="modal-box modal-box-large">
-    <div class="modal-header">
-      <div style="text-align: left;">
-        <h2 class="modal-header-title">GRIMÓRIO TÁTICO</h2>
-        <div class="modal-header-sub">Batalha suspensa no vácuo do tempo</div>
-      </div>
-      <div class="currency-badge">
-        <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#f1c40f; margin-right:4px;"><polygon points="12,1 17,6 17,18 12,23 7,18 7,6" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="12,5 15,8 15,16 12,19 9,16 9,8" fill="currentColor"/></svg><span id="pause-gold-val">0</span>
-      </div>
-    </div>
+<!-- Palco de Pausa Intrínseco: Estase Astral (Crônica da Batalha) -->
+<div id="pause-modal" class="modal-overlay pause-screen-overlay" style="display: none;">
+  <div class="pause-stasis-veil"></div>
+
+  <div class="pause-intrinsic-stage">
     
-    <div class="pause-layout-grid">
-      <!-- Coluna Esquerda: Arsenal Ativo & Rastreador de Sinergias -->
-      <div class="pause-column">
-        <h4 class="section-tag">ARSENAL ADQUIRIDO</h4>
-        <div id="pause-build-list" class="build-inventory-scroll"></div>
+    <!-- Camada Superior: Sigilo de Cronostase & Título Monumental -->
+    <div class="pause-header-group">
+      <div class="pause-sigil-wrap">
+        <div class="pause-sigil-halo-outer"></div>
+        <div class="pause-sigil-halo-inner"></div>
+        <div class="pause-sigil-mist"></div>
+        <svg class="pause-sigil-svg" viewBox="0 0 100 100" fill="none" style="overflow: visible;" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="stasisCoreGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="35%" stop-color="#00f5d4"/>
+              <stop offset="70%" stop-color="#0984e3"/>
+              <stop offset="100%" stop-color="#6c5ce7" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="stasisRingGrad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#00f5d4"/>
+              <stop offset="50%" stop-color="#ffd166"/>
+              <stop offset="100%" stop-color="#a29bfe"/>
+            </linearGradient>
+            <filter id="stasisGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2.5" result="blur"/>
+              <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+            </filter>
+          </defs>
 
-        <h4 class="section-tag" style="margin-top: 10px;">RASTREADOR DE FUSÕES (SINERGIAS)</h4>
-        <div id="pause-synergies-tracker" class="synergies-tracker-list"></div>
+          <!-- Anel Externo dos Ciclos -->
+          <circle cx="50" cy="50" r="44" stroke="url(#stasisRingGrad)" stroke-width="1.6" stroke-dasharray="7 4" opacity="0.85" filter="url(#stasisGlow)"/>
+          <circle cx="50" cy="50" r="38" stroke="#00f5d4" stroke-width="0.8" opacity="0.45"/>
+
+          <!-- Marcadores Cardeais de Cronostase -->
+          <line x1="50" y1="4" x2="50" y2="12" stroke="#ffd166" stroke-width="2" stroke-linecap="round"/>
+          <line x1="50" y1="88" x2="50" y2="96" stroke="#ffd166" stroke-width="2" stroke-linecap="round"/>
+          <line x1="4" y1="50" x2="12" y2="50" stroke="#ffd166" stroke-width="2" stroke-linecap="round"/>
+          <line x1="88" y1="50" x2="96" y2="50" stroke="#ffd166" stroke-width="2" stroke-linecap="round"/>
+
+          <!-- Geometria de Diamante Cósmico & Ampulheta Astral -->
+          <polygon points="50,16 80,50 50,84 20,50" stroke="url(#stasisRingGrad)" stroke-width="1.4" fill="none" opacity="0.75"/>
+          <polygon points="50,26 70,50 50,74 30,50" stroke="#00f5d4" stroke-width="1" fill="none" opacity="0.5"/>
+
+          <!-- Coração Rúnico de Estase -->
+          <circle cx="50" cy="50" r="9" fill="url(#stasisCoreGlow)" filter="url(#stasisGlow)"/>
+          <circle cx="50" cy="50" r="3" fill="#ffffff"/>
+        </svg>
       </div>
 
-      <!-- Coluna Direita: Biometria em Tempo Real, Áudio e Ações -->
-      <div class="pause-column">
-        <h4 class="section-tag">BIOMETRIA DO SOBREVIVENTE</h4>
-        <div id="pause-stats-grid" class="stats-mini-grid"></div>
+      <div class="pause-eyebrow">
+        <span class="pause-eyebrow-line"></span>
+        <span class="void-pulsing-node"></span>
+        <span id="pause-wave-eyebrow" class="pause-eyebrow-text">ESTÁSE TEMPORAL • CRÔNICA DA BATALHA</span>
+        <span class="pause-eyebrow-line"></span>
+      </div>
 
-        <div class="volume-control-card">
-          <div class="volume-header">
-            <span>VOLUME GERAL</span>
-            <span id="volume-val">50%</span>
-          </div>
-          <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" class="custom-slider">
+      <h1 class="pause-monumental-title">TEMPO SUSPENSO</h1>
+      <div class="pause-monumental-sub">O fluxo da arena cedeu perante a ressonância do Altar Astral</div>
+
+      <!-- Barra de Metadados da Partida -->
+      <div class="pause-meta-chips-row">
+        <div class="pause-meta-chip">
+          <span class="chip-label">TEMPO</span>
+          <span id="pause-timer-val" class="chip-val">00:00</span>
         </div>
-
-        <div class="pause-actions-group">
-          <button class="card-btn btn-resume" id="resume-btn">RETOMAR BATALHA</button>
-          <button class="card-btn btn-abandon" id="abandon-btn">ABANDONAR ARENA</button>
+        <div class="pause-meta-chip">
+          <span class="chip-label">ONDA</span>
+          <span id="pause-wave-badge" class="chip-val">1</span>
+        </div>
+        <div class="pause-meta-chip highlight-gold">
+          <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#ffd166;"><polygon points="12,1 17,6 17,18 12,23 7,18 7,6" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="12,5 15,8 15,16 12,19 9,16 9,8" fill="currentColor"/></svg>
+          <span id="pause-gold-val" class="chip-val">0</span>
         </div>
       </div>
     </div>
+
+    <!-- Layout Bento Modular de 3 Pilares -->
+    <div class="pause-bento-grid">
+      
+      <!-- PILAR 1: O Campeão & Biometria Cósmica -->
+      <div class="pause-pillar pause-pillar-survivor">
+        <div class="pillar-header">
+          <span class="pillar-tag">ARQUÉTIPO & BIOMETRIA</span>
+          <span id="pause-hero-badge" class="pillar-badge-hero">O PALADINO</span>
+        </div>
+
+        <!-- Dossiê do Herói com Barra de HP Vitral -->
+        <div class="pause-hero-dossier" id="pause-hero-dossier">
+          <div class="pause-hero-avatar-wrap" id="pause-hero-emblem-wrap">
+            <svg class="game-icon icon-md" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg>
+          </div>
+          <div class="pause-hero-meta">
+            <div class="pause-hero-name" id="pause-hero-name">Cavaleiro Arcano</div>
+            <div class="pause-hero-level" id="pause-hero-lvl-label">Nível 1 de Ascensão</div>
+            <div class="pause-hp-gauge-row">
+              <div class="pause-hp-gauge-bg">
+                <div id="pause-hp-gauge-fill" class="pause-hp-gauge-fill" style="width: 100%;"></div>
+              </div>
+              <span id="pause-hp-text" class="pause-hp-text">120/120 HP</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grid Biométrico: Status Numéricos -->
+        <div class="pillar-subheader">PARÂMETROS DE COMBATE</div>
+        <div id="pause-stats-grid" class="pause-stats-grid">
+          <!-- Preenchido dinamicamente por renderPauseInventory() -->
+        </div>
+      </div>
+
+      <!-- PILAR 2: Arsenal Arcano & Bênçãos Ativas -->
+      <div class="pause-pillar pause-pillar-arsenal">
+        <div class="pillar-header">
+          <span class="pillar-tag">ARSENAL ADQUIRIDO</span>
+          <span id="pause-weapons-count" class="pillar-badge-count">0 ARMAS</span>
+        </div>
+
+        <!-- Lista de Armas em Formato Bento -->
+        <div id="pause-build-list" class="pause-weapons-scroll">
+          <!-- Preenchido dinamicamente com pips luminosos de nível -->
+        </div>
+
+        <!-- Relíquias e Bênçãos Passivas -->
+        <div class="pillar-subheader" style="margin-top: 10px;">BÊNÇÃOS & PASSIVAS</div>
+        <div id="pause-passives-list" class="pause-passives-flow">
+          <!-- Tags de passivas renderizadas dinamicamente -->
+        </div>
+      </div>
+
+      <!-- PILAR 3: Matriz de Transmutação & Comandos -->
+      <div class="pause-pillar pause-pillar-actions">
+        <div class="pillar-header">
+          <span class="pillar-tag">MATRIZ DE TRANSMUTAÇÃO</span>
+          <span class="pillar-badge-fusion">SINERGIAS</span>
+        </div>
+
+        <!-- Rastreador de Fusões (Evoluções de Armas) -->
+        <div id="pause-synergies-tracker" class="pause-synergies-scroll">
+          <!-- Preenchido dinamicamente por getSynergyTrackerList() -->
+        </div>
+
+        <!-- Controle de Áudio Integrado -->
+        <div class="pause-volume-box">
+          <div class="volume-header">
+            <span class="volume-title">
+              <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="color:#00f5d4; margin-right:4px;"><polygon points="11,5 6,9 2,9 2,15 6,15 11,19" fill="currentColor"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              VOLUME GERAL
+            </span>
+            <span id="volume-val" class="volume-num">50%</span>
+          </div>
+          <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5" class="pause-slider">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Barra de Ações de Comando da Dimensão (Footer Dedicado & Anti-Corte) -->
+    <div class="pause-actions-bar">
+      <button class="btn-pause-resume" id="resume-btn" aria-label="Retomar Combate">
+        <div class="btn-shimmer-sweep"></div>
+        <div class="btn-resume-content">
+          <svg class="game-icon icon-sm" viewBox="0 0 24 24" style="color:#040508;"><polygon points="6,4 20,12 6,20" fill="currentColor"/></svg>
+          <span class="resume-label">RETOMAR BATALHA</span>
+        </div>
+        <span class="resume-hotkey-hint">[ ESC / ESPAÇO ]</span>
+      </button>
+
+      <button class="btn-pause-abandon" id="abandon-btn" aria-label="Abandonar Arena">
+        <svg class="game-icon icon-xs" viewBox="0 0 24 24" style="margin-right:6px;"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>ABANDONAR ARENA</span>
+      </button>
+    </div>
+
   </div>
 </div>
 
@@ -598,18 +731,179 @@
   </div>
 </div>
 
-<!-- Modal de Morte Dramática: Lápide dos Condenados -->
-<div id="death-modal" class="modal-overlay modal-death">
-  <div class="modal-box death-tombstone">
-    <div class="skull-emblem">
-      <svg viewBox="0 0 24 24" width="54" height="54" style="width: 54px; height: 54px; color:#ff7675; filter: drop-shadow(0 0 15px rgba(231, 76, 60, 0.7));"><path fill="currentColor" d="M12 2C7.6 2 4 5.6 4 10c0 2.8 1.4 5.3 3.6 6.8V20h8.8v-3.2c2.2-1.5 3.6-4 3.6-6.8 0-4.4-3.6-8-8-8zm-3 10a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zm6 0a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6z"/><line x1="10" y1="18" x2="10" y2="20" stroke="#121622" stroke-width="1.5"/><line x1="14" y1="18" x2="14" y2="20" stroke="#121622" stroke-width="1.5"/></svg>
+<!-- Tela de Morte Intrínseca (Dark Cyber-Gothic Arena Overlay) -->
+<div id="death-modal" class="modal-overlay death-screen-overlay" style="display: none;">
+  <div class="death-intrinsic-stage">
+    
+    <!-- Camada Superior: Brasão do Vazio e Veredito Épico -->
+    <div class="death-header-group">
+      <div class="death-sigil-wrap">
+        <div class="death-sigil-halo"></div>
+        <div class="death-sigil-mist"></div>
+        <svg class="death-sigil-icon" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bonePlateGrad" x1="60" y1="15" x2="60" y2="105" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="25%" stop-color="#ff7675"/>
+              <stop offset="65%" stop-color="#d63031"/>
+              <stop offset="100%" stop-color="#2d0508"/>
+            </linearGradient>
+
+            <linearGradient id="hornGrad" x1="15" y1="10" x2="105" y2="90" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#00f5d4"/>
+              <stop offset="30%" stop-color="#a29bfe"/>
+              <stop offset="75%" stop-color="#ff4757"/>
+              <stop offset="100%" stop-color="#3d070b"/>
+            </linearGradient>
+
+            <radialGradient id="spectralEyeGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+              <stop offset="35%" stop-color="#00f5d4" stop-opacity="0.95"/>
+              <stop offset="70%" stop-color="#0984e3" stop-opacity="0.6"/>
+              <stop offset="100%" stop-color="#6c5ce7" stop-opacity="0"/>
+            </radialGradient>
+
+            <filter id="ghostGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+            </filter>
+          </defs>
+
+          <!-- 1. Asas e Eflúvios Espectrais Posteriores -->
+          <g opacity="0.85" filter="url(#ghostGlow)">
+            <path d="M42 45 C30 35, 12 40, 6 56 C14 55, 24 58, 28 66 C18 68, 10 76, 12 88 C20 84, 30 84, 38 78 Z" fill="url(#hornGrad)" opacity="0.65"/>
+            <path d="M78 45 C90 35, 108 40, 114 56 C106 55, 96 58, 92 66 C102 68, 110 76, 108 88 C100 84, 90 84, 82 78 Z" fill="url(#hornGrad)" opacity="0.65"/>
+          </g>
+
+          <!-- 2. Chifres Arcanos da Cripta -->
+          <path d="M44 32 C34 20, 20 14, 8 16 C12 28, 24 36, 36 40 Z" fill="url(#hornGrad)" stroke="#ff7675" stroke-width="1"/>
+          <path d="M76 32 C86 20, 100 14, 112 16 C108 28, 96 36, 84 40 Z" fill="url(#hornGrad)" stroke="#ff7675" stroke-width="1"/>
+          <path d="M38 36 C30 30, 20 28, 14 32 C20 38, 28 42, 34 44 Z" fill="url(#hornGrad)" opacity="0.8"/>
+          <path d="M82 36 C90 30, 100 28, 106 32 C100 38, 92 42, 86 44 Z" fill="url(#hornGrad)" opacity="0.8"/>
+
+          <!-- 3. Diadema / Coroa Rúnica Astral -->
+          <path d="M48 24 L52 14 L56 24 L60 10 L64 24 L68 14 L72 24 Z" fill="#ffd166" filter="url(#ghostGlow)" opacity="0.95"/>
+
+          <!-- 4. Crânio Gótico Esculpido -->
+          <path d="M38 32 C44 26, 76 26, 82 32 C92 42, 94 56, 88 68 C84 76, 78 78, 76 86 L72 96 C66 100, 54 100, 48 96 L44 86 C42 78, 36 76, 32 68 C26 56, 28 42, 38 32 Z" 
+                fill="url(#bonePlateGrad)" stroke="#ff7675" stroke-width="1.8" filter="url(#ghostGlow)"/>
+
+          <!-- Têmporas Escavadas em Sombra Profunda -->
+          <path d="M33 54 C36 48, 42 46, 44 48 C40 54, 38 62, 34 66 Z" fill="#150204" opacity="0.85"/>
+          <path d="M87 54 C84 48, 78 46, 76 48 C80 54, 82 62, 86 66 Z" fill="#150204" opacity="0.85"/>
+
+          <!-- Fissura Rúnica Frontal (Ciano Astral) -->
+          <path d="M60 28 L59 38 L62 44 L58 48 L60 52" stroke="#00f5d4" stroke-width="1.6" stroke-linecap="round" filter="url(#ghostGlow)"/>
+          <circle cx="60" cy="28" r="2" fill="#00f5d4" filter="url(#ghostGlow)"/>
+
+          <!-- 5. Cavidades Oculares Agressivas -->
+          <path d="M42 50 C48 48, 54 52, 53 62 C48 66, 40 64, 38 56 Z" fill="#080102" stroke="#ff4757" stroke-width="1.2"/>
+          <path d="M78 50 C72 48, 66 52, 67 62 C72 66, 80 64, 82 56 Z" fill="#080102" stroke="#ff4757" stroke-width="1.2"/>
+
+          <!-- Chamas Oculares Vivas (Soul Embers) -->
+          <g filter="url(#ghostGlow)">
+            <ellipse cx="46" cy="56" rx="4.5" ry="5.5" fill="url(#spectralEyeGlow)"/>
+            <circle cx="46" cy="56" r="2" fill="#ffffff"/>
+            <path d="M46 51 C48 47, 44 43, 47 39 C44 43, 42 47, 46 51 Z" fill="#00f5d4" opacity="0.85"/>
+            
+            <ellipse cx="74" cy="56" rx="4.5" ry="5.5" fill="url(#spectralEyeGlow)"/>
+            <circle cx="74" cy="56" r="2" fill="#ffffff"/>
+            <path d="M74 51 C76 47, 72 43, 75 39 C72 43, 70 47, 74 51 Z" fill="#00f5d4" opacity="0.85"/>
+          </g>
+
+          <!-- 6. Cavidade Nasal em Losango Fendido -->
+          <path d="M60 62 L57 71 L60 70 L63 71 Z" fill="#080102" stroke="#ff4757" stroke-width="1"/>
+
+          <!-- 7. Mandíbula com Presas Superiores e Inferiores -->
+          <path d="M46 78 L48 85 L51 78 L54 86 L57 78 L60 84 L63 78 L66 86 L69 78 L72 85 L74 78" 
+                stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <path d="M48 93 L50 87 L53 93 L56 86 L59 93 L62 86 L65 93 L68 87 L70 93" 
+                stroke="#ffd166" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+          <!-- Queixo com Lâmina / Espigão Gótico -->
+          <polygon points="60,104 54,95 66,95" fill="#d63031" stroke="#ff7675" stroke-width="1"/>
+          <line x1="60" y1="95" x2="60" y2="103" stroke="#ffd166" stroke-width="1.2"/>
+        </svg>
+      </div>
+
+      <div class="death-eyebrow">
+        <span class="death-eyebrow-line"></span>
+        <span class="death-eyebrow-text">SENTENÇA DAS PROFUNDEZAS</span>
+        <span class="death-eyebrow-line"></span>
+      </div>
+
+      <h1 class="death-monumental-title" id="death-verdict-title">SUA ALMA FOI CONSUMIDA</h1>
     </div>
-    <h1 class="death-title" id="death-verdict-title">SUA ALMA FOI CONSUMIDA</h1>
-    <div class="death-divider"></div>
-    <div id="death-summary" class="death-epitaph"></div>
-    <button class="card-btn btn-death-rebirth" id="restart-death-btn">
-      RENASCER NA ARENA
-    </button>
+
+    <!-- Dossiê Central da Causa Mortis (O Algoz & O Golpe Fatal) -->
+    <div class="death-cause-dossier" id="death-cause-dossier">
+      <div class="cause-dossier-inner">
+        <div class="cause-killer-emblem" id="death-killer-emblem">
+          <svg class="killer-glyph" viewBox="0 0 24 24" id="death-killer-glyph">
+            <polygon points="13,1 4,14 11,14 9,23 20,9 13,9" fill="currentColor"/>
+          </svg>
+        </div>
+
+        <div class="cause-killer-details">
+          <div class="cause-category-badge-row">
+            <span class="cause-category-badge" id="death-category-badge">ABOMINAÇÃO DA HORDA</span>
+            <span class="cause-threat-indicator" id="death-threat-indicator">LETALIDADE MÁXIMA</span>
+          </div>
+
+          <div class="cause-killer-name-row">
+            <span class="cause-executed-by">EXECUTADO POR</span>
+            <h2 class="cause-killer-name" id="death-killer-name">Zumbi Operário</h2>
+          </div>
+
+          <div class="cause-attack-metric-row" id="death-attack-metric-row">
+            <div class="cause-metric-item">
+              <span class="cause-metric-label">GOLPE FATAL</span>
+              <span class="cause-metric-value" id="death-attack-name">Golpe Melee</span>
+            </div>
+            <div class="cause-metric-separator">•</div>
+            <div class="cause-metric-item">
+              <span class="cause-metric-label">DANO LETAL</span>
+              <span class="cause-metric-value damage-val" id="death-lethal-damage">-34</span>
+            </div>
+          </div>
+
+          <!-- Dica Tática do Bestiário / Conselho das Cinzas -->
+          <div class="cause-tactic-box" id="death-tactic-box">
+            <div class="tactic-box-header">
+              <span class="tactic-icon">👁</span>
+              <span class="tactic-title">CONSELHO DO CÓDICE</span>
+            </div>
+            <div class="tactic-desc" id="death-tactic-text">
+              Mantenha o campo sob controle com ataques em área para não ser encurralado pela massa de inimigos.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Biometria & Conquistas da Jornada (Badges Vazados) -->
+    <div class="death-metrics-stream" id="death-metrics-stream">
+      <!-- Preenchido dinamicamente por renderDeathMetrics() -->
+    </div>
+
+    <!-- Desbloqueios de Conquistas (se houver) -->
+    <div id="death-achievements-container" class="death-achievements-container"></div>
+
+    <!-- Ação de Retorno: Chamado ao Renascimento -->
+    <div class="death-actions-wrap">
+      <button class="btn-death-rebirth-v2" id="restart-death-btn" aria-label="Renascer na Arena">
+        <div class="rebirth-glow-pulse"></div>
+        <div class="rebirth-btn-content">
+          <svg class="rebirth-icon" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M12 2c-2 3-5 5-5 9a5 5 0 0 0 10 0c0-4-3-6-5-9zm0 13a2 2 0 0 1-2-2c0-1.5 1.5-2.5 2-4 .5 1.5 2 2.5 2 4a2 2 0 0 1-2 2z"/>
+            <path fill="currentColor" d="M5 12c-2 0-3 1.5-3 3.5A4.5 4.5 0 0 0 6.5 20c.5-1.5 0-3-1.5-4.5 1 0 2 .5 2.5 1 .5-2 0-3.5-2.5-4.5zm14 0c2 0 3 1.5 3 3.5A4.5 4.5 0 0 1 17.5 20c-.5-1.5 0-3 1.5-4.5-1 0-2 .5-2.5 1-.5-2 0-3.5 2.5-4.5z"/>
+          </svg>
+          <span class="rebirth-text">RENASCER NO ALTAR</span>
+        </div>
+        <span class="rebirth-hotkey-hint">[ ESPAÇO / ENTER ]</span>
+      </button>
+    </div>
+
   </div>
 </div>
 

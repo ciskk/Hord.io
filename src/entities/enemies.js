@@ -163,6 +163,30 @@ export function createEnemy(typeKey, x, y, isElite = false) {
     attackStrikeFrames = 5;
     attackRecoveryFrames = 36;
     attackCooldownMax = 32;
+  } else if (typeKey === 'CHAIN_FLAYER') {
+    attackRange = 65;
+    attackWindupFrames = 28;
+    attackStrikeFrames = 6;
+    attackRecoveryFrames = 42;
+    attackCooldownMax = 40;
+  } else if (typeKey === 'DULLAHAN_VANGUARD') {
+    attackRange = 38;
+    attackWindupFrames = 20;
+    attackStrikeFrames = 5;
+    attackRecoveryFrames = 34;
+    attackCooldownMax = 28;
+  } else if (typeKey === 'MAIDEN_THORNS') {
+    attackRange = 30;
+    attackWindupFrames = 22;
+    attackStrikeFrames = 5;
+    attackRecoveryFrames = 36;
+    attackCooldownMax = 30;
+  } else if (typeKey === 'GRAVE_GORGON') {
+    attackRange = 34;
+    attackWindupFrames = 24;
+    attackStrikeFrames = 6;
+    attackRecoveryFrames = 40;
+    attackCooldownMax = 32;
   } else {
     attackRange = Math.max(22, Math.round(radius * 1.5));
   }
@@ -190,9 +214,9 @@ export function createEnemy(typeKey, x, y, isElite = false) {
     stunTimer: 0,
     isElite: !!isElite,
     eliteMod,
-    // Emergência do Solo (Zumbis e Vermes Terrestres)
-    emergeTimer: (typeKey === 'ZOMBIE' || typeKey === 'SPLITTER') ? 34 : 0,
-    emergeDuration: (typeKey === 'ZOMBIE' || typeKey === 'SPLITTER') ? 34 : 0,
+    // Emergência do Solo (Zumbis, Rastejadores e Vermes Terrestres)
+    emergeTimer: (typeKey === 'ZOMBIE' || typeKey === 'SPLITTER' || typeKey === 'TRAIL_CRAWLER') ? 34 : 0,
+    emergeDuration: (typeKey === 'ZOMBIE' || typeKey === 'SPLITTER' || typeKey === 'TRAIL_CRAWLER') ? 34 : 0,
     // Máquina de Estados Melee (src/systems/combat.js)
     combatState: 'CHASE',
     attackTimer: 0,
@@ -229,7 +253,42 @@ export function createEnemy(typeKey, x, y, isElite = false) {
     cycleState: 0,
     slamTimer: 0,
     mortarTimer: 0,
-    ritualTimer: 0
+    ritualTimer: 0,
+    // Propriedades dos 15 novos mobs
+    trailTimer: 0,
+    webTimer: Math.floor(Math.random() * 80),
+    hookTimer: 0,
+    hookState: 'chase',
+    stoneFormTimer: 0,
+    isStoneForm: false,
+    burstDamageTracker: 0,
+    bellTimer: Math.floor(Math.random() * 60),
+    apothecaryTimer: Math.floor(Math.random() * 80),
+    scribeTimer: 0,
+    linkedShieldTarget: null,
+    shieldHp: 0,
+    maxShieldHp: 0,
+    flameState: 'chase',
+    flameTimer: 0,
+    flameTelegraph: null,
+    flameAngle: 0,
+    spikeHits: 0,
+    hasMirrored: false,
+    isDecoy: false,
+    decoyLife: 180,
+    lanceState: 'chase',
+    lanceTimer: 0,
+    lanceAngle: 0,
+    lanceTelegraph: null,
+    sniperTimer: Math.floor(Math.random() * 50),
+    sniperAimAngle: 0,
+    sniperLaserLife: 0,
+    eatenGemsCount: 0,
+    searchGemTimer: 0,
+    devourTimer: 0,
+    gorgonStacks: 0,
+    isAwakeMimic: false,
+    mimicWakeTimer: 0
   };
 }
 

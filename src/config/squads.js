@@ -80,7 +80,8 @@ export const SQUAD_TYPES = {
       { type: 'ZOMBIE',  offsetForward: -8, offsetLateral: -20 },
       { type: 'ZOMBIE',  offsetForward: -8, offsetLateral: 20 },
       { type: 'STALKER', offsetForward: -32, offsetLateral: -36 },
-      { type: 'STALKER', offsetForward: -32, offsetLateral: 36 }
+      { type: 'STALKER', offsetForward: -32, offsetLateral: 36 },
+      { type: 'VOID_SCAVENGER', offsetForward: -48, offsetLateral: 0 }
     ]
   },
 
@@ -94,6 +95,63 @@ export const SQUAD_TYPES = {
       { type: 'ZOMBIE',  offsetForward: 10, offsetLateral: -32 },
       { type: 'ZOMBIE',  offsetForward: 10, offsetLateral: 32 },
       { type: 'ZOMBIE',  offsetForward: -8, offsetLateral: 0 }
+    ]
+  },
+
+  // 7. Pelotão de Execução: Puxão de corrente frontal e queima em flanco cruzado
+  EXECUTION_SQUAD: {
+    key: 'EXECUTION_SQUAD',
+    name: 'Pelotão de Execução',
+    members: [
+      { type: 'CHAIN_FLAYER',    offsetForward: 38, offsetLateral: 0 },
+      { type: 'FORGE_PYREGUARD', offsetForward: 16, offsetLateral: -34 },
+      { type: 'FORGE_PYREGUARD', offsetForward: 16, offsetLateral: 34 },
+      { type: 'TRAIL_CRAWLER',   offsetForward: -10, offsetLateral: -24 },
+      { type: 'TRAIL_CRAWLER',   offsetForward: -10, offsetLateral: 24 },
+      { type: 'ZOMBIE',          offsetForward: -28, offsetLateral: 0 }
+    ]
+  },
+
+  // 8. Procissão da Morte: Muralha pétrea acelerada pelo sino fúnebre com curandeiros
+  DEATH_PROCESSION: {
+    key: 'DEATH_PROCESSION',
+    name: 'Procissão da Morte',
+    members: [
+      { type: 'BASALT_GARGOYLE',  offsetForward: 42, offsetLateral: -28 },
+      { type: 'BASALT_GARGOYLE',  offsetForward: 42, offsetLateral: 28 },
+      { type: 'GOLEM',            offsetForward: 24, offsetLateral: 0 },
+      { type: 'TOLL_BELLRINGER',   offsetForward: -12, offsetLateral: 0 },
+      { type: 'PLAGUE_APOTHECARY', offsetForward: -36, offsetLateral: -26 },
+      { type: 'PLAGUE_APOTHECARY', offsetForward: -36, offsetLateral: 26 },
+      { type: 'RUNE_SCRIBE',      offsetForward: -50, offsetLateral: 0 }
+    ]
+  },
+
+  // 9. Cerco Balístico de Éter: Distração aérea com artilharia sniper de longo alcance
+  SNIPER_PINCER: {
+    key: 'SNIPER_PINCER',
+    name: 'Cerco Balístico',
+    members: [
+      { type: 'BAT',            offsetForward: 30, offsetLateral: -35 },
+      { type: 'BAT',            offsetForward: 30, offsetLateral: 35 },
+      { type: 'CRYPT_WEAVER',   offsetForward: 10, offsetLateral: 0 },
+      { type: 'SNIPER_CULTIST', offsetForward: -42, offsetLateral: -48 },
+      { type: 'SNIPER_CULTIST', offsetForward: -42, offsetLateral: 48 }
+    ]
+  },
+
+  // 10. Confraria das Sombras: Ilusionismo, retaliação e corte de cavalaria
+  AMBUSH_COVEN: {
+    key: 'AMBUSH_COVEN',
+    name: 'Confraria das Sombras',
+    members: [
+      { type: 'DULLAHAN_VANGUARD', offsetForward: 45, offsetLateral: 0 },
+      { type: 'MIRROR_BANSHEE',    offsetForward: 18, offsetLateral: -38 },
+      { type: 'MIRROR_BANSHEE',    offsetForward: 18, offsetLateral: 38 },
+      { type: 'MAIDEN_THORNS',     offsetForward: -8, offsetLateral: -20 },
+      { type: 'MAIDEN_THORNS',     offsetForward: -8, offsetLateral: 20 },
+      { type: 'GRAVE_GORGON',      offsetForward: -32, offsetLateral: 0 },
+      { type: 'CURSED_CHEST',      offsetForward: -48, offsetLateral: 0 }
     ]
   }
 };

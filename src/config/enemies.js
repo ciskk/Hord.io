@@ -12,7 +12,24 @@ export const ENEMY_TYPES = {
   SHOOTER: { name: 'Autômato Artilheiro', radius: 14, speed: 1.1, hp: 231, color: '#0984e3', behavior: 'shooter', damage: 22, xp: 4 },
   SHIELDED: { name: 'Guardião Blindado', radius: 16, speed: 1.0, hp: 406, color: '#b2bec3', behavior: 'shielded', damage: 31, xp: 5 },
   SPLITTER: { name: 'Parasita Divisor', radius: 15, speed: 1.4, hp: 217, color: '#00d2d3', behavior: 'splitter', damage: 22, xp: 4 },
-  SPLITTER_MINI: { name: 'Parasita Célula', radius: 9, speed: 2.2, hp: 84, color: '#48dbfb', behavior: 'chase', damage: 14, xp: 2 }
+  SPLITTER_MINI: { name: 'Parasita Célula', radius: 9, speed: 2.2, hp: 84, color: '#48dbfb', behavior: 'chase', damage: 14, xp: 2 },
+
+  // --- 15 NOVOS MONSTROS DA HORDA EXPANDIDA ---
+  TRAIL_CRAWLER:    { name: 'Rastejador Peçonhento', radius: 13, speed: 1.45, hp: 160, color: '#16a085', behavior: 'trail_toxic', damage: 18, xp: 2 },
+  CRYPT_WEAVER:     { name: 'Tecelã das Catacumbas', radius: 14, speed: 1.20, hp: 210, color: '#636e72', behavior: 'web_trapper', damage: 16, xp: 3 },
+  CHAIN_FLAYER:     { name: 'Flagelador de Correntes', radius: 16, speed: 1.05, hp: 310, color: '#b33939', behavior: 'chain_hook', damage: 28, xp: 4 },
+  BASALT_GARGOYLE:  { name: 'Gárgula de Basalto', radius: 18, speed: 1.35, hp: 520, color: '#57606f', behavior: 'stone_turtle', damage: 32, xp: 5 },
+  TOLL_BELLRINGER:  { name: 'Arauto do Sino Fúnebre', radius: 15, speed: 0.90, hp: 240, color: '#f39c12', behavior: 'haste_chanter', damage: 15, xp: 5 },
+  PLAGUE_APOTHECARY:{ name: 'Boticário da Peste', radius: 14, speed: 1.00, hp: 260, color: '#27ae60', behavior: 'horde_mender', damage: 18, xp: 6 },
+  RUNE_SCRIBE:      { name: 'Escriba das Runas', radius: 15, speed: 0.95, hp: 280, color: '#2980b9', behavior: 'barrier_linker', damage: 20, xp: 6 },
+  FORGE_PYREGUARD:  { name: 'Lança-Chamas da Forja', radius: 17, speed: 0.85, hp: 340, color: '#d35400', behavior: 'flamethrower_cone', damage: 26, xp: 5 },
+  MAIDEN_THORNS:    { name: 'Donzela das Agulhas', radius: 16, speed: 1.15, hp: 380, color: '#8e44ad', behavior: 'spike_retaliation', damage: 29, xp: 5 },
+  MIRROR_BANSHEE:   { name: 'Banshee dos Espelhos', radius: 12, speed: 2.10, hp: 170, color: '#a29bfe', behavior: 'mirror_decoy', damage: 21, xp: 4 },
+  DULLAHAN_VANGUARD:{ name: 'Cavaleiro Sem Cabeça', radius: 18, speed: 1.10, hp: 440, color: '#2c3e50', behavior: 'lance_charge', damage: 38, xp: 6 },
+  SNIPER_CULTIST:   { name: 'Atirador de Éter', radius: 13, speed: 0.80, hp: 180, color: '#9c88ff', behavior: 'long_range_sniper', damage: 42, xp: 5 },
+  VOID_SCAVENGER:   { name: 'Duende Ladrão de Gemas', radius: 12, speed: 2.30, hp: 190, color: '#00d2d3', behavior: 'xp_devourer', damage: 14, xp: 3 },
+  GRAVE_GORGON:     { name: 'Carniçal Necrófago', radius: 17, speed: 1.10, hp: 350, color: '#535c68', behavior: 'corpse_eater', damage: 24, xp: 6 },
+  CURSED_CHEST:     { name: 'Mímico de Éter', radius: 18, speed: 2.50, hp: 850, color: '#e056fd', behavior: 'mimic_trap', damage: 36, xp: 15 }
 
 };
 

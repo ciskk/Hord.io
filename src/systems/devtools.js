@@ -616,7 +616,7 @@ function renderCheatsTab(container) {
         <div class="dev-cheat-icon">📖</div>
         <div class="dev-cheat-info">
           <div class="dev-cheat-name" style="color: #00f5d4;">Desbloquear Códice do Bestiário</div>
-          <div class="dev-cheat-desc">Catalogar instantaneamente todas as 30 criaturas com 100 abates e lore completa.</div>
+          <div class="dev-cheat-desc">Catalogar instantaneamente todas as 45 criaturas com 100 abates e lore completa.</div>
         </div>
         <button class="dev-card-action-btn" style="background: #00f5d4; color: #000; font-weight: bold;">📖 Desbloquear Tudo</button>
       </div>
@@ -672,7 +672,7 @@ function renderCheatsTab(container) {
 
   cheatsSection.querySelector('#card-unlock-all-bestiary').onclick = () => {
     unlockAllBestiary();
-    showDevToast(`📖 <b>Bestiário Completo:</b> Todas as 30 criaturas foram catalogadas!`);
+    showDevToast(`📖 <b>Bestiário Completo:</b> Todas as 45 criaturas foram catalogadas!`);
     const bestiaryModal = document.getElementById('bestiary-modal');
     if (bestiaryModal && bestiaryModal.style.display !== 'none' && !bestiaryModal.classList.contains('modal-hidden')) {
       renderBestiaryRoster();

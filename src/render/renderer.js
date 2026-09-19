@@ -9,6 +9,7 @@ import { stick } from '../core/input.js';
 import { renderEnvironment } from './environment.js';
 import { drawEnemyShape, drawDyingEnemyShape } from './enemiesRenderer.js';
 import { drawPlayerCharacter, drawPlayerEquipment } from './playerRenderer.js';
+import { generateGroundCracks, drawDetailedGroundCracks, drawGroundCraters } from './groundCracks.js';
 import { drawBossVictoryOverlay } from '../entities/bosses/abyssSovereign/render.js';
 import { getHudBottom, layoutMetrics } from '../core/responsive.js';
 import { player } from '../entities/player.js';
@@ -239,6 +240,9 @@ export function render() {
     ctx.restore();
   }
 
+  // 0. Fendas Tectônicas e Crateras Persistentes de Sir Roland (duram 5.5s com fade out gradual no solo)
+  drawGroundCraters(ctx, viewLeft, viewRight, viewTop, viewBottom);
+
   // 1. Renderização das poças ativas no solo (Ácido / Alquimia / Fogo) - no chão, abaixo das orbes de XP
   for (let i = 0; i < acidPuddles.length; i++) {
     const p = acidPuddles[i];
@@ -255,15 +259,137 @@ export function render() {
     const pulse = Math.sin(frameCount * 0.14 + i) * 2;
     const r = Math.max(2, (p.radius + pulse) * shrinkFactor);
 
+    // 1. Rastro de Fogo Vivo e Leito de Magma Incandescente (Ignis Ult / Passo Ígneo)
+    if (p.isFire) {
+      const shrinkFactor = 0.35 + 0.65 * fadeProgress;
+      const baseR = Math.max(6, (p.radius || 38) * shrinkFactor);
+      const fireAlpha = Math.min(1, fadeProgress * 1.15);
+      const seed = (p.x * 12.9898 + p.y * 78.233) % 1000;
+
+      ctx.save();
+      ctx.globalAlpha = fireAlpha;
+
+      // A. Resplendor térmico difuso no solo (Ambient Heat Glow)
+      const glowR = baseR * 1.7;
+      const heatGrad = ctx.createRadialGradient(p.x, p.y, baseR * 0.15, p.x, p.y, glowR);
+      heatGrad.addColorStop(0, 'rgba(255, 170, 0, 0.35)');
+      heatGrad.addColorStop(0.45, 'rgba(230, 80, 20, 0.20)');
+      heatGrad.addColorStop(1, 'rgba(180, 40, 10, 0)');
+      ctx.fillStyle = heatGrad;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // B. Rocha vulcânica chamuscada e leito de magma orgânico
+      ctx.beginPath();
+      const numPoints = 8;
+      for (let pt = 0; pt < numPoints; pt++) {
+        const angle = (pt / numPoints) * Math.PI * 2;
+        const radiusVar = baseR * (0.82 + 0.22 * Math.sin(angle * 3 + seed + frameCount * 0.04));
+        const px = p.x + Math.cos(angle) * radiusVar;
+        const py = p.y + Math.sin(angle) * radiusVar * 0.72; // perspectiva 2.5D
+        if (pt === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+
+      // Gradiente do leito de magma (de núcleo incandescente para fuligem)
+      const magmaGrad = ctx.createRadialGradient(p.x, p.y, baseR * 0.1, p.x, p.y, baseR);
+      magmaGrad.addColorStop(0, '#ffffff');
+      magmaGrad.addColorStop(0.2, '#fff176');
+      magmaGrad.addColorStop(0.5, '#f39c12');
+      magmaGrad.addColorStop(0.78, '#d35400');
+      magmaGrad.addColorStop(1, 'rgba(44, 20, 15, 0.85)');
+      ctx.fillStyle = magmaGrad;
+      ctx.fill();
+
+      ctx.strokeStyle = '#e74c3c';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+
+      // C. Fendas térmicas incandescentes (pulsando no interior da poça)
+      const fissurePulse = Math.sin(frameCount * 0.18 + seed) * 0.2 + 0.8;
+      ctx.strokeStyle = `rgba(255, 240, 160, ${0.75 * fissurePulse})`;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(p.x - baseR * 0.5, p.y + baseR * 0.1);
+      ctx.lineTo(p.x, p.y - baseR * 0.15);
+      ctx.lineTo(p.x + baseR * 0.45, p.y + baseR * 0.12);
+      ctx.stroke();
+
+      // D. Línguas de Fogo Vivas (Procedural Animated Flame Tongues)
+      const flameCount = 4;
+      for (let f = 0; f < flameCount; f++) {
+        const fSeed = seed + f * 47;
+        const fRelX = ((f - (flameCount - 1) / 2) / (flameCount / 2)) * (baseR * 0.65);
+        const fBaseX = p.x + fRelX;
+        const fBaseY = p.y + Math.sin(fSeed) * (baseR * 0.25);
+
+        // Altura e oscilação da labareda
+        const fWave = Math.sin(frameCount * 0.32 + fSeed * 0.5);
+        const fHeight = (baseR * 0.95 + fWave * (baseR * 0.35)) * shrinkFactor;
+        const fSway = Math.sin(frameCount * 0.22 + fSeed) * (baseR * 0.22);
+        const fWidth = (baseR * 0.38 + fWave * (baseR * 0.08)) * shrinkFactor;
+
+        const tipX = fBaseX + fSway;
+        const tipY = fBaseY - fHeight;
+
+        // Labareda Externa (Carmesim / Vermelho Fogo)
+        ctx.fillStyle = f % 2 === 0 ? '#e74c3c' : '#c0392b';
+        ctx.beginPath();
+        ctx.moveTo(fBaseX - fWidth, fBaseY);
+        ctx.quadraticCurveTo(fBaseX - fWidth * 0.7, fBaseY - fHeight * 0.45, tipX, tipY);
+        ctx.quadraticCurveTo(fBaseX + fWidth * 0.7, fBaseY - fHeight * 0.45, fBaseX + fWidth, fBaseY);
+        ctx.closePath();
+        ctx.fill();
+
+        // Labareda Média (Laranja Solar / Âmbar)
+        ctx.fillStyle = '#f39c12';
+        ctx.beginPath();
+        ctx.moveTo(fBaseX - fWidth * 0.65, fBaseY);
+        ctx.quadraticCurveTo(fBaseX - fWidth * 0.45, fBaseY - fHeight * 0.4, tipX * 0.95 + fBaseX * 0.05, tipY + fHeight * 0.15);
+        ctx.quadraticCurveTo(fBaseX + fWidth * 0.45, fBaseY - fHeight * 0.4, fBaseX + fWidth * 0.65, fBaseY);
+        ctx.closePath();
+        ctx.fill();
+
+        // Labareda Interna (Amarelo Ouro / Branco Solar)
+        ctx.fillStyle = '#fff176';
+        ctx.beginPath();
+        ctx.moveTo(fBaseX - fWidth * 0.35, fBaseY);
+        ctx.quadraticCurveTo(fBaseX - fWidth * 0.2, fBaseY - fHeight * 0.35, tipX * 0.9 + fBaseX * 0.1, tipY + fHeight * 0.35);
+        ctx.quadraticCurveTo(fBaseX + fWidth * 0.2, fBaseY - fHeight * 0.35, fBaseX + fWidth * 0.35, fBaseY);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // E. Brasas e Fagulhas Ascendentes (Rising Embers)
+      const emberCount = 5;
+      for (let emb = 0; emb < emberCount; emb++) {
+        const embSeed = seed + emb * 83;
+        const cycle = ((frameCount * 0.6 + embSeed * 7) % 36) / 36; // 0..1
+        const embAlpha = (1 - cycle) * (cycle > 0.1 ? 1 : cycle * 10);
+        const embDist = cycle * (baseR * 1.55);
+        const embSway = Math.sin(frameCount * 0.14 + embSeed + cycle * 4) * (baseR * 0.35);
+        const embX = p.x + ((embSeed % 17) - 8) * (baseR * 0.08) + embSway;
+        const embY = p.y - embDist;
+        const embSize = Math.max(0.8, (2.4 - cycle * 1.5) * shrinkFactor);
+
+        ctx.fillStyle = emb % 2 === 0 ? `rgba(255, 235, 120, ${embAlpha})` : `rgba(243, 156, 18, ${embAlpha})`;
+        ctx.beginPath();
+        ctx.arc(embX, embY, embSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+      continue;
+    }
+
     ctx.save();
     // Opacidade base 50% mais translúcida para Valéria (0.28), atenuada linearmente por globalAlpha
     const baseAlpha = p.isAlchemist ? 0.28 : 0.60;
     ctx.globalAlpha = baseAlpha * fadeProgress;
 
-    if (p.isFire) {
-      ctx.fillStyle = '#e67e22';
-      ctx.strokeStyle = '#e74c3c';
-    } else if (p.isAlchemist) {
+    if (p.isAlchemist) {
       // Poça de veneno da Valéria: ROXA / Violeta Alquímica (diferenciada de venenos de mobs)
       ctx.fillStyle = p.isEvolved ? '#a29bfe' : '#8e44ad';
       ctx.strokeStyle = p.isEvolved ? '#d6a2e8' : '#9b59b6';
@@ -287,7 +413,7 @@ export function render() {
       const bDist = r * 0.52;
       const bx = p.x + Math.cos(bAng) * bDist;
       const by = p.y + Math.sin(bAng) * bDist;
-      ctx.fillStyle = p.isFire ? '#f39c12' : (p.isAlchemist ? (p.isEvolved ? '#e056fd' : '#d6a2e8') : (p.isEvolved ? '#e0ffff' : '#a8e6cf'));
+      ctx.fillStyle = p.isAlchemist ? (p.isEvolved ? '#e056fd' : '#d6a2e8') : (p.isEvolved ? '#e0ffff' : '#a8e6cf');
       ctx.beginPath();
       ctx.arc(bx, by, Math.max(0.5, (2.2 + Math.sin(frameCount * 0.2 + b) * 1.2) * shrinkFactor), 0, Math.PI * 2);
       ctx.fill();
@@ -1099,166 +1225,61 @@ export function render() {
     if (b.type === 'HAMMER_SLAM') {
       const progress = 1 - (b.life / b.maxLife);
       const alpha = Math.max(0, b.life / b.maxLife);
-      const shockR = b.radius * (0.35 + progress * 0.65);
 
       ctx.save();
       ctx.translate(b.x, b.y);
 
-      // 1. Anel Sísmico 360° com Fendas Douradas e Radiação Sacra
-      ctx.strokeStyle = b.isEvolved ? `rgba(230, 126, 34, ${alpha * 0.55})` : `rgba(241, 196, 15, ${alpha * 0.45})`;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.arc(0, 0, shockR * 0.85, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Cone de Projeção Tectônica Frontal
-      ctx.fillStyle = b.isEvolved ? `rgba(230, 126, 34, ${alpha * 0.35})` : `rgba(241, 196, 15, ${alpha * 0.28})`;
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.arc(0, 0, shockR * 1.25, b.angle - Math.PI * 0.32, b.angle + Math.PI * 0.32);
-      ctx.closePath();
-      ctx.fill();
-
-      // Bordô Incandescente de Ruptura
-      ctx.strokeStyle = b.isEvolved ? `rgba(255, 234, 167, ${alpha * 0.95})` : `rgba(255, 255, 255, ${alpha * 0.9})`;
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.arc(0, 0, shockR * 1.25, b.angle - Math.PI * 0.32, b.angle + Math.PI * 0.32);
-      ctx.stroke();
-
-      // 2. Fissura Sísmica Central Tridimensional
-      const mainCrackLen = shockR * 1.35;
-      const perpX = -Math.sin(b.angle);
-      const perpY = Math.cos(b.angle);
-      const seg1X = Math.cos(b.angle) * (mainCrackLen * 0.35) + perpX * 8;
-      const seg1Y = Math.sin(b.angle) * (mainCrackLen * 0.35) + perpY * 8;
-      const seg2X = Math.cos(b.angle) * (mainCrackLen * 0.70) - perpX * 10;
-      const seg2Y = Math.sin(b.angle) * (mainCrackLen * 0.70) - perpY * 10;
-      const tipX = Math.cos(b.angle) * mainCrackLen;
-      const tipY = Math.sin(b.angle) * mainCrackLen;
-
-      // Profundidade da Fenda
-      ctx.strokeStyle = '#1e130c';
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(seg1X, seg1Y);
-      ctx.lineTo(seg2X, seg2Y);
-      ctx.lineTo(tipX, tipY);
-      ctx.stroke();
-
-      // Núcleo de Fogo e Luz Sacra na Fratura
-      ctx.strokeStyle = b.isEvolved ? `rgba(243, 156, 18, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
-      ctx.lineWidth = 3.2;
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(seg1X, seg1Y);
-      ctx.lineTo(seg2X, seg2Y);
-      ctx.lineTo(tipX, tipY);
-      ctx.stroke();
-
-      // Ramificações Laterais
-      ctx.lineWidth = 2.0;
-      ctx.strokeStyle = b.isEvolved ? `rgba(230, 126, 34, ${alpha * 0.85})` : `rgba(241, 196, 15, ${alpha * 0.85})`;
-      ctx.beginPath();
-      ctx.moveTo(seg1X, seg1Y);
-      ctx.lineTo(seg1X + Math.cos(b.angle + 0.55) * 26, seg1Y + Math.sin(b.angle + 0.55) * 26);
-      ctx.moveTo(seg2X, seg2Y);
-      ctx.lineTo(seg2X + Math.cos(b.angle - 0.55) * 30, seg2Y + Math.sin(b.angle - 0.55) * 30);
-      ctx.stroke();
-
-      // 3. Geysers de Luz Sagrada Brotos das Fendas
-      if (progress > 0.25) {
-        const geyserAlpha = Math.sin((progress - 0.25) / 0.75 * Math.PI) * alpha;
-        ctx.fillStyle = `rgba(255, 255, 255, ${geyserAlpha * 0.85})`;
-        ctx.fillRect(seg1X - 2, seg1Y - 14, 4, 14);
-        ctx.fillRect(seg2X - 2, seg2Y - 18, 4, 18);
-        ctx.fillRect(tipX - 2, tipY - 22, 4, 22);
-
-        ctx.fillStyle = b.isEvolved ? `rgba(243, 156, 18, ${geyserAlpha * 0.6})` : `rgba(241, 196, 15, ${geyserAlpha * 0.6})`;
+      if (progress < 0.32) {
+        // FASE 1: WINDUP - Glifo de Carga e Solo Rúnico Sagrado Concentrando Luz
+        const windT = progress / 0.32;
+        const gatherR = 32 * (1 - windT * 0.4);
+        ctx.strokeStyle = `rgba(241, 196, 15, ${windT * 0.65})`;
+        ctx.lineWidth = 1.8;
         ctx.beginPath();
-        ctx.arc(seg1X, seg1Y - 12, 6, 0, Math.PI * 2);
-        ctx.arc(seg2X, seg2Y - 16, 7, 0, Math.PI * 2);
-        ctx.arc(tipX, tipY - 20, 8, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // 4. Cinemática de Balanço, Arco de Luz e Impacto do Martelo
-      if (progress < 0.65) {
-        const slamPhase = Math.min(1, progress / 0.38);
-        const swingAng = b.angle + (1 - Math.pow(slamPhase, 2)) * -1.25;
-        const forwardReach = 20 + slamPhase * 16;
-        const hammerX = Math.cos(b.angle) * forwardReach;
-        const hammerY = Math.sin(b.angle) * forwardReach;
-
-        // Faixa em Arco de Luz Sagrada (Motion Ribbon do Swing)
-        if (slamPhase < 0.95) {
-          ctx.strokeStyle = `rgba(255, 255, 255, ${(1 - slamPhase) * 0.85})`;
-          ctx.lineWidth = 7;
-          ctx.beginPath();
-          ctx.arc(0, 0, forwardReach + 10, swingAng - 0.5, swingAng + 0.3);
-          ctx.stroke();
-
-          ctx.strokeStyle = `rgba(241, 196, 15, ${(1 - slamPhase) * 0.6})`;
-          ctx.lineWidth = 14;
-          ctx.beginPath();
-          ctx.arc(0, 0, forwardReach + 10, swingAng - 0.7, swingAng + 0.2);
-          ctx.stroke();
-        }
-
-        // Micro-vibração de impacto
-        const microShake = (slamPhase >= 1.0 && progress < 0.58) ? (Math.random() - 0.5) * 3 : 0;
-
-        // Desenho Fiel do Martelo Sagrado Titânico
-        ctx.save();
-        ctx.translate(hammerX + microShake, hammerY + microShake);
-        ctx.rotate(swingAng + Math.PI / 2);
-
-        // Cabo de carvalho com amarras cruzadas
-        ctx.fillStyle = '#3d271d';
-        ctx.fillRect(-3, -2, 6, 42);
-        ctx.strokeStyle = '#1e130c';
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        for (let st = 4; st <= 36; st += 7) {
-          ctx.moveTo(-3, st); ctx.lineTo(3, st + 4);
-        }
+        ctx.arc(0, 0, gatherR, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Pomo inferior
-        ctx.fillStyle = '#57606f';
-        ctx.fillRect(-4, 40, 8, 3.5);
+        // Raios de luz convergindo ao ponto de esmagamento
+        for (let r = 0; r < 4; r++) {
+          const rAng = b.angle + (r * Math.PI * 0.5) + windT * 0.8;
+          ctx.strokeStyle = `rgba(255, 235, 150, ${windT * 0.75})`;
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(rAng) * (gatherR + 14), Math.sin(rAng) * (gatherR + 14));
+          ctx.lineTo(Math.cos(rAng) * 5, Math.sin(rAng) * 5);
+          ctx.stroke();
+        }
+      } else {
+        // IMPACTO SÍSMICO IMEDIATO: Anel de choque estelar dourado e nítido
+        // (Sem disco branco sólido opaco que cega a tela e polui a visão em alta cadência)
+        const impactP = (progress - 0.32) / 0.68;
+        const flashAlpha = Math.max(0, 1 - impactP * 3.2);
+        if (flashAlpha > 0) {
+          const shockRingR = b.radius * (0.25 + impactP * 0.75);
 
-        // Colar e cabeça de guerra
-        ctx.fillStyle = '#2f3640';
-        ctx.fillRect(-4.5, -6, 9, 8);
+          // Anel principal de choque sagrado
+          ctx.strokeStyle = b.isEvolved ? `rgba(243, 156, 18, ${flashAlpha * 0.85})` : `rgba(241, 196, 15, ${flashAlpha * 0.80})`;
+          ctx.lineWidth = Math.max(1.5, 3.2 * (1 - impactP * 0.7));
+          ctx.beginPath();
+          ctx.arc(0, 0, shockRingR, 0, Math.PI * 2);
+          ctx.stroke();
 
-        // Bloco principal de ferro forjado
-        ctx.fillStyle = b.isEvolved ? '#d35400' : '#57606f';
-        ctx.fillRect(-18, -25, 36, 20);
-        ctx.strokeStyle = '#2f3640';
-        ctx.lineWidth = 1.6;
-        ctx.strokeRect(-18, -25, 36, 20);
+          // Filete fino interno celestial
+          ctx.strokeStyle = `rgba(255, 255, 255, ${flashAlpha * 0.75})`;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(0, 0, shockRingR * 0.88, 0, Math.PI * 2);
+          ctx.stroke();
 
-        // Faixas e placas biseladas em ouro sagrado
-        ctx.fillStyle = b.isEvolved ? '#f39c12' : '#f1c40f';
-        ctx.fillRect(-19, -23, 38, 4);
-        ctx.fillRect(-19, -13, 38, 4);
-        ctx.fillRect(-4, -25, 8, 20);
-
-        // Runa central radiante
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(-2, -18, 4, 6);
-
-        // Espigão superior perfurante
-        ctx.fillStyle = '#dcdde1';
-        ctx.beginPath();
-        ctx.moveTo(0, -32);
-        ctx.lineTo(5, -25);
-        ctx.lineTo(-5, -25);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
+          // Ponto de luz concentrado rápido apenas no início exato do choque
+          if (impactP < 0.20) {
+            const burstAlpha = (1 - impactP / 0.20) * 0.45;
+            ctx.fillStyle = `rgba(255, 255, 255, ${burstAlpha})`;
+            ctx.beginPath();
+            ctx.arc(0, 0, 16, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
       }
 
       ctx.restore();
@@ -1268,83 +1289,182 @@ export function render() {
     if (b.x < viewLeft || b.x > viewRight || b.y < viewTop || b.y > viewBottom) continue;
 
     if (b.type === 'STAFF') {
-      // Rastro Térmico Contínuo (Comet Tail Ribbon)
-      if (b.trail) {
-        for (let t = 0; t < b.trail.length; t++) {
-          const pt = b.trail[t];
-          const tProgress = t / b.trail.length;
-          const tAlpha = (1 - tProgress) * 0.55;
-          const tR = b.radius * (1 - tProgress * 0.65);
+      const rad = b.radius || 9;
+      const spin = frameCount * 0.25;
 
-          // Camada externa alaranjada
-          ctx.fillStyle = b.isEvolved 
-            ? `rgba(231, 76, 60, ${tAlpha * 0.5})` 
-            : `rgba(230, 126, 34, ${tAlpha * 0.5})`;
+      // 1. RASTRO DE FOGO EM CAUDA DE COMETA FLUIDA (Continuous Flame Comet Ribbon)
+      if (b.trail && b.trail.length > 0) {
+        ctx.save();
+        const allPts = [{ x: b.x, y: b.y }, ...b.trail];
+        const numPts = allPts.length;
+
+        if (numPts >= 2) {
+          const leftPoints = [];
+          const rightPoints = [];
+
+          for (let t = 0; t < numPts; t++) {
+            const pt = allPts[t];
+            const progress = t / (numPts - 1 || 1); // 0 (cabeça) -> 1 (ponta da cauda)
+            const taper = Math.pow(1 - progress, 0.82);
+            const currentW = (rad * 1.35) * taper;
+
+            // Vetor tangencial e perpendicular
+            let segAngle = b.angle || 0;
+            if (t < numPts - 1) {
+              segAngle = Math.atan2(allPts[t + 1].y - pt.y, allPts[t + 1].x - pt.x);
+            } else if (t > 0) {
+              segAngle = Math.atan2(pt.y - allPts[t - 1].y, pt.x - allPts[t - 1].x);
+            }
+
+            // Ondulação térmica viva de labareda com o vento e deslocamento
+            const wave = Math.sin(frameCount * 0.42 + t * 1.3) * (rad * 0.35 * taper);
+            const perpX = -Math.sin(segAngle);
+            const perpY = Math.cos(segAngle);
+
+            leftPoints.push({
+              x: pt.x + perpX * (currentW + wave),
+              y: pt.y + perpY * (currentW + wave)
+            });
+            rightPoints.push({
+              x: pt.x - perpX * (currentW - wave),
+              y: pt.y - perpY * (currentW - wave)
+            });
+          }
+
+          // A. Manto Externo de Fogo Vivo (Carmesim / Laranja Incandescente)
           ctx.beginPath();
-          ctx.arc(pt.x, pt.y, tR * 1.4, 0, Math.PI * 2);
+          ctx.moveTo(leftPoints[0].x, leftPoints[0].y);
+          for (let i = 1; i < leftPoints.length; i++) ctx.lineTo(leftPoints[i].x, leftPoints[i].y);
+          for (let i = rightPoints.length - 1; i >= 0; i--) ctx.lineTo(rightPoints[i].x, rightPoints[i].y);
+          ctx.closePath();
+
+          const tailGrad = ctx.createLinearGradient(
+            b.x, b.y,
+            allPts[numPts - 1].x, allPts[numPts - 1].y
+          );
+          tailGrad.addColorStop(0, b.isEvolved ? 'rgba(231, 76, 60, 0.85)' : 'rgba(230, 126, 34, 0.85)');
+          tailGrad.addColorStop(0.45, b.isEvolved ? 'rgba(214, 48, 49, 0.55)' : 'rgba(230, 80, 20, 0.55)');
+          tailGrad.addColorStop(1, 'rgba(180, 30, 10, 0)');
+          ctx.fillStyle = tailGrad;
           ctx.fill();
 
-          // Núcleo interno dourado
-          ctx.fillStyle = `rgba(241, 196, 15, ${tAlpha})`;
+          // B. Núcleo Interno de Fogo Dourado
           ctx.beginPath();
-          ctx.arc(pt.x, pt.y, tR * 0.7, 0, Math.PI * 2);
+          ctx.moveTo(
+            b.x + (leftPoints[0].x - b.x) * 0.65,
+            b.y + (leftPoints[0].y - b.y) * 0.65
+          );
+          for (let i = 1; i < leftPoints.length; i++) {
+            const lp = leftPoints[i];
+            const pt = allPts[i];
+            ctx.lineTo(pt.x + (lp.x - pt.x) * 0.65, pt.y + (lp.y - pt.y) * 0.65);
+          }
+          for (let i = rightPoints.length - 1; i >= 0; i--) {
+            const rp = rightPoints[i];
+            const pt = allPts[i];
+            ctx.lineTo(pt.x + (rp.x - pt.x) * 0.65, pt.y + (rp.y - pt.y) * 0.65);
+          }
+          ctx.closePath();
+
+          const coreGrad = ctx.createLinearGradient(
+            b.x, b.y,
+            allPts[numPts - 1].x, allPts[numPts - 1].y
+          );
+          coreGrad.addColorStop(0, 'rgba(255, 240, 150, 0.95)');
+          coreGrad.addColorStop(0.35, 'rgba(241, 196, 15, 0.8)');
+          coreGrad.addColorStop(0.8, 'rgba(230, 126, 34, 0.35)');
+          coreGrad.addColorStop(1, 'rgba(231, 76, 60, 0)');
+          ctx.fillStyle = coreGrad;
           ctx.fill();
+
+          // C. Espinha Dorsal de Plasma Branco de Alta Fusão
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+          ctx.lineWidth = Math.max(1.2, rad * 0.35);
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(b.x, b.y);
+          const spineCut = Math.min(numPts, 6);
+          for (let i = 1; i < spineCut; i++) {
+            ctx.lineTo(allPts[i].x, allPts[i].y);
+          }
+          ctx.stroke();
+
+          // D. Brasas e Faíscas que se desprendem na esteira térmica
+          for (let t = 1; t < numPts; t++) {
+            const pt = allPts[t];
+            const progress = t / numPts;
+            const sparkAngle = frameCount * 0.35 + t * 2.3;
+            const sparkDist = (rad * 0.85) * Math.sin(sparkAngle);
+            const sx = pt.x + Math.cos(sparkAngle) * sparkDist;
+            const sy = pt.y + Math.sin(sparkAngle) * sparkDist;
+            const sSize = Math.max(0.8, rad * 0.28 * (1 - progress));
+            ctx.fillStyle = (t % 2 === 0) 
+              ? `rgba(255, 255, 255, ${0.85 * (1 - progress)})` 
+              : `rgba(241, 196, 15, ${0.85 * (1 - progress)})`;
+            ctx.beginPath();
+            ctx.arc(sx, sy, sSize, 0, Math.PI * 2);
+            ctx.fill();
+          }
         }
+        ctx.restore();
       }
 
       ctx.save();
       ctx.translate(b.x, b.y);
       ctx.rotate(b.angle || 0);
 
-      const rad = b.radius;
-      const spin = frameCount * 0.25;
-
-      // 1. Halo Flamejante com Línguas de Fogo Espirais
-      ctx.fillStyle = b.isEvolved ? 'rgba(231, 76, 60, 0.4)' : 'rgba(230, 126, 34, 0.35)';
+      // 2. Halo Térmico Radial (Ambient Solar Corona)
+      const coronaR = rad * 1.85;
+      const orbHalo = ctx.createRadialGradient(0, 0, rad * 0.35, 0, 0, coronaR);
+      orbHalo.addColorStop(0, b.isEvolved ? 'rgba(231, 76, 60, 0.60)' : 'rgba(243, 156, 18, 0.60)');
+      orbHalo.addColorStop(0.55, b.isEvolved ? 'rgba(192, 57, 43, 0.30)' : 'rgba(230, 126, 34, 0.30)');
+      orbHalo.addColorStop(1, 'rgba(230, 80, 20, 0)');
+      ctx.fillStyle = orbHalo;
       ctx.beginPath();
-      ctx.arc(0, 0, rad * 1.5, 0, Math.PI * 2);
+      ctx.arc(0, 0, coronaR, 0, Math.PI * 2);
       ctx.fill();
 
-      // 2. Manto de Fogo Solar
+      // 3. Manto de Labaredas em Gota Esculpidas no Contorno
       ctx.fillStyle = b.isEvolved ? '#e74c3c' : '#e67e22';
       ctx.beginPath();
-      ctx.moveTo(rad * 1.4, 0);
-      ctx.quadraticCurveTo(0, -rad * 1.1, -rad * 1.2, 0);
-      ctx.quadraticCurveTo(0, rad * 1.1, rad * 1.4, 0);
+      ctx.moveTo(rad * 1.5, 0);
+      ctx.quadraticCurveTo(rad * 0.2, -rad * 1.3, -rad * 1.4, -rad * 0.45);
+      ctx.lineTo(-rad * 1.85, 0);
+      ctx.lineTo(-rad * 1.4, rad * 0.45);
+      ctx.quadraticCurveTo(rad * 0.2, rad * 1.3, rad * 1.5, 0);
       ctx.closePath();
       ctx.fill();
 
-      // 3. Manto Interno Incandescente Amarelo-Ouro
+      // 4. Manto Incandescente Amarelo-Ouro
       ctx.fillStyle = '#f1c40f';
       ctx.beginPath();
-      ctx.ellipse(0, 0, rad * 0.9, rad * 0.65, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, rad * 0.95, rad * 0.72, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // 4. Núcleo Concentrado de Plasma Branco Solar
+      // 5. Núcleo Concentrado de Fusão Branca Solar
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.ellipse(rad * 0.15, 0, rad * 0.45, rad * 0.35, 0, 0, Math.PI * 2);
+      ctx.ellipse(rad * 0.18, 0, rad * 0.52, rad * 0.40, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // 5. Se Evoluído: Anéis Rúnicos Astrais Cruzados em Rotação Contínua
+      // 6. Anéis Orbitais de Fogo e Plasma
       if (b.isEvolved) {
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.92)';
         ctx.lineWidth = 1.8;
         ctx.beginPath();
-        ctx.ellipse(0, 0, rad * 1.6, rad * 0.5, spin, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, rad * 1.6, rad * 0.55, spin, 0, Math.PI * 2);
         ctx.stroke();
 
-        ctx.strokeStyle = 'rgba(241, 196, 15, 0.85)';
+        ctx.strokeStyle = '#f1c40f';
         ctx.lineWidth = 1.8;
         ctx.beginPath();
-        ctx.ellipse(0, 0, rad * 1.6, rad * 0.5, -spin, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, rad * 1.6, rad * 0.55, -spin, 0, Math.PI * 2);
         ctx.stroke();
       } else {
-        // Coroa orbital simples de faíscas
-        ctx.strokeStyle = 'rgba(255, 234, 167, 0.65)';
+        ctx.strokeStyle = 'rgba(255, 235, 120, 0.85)';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.arc(0, 0, rad * 1.2, spin, spin + Math.PI);
+        ctx.ellipse(0, 0, rad * 1.35, rad * 0.48, spin, 0, Math.PI * 2);
         ctx.stroke();
       }
 
@@ -1421,8 +1541,8 @@ export function render() {
       if (b.trail) {
         for (let t = 0; t < b.trail.length; t++) {
           const pt = b.trail[t];
-          const tAlpha = (1 - t / b.trail.length) * 0.35;
-          ctx.fillStyle = b.isEvolved ? `rgba(241, 196, 15, ${tAlpha})` : `rgba(46, 204, 113, ${tAlpha})`;
+          const tAlpha = (1 - t / b.trail.length) * 0.42;
+          ctx.fillStyle = b.isEvolved ? `rgba(241, 196, 15, ${tAlpha})` : `rgba(0, 245, 212, ${tAlpha})`;
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, b.radius * (1 - t / b.trail.length * 0.5), 0, Math.PI * 2);
           ctx.fill();
@@ -1431,7 +1551,26 @@ export function render() {
       ctx.save();
       ctx.translate(b.x, b.y);
       ctx.rotate(b.angle || 0);
-      ctx.fillStyle = b.isEvolved ? '#f1c40f' : '#2ecc71';
+
+      // Halo translúcido de éter
+      ctx.fillStyle = b.isEvolved ? 'rgba(241, 196, 15, 0.35)' : 'rgba(0, 245, 212, 0.35)';
+      ctx.beginPath();
+      if (b.isEvolved) {
+        ctx.moveTo(18, 0);
+        ctx.lineTo(-10, -7.5);
+        ctx.lineTo(-4, 0);
+        ctx.lineTo(-10, 7.5);
+      } else {
+        ctx.moveTo(14, 0);
+        ctx.lineTo(-8, -5.5);
+        ctx.lineTo(-3, 0);
+        ctx.lineTo(-8, 5.5);
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      // Corpo da Foice Astral em plasma puro
+      ctx.fillStyle = b.isEvolved ? '#f1c40f' : '#00cec9';
       ctx.beginPath();
       if (b.isEvolved) {
         ctx.moveTo(16, 0);
@@ -1446,6 +1585,8 @@ export function render() {
       }
       ctx.closePath();
       ctx.fill();
+
+      // Núcleo incandescente branco
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(-2, -1, 6, 2);
       ctx.restore();

@@ -1,0 +1,376 @@
+﻿/* ==========================================================================
+   FASE 1: GRIMÓRIO DE CONQUISTAS, DESBLOQUEIOS & SELO PRIMORDIAL
+   ========================================================================== */
+
+#achievements-modal {
+  z-index: 110;
+}
+#achievements-modal.void-astral-overlay,
+#achievements-modal.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, rgba(12, 10, 24, 0.90) 0%, rgba(4, 5, 8, 0.97) 100%);
+  backdrop-filter: blur(8px);
+}
+#achievements-modal[style*="display: none"],
+#achievements-modal.modal-hidden {
+  display: none !important;
+}
+
+.achievements-void-box {
+  max-width: 900px !important;
+  width: 95vw !important;
+  max-height: 88vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: radial-gradient(circle at 50% 10%, #17142b 0%, #0d0b17 75%, #06050a 100%) !important;
+  border: 1.5px solid rgba(162, 155, 254, 0.4) !important;
+  box-shadow: 0 0 45px rgba(162, 155, 254, 0.2), inset 0 0 30px rgba(0, 0, 0, 0.9) !important;
+  padding: 0 !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+.achievements-header {
+  padding: 14px 20px 10px;
+  border-bottom: 1px solid rgba(162, 155, 254, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.achievements-header-info {
+  text-align: center;
+  flex: 1;
+}
+
+.achievements-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(162, 155, 254, 0.3) rgba(10, 12, 16, 0.6);
+}
+
+.achievements-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+  gap: 12px;
+}
+
+.achievement-card {
+  display: flex;
+  gap: 12px;
+  background: rgba(18, 22, 34, 0.85);
+  border: 1px solid rgba(162, 155, 254, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.achievement-card:hover {
+  border-color: rgba(162, 155, 254, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.achievement-card.ach-completed {
+  border-color: rgba(0, 245, 212, 0.45);
+  background: linear-gradient(135deg, rgba(16, 28, 38, 0.9) 0%, rgba(10, 18, 28, 0.95) 100%);
+  box-shadow: inset 0 0 15px rgba(0, 245, 212, 0.08);
+}
+
+.ach-card-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: rgba(10, 12, 18, 0.8);
+  border: 1px solid rgba(162, 155, 254, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.ach-card-icon-wrap.completed {
+  border-color: #00f5d4;
+  background: rgba(0, 245, 212, 0.12);
+  box-shadow: 0 0 12px rgba(0, 245, 212, 0.3);
+}
+
+.ach-card-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ach-card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ach-card-name {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.ach-card-name.name-completed {
+  color: #00f5d4;
+}
+
+.ach-status-badge {
+  font-size: 8.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.ach-status-badge.badge-done {
+  background: rgba(46, 204, 113, 0.2);
+  border: 1px solid #2ecc71;
+  color: #2ecc71;
+}
+
+.ach-status-badge.badge-pending {
+  background: rgba(241, 196, 15, 0.15);
+  border: 1px solid rgba(241, 196, 15, 0.4);
+  color: #f1c40f;
+}
+
+.ach-card-desc {
+  font-size: 10px;
+  color: #94a3b8;
+  line-height: 1.35;
+  margin-bottom: 4px;
+}
+
+.ach-progress-container {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ach-progress-rail {
+  width: 100%;
+  height: 5px;
+  background: rgba(10, 12, 16, 0.9);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ach-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #f1c40f 0%, #00f5d4 100%);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.ach-card-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9px;
+}
+
+.ach-reward-pill {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.ach-hero-reward {
+  background: rgba(162, 155, 254, 0.15);
+  border: 1px solid #a29bfe;
+  color: #a29bfe;
+}
+
+.ach-gold-reward {
+  background: rgba(241, 196, 15, 0.15);
+  border: 1px solid #f1c40f;
+  color: #ffd166;
+}
+
+.ach-pct-text {
+  color: #64748b;
+  font-weight: 700;
+  font-size: 9.5px;
+}
+
+/* Pedestais de Heróis Bloqueados */
+.char-pedestal-btn.hero-locked {
+  filter: grayscale(0.65) brightness(0.7);
+  border-color: rgba(255, 118, 117, 0.3) !important;
+}
+
+.char-pedestal-btn.hero-locked:hover {
+  filter: grayscale(0.25) brightness(0.9);
+}
+
+.pedestal-lock-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  background: #180a10;
+  border: 1px solid #ff7675;
+  border-radius: 50%;
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 6px rgba(255, 118, 117, 0.6);
+  z-index: 2;
+}
+
+.pedestal-lock-badge svg {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+
+.pedestal-locked-label {
+  color: #ff7675;
+  font-weight: 700;
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.pedestal-locked-label svg {
+  flex-shrink: 0;
+}
+
+/* Showcase Lock Dossier (Banner de Selo Primordial) */
+.showcase-lock-dossier {
+  background: linear-gradient(135deg, rgba(38, 16, 26, 0.92) 0%, rgba(20, 10, 18, 0.97) 100%);
+  border: 1px solid rgba(255, 118, 117, 0.5);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 0 16px rgba(255, 118, 117, 0.18), inset 0 0 12px rgba(0, 0, 0, 0.6);
+  animation: pulse-lock-border 3s infinite ease-in-out;
+}
+
+@keyframes pulse-lock-border {
+  0%, 100% { border-color: rgba(255, 118, 117, 0.4); }
+  50% { border-color: rgba(255, 118, 117, 0.8); }
+}
+
+.lock-dossier-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.lock-icon-lg {
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(255, 118, 117, 0.7));
+}
+
+.lock-icon-lg svg {
+  flex-shrink: 0;
+}
+
+.lock-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.lock-eyebrow {
+  font-size: 8.5px;
+  color: #ff7675;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+
+.lock-name {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffd166;
+}
+
+.lock-desc {
+  font-size: 10.5px;
+  color: #cbd5e1;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.lock-progress-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lock-progress-track {
+  width: 100%;
+  height: 6px;
+  background: #0a0c10;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 118, 117, 0.3);
+}
+
+.lock-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff7675 0%, #f1c40f 100%);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.lock-progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #94a3b8;
+}
+
+.lock-cur-val b {
+  color: #00f5d4;
+}
+
+.lock-pct-val {
+  color: #ffd166;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .achievements-void-box {
+    width: 96vw;
+    max-height: 92vh;
+  }
+  .achievements-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .achievements-modal-body {
+    padding: 8px 10px 14px;
+  }
+}
+

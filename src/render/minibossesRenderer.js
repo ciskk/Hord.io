@@ -1367,3 +1367,881 @@ export function drawMiniBossShape(e) {
     }
   }
 }
+
+/**
+ * Glifo de Ameaça agonizante: racha, perde a rotação rúnica e apaga no chão.
+ */
+function drawDyingThreatGlyph(R, color, t) {
+  const glyphAlpha = Math.max(0, 1 - t * 1.35);
+  if (glyphAlpha <= 0.01) return;
+
+  const shatter = t * 14;
+  ctx.save();
+  ctx.globalAlpha = glyphAlpha;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(0.5, 2.0 * (1 - t));
+
+  // Anel Externo Fraturando
+  ctx.beginPath();
+  ctx.ellipse(0, R * 0.82, Math.max(2, R * 1.32 - shatter * 0.4), Math.max(1, R * 0.48 - shatter * 0.2), 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Rachaduras radiais partindo do centro do glifo
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+  ctx.lineWidth = 1.0;
+  ctx.beginPath();
+  for (let c = 0; c < 6; c++) {
+    const ca = c * (Math.PI / 3) + 0.2;
+    const cr = (R * 1.3) * (0.3 + (c % 2) * 0.4);
+    ctx.moveTo(0, R * 0.82);
+    ctx.lineTo(Math.cos(ca) * cr, R * 0.82 + Math.sin(ca) * (cr * 0.4));
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * Renderizador de Animações de Morte Complexas para todos os 16 Mini-Bosses.
+ * Coreografia em 3 Fases: Impacto & Recoil (t < 0.35) -> Colapso Estrutural (0.35 <= t < 0.75) -> Dissipação (t >= 0.75).
+ * @param {Object} de Entidade agonizante em dyingEnemies
+ */
+export function drawDyingMiniBossShape(de) {
+  const t = Math.max(0, Math.min(1, 1 - (de.timer / de.maxTimer)));
+  const R = de.radius;
+  const isEnraged = !!de.enraged;
+  const eliteColor = isEnraged ? '#ff4757' : (de.color || '#f39c12');
+
+  ctx.save();
+  ctx.translate(de.x, de.y);
+  ctx.scale(de.facing || 1, 1);
+
+  // Efeito de queda e rotação física de impacto
+  if (de.rot) ctx.rotate(de.rot);
+
+  // Fade suave de transparência apenas no último quarto da animação (t >= 0.75)
+  const bodyAlpha = Math.max(0, 1 - Math.max(0, (t - 0.75) / 0.25));
+  ctx.globalAlpha = bodyAlpha;
+
+  // Glifo de ameaça no solo rachando e apagando
+  drawDyingThreatGlyph(R, eliteColor, t);
+
+  switch (de.baseType) {
+    // =========================================================================
+    // 1. ZOMBI ALFA (ZOMBIE_ALPHA)
+    // =========================================================================
+    case 'ZOMBIE_ALPHA': {
+      // Fase 1: Racha a coluna e arqueia o dorso
+      // Fase 2: Jatos de sangue verde e estalo vertebral
+      // Fase 3: Tombo pesado de frente com os braços esticados
+      const fallPitch = t < 0.35 ? -t * 0.4 : (t - 0.35) * 1.1;
+      ctx.rotate(fallPitch);
+      ctx.translate(0, t * 14);
+
+      const skinColor = isEnraged ? '#15241b' : '#1e392a';
+      const skinShade = isEnraged ? '#0d1812' : '#14271c';
+      const veinColor = isEnraged ? '#ff4757' : '#2ecc71';
+
+      // Torso desabando
+      ctx.fillStyle = skinColor;
+      ctx.beginPath();
+      ctx.moveTo(-R * 0.9, -R * 0.4);
+      ctx.quadraticCurveTo(0, -R * 0.55 + t * 4, R * 0.85, -R * 0.35 + t * 8);
+      ctx.lineTo(R * 0.6, R * 0.7);
+      ctx.lineTo(-R * 0.6, R * 0.7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = skinShade;
+      ctx.lineWidth = 2.8;
+      ctx.stroke();
+
+      // Coluna vertebral se partindo (vértebras ejetadas)
+      for (let v = 0; v < 5; v++) {
+        const vDisplace = t > 0.35 ? (t - 0.35) * (v * 12 - 24) : 0;
+        const vy = -R * 0.35 + v * (R * 0.22) + vDisplace * 0.4;
+        const vx = -R * 0.65 + Math.sin(v * 0.8) * 3 + vDisplace;
+        ctx.fillStyle = '#dfe4ea';
+        ctx.beginPath();
+        ctx.ellipse(vx, vy, 4.5, 3.2, -0.3 + t * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Erupção de bile verde esmeralda pelas veias rompidas
+      if (t > 0.25) {
+        ctx.fillStyle = veinColor;
+        for (let b = 0; b < 6; b++) {
+          const ba = b * 1.05 + t * 2.2;
+          const bd = R * (0.4 + (t - 0.25) * 1.8);
+          ctx.fillRect(Math.cos(ba) * bd - 2.5, Math.sin(ba) * (bd * 0.6) - 2.5, 5, 5);
+        }
+      }
+
+      // Cabeça abatida
+      ctx.fillStyle = skinShade;
+      ctx.beginPath();
+      ctx.arc(R * 0.25 + t * 6, -R * 0.6 + t * 12, R * 0.36, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+
+    // =========================================================================
+    // 2. CENTURIÃO DA GUARDA (PHALANX_LEADER)
+    // =========================================================================
+    case 'PHALANX_LEADER': {
+      // Fase 1: Escudo parte ao meio e tomba para a frente
+      // Fase 2: Lança imperial quebra e elmo salta
+      // Fase 3: O centurião cai de joelhos com capa esfarrapada
+      const kneeDrop = t * 12;
+      ctx.translate(0, kneeDrop);
+
+      const steelCol = '#576574';
+      const steelDark = '#2f3542';
+      const goldTrim = isEnraged ? '#e74c3c' : '#f1c40f';
+
+      // 1. Capa vermelha caindo no chão
+      ctx.fillStyle = '#8b0000';
+      ctx.beginPath();
+      ctx.moveTo(-R * 0.5, -R * 0.4);
+      ctx.quadraticCurveTo(-R * 1.1, R * 0.2 + t * 10, -R * 1.35, R * 0.7 + t * 12);
+      ctx.lineTo(-R * 0.8, R * 0.8 + t * 12);
+      ctx.closePath();
+      ctx.fill();
+
+      // 2. Peitoral metálico curvando para a frente
+      ctx.save();
+      ctx.rotate(t * 0.45);
+      ctx.fillStyle = steelCol;
+      ctx.fillRect(-R * 0.5, -R * 0.4, R * 0.8, R * 0.9);
+      ctx.strokeStyle = steelDark;
+      ctx.lineWidth = 2.0;
+      ctx.strokeRect(-R * 0.5, -R * 0.4, R * 0.8, R * 0.9);
+      ctx.restore();
+
+      // 3. Duas metades do Pavês Imperial caindo separadas
+      ctx.save();
+      ctx.translate(R * 0.5 + t * 12, t * 10);
+      ctx.rotate(t * 0.8);
+      ctx.fillStyle = '#b71540';
+      ctx.fillRect(0, -R * 0.9, R * 0.25, R * 0.85);
+      ctx.strokeStyle = goldTrim;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(0, -R * 0.9, R * 0.25, R * 0.85);
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(R * 0.5 + t * 18, t * 14);
+      ctx.rotate(-t * 0.6);
+      ctx.fillStyle = '#b71540';
+      ctx.fillRect(0, 0, R * 0.25, R * 0.85);
+      ctx.strokeRect(0, 0, R * 0.25, R * 0.85);
+      ctx.restore();
+
+      // 4. Lança de cerco partida
+      ctx.strokeStyle = '#dfe4ea';
+      ctx.lineWidth = 3.0;
+      ctx.beginPath();
+      ctx.moveTo(-R * 0.2, 0);
+      ctx.lineTo(R * 0.8, -R * 0.2 + t * 8);
+      ctx.stroke();
+
+      // 5. Elmo coríntio rolando
+      ctx.save();
+      ctx.translate(-R * 0.3 - t * 10, t * 10);
+      ctx.rotate(-t * 1.6);
+      ctx.fillStyle = steelDark;
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 0.32, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = goldTrim;
+      ctx.fillRect(-2, -R * 0.4, 4, 6);
+      ctx.restore();
+      break;
+    }
+
+    // =========================================================================
+    // 3. DEMOLIDOR SÍSMICO (SEISMIC_SMASHER)
+    // =========================================================================
+    case 'SEISMIC_SMASHER': {
+      // Fase 1: Tremor violento de curto-circuito e pistões descontrolados
+      // Fase 2: Explosão de vapor sob pressão e óleo
+      // Fase 3: As pernas colapsam e a cabeça do martelo crava na terra
+      const shudder = t < 0.45 ? (Math.sin(t * 50) * (1 - t) * 6) : 0;
+      ctx.translate(shudder, t * 12);
+
+      const mechCol = '#4b6584';
+      const mechDark = '#2c3e50';
+
+      // Chassi principal abatido
+      ctx.fillStyle = mechCol;
+      ctx.fillRect(-R * 0.75, -R * 0.5, R * 1.5, R * 0.9);
+      ctx.strokeStyle = mechDark;
+      ctx.lineWidth = 2.4;
+      ctx.strokeRect(-R * 0.75, -R * 0.5, R * 1.5, R * 0.9);
+
+      // Martelo pneumático dianteiro despencando e cravando no solo
+      ctx.save();
+      ctx.translate(R * 0.6 + t * 8, t * 10);
+      ctx.rotate(t * 0.7);
+      ctx.fillStyle = '#1e272e';
+      ctx.fillRect(-6, -R * 0.7, 12, R * 1.4);
+      ctx.fillStyle = '#f39c12';
+      ctx.fillRect(-8, R * 0.4, 16, 12);
+      ctx.restore();
+
+      // Jatos de vapor branco de alta pressão e estilhaços de faísca
+      if (t > 0.2) {
+        ctx.fillStyle = 'rgba(236, 240, 241, 0.8)';
+        for (let s = 0; s < 5; s++) {
+          const sa = s * 1.25 + t * 3;
+          const sd = R * (0.3 + (t - 0.2) * 1.8);
+          ctx.beginPath();
+          ctx.arc(Math.cos(sa) * sd, -R * 0.4 + Math.sin(sa) * (sd * 0.7), 4 + s * 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = '#f1c40f';
+        ctx.fillRect(R * 0.2 + (Math.random() - 0.5) * 12, -R * 0.2 + (Math.random() - 0.5) * 12, 3, 3);
+      }
+      break;
+    }
+
+    // =========================================================================
+    // 4. COLOSSO FERRUGINOSO (RUST_COLOSSUS)
+    // =========================================================================
+    case 'RUST_COLOSSUS': {
+      // Fase 1: Chaminés expelem nuvem negra e fornalha abre com luz branca
+      // Fase 2: Braços de pedra/ferro despencam em direções opostas
+      // Fase 3: O torso de fornalha racha ao meio desabando em pilha de sucata
+      ctx.translate(0, t * 14);
+
+      const rustBase = '#b33927';
+      const rustDark = '#533422';
+
+      // Chaminés traseiras tombando e soltando fumaça densa
+      ctx.fillStyle = '#2d3436';
+      ctx.fillRect(-R * 0.8 - t * 8, -R * 0.9 - t * 4, 10, R * 0.6);
+      ctx.fillRect(-R * 0.4 - t * 4, -R * 0.95 - t * 6, 10, R * 0.65);
+
+      // Fumaça espessa de fuligem
+      ctx.fillStyle = 'rgba(45, 52, 54, 0.75)';
+      for (let f = 0; f < 4; f++) {
+        const fa = f * 1.6 + t * 2;
+        const fy = -R * 0.8 - t * 20 - f * 6;
+        ctx.beginPath();
+        ctx.arc(-R * 0.6 + Math.sin(fa) * 10, fy, 6 + f * 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Torso rachando em dois blocos monolíticos
+      ctx.fillStyle = rustBase;
+      ctx.fillRect(-R * 0.8 - t * 10, -R * 0.4, R * 0.75, R * 0.9);
+      ctx.fillRect(t * 10, -R * 0.4, R * 0.75, R * 0.9);
+      ctx.strokeStyle = rustDark;
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(-R * 0.8 - t * 10, -R * 0.4, R * 0.75, R * 0.9);
+      ctx.strokeRect(t * 10, -R * 0.4, R * 0.75, R * 0.9);
+
+      // Braço esquerdo de rocha caindo
+      ctx.save();
+      ctx.translate(-R * 1.1 - t * 14, t * 8);
+      ctx.rotate(-t * 0.8);
+      ctx.fillStyle = '#636e72';
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Fornalha incandescente esfriando no centro
+      if (t < 0.7) {
+        ctx.fillStyle = t < 0.35 ? '#ffffff' : '#d35400';
+        ctx.beginPath();
+        ctx.arc(0, -R * 0.1, R * 0.3 * (1 - t * 1.2), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    }
+
+    // =========================================================================
+    // 5. GÁRGULA DE SANGUE (BLOOD_GARGOYLE)
+    // =========================================================================
+    case 'BLOOD_GARGOYLE': {
+      // Fase 1: Asas de morcego rasgam e ela despenca girando em espiral
+      // Fase 2: O coração de sangue cristalizado no peito estilhaça em rubis
+      // Fase 3: O corpo vira pedra cinzenta e fragmenta no solo
+      ctx.translate(0, t * 20);
+      ctx.rotate(t * 0.85);
+
+      const isPetrified = t > 0.45;
+      const bodyCol = isPetrified ? '#57606f' : '#3d161d';
+      const wingCol = isPetrified ? '#2f3542' : '#8b0000';
+
+      // Asas membranosas rasgadas
+      ctx.fillStyle = wingCol;
+      ctx.beginPath();
+      ctx.moveTo(-R * 1.4 * (1 - t * 0.5), -R * 0.6);
+      ctx.lineTo(-R * 0.4, -R * 0.2);
+      ctx.lineTo(0, R * 0.3);
+      ctx.lineTo(-R * 0.8, R * 0.5);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(R * 1.4 * (1 - t * 0.5), -R * 0.6);
+      ctx.lineTo(R * 0.4, -R * 0.2);
+      ctx.lineTo(0, R * 0.3);
+      ctx.lineTo(R * 0.8, R * 0.5);
+      ctx.closePath();
+      ctx.fill();
+
+      // Corpo principal
+      ctx.fillStyle = bodyCol;
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Estilhaçamento de rubis e cristais de sangue
+      if (t > 0.3 && t < 0.85) {
+        ctx.fillStyle = '#ff4757';
+        for (let g = 0; g < 6; g++) {
+          const ga = g * (Math.PI / 3) + t * 2.5;
+          const gd = R * (0.4 + (t - 0.3) * 2.2);
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(ga) * gd, Math.sin(ga) * gd);
+          ctx.lineTo(Math.cos(ga + 0.3) * (gd + 5), Math.sin(ga + 0.3) * (gd + 5));
+          ctx.lineTo(Math.cos(ga - 0.2) * (gd + 4), Math.sin(ga - 0.2) * (gd + 4));
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+      break;
+    }
+
+    // =========================================================================
+    // 6. PREDADOR ESPECTRAL (SPECTRAL_STALKER)
+    // =========================================================================
+    case 'SPECTRAL_STALKER': {
+      // Fase 1: Distorção cromática em ecos espectrais (ciano e magenta)
+      // Fase 2: Foices fantasmas se dissolvem em pó violeta
+      // Fase 3: Mini-buraco de névoa escura suga a silhueta em espiral
+      const chromaticOffset = (1 - t) * 8;
+      const swirl = t * Math.PI * 2;
+      ctx.rotate(swirl * 0.25);
+
+      // Eco Espectral Ciano
+      ctx.save();
+      ctx.translate(-chromaticOffset, 0);
+      ctx.globalAlpha = bodyAlpha * 0.45;
+      ctx.fillStyle = '#00d2d3';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, R * 0.55, R * 0.75, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Eco Espectral Magenta
+      ctx.save();
+      ctx.translate(chromaticOffset, 0);
+      ctx.globalAlpha = bodyAlpha * 0.45;
+      ctx.fillStyle = '#e056fd';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, R * 0.55, R * 0.75, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Corpo Central em Roxo Profundo com Sorvedouro
+      ctx.fillStyle = '#2c003e';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, Math.max(2, R * (0.6 - t * 0.5)), Math.max(2, R * (0.8 - t * 0.7)), 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Fitas de névoa e fitas do manto girando em espiral
+      ctx.strokeStyle = '#a29bfe';
+      ctx.lineWidth = 1.8;
+      for (let w = 0; w < 4; w++) {
+        const wa = swirl + w * (Math.PI / 2);
+        const wd = R * (0.8 - t * 0.6);
+        ctx.beginPath();
+        ctx.arc(0, 0, wd, wa, wa + 1.2);
+        ctx.stroke();
+      }
+      break;
+    }
+
+    // =========================================================================
+    // 7. FATIADOR QUÂNTICO (QUANTUM_SLICER)
+    // =========================================================================
+    case 'QUANTUM_SLICER': {
+      // Fase 1: Micro-blinks frenéticos em grade 3x3 deixando clones estáticos
+      // Fase 2: Lâminas de plasma explodem em prismas de luz
+      // Fase 3: As cópias colapsam para o centro numa fenda estelar brilhante
+      const blinkStep = Math.sin(t * 32);
+      const shiftX = (blinkStep > 0.4 ? 1 : (blinkStep < -0.4 ? -1 : 0)) * (1 - t) * 14;
+
+      // Fantasmas de teleporte holográficos
+      ctx.save();
+      ctx.translate(-shiftX, 0);
+      ctx.globalAlpha = bodyAlpha * 0.35;
+      ctx.strokeStyle = '#00cec9';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 0.6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(shiftX, 0);
+      ctx.globalAlpha = bodyAlpha * 0.35;
+      ctx.strokeStyle = '#e056fd';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 0.6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      // Chassi central colapsando
+      ctx.fillStyle = '#1e1a38';
+      ctx.beginPath();
+      ctx.arc(0, 0, Math.max(2, R * (0.55 - t * 0.45)), 0, Math.PI * 2);
+      ctx.fill();
+
+      // Lâminas de laser explodindo em prismas coloridos em expansão
+      ctx.fillStyle = '#81ecec';
+      for (let p = 0; p < 8; p++) {
+        const pa = p * (Math.PI / 4) + t * 4;
+        const pd = R * (0.5 + t * 2.0);
+        ctx.fillRect(Math.cos(pa) * pd - 3, Math.sin(pa) * pd - 3, 6, 6);
+      }
+      break;
+    }
+
+    // =========================================================================
+    // 8. TORRE MÓVEL (ARTILLERY_MECH)
+    // =========================================================================
+    case 'ARTILLERY_MECH': {
+      // Fase 1: Recuo duplo dos canhões e antena de radar ejetada girando
+      // Fase 2: Pernas de aranha mecânicas dobram e quebram
+      // Fase 3: Detonação interna de munições com micro-estalos e queda da cúpula
+      ctx.translate(0, t * 14);
+
+      const mechDark = '#1e3799';
+
+      // Antena de radar ejetada girando
+      ctx.save();
+      ctx.translate(R * 0.4 + t * 16, -R * 0.8 - t * 12);
+      ctx.rotate(t * 6);
+      ctx.strokeStyle = '#dfe4ea';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, 8, -0.6, 0.6);
+      ctx.stroke();
+      ctx.restore();
+
+      // Pernas mecânicas quebradas esticadas no chão
+      ctx.strokeStyle = '#7f8c8d';
+      ctx.lineWidth = 2.4;
+      for (let l = -1; l <= 1; l += 2) {
+        ctx.beginPath();
+        ctx.moveTo(0, l * R * 0.3);
+        ctx.lineTo(-R * 0.7, l * (R * 0.8 + t * 8));
+        ctx.lineTo(-R * 1.2, l * (R * 0.6 + t * 10));
+        ctx.stroke();
+      }
+
+      // Cúpula central da torreta tombando de lado
+      ctx.save();
+      ctx.rotate(t * 0.35);
+      ctx.fillStyle = mechDark;
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 0.65, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Canhões duplos tombando
+      ctx.fillStyle = '#2f3542';
+      ctx.fillRect(R * 0.3, -8, R * 0.7, 5);
+      ctx.fillRect(R * 0.3, 3, R * 0.7, 5);
+      ctx.restore();
+
+      // Micro-estalos de munição explodindo internamente
+      if (t > 0.25 && t < 0.75) {
+        ctx.fillStyle = '#f1c40f';
+        ctx.fillRect((Math.random() - 0.5) * 16, (Math.random() - 0.5) * 16, 4, 4);
+        ctx.fillStyle = '#ff4757';
+        ctx.fillRect((Math.random() - 0.5) * 16, (Math.random() - 0.5) * 16, 3, 3);
+      }
+      break;
+    }
+
+    // =========================================================================
+    // 9. INCINERADOR INSTÁVEL (FIRE_INCINERATOR)
+    // =========================================================================
+    case 'FIRE_INCINERATOR': {
+      // Fase 1: Caldeira estufa e vibra; rebites saltam
+      // Fase 2: Costuras rompem com labareda vertical e vazamento de lava
+      // Fase 3: Caldeirão colapsa num bloco de escória vulcânica negra
+      const swell = 1 + Math.sin(t * Math.PI) * 0.35;
+      ctx.scale(swell, swell);
+      ctx.translate(0, t * 10);
+
+      const boilerCol = '#d35400';
+
+      // Chassi do caldeirão tombando
+      ctx.fillStyle = t > 0.6 ? '#2d3436' : boilerCol;
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 0.7, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Coluna vertical de fogo e lava ejetada
+      if (t > 0.15) {
+        ctx.fillStyle = t < 0.5 ? '#f1c40f' : '#e67e22';
+        ctx.beginPath();
+        ctx.moveTo(-R * 0.4, -R * 0.5);
+        ctx.lineTo(0, -R * 0.5 - t * 28);
+        ctx.lineTo(R * 0.4, -R * 0.5);
+        ctx.closePath();
+        ctx.fill();
+
+        // Gotas de lava incandescentes espirrando
+        ctx.fillStyle = '#ff7675';
+        for (let dr = 0; dr < 6; dr++) {
+          const dra = dr * 1.05 + t * 2.5;
+          const drd = R * (0.6 + (t - 0.15) * 2.0);
+          ctx.fillRect(Math.cos(dra) * drd - 2.5, Math.sin(dra) * (drd * 0.7) - 2.5, 5, 5);
+        }
+      }
+      break;
+    }
+
+    // =========================================================================
+    // 10. CAPITÃO DE CERCO (SIEGE_CAPTAIN)
+    // =========================================================================
+    case 'SIEGE_CAPTAIN': {
+      // Fase 1: Esteiras rompem e desenrolam; morteiro dispara contragolpe
+      // Fase 2: Escotilha da torreta voa em bola de fogo
+      // Fase 3: Blindado tomba de lado vazando fumaça e óleo diesel
+      ctx.translate(0, t * 12);
+      ctx.rotate(t * 0.4);
+
+      const hullCol = '#b71540';
+
+      // Esteiras de blindado arrebentadas
+      ctx.strokeStyle = '#2d3436';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(-R * 1.3 - t * 10, R * 0.5);
+      ctx.lineTo(R * 0.8, R * 0.5);
+      ctx.stroke();
+
+      // Casco blindado principal
+      ctx.fillStyle = hullCol;
+      ctx.fillRect(-R * 0.8, -R * 0.4, R * 1.5, R * 0.8);
+      ctx.strokeStyle = '#2c3e50';
+      ctx.lineWidth = 2.4;
+      ctx.strokeRect(-R * 0.8, -R * 0.4, R * 1.5, R * 0.8);
+
+      // Cano do morteiro quebrado apontando para baixo
+      ctx.fillStyle = '#1e272e';
+      ctx.save();
+      ctx.translate(R * 0.4, -R * 0.3);
+      ctx.rotate(t * 1.2);
+      ctx.fillRect(0, -5, R * 0.7, 10);
+      ctx.restore();
+
+      // Escotilha voando
+      ctx.save();
+      ctx.translate(-R * 0.2 - t * 14, -R * 0.8 - t * 16);
+      ctx.rotate(-t * 4);
+      ctx.fillStyle = '#718093';
+      ctx.fillRect(-6, -3, 12, 6);
+      ctx.restore();
+
+      // Labareda e fumaça escapando da escotilha
+      if (t > 0.2) {
+        ctx.fillStyle = 'rgba(53, 59, 72, 0.7)';
+        ctx.beginPath();
+        ctx.arc(-R * 0.2, -R * 0.5 - t * 14, 8 + t * 8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    }
+
+    // =========================================================================
+    // 11. MATRIARCA PARASITA (BROOD_MATRIARCH)
+    // =========================================================================
+    case 'BROOD_MATRIARCH': {
+      // Fase 1: Abdômen ciano convulsiona e mandíbulas tremem
+      // Fase 2: Bolsa de ovos rompe expelindo jatos de fluido turquesa e vesículas
+      // Fase 3: As 6 patas dobram para cima na postura de morte e o corpo derrete
+      ctx.translate(0, t * 10);
+
+      const chitinCol = '#006266';
+
+      // 6 Patas aracnídeas curvando para cima (death curl)
+      ctx.strokeStyle = '#004d40';
+      ctx.lineWidth = 2.8;
+      for (let p = -1; p <= 1; p += 2) {
+        for (let leg = 0; leg < 3; leg++) {
+          const lX = -R * 0.4 + leg * (R * 0.4);
+          const curlY = -R * 0.8 * (1 - t * 0.3) - t * 8;
+          ctx.beginPath();
+          ctx.moveTo(lX, 0);
+          ctx.lineTo(lX + p * (R * 0.7 * (1 - t * 0.6)), curlY);
+          ctx.stroke();
+        }
+      }
+
+      // Abdômen de ninho estourando e murchando
+      const abdomenScale = Math.max(0.1, 1 - t * 0.85);
+      ctx.fillStyle = chitinCol;
+      ctx.beginPath();
+      ctx.ellipse(-R * 0.4, 0, R * 0.7 * abdomenScale, R * 0.55 * abdomenScale, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Cefalotórax frontal
+      ctx.fillStyle = '#004d40';
+      ctx.beginPath();
+      ctx.arc(R * 0.3, 0, R * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Jato de linfa bioluminescente turquesa
+      if (t > 0.25) {
+        ctx.fillStyle = '#00cec9';
+        for (let sp = 0; sp < 7; sp++) {
+          const spa = sp * 0.9 + t * 3;
+          const spd = R * (0.5 + (t - 0.25) * 2.0);
+          ctx.beginPath();
+          ctx.arc(Math.cos(spa) * spd, Math.sin(spa) * spd, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      break;
+    }
+
+    // =========================================================================
+    // 12. NINHO MÓVEL (MOBILE_HIVE)
+    // =========================================================================
+    case 'MOBILE_HIVE': {
+      // Fase 1: Alvéolos hexagonais trincam e vazam néctar tóxico
+      // Fase 2: Morcegos remanescentes fogem em pânico em todas as direções
+      // Fase 3: A estrutura bio-orgânica parte em 3 blocos e desmancha em esporos
+      ctx.translate(0, t * 12);
+
+      const hiveCol = '#16a085';
+
+      // 3 Blocos de favo se separando
+      ctx.fillStyle = hiveCol;
+      ctx.beginPath();
+      ctx.arc(-R * 0.3 - t * 10, -t * 6, R * 0.4, 0, Math.PI * 2);
+      ctx.arc(R * 0.3 + t * 10, -t * 6, R * 0.4, 0, Math.PI * 2);
+      ctx.arc(0, t * 8, R * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Alvéolos escuros desfeitos
+      ctx.fillStyle = '#0e4438';
+      ctx.fillRect(-R * 0.2 - t * 6, -3, 6, 6);
+      ctx.fillRect(R * 0.2 + t * 6, -3, 6, 6);
+
+      // Silhuetas de mini-morcegos fugindo para o alto
+      ctx.fillStyle = '#2c3e50';
+      for (let b = 0; b < 4; b++) {
+        const bx = -R * 0.6 + b * (R * 0.4) + Math.sin(t * 8 + b) * 8;
+        const by = -R * 0.8 - t * 24 - b * 4;
+        ctx.beginPath();
+        ctx.moveTo(bx - 6, by - 2);
+        ctx.lineTo(bx, by);
+        ctx.lineTo(bx + 6, by - 2);
+        ctx.stroke();
+      }
+
+      // Nuvem de esporos turquesa
+      if (t > 0.35) {
+        ctx.fillStyle = 'rgba(72, 219, 251, 0.7)';
+        for (let ep = 0; ep < 6; ep++) {
+          const epa = ep * 1.05 + t * 2;
+          const epd = R * (0.4 + (t - 0.35) * 1.8);
+          ctx.fillRect(Math.cos(epa) * epd - 2, Math.sin(epa) * epd - 2, 4, 4);
+        }
+      }
+      break;
+    }
+
+    // =========================================================================
+    // 13. ALTO SACERDOTE (HIGH_OCCULTIST)
+    // =========================================================================
+    case 'HIGH_OCCULTIST': {
+      // Fase 1: Cessação de levitação, cai no solo com túnica ondulando
+      // Fase 2: Orbes de gravidade orbitam em aceleração e convergem ao peito
+      // Fase 3: As vestes colapsam num ponto singular de gravidade e glifos sobem
+      ctx.translate(0, t * 16);
+
+      const robeCol = '#2c003e';
+
+      // Túnica cerimonial desabando
+      ctx.fillStyle = robeCol;
+      ctx.beginPath();
+      ctx.moveTo(-R * 0.6 * (1 + t * 0.4), R * 0.8);
+      ctx.lineTo(0, -R * 0.5 * (1 - t * 0.6));
+      ctx.lineTo(R * 0.6 * (1 + t * 0.4), R * 0.8);
+      ctx.closePath();
+      ctx.fill();
+
+      // Orbes de gravidade em espiral convergente para o centro
+      const orbRadius = Math.max(1, R * (1.2 - t * 1.1));
+      const orbSpin = t * Math.PI * 8;
+      ctx.fillStyle = '#000000';
+      ctx.strokeStyle = '#9c88ff';
+      ctx.lineWidth = 1.5;
+      for (let o = 0; o < 3; o++) {
+        const oa = orbSpin + o * (Math.PI * 2 / 3);
+        const ox = Math.cos(oa) * orbRadius;
+        const oy = Math.sin(oa) * (orbRadius * 0.5) - R * 0.1;
+        ctx.beginPath();
+        ctx.arc(ox, oy, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // Glifos cósmicos dourados ascendendo ao explodir o ponto singular
+      if (t > 0.45) {
+        ctx.fillStyle = '#f1c40f';
+        for (let g = 0; g < 5; g++) {
+          const ga = g * 1.3 + t * 3;
+          const gy = -R * 0.2 - (t - 0.45) * 26 - g * 4;
+          ctx.fillRect(Math.cos(ga) * 8 - 2, gy, 4, 4);
+        }
+      }
+      break;
+    }
+
+    // =========================================================================
+    // 14. GUARDIÃO RÚNICO (RUNIC_WARDEN)
+    // =========================================================================
+    case 'RUNIC_WARDEN': {
+      // Fase 1: Escudos de safira orbitais quebram em prismas de vidro azul
+      // Fase 2: Runas no monólito apagam progressivamente
+      // Fase 3: O corpo central de basalto racha em pilares que tombam
+      ctx.translate(0, t * 12);
+
+      const stoneCol = '#2c3e50';
+
+      // Fragmentos de cristais de barreira se dispersando
+      ctx.fillStyle = '#0984e3';
+      for (let cr = 0; cr < 6; cr++) {
+        const cra = cr * (Math.PI / 3) + t * 2.2;
+        const crd = R * (0.8 + t * 1.8);
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(cra) * crd, Math.sin(cra) * crd);
+        ctx.lineTo(Math.cos(cra + 0.3) * (crd + 6), Math.sin(cra + 0.3) * (crd + 6));
+        ctx.lineTo(Math.cos(cra - 0.2) * (crd + 5), Math.sin(cra - 0.2) * (crd + 5));
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Torso de basalto partindo em dois menires
+      ctx.fillStyle = stoneCol;
+      ctx.fillRect(-R * 0.65 - t * 8, -R * 0.6, R * 0.6, R * 1.2);
+      ctx.fillRect(t * 8, -R * 0.6, R * 0.6, R * 1.2);
+      ctx.strokeStyle = '#1e272e';
+      ctx.lineWidth = 2.2;
+      ctx.strokeRect(-R * 0.65 - t * 8, -R * 0.6, R * 0.6, R * 1.2);
+      ctx.strokeRect(t * 8, -R * 0.6, R * 0.6, R * 1.2);
+
+      // Runas apagando do topo à base
+      if (t < 0.6) {
+        ctx.strokeStyle = '#00d2d3';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(-R * 0.3, -R * 0.1);
+        ctx.lineTo(0, R * 0.2);
+        ctx.lineTo(R * 0.3, -R * 0.1);
+        ctx.stroke();
+      }
+      break;
+    }
+
+    // =========================================================================
+    // 15. PRECURSOR DO VAZIO (VOID_PRECURSOR)
+    // =========================================================================
+    case 'VOID_PRECURSOR': {
+      // Fase 1: Disco de acreção inverte rotação e expande
+      // Fase 2: Pulso gravitacional de sucção e clarão de supernova no núcleo
+      // Fase 3: Implosão total em ponto negro com anel de choque violeta
+      const pulseIn = t < 0.5 ? (1 + t * 0.6) : Math.max(0.02, 1.3 - (t - 0.5) * 2.6);
+
+      // Anel de choque gravitacional em expansão
+      ctx.strokeStyle = '#8e44ad';
+      ctx.lineWidth = 2.5 * (1 - t);
+      ctx.beginPath();
+      ctx.arc(0, 0, R * (0.8 + t * 2.5), 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Disco de acreção rodando velozmente
+      ctx.strokeStyle = '#e056fd';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, R * 1.2 * pulseIn, R * 0.45 * pulseIn, t * 8, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Núcleo do Horizonte de Eventos (Preto Absoluto -> Flash Branco -> Implosão)
+      ctx.fillStyle = (t > 0.4 && t < 0.6) ? '#ffffff' : '#000000';
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 0.75 * pulseIn, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#a29bfe';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+      break;
+    }
+
+    // =========================================================================
+    // 16. ARAUTO DO CAOS (CHAOS_HERALD)
+    // =========================================================================
+    case 'CHAOS_HERALD': {
+      // Fase 1: 4 tentáculos abissais desintegram das pontas para a base
+      // Fase 2: Olhos caóticos estouram em filamentos de éter rubro
+      // Fase 3: Torso demoníaco torce sobre si mesmo sugado para fenda abissal
+      const twist = t * Math.PI * 1.5;
+      ctx.rotate(twist * 0.15);
+
+      const demonCol = isEnraged ? '#d63031' : '#961b1b';
+
+      // 4 Tentáculos encurtando e se desfazendo em brasas
+      ctx.strokeStyle = demonCol;
+      ctx.lineWidth = Math.max(1, 3.5 * (1 - t * 0.7));
+      for (let tk = 0; tk < 4; tk++) {
+        const ta = tk * (Math.PI / 2) + t * 1.5;
+        const reach = R * (1.2 * Math.max(0.1, 1 - t * 0.9));
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(Math.cos(ta + 0.4) * (reach * 0.6), Math.sin(ta + 0.4) * (reach * 0.6), Math.cos(ta) * reach, Math.sin(ta) * reach);
+        ctx.stroke();
+      }
+
+      // Corpo demoníaco central torcendo e contraindo
+      const bodyScale = Math.max(0.05, 1 - t * 0.9);
+      ctx.scale(bodyScale, bodyScale);
+      ctx.fillStyle = demonCol;
+      ctx.beginPath();
+      ctx.arc(0, 0, R * 0.7, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Olhos caóticos explodindo em filamentos rubros
+      if (t > 0.25) {
+        ctx.fillStyle = '#ff4757';
+        for (let eye = 0; eye < 8; eye++) {
+          const ea = eye * (Math.PI / 4) + t * 3;
+          const ed = R * (0.4 + (t - 0.25) * 2.2);
+          ctx.fillRect(Math.cos(ea) * ed - 2.5, Math.sin(ea) * ed - 2.5, 5, 5);
+        }
+      }
+      break;
+    }
+
+    default: {
+      ctx.scale(1, Math.max(0.05, 1 - t));
+      ctx.fillStyle = eliteColor;
+      ctx.beginPath();
+      ctx.arc(0, 0, R, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+  }
+
+  ctx.restore();
+}

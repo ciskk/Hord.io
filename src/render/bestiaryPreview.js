@@ -11,6 +11,7 @@ import { setMainCtx, ctx as mainGameCtx } from '../main.js';
 import { drawEnemyShape } from './enemiesRenderer.js';
 import { drawMiniBossShape } from './minibossesRenderer.js';
 import { drawBoss, initBoss } from '../entities/bosses/bossRegistry.js';
+import { ENEMY_TYPES, MINI_BOSS_TYPES } from '../config/enemies.js';
 
 let previewCanvas = null;
 let pCtx = null;
@@ -117,18 +118,20 @@ function createMockEntity(creature, isDiscovered) {
   }
 
   if (creature.category === 'MINIBOSS') {
+    const def = MINI_BOSS_TYPES[creature.id];
+    const realRadius = (def && def.radius) ? def.radius : (creature.radius || 24);
     return {
       x: 0,
       y: 0,
       baseType: creature.id,
       name: creature.name,
-      radius: 24,
+      radius: realRadius,
       facing: 1,
       hitFlash: 0,
       slowTimer: 0,
       stunTimer: 0,
       enraged: false,
-      color: creature.color || '#f39c12',
+      color: creature.color || (def && def.color) || '#f39c12',
       isMiniBoss: true,
       isBoss: false,
       maxHp: 100,
@@ -139,23 +142,29 @@ function createMockEntity(creature, isDiscovered) {
   }
 
   // Categoria HORDE
+  const hDef = ENEMY_TYPES[creature.id];
+  const hordeRadius = (hDef && hDef.radius) ? hDef.radius : (creature.radius || 18);
   return {
     x: 0,
     y: 0,
     baseType: creature.id,
     type: creature.id,
-    radius: 20,
+    radius: hordeRadius,
     facing: 1,
     hitFlash: 0,
     slowTimer: 0,
     stunTimer: 0,
-    color: creature.color || '#2ecc71',
+    color: creature.color || (hDef && hDef.color) || '#2ecc71',
     isMiniBoss: false,
     isBoss: false,
     isElite: false,
     emergeTimer: 0,
     combatState: 'CHASE',
-    variant: 0
+    variant: 0,
+    isAwakeMimic: true,
+    eatenGemsCount: 3,
+    gorgonStacks: 2,
+    spikeHits: 4
   };
 }
 
@@ -410,13 +419,15 @@ function renderFrame() {
 
         } else {
           // Criaturas da Horda
-          const scale = isCompact ? 0.90 : 1.15;
-          const offsetY = -16 * scale;
+          const scale = isCompact ? 1.0 : 1.25;
+          const offsetY = -18 * (isCompact ? 0.9 : 1.0);
 
-          mockEntity.x = cx;
-          mockEntity.y = cy + offsetY;
+          mockEntity.x = 0;
+          mockEntity.y = 0;
 
           pCtx.save();
+          pCtx.translate(cx, cy + offsetY);
+          pCtx.scale(mockEntity.facing * scale, scale);
           drawEnemyShape(mockEntity);
           pCtx.restore();
         }

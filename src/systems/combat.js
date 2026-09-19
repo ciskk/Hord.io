@@ -3,7 +3,7 @@
  * Subsistema de combate, efeitos visuais de impacto e máquina de estados melee (Fase 3).
  */
 import { playSfx, triggerHaptic } from '../core/audio.js';
-import { triggerShake, bossShockwaves } from '../main.js';
+import { triggerShake, bossShockwaves, setLastAttackerInfo } from '../main.js';
 import { triggerDeath } from './ui.js';
 import { selectedHeroKey } from '../entities/player.js';
 
@@ -13,21 +13,54 @@ export const bloodSplats = [];
 export const dyingEnemies = [];
 
 export function addDyingEnemy(e, hitAngle = 0) {
-  if (!e || e.isBoss || e.isMiniBoss || e.isBossSubTarget) return;
-  const pushSpeed = 2.2;
+  if (!e || e.isBoss || e.isBossSubTarget) return;
+
+  const isMini = !!e.isMiniBoss;
+  let duration = 28;
+
+  if (isMini) {
+    duration = 54;
+  } else if (e.baseType === 'GOLEM' || e.baseType === 'SHIELDED' || e.baseType === 'MAIDEN_THORNS' || e.baseType === 'BASALT_GARGOYLE' || e.baseType === 'DULLAHAN_VANGUARD') {
+    duration = 36;
+  } else if (e.baseType === 'SPLITTER_MINI') {
+    duration = 20;
+  }
+
+  // Push speed and angular velocity based on creature mass and hit direction
+  const pushSpeed = isMini ? 1.2 : (e.baseType === 'GOLEM' ? 1.4 : 2.5);
+  const rotSign = Math.sin(hitAngle) >= 0 ? 1 : -1;
+  const initialVRot = (Math.random() * 0.04 + 0.02) * rotSign;
+
+  // Mobile/Performance Hard Cap: limit concurrent dying enemies to 60
+  if (dyingEnemies.length >= 60) {
+    let removeIdx = 0;
+    for (let k = 0; k < dyingEnemies.length; k++) {
+      if (!dyingEnemies[k].isMiniBoss) {
+        removeIdx = k;
+        break;
+      }
+    }
+    dyingEnemies.splice(removeIdx, 1);
+  }
+
   dyingEnemies.push({
     x: e.x,
     y: e.y,
     vx: Math.cos(hitAngle) * pushSpeed,
     vy: Math.sin(hitAngle) * pushSpeed,
+    rot: 0,
+    vRot: initialVRot,
     facing: e.facing || 1,
     radius: e.radius,
     baseType: e.baseType,
     variant: e.variant || 0,
     color: e.color,
     isElite: !!e.isElite,
-    timer: 11,
-    maxTimer: 11
+    isMiniBoss: isMini,
+    name: e.name || '',
+    enraged: !!e.enraged,
+    timer: duration,
+    maxTimer: duration
   });
 }
 
@@ -104,8 +137,10 @@ export function updateCombatVisuals(dt) {
     const de = dyingEnemies[i];
     de.x += de.vx * dt;
     de.y += de.vy * dt;
-    de.vx *= Math.pow(0.85, dt);
-    de.vy *= Math.pow(0.85, dt);
+    de.vx *= Math.pow(0.86, dt);
+    de.vy *= Math.pow(0.86, dt);
+    de.rot = (de.rot || 0) + (de.vRot || 0) * dt;
+    de.vRot = (de.vRot || 0) * Math.pow(0.92, dt);
     de.timer -= dt;
     if (de.timer > 0) {
       dyingEnemies[deWrite++] = de;
@@ -238,7 +273,26 @@ export function processEnemyMeleeAttacks(player, enemies, dt) {
 
               let playerDmgTaken = e.damage;
               if (selectedHeroKey === 'KNIGHT') playerDmgTaken *= 0.80;
-              if (player.armor > 0) playerDmgTaken = Math.max(1, playerDmgTaken - player.armor);
+              let enemyCategory = 'HORDE';
+              if (e.isBoss) enemyCategory = 'BOSS';
+              else if (e.isMiniBoss) enemyCategory = 'MINIBOSS';
+              else if (e.isElite) enemyCategory = 'ELITE';
+
+              let strikeName = 'Golpe Melee';
+              if (e.baseType === 'BAT') strikeName = 'Mordida Vampírica';
+              else if (e.baseType === 'GOLEM') strikeName = 'Esmagamento de Concreto';
+              else if (e.baseType === 'SHIELDED' || e.baseType === 'PHALANX_LEADER') strikeName = 'Investida com Escudo';
+              else if (e.baseType === 'DULLAHAN_VANGUARD') strikeName = 'Estocada de Lança Decapitadora';
+              else if (e.isElite) strikeName = 'Golpe Feroz de Elite';
+
+              setLastAttackerInfo({
+                name: e.name || 'Abominação da Horda',
+                category: enemyCategory,
+                attackName: strikeName,
+                damage: Math.round(playerDmgTaken),
+                enemyType: e.baseType || e.type,
+                color: e.color || '#e74c3c'
+              });
 
               player.hp -= playerDmgTaken;
               player.iFrames = 28;

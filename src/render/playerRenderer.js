@@ -520,6 +520,103 @@ export function drawPlayerEquipment() {
 }
 
 /**
+ * Renderiza com máxima fidelidade o Martelo Sagrado / Martelo dos Titãs de Sir Roland.
+ * Utilizado tanto no coldre dorsal quanto empunhado ativamente em combate.
+ */
+export function drawRolandHammerModel(c, cCol, isEvolved = false, runeGlowMult = 1.0) {
+  const hammerWood = cCol.hammerWood || '#3d271d';
+  const hammerSteel = isEvolved ? '#3d1c06' : (cCol.hammerSteel || '#57606f');
+  const hammerSteelLight = isEvolved ? '#e67e22' : (cCol.hammerSteelLight || '#8395a7');
+  const hammerGold = isEvolved ? '#f39c12' : (cCol.hammerGold || '#f1c40f');
+  const hammerGoldLight = isEvolved ? '#ffeaa7' : (cCol.hammerGoldLight || '#ffeaa7');
+  const hammerRune = isEvolved ? '#ff7675' : (cCol.hammerRune || '#f1c40f');
+  const hammerRuneGlow = isEvolved ? '#ffffff' : (cCol.hammerRuneGlow || '#ffffff');
+  const steelHighlight = cCol.armorHighlight || '#ffffff';
+
+  // Cabo de carvalho torneado com ataduras cruzadas de couro cru
+  c.fillStyle = hammerWood;
+  c.fillRect(-2, -4, 4, 32);
+  c.strokeStyle = '#1e130c';
+  c.lineWidth = 1;
+  c.beginPath();
+  c.moveTo(-2, 4); c.lineTo(2, 7);
+  c.moveTo(-2, 12); c.lineTo(2, 15);
+  c.moveTo(-2, 20); c.lineTo(2, 23);
+  c.stroke();
+
+  // Pomo inferior de ferro forjado e anel de ouro maciço
+  c.fillStyle = hammerSteel;
+  c.fillRect(-2.5, 27, 5, 3.5);
+  c.fillStyle = hammerGold;
+  c.fillRect(-2, 29, 4, 1.5);
+  c.fillStyle = hammerGoldLight;
+  c.fillRect(-0.5, 29, 1.2, 1.5);
+
+  // Colar / anel de junção do cabo à cabeça de guerra
+  c.fillStyle = hammerGold;
+  c.fillRect(-4, -3, 8, 2.5);
+  c.fillStyle = hammerGoldLight;
+  c.fillRect(-3, -3, 6, 0.8);
+
+  // Cabeça titânica do martelo de guerra
+  // Bloco principal de ferro temperado
+  c.fillStyle = hammerSteel;
+  c.fillRect(-9, -15, 18, 12);
+
+  // Face chanfrada superior com reflexo especular de luz
+  c.fillStyle = hammerSteelLight;
+  c.beginPath();
+  c.moveTo(-9, -15);
+  c.lineTo(9, -15);
+  c.lineTo(8, -12);
+  c.lineTo(-8, -12);
+  c.closePath();
+  c.fill();
+
+  // Crista especular brilhante
+  c.strokeStyle = steelHighlight;
+  c.lineWidth = 0.8;
+  c.beginPath();
+  c.moveTo(-7.5, -14.8);
+  c.lineTo(7.5, -14.8);
+  c.stroke();
+
+  // Faixas de reforço douradas forjadas
+  c.fillStyle = hammerGold;
+  c.fillRect(-10, -13, 20, 2.6);
+  c.fillRect(-10, -7.5, 20, 2.6);
+  c.fillRect(-2, -15, 4, 12);
+
+  // Friso de luz dourada
+  c.fillStyle = hammerGoldLight;
+  c.fillRect(-10, -13, 20, 0.8);
+  c.fillRect(-10, -7.5, 20, 0.8);
+
+  // Runa divina incandescente pulsante
+  c.fillStyle = `rgba(241, 196, 15, ${Math.min(1, 0.45 * runeGlowMult)})`;
+  c.beginPath();
+  c.arc(0, -9.5, 5.5, 0, Math.PI * 2);
+  c.fill();
+
+  // Cruz sagrada interior
+  c.fillStyle = hammerRune;
+  c.fillRect(-0.9, -12.5, 1.8, 6);
+  c.fillRect(-2.7, -10.4, 5.4, 1.8);
+
+  c.fillStyle = hammerRuneGlow;
+  c.fillRect(-0.4, -9.9, 0.8, 0.8);
+
+  // Espigão superior perfurante
+  c.fillStyle = hammerSteelLight;
+  c.beginPath();
+  c.moveTo(0, -20);
+  c.lineTo(3.0, -15);
+  c.lineTo(-3.0, -15);
+  c.closePath();
+  c.fill();
+}
+
+/**
  * Renderiza proceduralmente o personagem jogável selecionado e seus efeitos corporais.
  */
 export function renderHeroModel(c, heroKey, state = {}) {
@@ -541,7 +638,9 @@ export function renderHeroModel(c, heroKey, state = {}) {
   const alchemistSkillTimer = state.alchemistSkillTimer || 0;
   const iFrames = state.iFrames || 0;
   const isRetaliating = state.isRetaliating !== undefined ? state.isRetaliating : (iFrames > 12);
-  const isHammerAttacking = !!state.isHammerAttacking;
+  const hammerProgress = state.hammerProgress !== undefined ? state.hammerProgress : (state.isHammerAttacking ? 0.45 : -1);
+  const isHammerAttacking = hammerProgress >= 0 && hammerProgress <= 1.0;
+  const evolvedHammer = !!(state.evolvedHammer || state.isEvolvedHammer);
   const isBerserk = state.isBerserk !== undefined ? state.isBerserk : (berserkTimer > 0);
   const fluidColor = state.fluidColor || (state.evolvedPotion ? '#a29bfe' : '#9b59b6');
   const isCasting = state.isCasting !== undefined ? state.isCasting : (staffCastTimer > 0 || !!state.isStaffCasting);
@@ -682,102 +781,12 @@ export function renderHeroModel(c, heroKey, state = {}) {
     c.lineTo(-2.5, 15.2 + bob);
     c.stroke();
 
-    // 2. Coldre Dorsal do Martelo Sagrado (Visível em repouso/preview, some no ataque)
+    // 2. Coldre Dorsal do Martelo Sagrado (Visível em repouso/guarda, empunhado nas mãos no ataque)
     if (!isHammerAttacking) {
       c.save();
       c.translate(-2, -3 + bob);
       c.rotate(-0.58);
-
-      // Cabo de carvalho no coldre com ataduras de couro cruzadas
-      c.fillStyle = hammerWood;
-      c.fillRect(-2, -4, 4, 30);
-      c.strokeStyle = '#1e130c';
-      c.lineWidth = 1;
-      c.beginPath();
-      c.moveTo(-2, 4); c.lineTo(2, 7);
-      c.moveTo(-2, 12); c.lineTo(2, 15);
-      c.moveTo(-2, 20); c.lineTo(2, 23);
-      c.stroke();
-
-      // Pomo inferior de ferro forjado e anel de ouro
-      c.fillStyle = hammerSteel;
-      c.fillRect(-2.5, 25, 5, 3.5);
-      c.fillStyle = hammerGold;
-      c.fillRect(-2, 27, 4, 1.5);
-      c.fillStyle = goldLight;
-      c.fillRect(-0.5, 27, 1.2, 1.5);
-
-      // Encaixe / Colar de fixação da cabeça do martelo
-      c.fillStyle = hammerGold;
-      c.fillRect(-4, -3, 8, 2.5);
-      c.fillStyle = goldLight;
-      c.fillRect(-3, -3, 6, 0.8);
-
-      // Cabeça titânica do martelo de guerra
-      // Base chanfrada de aço escuro
-      c.fillStyle = hammerSteel;
-      c.fillRect(-9, -15, 18, 12);
-
-      // Face chanfrada superior com reflexo de luz
-      c.fillStyle = hammerSteelLight;
-      c.beginPath();
-      c.moveTo(-9, -15);
-      c.lineTo(9, -15);
-      c.lineTo(8, -12);
-      c.lineTo(-8, -12);
-      c.closePath();
-      c.fill();
-
-      // Linha especular brilhante na crista do martelo
-      c.strokeStyle = steelHighlight;
-      c.lineWidth = 0.8;
-      c.beginPath();
-      c.moveTo(-7.5, -14.8);
-      c.lineTo(7.5, -14.8);
-      c.stroke();
-
-      // Faixas de reforço douradas forjadas
-      c.fillStyle = hammerGold;
-      c.fillRect(-10, -13, 20, 2.6);
-      c.fillRect(-10, -7.5, 20, 2.6);
-      c.fillRect(-2, -15, 4, 12);
-
-      // Friso de luz dourada
-      c.fillStyle = hammerGoldLight;
-      c.fillRect(-10, -13, 20, 0.8);
-      c.fillRect(-10, -7.5, 20, 0.8);
-
-      // RUNA SAGRADA INCANDESCENTE (Glifo divino que pulsa no bloco do martelo)
-      const runePulse = Math.sin(tFrame * 0.1) * 0.3 + 0.7;
-      c.fillStyle = `rgba(241, 196, 15, ${0.45 * runePulse})`;
-      c.beginPath();
-      c.arc(0, -9.5, 5, 0, Math.PI * 2);
-      c.fill();
-
-      // Cruz rúnica central incandescente
-      c.fillStyle = hammerRune;
-      c.fillRect(-0.9, -12.5, 1.8, 6);
-      c.fillRect(-2.7, -10.4, 5.4, 1.8);
-      // Ponto de fusão solar central
-      c.fillStyle = hammerRuneGlow;
-      c.fillRect(-0.4, -9.9, 0.8, 0.8);
-
-      // Espigão superior perfurador de armaduras
-      c.fillStyle = hammerSteelLight;
-      c.beginPath();
-      c.moveTo(0, -20);
-      c.lineTo(3.2, -15);
-      c.lineTo(-3.2, -15);
-      c.closePath();
-      c.fill();
-      // Ponto de luz no espigão
-      c.strokeStyle = steelHighlight;
-      c.lineWidth = 0.8;
-      c.beginPath();
-      c.moveTo(0, -19.5);
-      c.lineTo(0, -15);
-      c.stroke();
-
+      drawRolandHammerModel(c, cCol, evolvedHammer, Math.sin(tFrame * 0.1) * 0.3 + 0.7);
       c.restore();
     }
 
@@ -944,20 +953,18 @@ export function renderHeroModel(c, heroKey, state = {}) {
     c.fillStyle = '#231711';
     c.fillRect(-7, 4.5 + bob, 14, 3.2);
 
-    // Correia diagonal de couro que segura o coldre do martelo
-    if (!isHammerAttacking) {
-      c.strokeStyle = '#231711';
-      c.lineWidth = 2.4;
-      c.beginPath();
-      c.moveTo(-6, -4 + bob);
-      c.lineTo(5, 5 + bob);
-      c.stroke();
+    // Correia diagonal de couro do coldre transversal
+    c.strokeStyle = '#231711';
+    c.lineWidth = 2.4;
+    c.beginPath();
+    c.moveTo(-6, -4 + bob);
+    c.lineTo(5, 5 + bob);
+    c.stroke();
 
-      // Rebites de aço na correia
-      c.fillStyle = steelLight;
-      c.fillRect(-3, -1.8 + bob, 1.2, 1.2);
-      c.fillRect(1, 1.6 + bob, 1.2, 1.2);
-    }
+    // Rebites de aço na correia
+    c.fillStyle = steelLight;
+    c.fillRect(-3, -1.8 + bob, 1.2, 1.2);
+    c.fillRect(1, 1.6 + bob, 1.2, 1.2);
 
     // Fivela ornamentada de ouro com espigão e brilho especular
     c.fillStyle = goldTrim;
@@ -1131,20 +1138,146 @@ export function renderHeroModel(c, heroKey, state = {}) {
     c.fillStyle = steelHighlight;
     c.fillRect(9, -4.5 + bob, 3, 1);
 
-    // 8. Braço e Manopla (Postura Dinâmica de Empunhadura no Ataque)
+    // 8. Braços, Manoplas Articuladas e Empunhadura Dinâmica do Martelo Sagrado
     if (isHammerAttacking) {
-      // Braços erguidos em postura pesada de impacto frontal
-      c.fillStyle = steelMid;
-      c.fillRect(5, -6 + bob, 6, 4.5);
-      c.fillStyle = steelLight;
-      c.fillRect(6, -5.5 + bob, 4, 1.5);
-      c.fillStyle = steelDark;
-      c.fillRect(9, -8 + bob, 4.5, 4.5);
-      // Manopla com juntas de ouro articuladas
-      c.fillStyle = goldTrim;
-      c.fillRect(10, -7 + bob, 2.5, 2.5);
-      c.fillStyle = goldLight;
-      c.fillRect(10.5, -6.5 + bob, 1.2, 1.2);
+      const p = Math.max(0, Math.min(1, hammerProgress));
+      let hX = 0, hY = 0, hAngle = 0;
+      let runeGlow = 1.0;
+      let showSmear = false;
+      let smearAlpha = 0;
+
+      if (p < 0.32) {
+        // FASE 1: WINDUP (Elevação com as duas mãos e carga rúnica divina)
+        const tWind = p / 0.32;
+        hX = -2 + tWind * 6;
+        hY = -8 - tWind * 14;
+        hAngle = -0.75 - tWind * 0.95; // atinge ~ -1.70 rad (inclinado alto atrás da cabeça)
+        runeGlow = 1.0 + Math.sin(tWind * Math.PI) * 1.5;
+
+        // Aura sagrada condensando energia estelar no topo do martelo
+        c.save();
+        c.fillStyle = `rgba(255, 235, 150, ${0.15 + tWind * 0.35})`;
+        c.beginPath();
+        c.arc(hX - 2, hY - 14, 14 + tWind * 6, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+
+        // Braço esquerdo (traseiro) subindo para firmar a pegada no cabo
+        c.fillStyle = steelDark;
+        c.fillRect(-2, -8 + bob, 5, 5);
+        c.fillStyle = steelMid;
+        c.fillRect(-1, -12 + bob, 4.5, 6);
+        c.fillStyle = goldTrim;
+        c.fillRect(0, -14 + bob, 3, 3);
+
+        // Braço direito (frontal) erguido segurando a manopla no colar
+        c.fillStyle = steelMid;
+        c.fillRect(5, -6 + bob, 5, 5);
+        c.fillStyle = steelLight;
+        c.fillRect(6, -11 + bob, 4.5, 6.5);
+        c.fillStyle = steelDark;
+        c.fillRect(6.5, -15 + bob, 4.5, 4.5);
+        c.fillStyle = goldTrim;
+        c.fillRect(7.5, -15 + bob, 3.5, 3.0);
+        c.fillStyle = goldLight;
+        c.fillRect(8.5, -14.5 + bob, 1.5, 1.5);
+      } else if (p < 0.58) {
+        // FASE 2: SLAM / DOWNSWING (Descida fulminante e impacto no solo)
+        const tSlam = (p - 0.32) / 0.26;
+        const easeSlam = Math.pow(tSlam, 2.2);
+        hX = 4 + easeSlam * 16;
+        hY = -22 + easeSlam * 34;
+        hAngle = -1.70 + easeSlam * 2.82; // gira até +1.12 rad (martelada telúrica no solo)
+        runeGlow = 2.0;
+
+        if (tSlam < 0.85) {
+          showSmear = true;
+          smearAlpha = 1.0 - tSlam;
+        } else {
+          // Impacto no chão: micro-tremor de choque mecânico
+          const shake = (Math.random() - 0.5) * 2.0;
+          hX += shake;
+          hY += shake;
+        }
+
+        // Braço esquerdo (traseiro) projetado para baixo acompanhando o golpe
+        c.fillStyle = steelDark;
+        c.fillRect(3, -4 + bob + easeSlam * 4, 4.5, 6);
+        c.fillStyle = goldTrim;
+        c.fillRect(4, 1 + bob + easeSlam * 6, 3, 3);
+
+        // Braço direito (frontal) estendido com força sobre o cabo
+        c.fillStyle = steelMid;
+        c.fillRect(7, -4 + bob + easeSlam * 6, 5, 7);
+        c.fillStyle = steelLight;
+        c.fillRect(8, -3 + bob + easeSlam * 6, 2, 6);
+        c.fillStyle = steelDark;
+        c.fillRect(9, 2 + bob + easeSlam * 8, 4.5, 4.5);
+        c.fillStyle = goldTrim;
+        c.fillRect(9.5, 3 + bob + easeSlam * 8, 3.5, 3.0);
+        c.fillStyle = goldLight;
+        c.fillRect(10.5, 3.5 + bob + easeSlam * 8, 1.5, 1.5);
+      } else {
+        // FASE 3: RECOVERY E TRANSIÇÃO CONTÍNUA AO COLDRE
+        const tRec = (p - 0.58) / 0.42;
+        if (tRec < 0.40) {
+          // Martelo cravado no chão e postura solene de guarda
+          hX = 20;
+          hY = 12;
+          hAngle = 1.12;
+          runeGlow = 1.2 - tRec;
+
+          // Braços mantendo o apoio no cabo do martelo
+          c.fillStyle = steelMid;
+          c.fillRect(6, 0 + bob, 5, 6);
+          c.fillStyle = steelDark;
+          c.fillRect(8, 5 + bob, 4.5, 4);
+          c.fillStyle = goldTrim;
+          c.fillRect(9, 6 + bob, 3, 2.5);
+        } else {
+          // Retorno suave e contínuo ao coldre dorsal
+          const tRet = (tRec - 0.40) / 0.60;
+          const easeRet = Math.sin(tRet * Math.PI * 0.5);
+          hX = 20 - easeRet * 22;
+          hY = 12 - easeRet * 15;
+          hAngle = 1.12 - easeRet * 1.70; // volta exatamente para -0.58 rad
+
+          c.fillStyle = steelMid;
+          c.fillRect(6, -2 + bob, 4.5, 7.5);
+          c.fillStyle = steelLight;
+          c.fillRect(7, -1.5 + bob, 1.8, 6.5);
+          c.fillStyle = steelDark;
+          c.fillRect(6.5, 3 + bob, 4.5, 3.5);
+          c.fillStyle = goldTrim;
+          c.fillRect(7.5, 4 + bob, 2.2, 2.0);
+        }
+      }
+
+      // Rastro em Arco Sagrado de Alta Velocidade (Motion Smear Ribbon)
+      if (showSmear) {
+        c.save();
+        // Arco externo dourado divino
+        c.strokeStyle = evolvedHammer ? `rgba(243, 156, 18, ${smearAlpha * 0.85})` : `rgba(241, 196, 15, ${smearAlpha * 0.75})`;
+        c.lineWidth = 11;
+        c.beginPath();
+        c.arc(hX - 8, hY - 6, 26, hAngle - 1.0, hAngle + 0.15);
+        c.stroke();
+
+        // Arco interno branco celestial incandescente
+        c.strokeStyle = `rgba(255, 255, 255, ${smearAlpha * 0.95})`;
+        c.lineWidth = 5;
+        c.beginPath();
+        c.arc(hX - 8, hY - 6, 26, hAngle - 0.8, hAngle + 0.05);
+        c.stroke();
+        c.restore();
+      }
+
+      // Renderiza o Martelo Sagrado na Pose Exata dos Braços
+      c.save();
+      c.translate(hX, hY + bob);
+      c.rotate(hAngle);
+      drawRolandHammerModel(c, cCol, evolvedHammer, runeGlow);
+      c.restore();
     } else {
       // Braço em repouso lateral segurando o equilíbrio do escudo/martelo
       c.fillStyle = steelMid;
@@ -2728,81 +2861,152 @@ export function renderHeroModel(c, heroKey, state = {}) {
     const crystalCol = cCol.crystal || '#ff4757';
     const coronaCol = cCol.staffCorona || '#f39c12';
 
-    // --- ULT: Pós-Imagens Térmicas e Asas Espectrais de Fênix ---
+    // --- ULT: Pós-Imagens Térmicas, Asas Espectrais de Fênix e Jato de Fogo ---
     if (isDashing) {
       c.save();
-      // Fantasmas térmicos com decaimento cromático
+      // Jato de plasma e esteira de fogo propulsora
+      const jetWave = Math.sin(tFrame * 0.6) * 3;
+      c.fillStyle = 'rgba(231, 76, 60, 0.45)';
+      c.beginPath();
+      c.moveTo(-6, -4 + bob);
+      c.quadraticCurveTo(-22, -8 + jetWave, -38, bob + jetWave);
+      c.quadraticCurveTo(-22, 6 + jetWave, -6, 8 + bob);
+      c.closePath();
+      c.fill();
+
+      c.fillStyle = 'rgba(241, 196, 15, 0.65)';
+      c.beginPath();
+      c.moveTo(-5, -2 + bob);
+      c.quadraticCurveTo(-16, -4 + jetWave * 0.7, -26, bob + jetWave * 0.5);
+      c.quadraticCurveTo(-16, 4 + jetWave * 0.7, -5, 5 + bob);
+      c.closePath();
+      c.fill();
+
+      // Fantasmas térmicos com decaimento cromático e labaredas
       const ghostColors = [
-        'rgba(255, 255, 255, 0.45)',
-        'rgba(241, 196, 15, 0.35)',
-        'rgba(230, 126, 34, 0.25)',
-        'rgba(179, 57, 57, 0.15)'
+        'rgba(255, 255, 255, 0.55)',
+        'rgba(241, 196, 15, 0.45)',
+        'rgba(230, 126, 34, 0.32)',
+        'rgba(179, 57, 57, 0.18)'
       ];
       for (let g = 0; g < ghostColors.length; g++) {
         const gDist = (g + 1) * 9;
         c.fillStyle = ghostColors[g];
         c.beginPath();
-        c.ellipse(-gDist, bob, 11, 15, 0, 0, Math.PI * 2);
+        c.ellipse(-gDist, bob, 11 - g * 1.5, 15 - g * 1.8, 0, 0, Math.PI * 2);
         c.fill();
+
+        // Faíscas desprendidas de cada fantasma térmico
+        const gSparkY = bob + Math.sin(tFrame * 0.4 + g * 2) * 8;
+        c.fillStyle = g % 2 === 0 ? '#ffffff' : '#f1c40f';
+        c.fillRect(-gDist - 4, gSparkY, 1.4, 1.4);
       }
 
       // Anéis de solo em brasa viva sob os pés
-      c.strokeStyle = 'rgba(241, 196, 15, 0.85)';
-      c.lineWidth = 2.0;
+      c.strokeStyle = 'rgba(241, 196, 15, 0.9)';
+      c.lineWidth = 2.2;
       c.beginPath();
-      c.ellipse(0, 14 + bob, 20, 6.5, 0, 0, Math.PI * 2);
+      c.ellipse(0, 14 + bob, 22, 7, 0, 0, Math.PI * 2);
       c.stroke();
 
       // Asas Espectrais da Fênix de Plasma
-      const wingFlap = Math.sin(tFrame * 0.55) * 5;
-      c.fillStyle = 'rgba(241, 196, 15, 0.45)';
+      const wingFlap = Math.sin(tFrame * 0.55) * 6;
+      c.fillStyle = 'rgba(241, 196, 15, 0.55)';
       c.strokeStyle = '#ffffff';
       c.lineWidth = 2.2;
 
       // Asa Posterior
       c.beginPath();
       c.moveTo(-4, -8 + bob);
-      c.quadraticCurveTo(-18, -26 + wingFlap, -36, -16 + wingFlap);
+      c.quadraticCurveTo(-18, -26 + wingFlap, -38, -16 + wingFlap);
       c.lineTo(-24, -6 + wingFlap * 0.5);
-      c.lineTo(-30, 4 + wingFlap);
+      c.lineTo(-32, 5 + wingFlap);
       c.lineTo(-12, 4 + bob);
       c.closePath();
       c.fill();
       c.stroke();
 
+      // Penas de labareda na Asa Posterior
+      c.strokeStyle = '#e74c3c';
+      c.lineWidth = 1.2;
+      c.beginPath();
+      c.moveTo(-16, -14 + wingFlap * 0.6); c.lineTo(-28, -12 + wingFlap);
+      c.moveTo(-12, -4 + wingFlap * 0.4); c.lineTo(-22, 1 + wingFlap * 0.8);
+      c.stroke();
+
       // Asa Anterior
+      c.strokeStyle = '#ffffff';
+      c.lineWidth = 2.2;
       c.beginPath();
       c.moveTo(3, -8 + bob);
-      c.quadraticCurveTo(16, -28 + wingFlap, 34, -20 + wingFlap);
-      c.lineTo(24, -7 + wingFlap * 0.5);
-      c.lineTo(29, 2 + wingFlap);
+      c.quadraticCurveTo(16, -28 + wingFlap, 36, -20 + wingFlap);
+      c.lineTo(25, -7 + wingFlap * 0.5);
+      c.lineTo(31, 3 + wingFlap);
       c.lineTo(10, 3 + bob);
       c.closePath();
       c.fill();
       c.stroke();
+
+      // Penas de labareda na Asa Anterior
+      c.strokeStyle = '#e74c3c';
+      c.lineWidth = 1.2;
+      c.beginPath();
+      c.moveTo(14, -15 + wingFlap * 0.6); c.lineTo(26, -15 + wingFlap);
+      c.moveTo(12, -4 + wingFlap * 0.4); c.lineTo(22, 0 + wingFlap * 0.8);
+      c.stroke();
+
       c.restore();
     }
 
-    // 0. ORBE DE PLASMA SOLAR POSTERIOR (PYROSPHERE ESQUERDA)
+    // 0. ORBE DE PLASMA SOLAR POSTERIOR (PYROSPHERE ESQUERDA) COM RASTRO DE FOGO
     const orb1Y = -12 + bob + Math.sin(tFrame * 0.08) * 2.8;
     const orb1X = -13 + Math.cos(tFrame * 0.07) * 2.0;
     c.save();
+
+    // Rastro de fogo vivo / cauda de plasma na pyrosphere 1
+    const o1TailLen = isDashing ? 12 : (isMoving ? 8 : 5);
+    const o1Angle = isDashing ? Math.PI : (isMoving ? Math.PI * 0.85 : -Math.PI * 0.5 + Math.sin(tFrame * 0.15) * 0.35);
+    const o1TailTipX = orb1X + Math.cos(o1Angle) * o1TailLen;
+    const o1TailTipY = orb1Y + Math.sin(o1Angle) * o1TailLen;
+
+    // Cauda externa carmesim
+    c.fillStyle = 'rgba(231, 76, 60, 0.65)';
+    c.beginPath();
+    c.moveTo(orb1X - 2.5, orb1Y);
+    c.quadraticCurveTo(orb1X + Math.cos(o1Angle) * (o1TailLen * 0.5), orb1Y + Math.sin(o1Angle) * (o1TailLen * 0.5), o1TailTipX, o1TailTipY);
+    c.quadraticCurveTo(orb1X, orb1Y + 2.5, orb1X + 2.5, orb1Y);
+    c.closePath();
+    c.fill();
+
+    // Cauda interna dourada
+    c.fillStyle = 'rgba(241, 196, 15, 0.85)';
+    c.beginPath();
+    c.moveTo(orb1X - 1.4, orb1Y);
+    c.quadraticCurveTo(orb1X + Math.cos(o1Angle) * (o1TailLen * 0.4), orb1Y + Math.sin(o1Angle) * (o1TailLen * 0.4), o1TailTipX * 0.7 + orb1X * 0.3, o1TailTipY * 0.7 + orb1Y * 0.3);
+    c.quadraticCurveTo(orb1X, orb1Y + 1.4, orb1X + 1.4, orb1Y);
+    c.closePath();
+    c.fill();
+
+    // Fagulhas que se desprendem da cauda do orbe 1
+    const o1SparkProg = ((tFrame * 0.4) % 6) / 6;
+    const o1SparkX = o1TailTipX + Math.cos(o1Angle) * (o1SparkProg * 4) + Math.sin(tFrame * 0.3) * 1.2;
+    const o1SparkY = o1TailTipY + Math.sin(o1Angle) * (o1SparkProg * 4) - o1SparkProg * 3;
+    c.fillStyle = '#ffffff';
+    c.fillRect(o1SparkX, o1SparkY, 1.2, 1.2);
+
+    // Núcleo do orbe 1
     c.fillStyle = orbGlow;
     c.beginPath();
-    c.arc(orb1X, orb1Y, 4.2 + Math.sin(tFrame * 0.2) * 0.8, 0, Math.PI * 2);
+    c.arc(orb1X, orb1Y, 4.4 + Math.sin(tFrame * 0.2) * 0.8, 0, Math.PI * 2);
     c.fill();
     c.fillStyle = flameMid;
     c.beginPath();
-    c.arc(orb1X, orb1Y, 2.5, 0, Math.PI * 2);
+    c.arc(orb1X, orb1Y, 2.6, 0, Math.PI * 2);
     c.fill();
     c.fillStyle = orbCore;
     c.beginPath();
-    c.arc(orb1X - 0.4, orb1Y - 0.4, 1.2, 0, Math.PI * 2);
+    c.arc(orb1X - 0.4, orb1Y - 0.4, 1.3, 0, Math.PI * 2);
     c.fill();
-    // Microfaísca ascendente
-    const spark1Y = orb1Y - 2.5 - ((tFrame * 0.3) % 5);
-    c.fillStyle = flameBright;
-    c.fillRect(orb1X + 0.5, spark1Y, 1.2, 1.2);
     c.restore();
 
     // 1. MANTO IMPERIAL DA FÊNIX (CAPA DUPLA DE OBSIDIANA & CARMESIM COM BORDAS DE BRASA)
@@ -3326,26 +3530,56 @@ export function renderHeroModel(c, heroKey, state = {}) {
     c.fillRect(-14 - Math.abs(flameSway * 1.0), 10 + bob + flameSway, 1.5, 1.5);
     c.fillRect(-15 - Math.abs(flameSway * 0.9), fSparkY2, 1.0, 1.0);
 
-    // 13. ORBE DE PLASMA SOLAR ANTERIOR (PYROSPHERE DIREITA)
+    // 13. ORBE DE PLASMA SOLAR ANTERIOR (PYROSPHERE DIREITA) COM RASTRO DE FOGO
     // Desenhado à frente do ombro para criar profundidade 3D
     const orb2Y = -14 + bob + Math.sin(tFrame * 0.08 + Math.PI) * 2.8;
     const orb2X = 13 + Math.cos(tFrame * 0.07 + Math.PI) * 2.0;
     c.save();
+
+    // Rastro de fogo vivo / cauda de plasma na pyrosphere 2
+    const o2TailLen = isDashing ? 13 : (isMoving ? 8.5 : 5.5);
+    const o2Angle = isDashing ? Math.PI : (isMoving ? Math.PI * 0.82 : -Math.PI * 0.5 + Math.sin(tFrame * 0.15 + 2) * 0.35);
+    const o2TailTipX = orb2X + Math.cos(o2Angle) * o2TailLen;
+    const o2TailTipY = orb2Y + Math.sin(o2Angle) * o2TailLen;
+
+    // Cauda externa carmesim
+    c.fillStyle = 'rgba(231, 76, 60, 0.65)';
+    c.beginPath();
+    c.moveTo(orb2X - 2.5, orb2Y);
+    c.quadraticCurveTo(orb2X + Math.cos(o2Angle) * (o2TailLen * 0.5), orb2Y + Math.sin(o2Angle) * (o2TailLen * 0.5), o2TailTipX, o2TailTipY);
+    c.quadraticCurveTo(orb2X, orb2Y + 2.5, orb2X + 2.5, orb2Y);
+    c.closePath();
+    c.fill();
+
+    // Cauda interna dourada
+    c.fillStyle = 'rgba(241, 196, 15, 0.85)';
+    c.beginPath();
+    c.moveTo(orb2X - 1.4, orb2Y);
+    c.quadraticCurveTo(orb2X + Math.cos(o2Angle) * (o2TailLen * 0.4), orb2Y + Math.sin(o2Angle) * (o2TailLen * 0.4), o2TailTipX * 0.7 + orb2X * 0.3, o2TailTipY * 0.7 + orb2Y * 0.3);
+    c.quadraticCurveTo(orb2X, orb2Y + 1.4, orb2X + 1.4, orb2Y);
+    c.closePath();
+    c.fill();
+
+    // Fagulhas que se desprendem da cauda do orbe 2
+    const o2SparkProg = (((tFrame + 12) * 0.4) % 6) / 6;
+    const o2SparkX = o2TailTipX + Math.cos(o2Angle) * (o2SparkProg * 4) + Math.sin(tFrame * 0.3 + 1) * 1.2;
+    const o2SparkY = o2TailTipY + Math.sin(o2Angle) * (o2SparkProg * 4) - o2SparkProg * 3;
+    c.fillStyle = '#ffffff';
+    c.fillRect(o2SparkX, o2SparkY, 1.2, 1.2);
+
+    // Núcleo do orbe 2
     c.fillStyle = orbGlow;
     c.beginPath();
-    c.arc(orb2X, orb2Y, 4.5 + Math.sin(tFrame * 0.22) * 0.8, 0, Math.PI * 2);
+    c.arc(orb2X, orb2Y, 4.6 + Math.sin(tFrame * 0.22) * 0.8, 0, Math.PI * 2);
     c.fill();
     c.fillStyle = flameMid;
     c.beginPath();
-    c.arc(orb2X, orb2Y, 2.6, 0, Math.PI * 2);
+    c.arc(orb2X, orb2Y, 2.7, 0, Math.PI * 2);
     c.fill();
     c.fillStyle = orbCore;
     c.beginPath();
-    c.arc(orb2X - 0.4, orb2Y - 0.4, 1.2, 0, Math.PI * 2);
+    c.arc(orb2X - 0.4, orb2Y - 0.4, 1.3, 0, Math.PI * 2);
     c.fill();
-    const spark2Y = orb2Y - 2.5 - (((tFrame + 15) * 0.3) % 5);
-    c.fillStyle = flameBright;
-    c.fillRect(orb2X + 0.4, spark2Y, 1.2, 1.2);
     c.restore();
 
     // 10. BRAÇO, MANOPLA E POSTURAS (CONJURAÇÃO DO CAJADO OU REPOUSO)
@@ -3432,490 +3666,841 @@ export function renderHeroModel(c, heroKey, state = {}) {
     // isPhasing handled via state
     // isAttacking handled via state
     const cCol = charDef.color || {};
-    const tunicMid = cCol.tunic || '#1e272e';
-    const tunicDark = cCol.tunicDark || '#0d1317';
-    const tunicHigh = cCol.tunicHighlight || '#3d4e5a';
-    const leatherStrap = cCol.leatherStraps || '#2c1e18';
-    const leatherDark = cCol.leatherDark || '#181210';
-    const buckleCol = cCol.buckles || '#bdc3c7';
-    const buckleLight = cCol.bucklesLight || '#ffffff';
-    const hoodBase = cCol.hood || '#111d1a';
-    const hoodDark = cCol.hoodDark || '#09100e';
-    const hoodTrim = cCol.hoodTrim || '#16a085';
-    const capeExt = cCol.cape || '#0e4438';
-    const capeIn = cCol.capeInner || '#07261f';
-    const capeTrim = cCol.capeTrim || '#16a085';
-    const capeGlow = cCol.capeGlow || 'rgba(0, 206, 201, 0.4)';
-    const maskCol = cCol.maskCol || '#141c19';
-    const shadowFace = cCol.shadowFace || '#080c0d';
-    const eyeGlow = isPhasing ? '#ffffff' : (cCol.eyeGlow || '#00cec9');
+    const abyssDark = cCol.tunicDark || '#070c14';
+    const abyssMid = cCol.tunic || '#0d1522';
+    const abyssHigh = cCol.tunicHighlight || '#1b293e';
+    const armorPlate = cCol.armorPlates || '#131e2e';
+    const armorPlateLight = cCol.armorPlateLight || '#1e2e46';
+    const armorPlateHigh = cCol.armorPlateHighlight || '#38bdf8';
+    const armorRim = cCol.armorRim || '#00f2fe';
+    const leatherStrap = cCol.leatherStraps || '#0a0e17';
+    const leatherDark = cCol.leatherDark || '#05080e';
+    const platina = cCol.platina || '#e2e8f0';
+    const platinaLight = cCol.platinaLight || '#ffffff';
+    const platinaDark = cCol.platinaDark || '#64748b';
+    const platinaGlint = cCol.platinaGlint || '#ffffff';
+    const hoodBase = cCol.hood || '#070c14';
+    const hoodDark = cCol.hoodDark || '#04070a';
+    const hoodTrim = cCol.hoodTrim || '#00cec9';
+    const hoodRune = cCol.hoodRune || '#81ecec';
+    const hoodRuneGlow = cCol.hoodRuneGlow || 'rgba(0, 245, 212, 0.75)';
+    const capeExt = cCol.cape || '#06131c';
+    const capeIn = cCol.capeInner || '#061d22';
+    const capeTrim = cCol.capeTrim || '#00f5d4';
+    const rimLight = cCol.rimLight || 'rgba(0, 245, 212, 0.45)';
+    const scarfCyan = cCol.scarfCyan || '#00cec9';
+    const scarfBright = cCol.scarfCyanBright || '#00f5d4';
+    const scarfGlow = cCol.scarfGlow || 'rgba(0, 245, 212, 0.40)';
+    const maskCol = cCol.maskCol || '#0b1019';
+    const maskPlate = cCol.maskPlate || '#cbd5e1';
+    const shadowFace = cCol.shadowFace || '#020406';
+    const eyeGlow = isPhasing ? '#ffffff' : (cCol.eyeGlow || '#00f2fe');
     const eyeCore = isPhasing ? '#ffffff' : (cCol.eyeGlowCore || '#ffffff');
-    const bandagesCol = cCol.bandages || '#bdc3c7';
-    const bandagesDark = cCol.bandagesDark || '#7f8c8d';
-    const scabbardCol = cCol.scabbard || '#151e22';
-    const scabbardSteel = cCol.scabbardSteel || '#7f8c8d';
+    const eyeTrail = cCol.eyeTrail || '#00f5d4';
+    const bandagesCol = cCol.bandages || '#cbd5e1';
+    const bandagesDark = cCol.bandagesDark || '#64748b';
+    const scabbardCol = cCol.scabbard || '#070c14';
+    const scabbardSteel = cCol.scabbardSteel || '#94a3b8';
     const bladeSteel = cCol.bladeSteel || '#81ecec';
     const bladeSteelLight = cCol.bladeSteelLight || '#dff9fb';
     const bladeGlow = cCol.bladeGlow || '#00cec9';
-    const hiltGold = cCol.hiltGold || '#f1c40f';
-    const hiltDark = cCol.hiltDark || '#b7950b';
-    const phialSmoke = cCol.phialSmoke || '#00cec9';
+    const bladeCore = cCol.bladeCore || '#ffffff';
+    const hiltGold = cCol.hiltGold || '#e2e8f0';
+    const hiltDark = cCol.hiltDark || '#475569';
+    const phialSmoke = cCol.phialSmoke || '#00f5d4';
     const phialGlass = cCol.phialGlass || 'rgba(223, 249, 251, 0.85)';
+    const mistBreath = cCol.mistBreath || 'rgba(223, 249, 251, 0.45)';
+    const isDetailed = scale >= 1.5;
 
-    // --- ULT/HABILIDADE: Pós-Imagens de Fumaça e Rastro Espectral ---
+    // =========================================================================
+    // 0. ULT/HABILIDADE: FENDAS DIMENSIONAIS, DISTORÇÃO DO VÁCUO & PÓS-IMAGENS
+    // =========================================================================
     if (isPhasing) {
       c.save();
-      // Silhuetas residuais de névoa escura em decalque
-      for (let g = 1; g <= 3; g++) {
-        const ghostDist = g * 8.5;
-        c.fillStyle = `rgba(16, 172, 132, ${0.32 / g})`;
+      // Pós-imagens de vácuo em dispersão translúcida com distorção de rotação
+      for (let g = 1; g <= 4; g++) {
+        const ghostDist = g * 9.5;
+        const gAlpha = 0.40 / g;
+        c.fillStyle = `rgba(0, 242, 254, ${gAlpha * 0.6})`;
         c.beginPath();
-        c.ellipse(-ghostDist, bob + 1, 10, 15, 0, 0, Math.PI * 2);
+        c.ellipse(-ghostDist, bob + (g % 2 === 0 ? 1 : -1), 11, 16, -0.15, 0, Math.PI * 2);
         c.fill();
 
-        c.fillStyle = `rgba(10, 13, 14, ${0.45 / g})`;
+        c.fillStyle = `rgba(7, 12, 20, ${0.52 / g})`;
         c.beginPath();
-        c.ellipse(-ghostDist * 0.7, bob, 8, 13, 0, 0, Math.PI * 2);
+        c.ellipse(-ghostDist * 0.75, bob, 8.5, 14, 0, 0, Math.PI * 2);
         c.fill();
       }
 
-      // Névoa condensada rastejando no solo sob os passos
-      c.strokeStyle = 'rgba(0, 206, 201, 0.75)';
+      // Anel rúnico de transposição gravitacional no solo sob os passos
+      const pulseGlow = Math.sin(tFrame * 0.2) * 3.5;
+      c.strokeStyle = 'rgba(0, 245, 212, 0.85)';
       c.lineWidth = 1.8;
-      c.setLineDash([4, 3]);
+      c.setLineDash([4, 2]);
       c.beginPath();
-      c.ellipse(0, 14 + bob, 19, 5.8, 0, 0, Math.PI * 2);
+      c.ellipse(0, 14 + bob, 22 + pulseGlow, 6.2 + pulseGlow * 0.25, 0, 0, Math.PI * 2);
       c.stroke();
       c.setLineDash([]);
+
+      // Nós de éter giratórios cardeais ao redor do anel de transposição
+      const nodeAngle = tFrame * 0.08;
+      for (let n = 0; n < 4; n++) {
+        const nAng = nodeAngle + n * (Math.PI / 2);
+        const nx = Math.cos(nAng) * (22 + pulseGlow);
+        const ny = 14 + bob + Math.sin(nAng) * (6.2 + pulseGlow * 0.25);
+        c.fillStyle = '#ffffff';
+        c.fillRect(nx - 0.8, ny - 0.8, 1.6, 1.6);
+        c.fillStyle = scarfBright;
+        c.fillRect(nx - 1.2, ny - 1.2, 2.4, 2.4);
+      }
       c.restore();
     }
 
-    // 1. CAPA RASGADA ESPECTRAL DE TRÊS PONTAS (SPECTRAL SHROUD)
-    // Forro interno escuro abissal
+    // =========================================================================
+    // 1. MANTO DA NEBULOSA (NEBULA SHROUD COM POEIRA ESTELAR ATIVA E RIM LIGHT)
+    // =========================================================================
+    // Forro interno cósmico com profundidade
     c.fillStyle = capeIn;
     c.beginPath();
-    c.moveTo(-4, -3 + bob);
-    c.lineTo(-15 - Math.abs(capeWave * 1.3), 16 + bob);
-    c.lineTo(-9 - Math.abs(capeWave * 0.8), 12 + bob);
-    c.lineTo(-13 - Math.abs(capeWave * 1.1), 18 + bob);
-    c.lineTo(-3, 15 + bob);
-    c.lineTo(2, -3 + bob);
+    c.moveTo(-4.5, -4 + bob);
+    c.lineTo(-17 - Math.abs(capeWave * 1.5), 17 + bob);
+    c.lineTo(-11 - Math.abs(capeWave * 0.9), 13 + bob);
+    c.lineTo(-15 - Math.abs(capeWave * 1.3), 20 + bob);
+    c.lineTo(-7 - Math.abs(capeWave * 0.7), 16 + bob);
+    c.lineTo(-10 - Math.abs(capeWave * 0.8), 21 + bob);
+    c.lineTo(-2, 16 + bob);
+    c.lineTo(2.5, -4 + bob);
     c.closePath();
     c.fill();
 
-    // Camada principal em verde-petróleo escuro com gomos recortados
+    // Camada principal exterior em preto abissal com gomos afiados
     c.fillStyle = capeExt;
     c.beginPath();
-    c.moveTo(-4, -4 + bob);
-    c.lineTo(-14 - Math.abs(capeWave * 1.1), 14 + bob);
-    c.lineTo(-8 - Math.abs(capeWave * 0.6), 10 + bob);
-    c.lineTo(-11 - Math.abs(capeWave * 0.9), 16 + bob);
+    c.moveTo(-5, -5 + bob);
+    c.lineTo(-15 - Math.abs(capeWave * 1.3), 15 + bob);
+    c.lineTo(-9 - Math.abs(capeWave * 0.7), 11 + bob);
+    c.lineTo(-13 - Math.abs(capeWave * 1.1), 18 + bob);
+    c.lineTo(-6 - Math.abs(capeWave * 0.5), 14 + bob);
+    c.lineTo(-8 - Math.abs(capeWave * 0.6), 19 + bob);
     c.lineTo(-1, 14 + bob);
-    c.lineTo(3, -4 + bob);
+    c.lineTo(3.5, -5 + bob);
     c.closePath();
     c.fill();
 
-    // Sombreamento de vincos na capa
-    c.strokeStyle = '#051814';
+    // Vincos de sombreamento profundo no tecido da capa
+    c.strokeStyle = '#020407';
     c.lineWidth = 1.2;
     c.beginPath();
-    c.moveTo(-3, -2 + bob);
-    c.lineTo(-7 - Math.abs(capeWave * 0.7), 12 + bob);
+    c.moveTo(-4, -3 + bob);
+    c.lineTo(-8 - Math.abs(capeWave * 0.8), 12 + bob);
+    c.moveTo(-1, -3 + bob);
+    c.lineTo(-5 - Math.abs(capeWave * 0.6), 13 + bob);
     c.stroke();
 
-    // Debrum de costura em verde-água espectral
+    // Debrum de platina com costura em ciano estelar
     c.strokeStyle = capeTrim;
-    c.lineWidth = 1.2;
+    c.lineWidth = 1.1;
     c.stroke();
 
-    // Fagulhas de éter ciano ativas que se desprendem das pontas da capa
-    const capeSparkY = 15.5 + bob - ((tFrame * 0.3) % 6);
-    c.fillStyle = bladeGlow;
-    c.fillRect(-11 - Math.abs(capeWave * 0.9), 16 + bob, 1.4, 1.4);
-    c.fillStyle = bladeSteelLight;
-    c.fillRect(-11.5 - Math.abs(capeWave * 0.9), capeSparkY, 1.0, 1.0);
+    // RIM LIGHT ESPECTRAL na silhueta externa da capa
+    c.strokeStyle = isPhasing ? 'rgba(255, 255, 255, 0.8)' : rimLight;
+    c.lineWidth = 1.0;
+    c.beginPath();
+    c.moveTo(-15 - Math.abs(capeWave * 1.3), 15 + bob);
+    c.lineTo(-13 - Math.abs(capeWave * 1.1), 18 + bob);
+    c.lineTo(-8 - Math.abs(capeWave * 0.6), 19 + bob);
+    c.stroke();
 
-    // 2. COLDRE DORSAL CRUZADO EM "X" & DUPLAS LÂMINAS ASTRAIS
+    // Fagulhas e poeira estelar cósmica ativas que evaporam das pontas
+    for (let s = 0; s < 4; s++) {
+      const sparkProg = ((tFrame * 0.2 + s * 1.6) % 6) / 6;
+      const sparkX = -14 - Math.abs(capeWave * 1.1) + (s * 3.2);
+      const sparkY = 17 + bob - (sparkProg * 12);
+      c.fillStyle = s === 0 ? '#ffffff' : scarfBright;
+      c.fillRect(sparkX, sparkY, 1.2, 1.2);
+      if (isDetailed) {
+        c.fillStyle = 'rgba(255, 255, 255, 0.65)';
+        c.fillRect(sparkX + 0.3, sparkY + 0.3, 0.6, 0.6);
+      }
+    }
+
+    // =========================================================================
+    // 2. CACHECÓIS ASTRAIS FLUIDOS (FLOWING SHINOBI RIBBONS EM CONSTANTE VOO)
+    // =========================================================================
+    // Faixa 1: Longa com ondulação senoidal dupla e tripla camada de luz
+    c.save();
+    const s1X = -12 - Math.sin(tFrame * 0.12) * 5.5;
+    const s1Y = -4 + bob + Math.cos(tFrame * 0.12) * 2.2;
+    const s2X = -22 - Math.sin(tFrame * 0.12 + 0.8) * 6.5;
+    const s2Y = 0 + bob + Math.sin(tFrame * 0.12 + 0.8) * 4.5;
+
+    // Halo externo de éter da fita 1
+    c.strokeStyle = scarfGlow;
+    c.lineWidth = 4.2;
+    c.beginPath();
+    c.moveTo(-3, -7 + bob);
+    c.bezierCurveTo(s1X, s1Y, s2X, s2Y, s2X - 5, s2Y + 4);
+    c.stroke();
+
+    // Corpo de seda cósmica ciano fluorescente da fita 1
+    c.strokeStyle = scarfCyan;
+    c.lineWidth = 2.4;
+    c.beginPath();
+    c.moveTo(-3, -7 + bob);
+    c.bezierCurveTo(s1X, s1Y, s2X, s2Y, s2X - 5, s2Y + 4);
+    c.stroke();
+
+    // Núcleo de fusão branca estelar
+    c.strokeStyle = '#ffffff';
+    c.lineWidth = 0.9;
+    c.beginPath();
+    c.moveTo(-3, -7 + bob);
+    c.bezierCurveTo(s1X, s1Y, s2X, s2Y, s2X - 5, s2Y + 4);
+    c.stroke();
+
+    // Ponta chanfrada da fita com micro-brilho especular
+    c.fillStyle = platinaLight;
+    c.fillRect(s2X - 5.5, s2Y + 3.5, 1.4, 1.4);
+    c.restore();
+
+    // Faixa 2: Secundária com inércia defasada
+    c.save();
+    const s3X = -9 - Math.sin(tFrame * 0.14 + 1.2) * 4.2;
+    const s3Y = -1 + bob;
+    const s4X = -18 - Math.sin(tFrame * 0.14 + 2.0) * 5.2;
+    const s4Y = 6 + bob;
+
+    c.strokeStyle = scarfGlow;
+    c.lineWidth = 3.2;
+    c.beginPath();
+    c.moveTo(-2, -6 + bob);
+    c.bezierCurveTo(s3X, s3Y, s4X, s4Y, s4X - 3, s4Y + 3);
+    c.stroke();
+
+    c.strokeStyle = scarfBright;
+    c.lineWidth = 1.8;
+    c.beginPath();
+    c.moveTo(-2, -6 + bob);
+    c.bezierCurveTo(s3X, s3Y, s4X, s4Y, s4X - 3, s4Y + 3);
+    c.stroke();
+
+    c.strokeStyle = '#ffffff';
+    c.lineWidth = 0.7;
+    c.beginPath();
+    c.moveTo(-2, -6 + bob);
+    c.bezierCurveTo(s3X, s3Y, s4X, s4Y, s4X - 3, s4Y + 3);
+    c.stroke();
+    c.restore();
+
+    // =========================================================================
+    // 3. COLDRE DORSAL DE PLATINA & DUPLAS FOICES ASTRAIS LUNARES
+    // =========================================================================
     c.save();
     c.translate(-1, -3 + bob);
 
-    // Correias de couro cruzadas que sustentam as bainhas
-    c.strokeStyle = leatherStrap;
-    c.lineWidth = 2.4;
+    // Correias de couro do abisso com reforço de platina cruzado
+    c.strokeStyle = leatherDark;
+    c.lineWidth = 2.8;
     c.beginPath();
-    c.moveTo(-6, -4); c.lineTo(5, 7);
-    c.moveTo(5, -4);  c.lineTo(-6, 7);
+    c.moveTo(-6.5, -5); c.lineTo(5.5, 7);
+    c.moveTo(5.5, -5);  c.lineTo(-6.5, 7);
     c.stroke();
 
-    // Rebites prateados no cruzamento das correias
-    c.fillStyle = buckleCol;
-    c.fillRect(-0.6, 0.9, 1.4, 1.4);
-    c.fillStyle = buckleLight;
-    c.fillRect(-0.3, 1.1, 0.7, 0.7);
+    c.strokeStyle = platina;
+    c.lineWidth = 0.9;
+    c.stroke();
 
-    // Adagas gêmeas no coldre (visíveis em repouso/preview, recolhem no ataque)
+    // Fivela central estelar chanfrada com núcleo ciano
+    c.fillStyle = platina;
+    c.fillRect(-1.0, 0.6, 2.0, 2.0);
+    c.fillStyle = scarfBright;
+    c.fillRect(-0.5, 1.1, 1.0, 1.0);
+    c.fillStyle = platinaGlint;
+    c.fillRect(-0.8, 0.8, 0.6, 0.6);
+
+    // Lâminas gêmeas no coldre dorsal (visíveis em repouso)
     if (!isAttacking) {
-      // ADAGA ESQUERDA (Inclinada a -0.65 rad)
-      c.save();
-      c.rotate(-0.65);
+      [-0.72, 0.72].forEach((ang) => {
+        c.save();
+        c.rotate(ang);
 
-      // Bainha de couro negro reforçado
-      c.fillStyle = scabbardCol;
-      c.fillRect(-2.0, -9.5, 4.0, 15.5);
-      // Ponteira chanfrada de aço na bainha
-      c.fillStyle = scabbardSteel;
-      c.fillRect(-2.0, 4.0, 4.0, 2.0);
+        // Bainha facetada de ônix com chanfro zenital 2.5D
+        c.fillStyle = scabbardCol;
+        c.fillRect(-2.4, -10.5, 4.8, 16.5);
+        c.fillStyle = abyssMid;
+        c.fillRect(-1.2, -10.5, 2.4, 16.5); // Meio-tom central da bainha
+        c.strokeStyle = platinaDark;
+        c.lineWidth = 0.8;
+        c.strokeRect(-2.4, -10.5, 4.8, 16.5);
 
-      // Guarda-mão em latão envelhecido
-      c.fillStyle = hiltGold;
-      c.fillRect(-3.8, -11.0, 7.6, 2.2);
-      c.fillStyle = hiltDark;
-      c.fillRect(-3.8, -9.4, 7.6, 0.6);
+        // Ponteira de platina na ponta da bainha
+        c.fillStyle = platina;
+        c.fillRect(-2.2, 4.2, 4.4, 1.8);
+        c.fillStyle = platinaLight;
+        c.fillRect(-1.0, 4.5, 2.0, 0.8);
 
-      // Empunhadura de couro negro trançado
-      c.fillStyle = '#111417';
-      c.fillRect(-1.4, -14.5, 2.8, 3.8);
+        // Runa ciano entalhada na bainha com núcleo branco
+        c.fillStyle = scarfBright;
+        c.fillRect(-0.8, -4, 1.6, 3.2);
+        c.fillStyle = '#ffffff';
+        c.fillRect(-0.4, -3, 0.8, 1.2);
 
-      // Pomo em anel de assassino
-      c.strokeStyle = hiltGold;
-      c.lineWidth = 1.2;
-      c.beginPath();
-      c.arc(0, -15.5, 1.6, 0, Math.PI * 2);
-      c.stroke();
+        // Guarda em meia-lua com garras de platina polida
+        c.fillStyle = platina;
+        c.beginPath();
+        c.arc(0, -11.5, 4.0, 0, Math.PI);
+        c.fill();
+        c.strokeStyle = platinaDark;
+        c.lineWidth = 0.7;
+        c.stroke();
 
-      // Seção exposta da lâmina astral com luminescência espectral ciano
-      c.fillStyle = bladeGlow;
-      c.fillRect(-1.6, -11.5, 3.2, 0.8);
-      c.restore();
+        // Empunhadura de couro ônix com trançado visível
+        c.fillStyle = '#060a10';
+        c.fillRect(-1.3, -15.5, 2.6, 4.0);
+        c.strokeStyle = platina;
+        c.lineWidth = 0.6;
+        c.beginPath();
+        c.moveTo(-1.3, -14.5); c.lineTo(1.3, -13.5);
+        c.moveTo(-1.3, -12.5); c.lineTo(1.3, -11.5);
+        c.stroke();
 
-      // ADAGA DIREITA (Inclinada a +0.65 rad)
-      c.save();
-      c.rotate(0.65);
+        // Pomo em anel cósmico com núcleo de luz e brilho especular
+        c.strokeStyle = platina;
+        c.lineWidth = 1.3;
+        c.beginPath();
+        c.arc(0, -16.8, 2.0, 0, Math.PI * 2);
+        c.stroke();
+        c.fillStyle = scarfBright;
+        c.beginPath();
+        c.arc(0, -16.8, 1.0, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = '#ffffff';
+        c.fillRect(-0.4, -17.2, 0.8, 0.8);
 
-      // Bainha de couro negro reforçado
-      c.fillStyle = scabbardCol;
-      c.fillRect(-2.0, -9.5, 4.0, 15.5);
-      // Ponteira chanfrada de aço na bainha
-      c.fillStyle = scabbardSteel;
-      c.fillRect(-2.0, 4.0, 4.0, 2.0);
-
-      // Guarda-mão em latão envelhecido
-      c.fillStyle = hiltGold;
-      c.fillRect(-3.8, -11.0, 7.6, 2.2);
-      c.fillStyle = hiltDark;
-      c.fillRect(-3.8, -9.4, 7.6, 0.6);
-
-      // Empunhadura de couro negro trançado
-      c.fillStyle = '#111417';
-      c.fillRect(-1.4, -14.5, 2.8, 3.8);
-
-      // Pomo em anel de assassino
-      c.strokeStyle = hiltGold;
-      c.lineWidth = 1.2;
-      c.beginPath();
-      c.arc(0, -15.5, 1.6, 0, Math.PI * 2);
-      c.stroke();
-
-      // Seção exposta da lâmina astral
-      c.fillStyle = bladeGlow;
-      c.fillRect(-1.6, -11.5, 3.2, 0.8);
-      c.restore();
+        c.restore();
+      });
     }
     c.restore();
 
-    // 3. PERNAS, CALÇAS TÁTICAS, BANDAGENS MÉDICAS E BOTAS SILENCIOSAS
-    const legLeftX = -6.0 - legSwing * 0.4;
-    const legRightX = 1.5 + legSwing * 0.4;
+    // =========================================================================
+    // 4. PERNAS, GREVAS DE PLATINA & BOTAS SILENCIOSAS DE VELUDO
+    // =========================================================================
+    const legLeftX = -6.2 - legSwing * 0.4;
+    const legRightX = 1.6 + legSwing * 0.4;
 
-    // Calças táticas justas com volume muscular
-    c.fillStyle = tunicDark;
-    c.fillRect(legLeftX, 6 + bob, 4.5, 8.0);
-    c.fillRect(legRightX, 6 + bob, 4.5, 8.0);
+    // Calças táticas em tecido de veludo do abisso com sombreamento anatômico
+    c.fillStyle = abyssDark;
+    c.fillRect(legLeftX, 6 + bob, 4.6, 8.5);
+    c.fillRect(legRightX, 6 + bob, 4.6, 8.5);
 
-    // Meia-luz nas pernas
-    c.fillStyle = tunicMid;
-    c.fillRect(legLeftX + 0.6, 6.5 + bob, 3.2, 5.5);
-    c.fillRect(legRightX + 0.6, 6.5 + bob, 3.2, 5.5);
+    // Meia-luz no quadríceps
+    c.fillStyle = abyssMid;
+    c.fillRect(legLeftX + 0.6, 6.5 + bob, 3.4, 6.0);
+    c.fillRect(legRightX + 0.6, 6.5 + bob, 3.4, 6.0);
 
-    // Bandagens cirúrgicas cruzadas nas canelas com relevo
+    // Bandagens / tiras ninja de seda lunar cruzadas em "X" com relevo
     c.fillStyle = bandagesCol;
-    c.fillRect(legLeftX, 8.0 + bob, 4.5, 3.8);
-    c.fillRect(legRightX, 8.0 + bob, 4.5, 3.8);
-
+    c.fillRect(legLeftX, 8.5 + bob, 4.6, 3.2);
+    c.fillRect(legRightX, 8.5 + bob, 4.6, 3.2);
     c.strokeStyle = bandagesDark;
-    c.lineWidth = 1.0;
+    c.lineWidth = 0.9;
     c.beginPath();
-    c.moveTo(legLeftX, 8.5 + bob);        c.lineTo(legLeftX + 4.5, 11.0 + bob);
-    c.moveTo(legLeftX + 4.5, 8.5 + bob);  c.lineTo(legLeftX, 11.0 + bob);
-    c.moveTo(legRightX, 8.5 + bob);       c.lineTo(legRightX + 4.5, 11.0 + bob);
-    c.moveTo(legRightX + 4.5, 8.5 + bob); c.lineTo(legRightX, 11.0 + bob);
+    c.moveTo(legLeftX, 8.8 + bob);        c.lineTo(legLeftX + 4.6, 11.2 + bob);
+    c.moveTo(legLeftX + 4.6, 8.8 + bob);  c.lineTo(legLeftX, 11.2 + bob);
+    c.moveTo(legRightX, 8.8 + bob);       c.lineTo(legRightX + 4.6, 11.2 + bob);
+    c.moveTo(legRightX + 4.6, 8.8 + bob); c.lineTo(legRightX, 11.2 + bob);
     c.stroke();
 
-    // Botas de couro macio silencioso
-    c.fillStyle = '#14100d';
-    c.fillRect(legLeftX - 1.0, 12.2 + bob, 6.0, 3.5);
-    c.fillRect(legRightX - 1.0, 12.2 + bob, 6.0, 3.5);
+    // Grevas frontais afiadas de platina estelar chanfradas
+    c.fillStyle = armorPlate;
+    c.fillRect(legLeftX + 0.8, 7.5 + bob, 3.0, 5.5);
+    c.fillRect(legRightX + 0.8, 7.5 + bob, 3.0, 5.5);
+    c.fillStyle = armorPlateLight;
+    c.fillRect(legLeftX + 1.2, 7.8 + bob, 1.4, 4.8);
+    c.fillRect(legRightX + 1.2, 7.8 + bob, 1.4, 4.8);
+    c.strokeStyle = scarfCyan;
+    c.lineWidth = 0.8;
+    c.strokeRect(legLeftX + 0.8, 7.5 + bob, 3.0, 5.5);
+    c.strokeRect(legRightX + 0.8, 7.5 + bob, 3.0, 5.5);
 
-    // Tira de aperto e fivela prateada na bota
-    c.fillStyle = leatherStrap;
-    c.fillRect(legLeftX - 0.5, 12.5 + bob, 5.0, 1.2);
-    c.fillRect(legRightX - 0.5, 12.5 + bob, 5.0, 1.2);
-    c.fillStyle = buckleCol;
-    c.fillRect(legLeftX + 2.6, 12.3 + bob, 1.4, 1.6);
-    c.fillRect(legRightX + 2.6, 12.3 + bob, 1.4, 1.6);
+    // Ponto de luz zenital no topo da greva (joelheira)
+    c.fillStyle = platinaGlint;
+    c.fillRect(legLeftX + 1.6, 7.5 + bob, 1.2, 0.9);
+    c.fillRect(legRightX + 1.6, 7.5 + bob, 1.2, 0.9);
 
-    // Biqueira pontiaguda reforçada
-    c.fillStyle = '#0a0806';
-    c.fillRect(legLeftX + 3.2, 13.5 + bob, 2.0, 1.5);
-    c.fillRect(legRightX + 3.2, 13.5 + bob, 2.0, 1.5);
+    // Botas de couro de sombra com ponteira curvada
+    c.fillStyle = '#070a10';
+    c.fillRect(legLeftX - 1.0, 12.4 + bob, 6.2, 3.6);
+    c.fillRect(legRightX - 1.0, 12.4 + bob, 6.2, 3.6);
 
-    // 4. TRONCO ÁGIL, COLETE DE COURO REFORÇADO & CINTURÃO DE UTILIDADES
-    // Base do torso
-    c.fillStyle = tunicMid;
+    // Tira de aperto e fivela de platina na bota
+    c.fillStyle = leatherDark;
+    c.fillRect(legLeftX - 0.5, 12.8 + bob, 5.2, 1.2);
+    c.fillRect(legRightX - 0.5, 12.8 + bob, 5.2, 1.2);
+    c.fillStyle = platina;
+    c.fillRect(legLeftX + 2.8, 12.6 + bob, 1.4, 1.6);
+    c.fillRect(legRightX + 2.8, 12.6 + bob, 1.4, 1.6);
+
+    // Biqueira curvada reforçada com bisel de platina
+    c.fillStyle = platina;
+    c.fillRect(legLeftX + 3.2, 13.5 + bob, 2.2, 1.6);
+    c.fillRect(legRightX + 3.2, 13.5 + bob, 2.2, 1.6);
+    c.fillStyle = platinaGlint;
+    c.fillRect(legLeftX + 3.6, 13.7 + bob, 1.0, 0.8);
+    c.fillRect(legRightX + 3.6, 13.7 + bob, 1.0, 0.8);
+
+    // Rim light sutil nas botas
+    c.strokeStyle = rimLight;
+    c.lineWidth = 0.8;
     c.beginPath();
-    c.moveTo(-7.0, -5 + bob);
-    c.lineTo(7.0, -5 + bob);
-    c.lineTo(5.0, 7 + bob);
-    c.lineTo(-5.0, 7 + bob);
-    c.closePath();
-    c.fill();
-
-    // Colete peitoral com placas segmentadas de couro escuro
-    c.fillStyle = tunicDark;
-    c.beginPath();
-    c.moveTo(-5.5, -4.5 + bob);
-    c.lineTo(5.5, -4.5 + bob);
-    c.lineTo(4.0, 4.5 + bob);
-    c.lineTo(-4.0, 4.5 + bob);
-    c.closePath();
-    c.fill();
-
-    // Chanfros de reflexo zenital no peitoral
-    c.fillStyle = tunicHigh;
-    c.fillRect(-3.0, -4.0 + bob, 6.0, 1.6);
-    c.fillRect(-2.5, -1.5 + bob, 5.0, 1.4);
-
-    // CINTURÃO TÁTICO DE UTILIDADES (ARSENAL DO ASSASSINO)
-    c.fillStyle = leatherStrap;
-    c.fillRect(-6.5, 4.5 + bob, 13.0, 3.2);
-
-    // Fivela de aço escovado com entalhe
-    c.fillStyle = buckleCol;
-    c.fillRect(-1.8, 4.2 + bob, 3.6, 3.8);
-    c.fillStyle = tunicDark;
-    c.fillRect(-0.9, 5.0 + bob, 1.8, 2.2);
-    c.fillStyle = buckleLight;
-    c.fillRect(-1.5, 4.4 + bob, 1.0, 0.8);
-
-    // Bolsas de couro para gazuas no quadril direito
-    c.fillStyle = '#1c1510';
-    c.fillRect(2.8, 4.2 + bob, 3.2, 3.8);
-    c.fillStyle = buckleCol;
-    c.fillRect(3.8, 4.5 + bob, 1.2, 1.2);
-
-    // 3 CÁPSULAS DE FUMAÇA ESPECTRAL (SMOKE PHIALS) NO CINTO ESQUERDO
-    // Frasco 1
-    c.fillStyle = phialGlass;
-    c.fillRect(-3.8, 4.4 + bob, 1.5, 3.4);
-    c.fillStyle = phialSmoke;
-    c.fillRect(-3.8, 5.2 + bob, 1.5, 2.4);
-    c.fillStyle = hiltGold;
-    c.fillRect(-4.0, 4.0 + bob, 1.9, 1.0);
-
-    // Frasco 2
-    c.fillStyle = phialGlass;
-    c.fillRect(-5.6, 4.4 + bob, 1.5, 3.4);
-    c.fillStyle = phialSmoke;
-    c.fillRect(-5.6, 5.2 + bob, 1.5, 2.4);
-    c.fillStyle = hiltGold;
-    c.fillRect(-5.8, 4.0 + bob, 1.9, 1.0);
-
-    // Micro-brilho nas cápsulas de fumaça
-    c.fillStyle = '#ffffff';
-    c.fillRect(-3.6, 5.4 + bob, 0.6, 0.6);
-    c.fillRect(-5.4, 5.4 + bob, 0.6, 0.6);
-
-    // Faca de arremesso kunai presa horizontalmente na base do cinto
-    c.fillStyle = scabbardSteel;
-    c.fillRect(-1.5, 7.8 + bob, 3.5, 1.0);
-    c.fillStyle = hiltGold;
-    c.fillRect(1.5, 7.6 + bob, 1.2, 1.4);
-
-    // 5. BRAÇOS, MANOPLAS COM LÂMINAS OCULTAS E POSTURAS
-    if (isAttacking) {
-      // POSTURA DE CORTE / ARREMESSO CIRÚRGICO DE LÂMINA ASTRAL
-      c.save();
-      c.fillStyle = tunicMid;
-      c.fillRect(2.0, -4.5 + bob, 8.5, 4.2);
-      c.fillStyle = tunicDark;
-      c.fillRect(7.0, -5.0 + bob, 4.2, 5.0);
-
-      // Manopla com guarnição de aço e bandagens no punho
-      c.fillStyle = bandagesCol;
-      c.fillRect(6.0, -4.2 + bob, 2.0, 3.6);
-      c.fillStyle = buckleCol;
-      c.fillRect(8.5, -4.6 + bob, 1.4, 4.2);
-
-      // Lâmina Astral empunhada projetada para o golpe
-      c.save();
-      c.translate(13.0, -3.0 + bob);
-      c.rotate(0.35);
-
-      // Empunhadura e guarda
-      c.fillStyle = hiltGold;
-      c.fillRect(-1.5, -2.5, 3.0, 1.4);
-      c.fillStyle = '#111417';
-      c.fillRect(-0.8, -4.5, 1.6, 2.2);
-
-      // Lâmina de plasma espectral cortante
-      c.fillStyle = bladeGlow;
-      c.beginPath();
-      c.moveTo(-1.8, -1.0);
-      c.lineTo(1.8, -1.0);
-      c.lineTo(1.2, 10.0);
-      c.lineTo(0, 13.5); // Ponta perfurante afiada
-      c.lineTo(-1.2, 10.0);
-      c.closePath();
-      c.fill();
-
-      // Fio cortante branco de luz
-      c.strokeStyle = '#ffffff';
-      c.lineWidth = 0.9;
-      c.beginPath();
-      c.moveTo(0, -1.0);
-      c.lineTo(0, 13.0);
-      c.stroke();
-      c.restore();
-
-      // ARCO CINÉTICO ESPECTRAL DE CORTE NO AR
-      const slashPulse = Math.sin(tFrame * 0.4) * 1.5;
-      c.strokeStyle = 'rgba(0, 206, 201, 0.75)';
-      c.lineWidth = 2.4;
-      c.beginPath();
-      c.arc(14, -2 + bob, 11 + slashPulse, -Math.PI * 0.45, Math.PI * 0.45);
-      c.stroke();
-
-      c.strokeStyle = '#ffffff';
-      c.lineWidth = 1.0;
-      c.beginPath();
-      c.arc(14, -2 + bob, 11.5 + slashPulse, -Math.PI * 0.35, Math.PI * 0.35);
-      c.stroke();
-      c.restore();
-    } else {
-      // POSTURA NORMAL: Braços em repouso atlético rente ao corpo
-      c.fillStyle = tunicMid;
-      c.fillRect(-9.0, -3.0 + bob, 3.8, 7.5);
-      c.fillRect(5.5, -3.0 + bob, 3.8, 7.5);
-
-      // Bandagens e protetores de pulso
-      c.fillStyle = bandagesCol;
-      c.fillRect(-9.2, 1.5 + bob, 4.0, 2.5);
-      c.fillRect(5.4, 1.5 + bob, 4.0, 2.5);
-      c.strokeStyle = bandagesDark;
-      c.lineWidth = 0.8;
-      c.strokeRect(-9.2, 1.5 + bob, 4.0, 2.5);
-      c.strokeRect(5.4, 1.5 + bob, 4.0, 2.5);
-
-      // Alojamento da lâmina oculta no antebraço
-      c.fillStyle = scabbardSteel;
-      c.fillRect(6.2, 0.0 + bob, 1.5, 4.2);
-      c.fillStyle = bladeGlow;
-      c.fillRect(6.6, 3.8 + bob, 0.8, 1.0);
-    }
-
-    // 6. GOLA ALTA, CACHOCOL TÁTICO & BASE DO PESCOÇO
-    c.fillStyle = hoodDark;
-    c.beginPath();
-    c.moveTo(-5.5, -6.5 + bob);
-    c.lineTo(5.5, -6.5 + bob);
-    c.lineTo(4.2, -2.5 + bob);
-    c.lineTo(-4.2, -2.5 + bob);
-    c.closePath();
-    c.fill();
-    c.strokeStyle = hoodTrim;
-    c.lineWidth = 1.0;
+    c.moveTo(legLeftX - 1.0, 15.0 + bob); c.lineTo(legLeftX + 4.5, 15.0 + bob);
+    c.moveTo(legRightX - 1.0, 15.0 + bob); c.lineTo(legRightX + 4.5, 15.0 + bob);
     c.stroke();
 
-    // 7. CABEÇA: CAPUZ SOMBRIO DO ANDARILHO (SHADOW COWL)
-    // Volume do capuz que envolve a cabeça com silhueta clássica
-    c.fillStyle = hoodBase;
+    // =========================================================================
+    // 5. TRONCO DO VÁCUO, OMBREIRA ASSIMÉTRICA EM 3 PLACAS & CINTURÃO TÁTICO
+    // =========================================================================
+    // Base muscular atlética em V-Taper
+    c.fillStyle = abyssMid;
+    c.beginPath();
+    c.moveTo(-7.5, -5 + bob);
+    c.lineTo(7.5, -5 + bob);
+    c.lineTo(5.5, 7 + bob);
+    c.lineTo(-5.5, 7 + bob);
+    c.closePath();
+    c.fill();
+
+    // Peitoral reforçado com chanfro geométrico em "V" (Anatomia 2.5D)
+    c.fillStyle = abyssDark;
     c.beginPath();
     c.moveTo(-6.0, -4.5 + bob);
-    c.lineTo(-7.5, -11.0 + bob);
-    c.quadraticCurveTo(-6.0, -17.5 + bob, -0.5, -18.0 + bob); // Topo do capuz
-    c.quadraticCurveTo(5.8, -17.0 + bob, 7.2, -10.5 + bob);
-    c.lineTo(5.8, -4.5 + bob);
+    c.lineTo(6.0, -4.5 + bob);
+    c.lineTo(0.0, 3.5 + bob);
     c.closePath();
     c.fill();
-    c.strokeStyle = hoodDark;
-    c.lineWidth = 1.3;
+
+    // Linha esternal e chanfros de reflexo zenital no peitoral
+    c.fillStyle = abyssHigh;
+    c.fillRect(-2.8, -4.2 + bob, 5.6, 1.6);
+    c.fillRect(-2.0, -1.8 + bob, 4.0, 1.4);
+    c.fillStyle = armorPlateHigh;
+    c.fillRect(-0.4, -3.8 + bob, 0.8, 4.5); // Friso esternal fino
+
+    // Contorno rúnico ciano no peitoral
+    c.strokeStyle = scarfCyan;
+    c.lineWidth = 0.9;
     c.stroke();
 
-    // Borda drapeada do capuz com debrum verde-água espectral
-    c.strokeStyle = hoodTrim;
-    c.lineWidth = 1.3;
+    // OMBREIRA ESQUERDA ASSIMÉTRICA DO VAZIO EM 3 PLACAS ESCALONADAS (PADRÃO KRAGDOR)
+    // Placa 1: Base de armadura
+    c.fillStyle = armorPlate;
     c.beginPath();
-    c.moveTo(-0.5, -18.0 + bob);
-    c.quadraticCurveTo(5.5, -17.0 + bob, 6.8, -11.0 + bob);
-    c.lineTo(5.8, -4.5 + bob);
-    c.stroke();
-
-    // Sombra profunda interna sob a aba do capuz
-    c.fillStyle = shadowFace;
-    c.beginPath();
-    c.arc(0.5, -10.0 + bob, 5.8, 0, Math.PI * 2);
-    c.fill();
-
-    // 8. MÁSCARA FACIAL TÁTICA (DO NARIZ PARA BAIXO)
-    c.fillStyle = maskCol;
-    c.beginPath();
-    c.moveTo(0.5, -8.5 + bob);
-    c.lineTo(5.8, -8.5 + bob);
-    c.lineTo(4.8, -4.5 + bob);
-    c.lineTo(0.0, -5.0 + bob);
+    c.moveTo(-10.5, -6.8 + bob);
+    c.lineTo(-4.5, -6.0 + bob);
+    c.lineTo(-5.8, -1.0 + bob);
+    c.lineTo(-12.5, -2.0 + bob);
     c.closePath();
     c.fill();
-    c.strokeStyle = tunicDark;
+
+    // Placa 2: Camada central chanfrada com aço de platina
+    c.fillStyle = armorPlateLight;
+    c.beginPath();
+    c.moveTo(-11.2, -7.5 + bob);
+    c.lineTo(-6.0, -6.8 + bob);
+    c.lineTo(-7.0, -3.0 + bob);
+    c.lineTo(-13.0, -4.0 + bob);
+    c.closePath();
+    c.fill();
+    c.strokeStyle = platinaDark;
     c.lineWidth = 0.8;
     c.stroke();
 
-    // Fendas de ventilação sutis na máscara tática
-    c.fillStyle = '#0a0d0e';
-    c.fillRect(2.0, -6.8 + bob, 1.0, 0.8);
-    c.fillRect(3.4, -6.8 + bob, 1.0, 0.8);
-
-    // Mecha discreta de cabelo rebelde escapando na lateral
-    c.strokeStyle = '#7f8c8d';
-    c.lineWidth = 1.0;
+    // Placa 3: Espigão/Garra astral superior pontiaguda com reflexo de platina
+    c.fillStyle = platina;
     c.beginPath();
-    c.moveTo(5.5, -12.0 + bob);
-    c.lineTo(6.5, -8.5 + bob);
+    c.moveTo(-12.0, -5.0 + bob);
+    c.lineTo(-16.0, -9.0 + bob); // Ponta afiada
+    c.lineTo(-9.5, -7.5 + bob);
+    c.closePath();
+    c.fill();
+    c.strokeStyle = platinaLight;
+    c.lineWidth = 0.8;
     c.stroke();
 
-    // 9. OLHAR DO ESPECTRO ASSASSINO & RASTRO DE NÉVOA
-    // Fenda ocular afiada na escuridão sob a aba do capuz
-    c.fillStyle = '#050809';
-    c.fillRect(2.2, -11.2 + bob, 3.8, 2.0);
+    // Brilho especular no espigão da ombreira
+    c.fillStyle = platinaGlint;
+    c.fillRect(-15.8, -8.8 + bob, 1.5, 1.5);
 
-    // Olho Espectral Ciano Incandescente
+    // Runa cósmica esculpida na ombreira com núcleo brilhante
+    c.fillStyle = scarfBright;
+    c.fillRect(-9.8, -4.8 + bob, 2.6, 1.6);
+    c.fillStyle = '#ffffff';
+    c.fillRect(-9.0, -4.4 + bob, 1.0, 0.8);
+
+    // CINTURÃO TÁTICO COM FIVELA HEXAGONAL DE PLATINA E BOLSAS DE COURO
+    c.fillStyle = leatherDark;
+    c.fillRect(-7.2, 4.5 + bob, 14.4, 3.6);
+    c.fillStyle = '#060a12';
+    c.fillRect(-6.8, 5.0 + bob, 13.6, 1.2);
+
+    // Bolsa utilitária de couro para gazuas no quadril direito com costuras
+    c.fillStyle = '#0c1018';
+    c.fillRect(3.2, 4.2 + bob, 3.4, 4.0);
+    c.fillStyle = platinaDark;
+    c.fillRect(4.2, 4.5 + bob, 1.4, 1.2);
+    c.fillStyle = platinaGlint;
+    c.fillRect(4.6, 4.7 + bob, 0.6, 0.6);
+
+    // Fivela hexagonal de platina
+    c.fillStyle = platina;
+    c.beginPath();
+    c.moveTo(-2.5, 4.2 + bob);
+    c.lineTo(2.5, 4.2 + bob);
+    c.lineTo(3.4, 6.2 + bob);
+    c.lineTo(0.0, 8.2 + bob);
+    c.lineTo(-3.4, 6.2 + bob);
+    c.closePath();
+    c.fill();
+    c.strokeStyle = platinaLight;
+    c.lineWidth = 0.7;
+    c.stroke();
+
+    // Gema estelar ciano no centro da fivela com brilho
+    c.fillStyle = scarfBright;
+    c.fillRect(-1.2, 5.2 + bob, 2.4, 2.0);
+    c.fillStyle = '#ffffff';
+    c.fillRect(-0.6, 5.4 + bob, 1.0, 0.9);
+
+    // FRASCOS DE FUMAÇA DIMENSIONAL ESFÉRICOS COM MENISCO LÍQUIDO E BRILHO VÍTREO
+    [-4.8, 4.8].forEach((fx) => {
+      // Corpo esférico com fumaça
+      c.fillStyle = scarfBright;
+      c.beginPath();
+      c.arc(fx, 6.2 + bob, 2.2, 0, Math.PI * 2);
+      c.fill();
+
+      // Reflexo curvo de vidro
+      c.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      c.lineWidth = 0.8;
+      c.beginPath();
+      c.arc(fx - 0.5, 5.6 + bob, 1.2, -Math.PI * 0.7, 0);
+      c.stroke();
+
+      // Ponto de luz especular
+      c.fillStyle = '#ffffff';
+      c.fillRect(fx - 0.9, 5.3 + bob, 0.8, 0.8);
+
+      // Gargalo e lacre de platina
+      c.fillStyle = platina;
+      c.fillRect(fx - 1.2, 3.8 + bob, 2.4, 1.2);
+      c.fillStyle = platinaLight;
+      c.fillRect(fx - 0.6, 3.8 + bob, 1.2, 0.6);
+    });
+
+    // Kunai espectral de arremesso presa horizontalmente sob o cinturão
+    c.fillStyle = scabbardSteel;
+    c.fillRect(-1.8, 8.0 + bob, 3.8, 1.0);
+    c.fillStyle = platina;
+    c.fillRect(1.6, 7.8 + bob, 1.4, 1.4);
+    c.strokeStyle = platina;
+    c.lineWidth = 0.8;
+    c.beginPath();
+    c.arc(2.3, 8.5 + bob, 0.8, 0, Math.PI * 2);
+    c.stroke();
+
+    // =========================================================================
+    // 6. BRAÇOS, MANOPLAS & GOLPE DE FOICE ASTRAL (KAMA)
+    // =========================================================================
+    if (isAttacking) {
+      // POSTURA DE ATAQUE COM FOICE ASTRAL EM MEIA-LUA
+      c.fillStyle = abyssMid;
+      c.fillRect(2.5, -4.5 + bob, 9.0, 4.4);
+      c.fillStyle = abyssDark;
+      c.fillRect(7.5, -5.0 + bob, 4.2, 5.2);
+
+      // Manopla de platina com frisos rúnicos e bandagens
+      c.fillStyle = bandagesCol;
+      c.fillRect(6.2, -4.2 + bob, 2.2, 3.8);
+      c.fillStyle = platina;
+      c.fillRect(8.8, -4.8 + bob, 2.5, 5.0);
+      c.fillStyle = platinaLight;
+      c.fillRect(9.8, -4.4 + bob, 1.0, 4.2);
+
+      c.save();
+      c.translate(14.0, -3.0 + bob);
+      c.rotate(0.32);
+
+      // Guarda e punho da Foice
+      c.fillStyle = platina;
+      c.fillRect(-1.8, -2.5, 3.6, 1.6);
+      c.fillStyle = '#070c14';
+      c.fillRect(-1.0, -5.0, 2.0, 2.5);
+
+      // Pomo em anel cósmico com núcleo ciano
+      c.strokeStyle = platina;
+      c.lineWidth = 1.2;
+      c.beginPath();
+      c.arc(0, -6.5, 1.8, 0, Math.PI * 2);
+      c.stroke();
+      c.fillStyle = scarfBright;
+      c.beginPath();
+      c.arc(0, -6.5, 0.9, 0, Math.PI * 2);
+      c.fill();
+
+      // Halo translúcido externo de plasma da foice
+      c.fillStyle = 'rgba(0, 245, 212, 0.35)';
+      c.beginPath();
+      c.moveTo(-3.0, -1.0);
+      c.lineTo(3.0, -1.0);
+      c.quadraticCurveTo(7.5, 7.5, 3.5, 16.5);
+      c.lineTo(0.5, 20.0);
+      c.quadraticCurveTo(0.5, 8.5, -3.0, -1.0);
+      c.closePath();
+      c.fill();
+
+      // Lâmina em Foice Curva de Plasma Estelar Translúcido
+      c.fillStyle = bladeGlow;
+      c.beginPath();
+      c.moveTo(-2.2, -1.0);
+      c.lineTo(2.2, -1.0);
+      c.quadraticCurveTo(5.5, 7.0, 2.5, 14.5);
+      c.lineTo(0.5, 17.5); // Ponta cirúrgica penetrante
+      c.quadraticCurveTo(0.5, 8.0, -2.2, -1.0);
+      c.closePath();
+      c.fill();
+
+      // Núcleo branco puro de alta incandescência
+      c.fillStyle = '#ffffff';
+      c.beginPath();
+      c.moveTo(-0.5, 0);
+      c.quadraticCurveTo(2.8, 6.5, 1.2, 13.5);
+      c.lineTo(0.5, 16.5);
+      c.quadraticCurveTo(0.2, 7.5, -0.5, 0);
+      c.closePath();
+      c.fill();
+
+      // Friso de luz cortante no gume
+      c.strokeStyle = '#e0f7fa';
+      c.lineWidth = 0.8;
+      c.beginPath();
+      c.moveTo(0.5, 0);
+      c.lineTo(0.5, 16.5);
+      c.stroke();
+
+      // ARCO CINÉTICO DE VÁCUO NO AR (Duplo com partículas de vácuo)
+      const slashPulse = Math.sin(tFrame * 0.4) * 2.0;
+      c.strokeStyle = 'rgba(0, 245, 212, 0.85)';
+      c.lineWidth = 3.4;
+      c.beginPath();
+      c.arc(10, 0, 14 + slashPulse, -Math.PI * 0.42, Math.PI * 0.42);
+      c.stroke();
+
+      c.strokeStyle = '#ffffff';
+      c.lineWidth = 1.3;
+      c.beginPath();
+      c.arc(10, 0, 14.5 + slashPulse, -Math.PI * 0.32, Math.PI * 0.32);
+      c.stroke();
+
+      // Fagulhas de vácuo desprendendo do golpe
+      c.fillStyle = '#ffffff';
+      c.fillRect(18 + slashPulse, -8, 1.4, 1.4);
+      c.fillRect(19 + slashPulse, 6, 1.2, 1.2);
+      c.restore();
+    } else {
+      // POSTURA NORMAL: Braços ágeis em repouso com braceletes de platina e rebites
+      c.fillStyle = abyssMid;
+      c.fillRect(-9.4, -3.0 + bob, 4.2, 8.0);
+      c.fillRect(5.5, -3.0 + bob, 4.2, 8.0);
+
+      // Sombra de volume muscular no braço
+      c.fillStyle = abyssDark;
+      c.fillRect(-9.4, 1.0 + bob, 4.2, 1.5);
+      c.fillRect(5.5, 1.0 + bob, 4.2, 1.5);
+
+      // Deltoide superior iluminado
+      c.fillStyle = abyssHigh;
+      c.fillRect(-9.0, -3.0 + bob, 1.4, 3.5);
+      c.fillRect(7.8, -3.0 + bob, 1.4, 3.5);
+
+      // Braceletes de platina nos punhos com rebites e canal ciano
+      c.fillStyle = platina;
+      c.fillRect(-9.6, 1.5 + bob, 4.6, 2.6);
+      c.fillRect(5.3, 1.5 + bob, 4.6, 2.6);
+      c.fillStyle = scarfBright;
+      c.fillRect(-9.0, 2.1 + bob, 3.4, 1.2);
+      c.fillRect(5.9, 2.1 + bob, 3.4, 1.2);
+
+      // Pontos de brilho especular nos braceletes
+      c.fillStyle = platinaGlint;
+      c.fillRect(-9.2, 1.7 + bob, 0.8, 0.8);
+      c.fillRect(8.9, 1.7 + bob, 0.8, 0.8);
+
+      // Alojamento da lâmina oculta no antebraço direito
+      c.fillStyle = scabbardSteel;
+      c.fillRect(6.2, -0.5 + bob, 1.6, 4.2);
+      c.fillStyle = scarfBright;
+      c.fillRect(6.6, 3.2 + bob, 0.8, 1.0);
+    }
+
+    // =========================================================================
+    // 7. GOLA ALTA RÚNICA & CACHOCOL TÁTICO
+    // =========================================================================
+    c.fillStyle = abyssDark;
+    c.beginPath();
+    c.moveTo(-6.0, -6.5 + bob);
+    c.lineTo(6.0, -6.5 + bob);
+    c.lineTo(4.5, -2.5 + bob);
+    c.lineTo(-4.5, -2.5 + bob);
+    c.closePath();
+    c.fill();
+    c.strokeStyle = scarfCyan;
+    c.lineWidth = 1.1;
+    c.stroke();
+
+    // =========================================================================
+    // 8. CAPUZ BICO DE FALCÃO NOTURNO (SHADOW RAVEN COWL COM RIM LIGHT)
+    // =========================================================================
+    // Volume base escuro que envolve a cabeça
+    c.fillStyle = hoodBase;
+    c.beginPath();
+    c.moveTo(-6.5, -4.5 + bob);
+    c.lineTo(-8.5, -11.5 + bob);
+    c.quadraticCurveTo(-7.0, -18.5 + bob, -0.5, -19.5 + bob);
+    c.lineTo(2.2, -21.2 + bob); // Bico de Falcão pontiagudo frontal agressivo
+    c.quadraticCurveTo(7.8, -18.2 + bob, 8.4, -11.0 + bob);
+    c.lineTo(6.5, -4.5 + bob);
+    c.closePath();
+    c.fill();
+
+    // Sombreamento de dobras e vincos no tecido do capuz
+    c.strokeStyle = hoodDark;
+    c.lineWidth = 1.4;
+    c.stroke();
+
+    // Borda geométrica e bisel do capuz em platina e ciano
+    c.strokeStyle = hoodTrim;
+    c.lineWidth = 1.4;
+    c.beginPath();
+    c.moveTo(-0.5, -19.5 + bob);
+    c.lineTo(2.2, -21.2 + bob);
+    c.quadraticCurveTo(7.8, -18.2 + bob, 8.4, -11.0 + bob);
+    c.stroke();
+
+    // RIM LIGHT no topo do capuz
+    c.strokeStyle = rimLight;
+    c.lineWidth = 1.0;
+    c.beginPath();
+    c.moveTo(-6.0, -17.5 + bob);
+    c.quadraticCurveTo(-0.5, -20.2 + bob, 2.2, -21.2 + bob);
+    c.stroke();
+
+    // Runa cósmica ciano na aba do capuz com halo de pulso
+    c.fillStyle = hoodRuneGlow;
+    c.fillRect(0.2, -17.8 + bob, 3.0, 3.0);
+    c.fillStyle = hoodRune;
+    c.fillRect(0.8, -17.2 + bob, 1.8, 1.8);
+    c.fillStyle = '#ffffff';
+    c.fillRect(1.2, -16.8 + bob, 0.9, 0.9);
+
+    // Sombra profunda interna sob a aba
+    c.fillStyle = shadowFace;
+    c.beginPath();
+    c.arc(1.0, -10.5 + bob, 6.2, 0, Math.PI * 2);
+    c.fill();
+
+    // =========================================================================
+    // 9. MÁSCARA DO ECLIPSE (ÔNIX COM PLATINA GEOMÉTRICA & 3 FACETAS 2.5D)
+    // =========================================================================
+    // Faceta escura (esquerda)
+    c.fillStyle = '#06090e';
+    c.beginPath();
+    c.moveTo(0.5, -9.0 + bob);
+    c.lineTo(3.2, -9.0 + bob);
+    c.lineTo(2.6, -4.6 + bob);
+    c.lineTo(-0.2, -4.8 + bob);
+    c.closePath();
+    c.fill();
+
+    // Faceta iluminada (direita)
+    c.fillStyle = maskCol;
+    c.beginPath();
+    c.moveTo(3.2, -9.0 + bob);
+    c.lineTo(6.8, -9.0 + bob);
+    c.lineTo(5.8, -4.2 + bob);
+    c.lineTo(2.6, -4.6 + bob);
+    c.closePath();
+    c.fill();
+
+    // Placa de reforço angular em platina estelar com bisel
+    c.strokeStyle = maskPlate;
+    c.lineWidth = 1.1;
+    c.beginPath();
+    c.moveTo(1.2, -8.6 + bob);
+    c.lineTo(6.4, -8.6 + bob);
+    c.lineTo(5.4, -4.6 + bob);
+    c.stroke();
+
+    // Ponto de brilho especular na quina da máscara
+    c.fillStyle = platinaGlint;
+    c.fillRect(6.0, -8.8 + bob, 1.0, 1.0);
+
+    // Fenda de respiração filtrada com ilhós
+    c.fillStyle = '#020406';
+    c.fillRect(2.8, -6.5 + bob, 1.8, 0.8);
+    c.fillStyle = platinaDark;
+    c.fillRect(2.4, -6.5 + bob, 0.5, 0.8);
+    c.fillRect(4.5, -6.5 + bob, 0.5, 0.8);
+
+    // Micro-baforada de névoa fria espectral da respiração (Padrão Kragdor)
+    const breathCycle = (tFrame * 0.08) % 1;
+    if (breathCycle < 0.45) {
+      const bProg = breathCycle / 0.45;
+      c.fillStyle = `rgba(0, 245, 212, ${(1 - bProg) * (isPhasing ? 0.6 : 0.35)})`;
+      c.beginPath();
+      c.arc(6.5 + bProg * 5, -5.5 + bob - bProg * 2.5, 0.8 + bProg * 1.8, 0, Math.PI * 2);
+      c.fill();
+    }
+
+    // =========================================================================
+    // 10. OLHAR PREDADOR DUPLO & CHAMA ESPECTRAL ASCENDENTE (PADRÃO KRAGDOR)
+    // =========================================================================
+    // Fendas oculares afiadas na escuridão
+    c.fillStyle = '#010305';
+    c.fillRect(2.0, -12.0 + bob, 4.8, 2.6);
+
+    // Olho laser ciano incandescente
     c.fillStyle = eyeGlow;
-    c.fillRect(2.6, -10.9 + bob, 3.0, 1.4);
-
-    // Ponto de luz estelar branca no núcleo do olhar
+    c.fillRect(2.8, -11.6 + bob, 3.6, 1.8);
     c.fillStyle = eyeCore;
-    c.fillRect(3.6, -10.7 + bob, 1.4, 1.0);
+    c.fillRect(4.0, -11.4 + bob, 1.8, 1.2);
+    c.fillStyle = '#ffffff';
+    c.fillRect(4.6, -11.2 + bob, 0.8, 0.8); // Ponto de brilho estelar duplo
 
-    // RASTRO DE NÉVOA ESPECTRAL CIANO EVAPORANDO DO OLHO
-    const mistWave = Math.sin(tFrame * 0.25) * 1.0;
-    c.strokeStyle = isPhasing ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 206, 201, 0.65)';
-    c.lineWidth = 1.0;
+    // CHAMA ESPECTRAL FRIA ASCENDENTE (Rastro de Éter Flutuante Contínuo)
+    const fireWisp = Math.sin(tFrame * 0.25) * 1.6;
+    const fireWisp2 = Math.cos(tFrame * 0.28) * 1.2;
+
+    // Halo da chama
+    c.strokeStyle = isPhasing ? 'rgba(255, 255, 255, 0.65)' : 'rgba(0, 245, 212, 0.4)';
+    c.lineWidth = 2.4;
     c.beginPath();
-    c.moveTo(5.6, -10.5 + bob);
-    c.quadraticCurveTo(8.0, -11.5 + bob + mistWave, 10.5, -10.8 + bob - mistWave);
+    c.moveTo(5.8, -11.2 + bob);
+    c.bezierCurveTo(8.5, -13.0 + bob + fireWisp, 10.5, -15.0 + bob + fireWisp2, 12.5, -17.5 + bob - fireWisp);
     c.stroke();
 
-    c.fillStyle = bladeGlow;
-    c.fillRect(9.2, -11.8 + bob + mistWave, 1.2, 1.2);
+    // Núcleo da chama
+    c.strokeStyle = isPhasing ? '#ffffff' : eyeTrail;
+    c.lineWidth = 1.3;
+    c.beginPath();
+    c.moveTo(5.8, -11.2 + bob);
+    c.bezierCurveTo(8.5, -13.0 + bob + fireWisp, 10.5, -15.0 + bob + fireWisp2, 12.5, -17.5 + bob - fireWisp);
+    c.stroke();
+
+    // Fagulhas estelares que se soltam do olho
+    c.fillStyle = '#ffffff';
+    c.fillRect(11.0, -18.2 + bob - fireWisp, 1.2, 1.2);
+    c.fillStyle = scarfBright;
+    c.fillRect(13.5, -20.5 + bob - fireWisp2, 1.0, 1.0);
   } else {
     // Fallback genérico para chaves de heróis não mapeadas
     c.fillStyle = charDef.color.cape || '#7f8c8d';
@@ -3966,7 +4551,12 @@ export function drawPlayerCharacter() {
     evolvedPotion: player.evolvedPotion,
     iFrames: player.iFrames,
     radius: player.radius,
-    isHammerAttacking: bullets.some(b => b.type === 'HAMMER_SLAM' && b.life > 4),
+    hammerProgress: (() => {
+      const hb = bullets.find(b => b.type === 'HAMMER_SLAM');
+      return hb ? Math.max(0, Math.min(1, 1 - (hb.life / hb.maxLife))) : -1;
+    })(),
+    isHammerAttacking: bullets.some(b => b.type === 'HAMMER_SLAM' && b.life > 0),
+    evolvedHammer: player.evolvedHammer,
     isStaffCasting: bullets.some(b => b.type === 'STAFF' && b.life > 48),
     isSwordAttacking: bullets.some(b => b.type === 'SWORD' && b.life > 45),
     potionThrowTimer: player.potionThrowTimer || 0,

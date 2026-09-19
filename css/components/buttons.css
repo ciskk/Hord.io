@@ -1,0 +1,31 @@
+﻿/* ======================================================== */
+/* BOTÕES & CARDS GENÉRICOS DE AÇÃO                         */
+/* ======================================================== */
+
+.card-btn {
+  width: 100%;
+  padding: clamp(9px, 1.8vh, 12px);
+  margin: 4px 0;
+  border-radius: 8px;
+  background: #232738;
+  color: #fff;
+  border: 1px solid var(--border-strong);
+  font-size: clamp(11px, 1.6vw, 13px);
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.card-btn:hover {
+  border-color: var(--gold-runic);
+}
+
+.card-btn:active {
+  background: #3e445e;
+  border-color: var(--gold-runic);
+  transform: scale(0.98);
+}
+

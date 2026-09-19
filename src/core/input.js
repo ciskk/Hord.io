@@ -196,12 +196,22 @@ window.addEventListener('keydown', e => {
     }
   }
 
-  // Habilidade com Espaço ou E
+  // Habilidade com Espaço ou E (ou retomar batalha se pausado)
   if (e.code === 'Space' || e.code === 'KeyE') {
     e.preventDefault();
+    if (gameState.isPaused) {
+      const pauseModal = document.getElementById('pause-modal');
+      if (pauseModal && pauseModal.style.display !== 'none' && !pauseModal.classList.contains('closing')) {
+        togglePause();
+      }
+      return;
+    }
     triggerHeroSkill();
     return;
   }
+
+  // Se o jogo estiver pausado, bloqueia movimentação
+  if (gameState.isPaused) return;
 
   // Direcionais
   if (e.code === 'KeyW' || e.code === 'ArrowUp') keys.up = true;

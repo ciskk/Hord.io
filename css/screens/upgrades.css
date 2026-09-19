@@ -1,0 +1,184 @@
+﻿/* ======================================================== */
+/* 2. MODAL DE UPGRADES (TARÔ ARCANO DE PODER)             */
+/* ======================================================== */
+
+.modal-box-tarot {
+  max-width: min(94vw, 760px);
+}
+
+/* Banner de Recompensa de Chefe na Seleção de Bênçãos */
+.boss-reward-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, rgba(241, 196, 15, 0.16) 0%, rgba(142, 68, 173, 0.22) 100%);
+  border: 1.5px solid rgba(241, 196, 15, 0.6);
+  border-radius: 12px;
+  padding: 10px 18px;
+  margin-bottom: 12px;
+  box-shadow: 0 0 22px rgba(241, 196, 15, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  animation: bossRewardGlow 2.4s infinite ease-in-out;
+}
+
+@keyframes bossRewardGlow {
+  0%, 100% {
+    box-shadow: 0 0 18px rgba(241, 196, 15, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    border-color: rgba(241, 196, 15, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(241, 196, 15, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    border-color: rgba(241, 196, 15, 0.95);
+  }
+}
+
+.boss-reward-badge {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #f1c40f;
+  text-transform: uppercase;
+  background: rgba(241, 196, 15, 0.2);
+  border: 1px solid rgba(241, 196, 15, 0.45);
+  border-radius: 20px;
+  padding: 3px 12px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+
+.boss-reward-title {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #fff;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 12px rgba(241, 196, 15, 0.6);
+}
+
+.boss-reward-counter {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f39c12;
+  letter-spacing: 0.4px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+}
+
+.upgrade-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.upgrade-card-pro {
+  position: relative;
+  background: linear-gradient(165deg, #181d2e 0%, #0d1018 100%);
+  border: 2px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 16px 14px;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+}
+
+.upgrade-card-pro::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.upgrade-card-pro:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.75);
+}
+
+.upgrade-card-pro:active {
+  transform: scale(0.97);
+}
+
+.card-icon-wrapper {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
+}
+
+.card-icon-wrapper svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* Raridades dos Cards */
+.upgrade-card-pro.card-common {
+  border-color: #576574;
+}
+.upgrade-card-pro.card-common .card-icon-wrapper {
+  border-color: #576574;
+  background: rgba(87, 101, 116, 0.15);
+}
+
+.upgrade-card-pro.card-rare {
+  border-color: var(--spectral-blue);
+  box-shadow: 0 0 16px rgba(9, 132, 227, 0.25);
+}
+.upgrade-card-pro.card-rare .card-icon-wrapper {
+  border-color: var(--spectral-blue);
+  background: rgba(9, 132, 227, 0.2);
+}
+
+.upgrade-card-pro.card-legendary {
+  border-color: var(--gold-runic);
+  box-shadow: 0 0 20px rgba(241, 196, 15, 0.35);
+  animation: legendaryBorderPulse 2.5s infinite alternate;
+}
+.upgrade-card-pro.card-legendary .card-icon-wrapper {
+  border-color: var(--gold-runic);
+  background: rgba(241, 196, 15, 0.2);
+}
+
+@keyframes legendaryBorderPulse {
+  0% { box-shadow: 0 0 14px rgba(241, 196, 15, 0.3); }
+  100% { box-shadow: 0 0 26px rgba(241, 196, 15, 0.65); }
+}
+
+.synergy-indicator-tag {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 8px;
+  font-weight: 800;
+  background: #f39c12;
+  color: #000;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+.reroll-btn-styled {
+  background: linear-gradient(135deg, #8e44ad, #5e2776) !important;
+  border: 1.5px solid #be79df !important;
+  font-family: var(--font-body);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(142, 68, 173, 0.4);
+}
+

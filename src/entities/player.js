@@ -1064,15 +1064,15 @@ export function fireWeapons() {
         });
       }
     } else if (w.type === 'HAMMER') {
-      playSfx('hammer_slam');
-      triggerShake(10);
-
       const targetAngle = Math.atan2(closestEnemy.y - player.y, closestEnemy.x - player.x);
       player.facing = closestEnemy.x >= player.x ? 1 : -1;
-      const slamRadius = (player.evolvedHammer ? 92 : 72) + (w.count - 1) * 10;
+      player.hammerAngle = targetAngle;
+      const slamRadius = (player.evolvedHammer ? 96 : 76) + (w.count - 1) * 12;
 
+      // Inicia ciclo de 26 frames: windup (8 frames) -> impacto telúrico -> fendas tectônicas e recuperação
       bullets.push({
         type: 'HAMMER_SLAM',
+        playerRef: player,
         x: player.x,
         y: player.y,
         vx: 0,
@@ -1080,10 +1080,13 @@ export function fireWeapons() {
         angle: targetAngle,
         radius: slamRadius,
         damage: player.damage * w.damageMult * (player.evolvedHammer ? 2.8 : 2.0),
-        life: 24,
-        maxLife: 24,
-        hitSet: new Set(),
-        isEvolved: player.evolvedHammer
+        life: 26,
+        maxLife: 26,
+        impactFrame: 8,
+        hasImpacted: false,
+        hitEnemies: new Set(),
+        isEvolved: player.evolvedHammer,
+        count: w.count || 1
       });
     }
   }

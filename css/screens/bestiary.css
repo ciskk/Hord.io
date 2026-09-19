@@ -1,0 +1,457 @@
+﻿/* ==========================================================================
+   FASE 3: CÓDICE DO BESTIÁRIO DAS TREVAS (BESTIARY MODAL)
+   ========================================================================== */
+.bestiary-void-box {
+  width: 94vw;
+  max-width: 1060px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at 50% 10%, #151a24 0%, #0a0d14 75%, #05070a 100%) !important;
+  border: 1px solid rgba(0, 245, 212, 0.35) !important;
+  box-shadow: 0 0 45px rgba(0, 245, 212, 0.12), inset 0 0 40px rgba(0, 0, 0, 0.85) !important;
+  padding: 0 !important;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.bestiary-header {
+  padding: 14px 20px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  background: rgba(10, 13, 20, 0.6);
+}
+
+.bestiary-header-info {
+  text-align: center;
+  flex: 1;
+}
+
+.btn-bestiary-nav {
+  border-color: rgba(0, 245, 212, 0.5) !important;
+  color: #00f5d4 !important;
+}
+
+.btn-bestiary-nav:hover {
+  background: rgba(0, 245, 212, 0.2) !important;
+  border-color: #00f5d4 !important;
+  box-shadow: 0 0 16px rgba(0, 245, 212, 0.45) !important;
+  color: #fff !important;
+}
+
+.btn-achievements-nav {
+  border-color: rgba(162, 155, 254, 0.5) !important;
+  color: #a29bfe !important;
+}
+
+.btn-achievements-nav:hover {
+  background: rgba(162, 155, 254, 0.2) !important;
+  border-color: #a29bfe !important;
+  box-shadow: 0 0 16px rgba(162, 155, 254, 0.45) !important;
+  color: #fff !important;
+}
+
+/* Barra de Abas / Categorias */
+.bestiary-tabs-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(7, 10, 16, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.bestiary-tab-btn {
+  background: rgba(22, 28, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.bestiary-tab-btn:hover {
+  border-color: #00f5d4;
+  color: #e2e8f0;
+  background: rgba(0, 245, 212, 0.1);
+}
+
+.bestiary-tab-btn.active {
+  background: linear-gradient(135deg, rgba(0, 245, 212, 0.25) 0%, rgba(20, 30, 48, 0.8) 100%);
+  border-color: #00f5d4;
+  color: #00f5d4;
+  box-shadow: 0 0 12px rgba(0, 245, 212, 0.25);
+}
+
+/* Layout Principal de 2 Colunas */
+.bestiary-main-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Coluna Esquerda: Grade de Monstros */
+.bestiary-roster-column {
+  overflow-y: auto;
+  padding: 14px 14px 20px;
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(8, 10, 15, 0.5);
+}
+
+.bestiary-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+/* Card Individual de Criatura na Lista */
+.bestiary-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(18, 22, 33, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.bestiary-card:hover {
+  background: rgba(28, 35, 52, 0.75);
+  border-color: rgba(0, 245, 212, 0.4);
+  transform: translateX(3px);
+}
+
+.bestiary-card.active {
+  background: linear-gradient(90deg, rgba(0, 245, 212, 0.18) 0%, rgba(20, 26, 40, 0.85) 100%);
+  border-color: #00f5d4;
+  box-shadow: 0 0 14px rgba(0, 245, 212, 0.2), inset 0 0 10px rgba(0, 245, 212, 0.08);
+}
+
+.bestiary-card.undiscovered {
+  opacity: 0.65;
+  background: rgba(12, 14, 20, 0.5);
+  border-style: dashed;
+}
+
+.bestiary-card.undiscovered:hover {
+  opacity: 0.85;
+}
+
+.bcard-avatar-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  border: 1.5px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+}
+
+.bcard-avatar-icon {
+  font-size: 16px;
+}
+
+.bcard-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bcard-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.bcard-name {
+  font-family: 'Cinzel', serif;
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bcard-name.undiscovered-name {
+  font-style: italic;
+  letter-spacing: 2px;
+}
+
+.bcard-cat-pill {
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.6px;
+  flex-shrink: 0;
+}
+
+.badge-horde {
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.35);
+}
+
+.badge-miniboss {
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  border: 1px solid rgba(243, 156, 18, 0.35);
+}
+
+.badge-boss {
+  background: rgba(155, 89, 182, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.45);
+}
+
+.bcard-sub-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #8395a7;
+}
+
+.bcard-threat {
+  color: #f1c40f;
+  letter-spacing: 1px;
+}
+
+/* Coluna Direita: Dossiê e Palco da Criatura */
+.bestiary-dossier-panel {
+  overflow-y: auto;
+  padding: 16px 22px 24px;
+  background: rgba(5, 7, 12, 0.4);
+}
+
+.dossier-card-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Viewport do Canvas de Prévia */
+.bestiary-preview-viewport {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  background: radial-gradient(circle at 50% 65%, #182030 0%, #0d121c 60%, #06080e 100%);
+  border: 1px solid rgba(0, 245, 212, 0.25);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.8), 0 4px 18px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+#bestiary-preview-canvas {
+  width: 220px;
+  height: 220px;
+}
+
+.bestiary-category-pill {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font-size: 9px;
+  font-weight: 800;
+  font-family: 'Cinzel', serif;
+  background: rgba(5, 8, 14, 0.85);
+  border: 1px solid;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.8px;
+  backdrop-filter: blur(4px);
+}
+
+.bestiary-kills-pill {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #ffd166;
+  background: rgba(5, 8, 14, 0.85);
+  border: 1px solid rgba(255, 209, 102, 0.3);
+  padding: 2px 8px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+}
+
+/* Identidade */
+.dossier-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dossier-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dossier-name {
+  font-family: 'Cinzel', serif;
+  font-size: 20px;
+  font-weight: 900;
+  margin: 0;
+  letter-spacing: 0.8px;
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.9);
+}
+
+.dossier-threat-badge {
+  color: #f1c40f;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  background: rgba(241, 196, 15, 0.1);
+  border: 1px solid rgba(241, 196, 15, 0.3);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.dossier-title {
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-style: italic;
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Grid de Estatísticas */
+.dossier-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.dossier-stat-box {
+  background: rgba(18, 23, 35, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dossier-stat-label {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.6px;
+}
+
+.dossier-stat-value {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #f1f2f6;
+}
+
+/* Blocos de Lore e Fraquezas */
+.dossier-lore-box {
+  background: rgba(14, 18, 28, 0.75);
+  border: 1px solid rgba(0, 245, 212, 0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.dossier-lore-box.is-locked {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(10, 12, 18, 0.5);
+}
+
+.dossier-tactics-box {
+  border-color: rgba(243, 156, 18, 0.25);
+}
+
+.dossier-box-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.dossier-box-icon {
+  font-size: 13px;
+}
+
+.dossier-box-title {
+  font-family: 'Cinzel', serif;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #cbd5e1;
+  letter-spacing: 0.8px;
+}
+
+.dossier-lock-status {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 700;
+  color: #ffd166;
+}
+
+.dossier-box-content {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: #cbd5e1;
+  font-family: 'Outfit', sans-serif;
+}
+
+.dossier-lore-box.is-locked .dossier-box-content {
+  color: #64748b;
+  font-style: italic;
+}
+
+/* Citações / Quotes */
+.dossier-quotes-box {
+  background: rgba(14, 18, 28, 0.65);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.dossier-quotes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dossier-quote-item {
+  font-style: italic;
+  font-size: 11.5px;
+  color: #d8b4fe;
+  line-height: 1.45;
+  padding: 4px 8px;
+  border-left: 2px solid rgba(168, 85, 247, 0.5);
+  background: rgba(168, 85, 247, 0.05);
+}
+
+.dossier-quote-item.locked-quote {
+  color: #64748b;
+  border-left-color: rgba(255, 255, 255, 0.1);
+  background: transparent;
+}
+

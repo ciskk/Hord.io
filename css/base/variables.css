@@ -1,0 +1,34 @@
+﻿/* ======================================================== */
+/* HORD.IO: DESIGN SYSTEM GRIM CYBER-GOTHIC                 */
+/* ======================================================== */
+
+:root {
+  --bg-void: #0a0c10;
+  --bg-panel: #121520;
+  --bg-card: #181d2e;
+  --bg-card-hover: #1e243b;
+  --border-subtle: #23293d;
+  --border-strong: #333d59;
+  
+  --gold-runic: #f1c40f;
+  --gold-glow: rgba(241, 196, 15, 0.45);
+  --crimson-blood: #e74c3c;
+  --crimson-dark: #8b0000;
+  --abyss-purple: #9b59b6;
+  --abyss-glow: rgba(155, 89, 182, 0.35);
+  --spectral-cyan: #00cec9;
+  --spectral-blue: #0984e3;
+  --vital-green: #2ecc71;
+
+  --font-display: 'Cinzel Decorative', 'Cinzel', serif;
+  --font-heading: 'Cinzel', serif;
+  --font-body: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+

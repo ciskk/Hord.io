@@ -85,6 +85,9 @@ function playProceduralNoise({ filterType = 'lowpass', filterFreq = 1000, rampFr
 
 export function triggerHaptic(type) {
   try {
+    if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
+      return;
+    }
     if (navigator.vibrate) {
       if (type === 'light') navigator.vibrate(10);
       else if (type === 'medium') navigator.vibrate(22);
@@ -142,6 +145,29 @@ export function resetDeathAudioFilter() {
   const t = audioCtx.currentTime;
   masterFilterNode.frequency.cancelScheduledValues(t);
   masterFilterNode.frequency.setTargetAtTime(22000, t, 0.04);
+}
+
+/**
+ * Filtro de Estase Temporal (Pausa da Partida):
+ * Modula as frequências para um tom etéreo e misterioso (lowpass ressonante em 520Hz)
+ * que suspende a agressividade do combate sem a sensação de asfixia da morte.
+ */
+export function applyStasisAudioFilter() {
+  if (!audioCtx || !masterFilterNode) return;
+  const t = audioCtx.currentTime;
+  masterFilterNode.frequency.cancelScheduledValues(t);
+  masterFilterNode.frequency.setTargetAtTime(520, t, 0.08);
+}
+
+/**
+ * Restauração do Espectro Auditivo de Estase:
+ * Reabre a passagem total de frequências ao retomar a batalha.
+ */
+export function resetStasisAudioFilter() {
+  if (!audioCtx || !masterFilterNode) return;
+  const t = audioCtx.currentTime;
+  masterFilterNode.frequency.cancelScheduledValues(t);
+  masterFilterNode.frequency.setTargetAtTime(22000, t, 0.06);
 }
 
 export function playSfx(type) {
@@ -504,6 +530,40 @@ export function playSfx(type) {
         o.stop(t + idx * 0.05 + 0.35);
       });
       triggerHaptic('heavy');
+    } else if (type === 'stasis_enter') {
+      // Ressonância de cristal cósmico e sino etéreo de suspensão temporal
+      [587.33, 880, 1174.66].forEach((freq, idx) => {
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.connect(g);
+        g.connect(masterGainNode);
+        o.type = 'sine';
+        o.frequency.setValueAtTime(freq, t + idx * 0.03);
+        o.frequency.exponentialRampToValueAtTime(freq * 1.05, t + idx * 0.03 + 0.35);
+        g.gain.setValueAtTime(0.001, t + idx * 0.03);
+        g.gain.linearRampToValueAtTime(0.08, t + idx * 0.03 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.03 + 0.38);
+        o.start(t + idx * 0.03);
+        o.stop(t + idx * 0.03 + 0.38);
+      });
+      triggerHaptic('medium');
+    } else if (type === 'stasis_exit') {
+      // Descompressão temporal suave e liberação de energia da estase
+      [1174.66, 880, 587.33].forEach((freq, idx) => {
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.connect(g);
+        g.connect(masterGainNode);
+        o.type = 'triangle';
+        o.frequency.setValueAtTime(freq, t + idx * 0.02);
+        o.frequency.exponentialRampToValueAtTime(freq * 0.9, t + idx * 0.02 + 0.2);
+        g.gain.setValueAtTime(0.001, t + idx * 0.02);
+        g.gain.linearRampToValueAtTime(0.05, t + idx * 0.02 + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.02 + 0.22);
+        o.start(t + idx * 0.02);
+        o.stop(t + idx * 0.02 + 0.22);
+      });
+      triggerHaptic('light');
     }
 
     // =========================================================================

@@ -1,0 +1,2292 @@
+/* ======================================================== */
+/* OTIMIZAÇÃO COMPLETA PARA SMARTPHONES VERTICAIS (PORTRAIT)*/
+/* ======================================================== */
+
+@media (max-width: 850px), (orientation: portrait) {
+  /* ======================================================== */
+  /* 0. HUD DE COMBATE MOBILE (ANTI-SOBREPOSIÇÃO & COMPACTO)   */
+  /* ======================================================== */
+  #hud {
+    top: max(env(safe-area-inset-top, 6px), 6px);
+    left: max(env(safe-area-inset-left, 6px), 8px);
+    right: max(env(safe-area-inset-right, 6px), 8px);
+    width: auto;
+    gap: 4px;
+  }
+
+  /* Barra de Topo em Grid Preciso de 3 Colunas: Impossível Sobrepor! */
+  .hud-top-bar {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 6px;
+    min-height: auto;
+    width: 100%;
+  }
+
+  /* Badges da Esquerda (Kills & Gold) */
+  .hud-meta-group.left {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .hud-badge {
+    padding: 2px 6px;
+    font-size: 9.5px;
+    border-radius: 5px;
+    gap: 4px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+  }
+
+  .hud-badge .hud-icon {
+    font-size: 10px;
+  }
+
+  /* Coluna Central: Cronômetro & Onda com Truncate Anti-Vazamento */
+  .hud-center-chronicle {
+    flex: 1;
+    min-width: 0; /* Impede que textos longos estourem a coluna central */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    overflow: hidden;
+  }
+
+  .hud-timer {
+    font-size: 13.5px;
+    letter-spacing: 1px;
+    line-height: 1;
+  }
+
+  .hud-wave-pill {
+    padding: 2px 8px;
+    max-width: 100%;
+    border-radius: 10px;
+    gap: 4px;
+    box-sizing: border-box;
+    white-space: nowrap;
+  }
+
+  .hud-wave-pill .wave-icon {
+    font-size: 9px;
+    flex-shrink: 0;
+  }
+
+  #wave-banner {
+    font-size: clamp(8.5px, 2.3vw, 10.5px);
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: clamp(120px, 46vw, 240px);
+    display: inline-block;
+  }
+
+  .screen-ultratall #wave-banner {
+    max-width: clamp(150px, 54vw, 290px);
+  }
+
+  /* Botão de Pausa da Direita */
+  .hud-meta-group.right {
+    flex: none;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  #pause-btn {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 11px !important;
+    border-radius: 6px;
+    pointer-events: auto;
+  }
+
+  /* Barras Vitais Compactas (Mobile-Optimized) */
+  .hud-vial-block {
+    gap: 2px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .vial-header {
+    font-size: 9.5px;
+    padding: 0 1px;
+    line-height: 1.15;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .vial-label {
+    gap: 4px;
+    min-width: 0;
+    flex-shrink: 1;
+    overflow: hidden;
+  }
+
+  .vial-rune-icon {
+    font-size: 10px;
+  }
+
+  .vial-title {
+    font-size: 8.5px;
+    letter-spacing: 0.8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .vial-readout {
+    font-size: 9.5px;
+    gap: 1px;
+    flex-shrink: 0;
+    margin-left: 6px;
+  }
+
+  .vial-denom {
+    font-size: 8.5px;
+    opacity: 0.65;
+  }
+
+  .vial-pct {
+    font-size: 8.5px;
+    margin-left: 3px;
+  }
+
+  .lvl-crest-badge {
+    padding: 1px 4px;
+    gap: 2px;
+    border-radius: 3px;
+  }
+
+  .crest-label {
+    font-size: 7.5px;
+  }
+
+  .crest-num {
+    font-size: 9.5px;
+  }
+
+  /* Alturas Enxutas das Barras no Mobile para não Roubar Campo de Visão */
+  .hp-bezel {
+    height: 11px;
+    border-radius: 3px;
+    border-width: 1px;
+  }
+
+  .xp-bezel {
+    height: 7px;
+    border-radius: 2px;
+    border-width: 1px;
+  }
+
+  /* HUD de Chefe Mobile */
+  #boss-hud {
+    margin-top: 2px;
+    gap: 2px;
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .boss-hud-header {
+    font-size: 9.5px;
+    padding: 0 1px;
+    margin-bottom: 1px;
+    white-space: nowrap;
+    width: 100%;
+  }
+
+  .boss-name-group {
+    gap: 4px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .boss-skull-icon {
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  #boss-name {
+    font-size: 9.5px;
+    letter-spacing: 0.8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: clamp(100px, 45vw, 180px);
+  }
+
+  .boss-pct {
+    font-size: 9.5px;
+    flex-shrink: 0;
+    margin-left: 4px;
+  }
+
+  .boss-bezel {
+    height: 11px;
+    border-radius: 3px;
+    border-width: 1px;
+    width: 100%;
+  }
+
+  #skill-btn-container {
+    bottom: max(env(safe-area-inset-bottom, 16px), 16px);
+    right: max(env(safe-area-inset-right, 14px), 14px);
+    width: 58px;
+    height: 58px;
+  }
+
+  /* 1. Modais Universais */
+  .modal-overlay {
+    padding: max(env(safe-area-inset-top, 6px), 6px) 
+             max(env(safe-area-inset-right, 6px), 6px) 
+             max(env(safe-area-inset-bottom, 6px), 6px) 
+             max(env(safe-area-inset-left, 6px), 6px);
+  }
+
+  .modal-box {
+    padding: 12px 10px;
+    max-width: 96vw;
+    max-height: 96dvh;
+    border-radius: 12px;
+  }
+
+  .modal-header {
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    gap: 6px;
+  }
+
+  .modal-header-title {
+    font-size: 15px;
+    letter-spacing: 0.5px;
+  }
+
+  .modal-header-sub {
+    font-size: 9px;
+  }
+
+  /* ======================================================== */
+  /* 2. VOID ASTRAL: NOVO LAYOUT CINEMATOGRÁFICO VERTICAL     */
+  /* (HERO-CENTRIC • HERO PILL DOCK • CARD TÁTICO UNIFICADO)   */
+  /* ======================================================== */
+  #char-modal {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    width: 100dvw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-width: 100vw !important;
+    max-height: 100dvh !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: radial-gradient(ellipse at 50% 25%, #180c32 0%, #081224 45%, #040508 100%) !important;
+    backdrop-filter: blur(20px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    overflow: hidden !important;
+    z-index: 100 !important;
+  }
+
+  #char-modal[style*="display: none"],
+  #char-modal.modal-hidden {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .modal-box-altar.void-modal-box {
+    max-width: 100vw !important;
+    width: 100% !important;
+    min-height: 100dvh !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    padding: max(env(safe-area-inset-top, 6px), 6px) 
+             max(env(safe-area-inset-right, 8px), 8px) 
+             0 
+             max(env(safe-area-inset-left, 8px), 8px) !important;
+    margin: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    overflow: hidden !important;
+    flex-grow: 1 !important;
+    gap: 3px !important;
+  }
+
+  /* 2.1 Top Bar Ultraleve Integrada Responsiva (Vertical / Mobile) */
+  .void-modal-header {
+    padding: 3px 4px 4px 4px !important;
+    margin-bottom: 2px !important;
+    border-bottom: 1px solid rgba(0, 245, 212, 0.14) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
+    z-index: 30 !important;
+  }
+
+  .void-header-top-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    gap: 6px !important;
+  }
+
+  .void-header-info {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    min-width: 0 !important;
+  }
+
+  .void-header-eyebrow {
+    font-size: 7.5px !important;
+    letter-spacing: 1.5px !important;
+    color: #00f5d4 !important;
+    font-weight: 800 !important;
+  }
+
+  .void-modal-title {
+    font-size: clamp(12px, 3.8vw, 15px) !important;
+    letter-spacing: 1px !important;
+    line-height: 1.15 !important;
+    color: #f1f5f9 !important;
+    text-shadow: 0 0 10px rgba(0, 245, 212, 0.35) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .void-modal-sub {
+    display: none !important;
+  }
+
+  .void-souls-capsule {
+    padding: 2px 7px !important;
+    font-size: 9.5px !important;
+    height: 24px !important;
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px) !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Grid de 3 botões de navegação preenchendo 100% da largura horizontal */
+  .char-modal-header-actions {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 4px !important;
+    width: 100% !important;
+  }
+
+  .char-modal-header-actions .void-astrolabe-btn {
+    padding: 4px 2px !important;
+    font-size: 9px !important;
+    height: 27px !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px) !important;
+    letter-spacing: 0.4px !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+  }
+
+  .char-modal-header-actions .void-astrolabe-btn svg {
+    width: 12px !important;
+    height: 12px !important;
+    margin-right: 3px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 2.2 Estrutura Geral Vertical */
+  .char-altar-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    flex-grow: 1 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    position: relative !important;
+  }
+
+  /* Tier 1: Palco Monumental do Campeão (Canvas 2D ao Vivo Otimizado para Mobile) */
+  .char-stage-col.void-hero-stage {
+    order: 1 !important;
+    flex: 1 1 0 !important;
+    min-height: 120px !important;
+    max-height: none !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    overflow: hidden !important;
+  }
+
+  .char-stage-col.void-hero-stage::before {
+    display: none !important;
+  }
+
+  /* Insígnia do Arquétipo Flutuante no Topo */
+  .char-stage-badge.void-archetype-badge {
+    position: absolute !important;
+    top: 4px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    font-size: 9px !important;
+    font-weight: 900 !important;
+    letter-spacing: 1.5px !important;
+    padding: 2px 12px !important;
+    border-radius: 12px !important;
+    clip-path: none !important;
+    background: rgba(6, 8, 18, 0.82) !important;
+    backdrop-filter: blur(8px) !important;
+    border: 1px solid var(--showcase-color, #00f5d4) !important;
+    color: var(--showcase-color, #00f5d4) !important;
+    box-shadow: 0 0 14px rgba(0, 0, 0, 0.8), 0 0 12px var(--showcase-color, #00f5d4) !important;
+    z-index: 15 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
+  .char-stage-viewport.void-stage-viewport {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 120px !important;
+    max-height: none !important;
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  #char-preview-canvas {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none !important;
+    min-height: 120px !important;
+    object-fit: contain !important;
+    cursor: default !important;
+    display: block !important;
+    filter: drop-shadow(0 12px 30px rgba(0, 0, 0, 0.95)) !important;
+  }
+
+  /* Setas Laterais de Navegação Ergonômicas (Não Obstruem o Personagem) */
+  .stage-nav-arrow {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    line-height: 0 !important;
+    width: 24px !important;
+    height: 38px !important;
+    clip-path: none !important;
+    border-radius: 8px !important;
+    background: rgba(8, 14, 28, 0.45) !important;
+    backdrop-filter: blur(8px) !important;
+    border: 1px solid rgba(0, 245, 212, 0.22) !important;
+    color: #00f5d4 !important;
+    z-index: 16 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+    transition: all 0.15s ease !important;
+  }
+
+  .stage-nav-arrow:active {
+    background: rgba(0, 245, 212, 0.3) !important;
+    transform: translateY(-50%) scale(0.95) !important;
+  }
+
+  .stage-nav-arrow svg {
+    width: 15px !important;
+    height: 15px !important;
+    display: block !important;
+    stroke: currentColor !important;
+    stroke-width: 2.5 !important;
+    pointer-events: none !important;
+    margin: 0 !important;
+  }
+
+  .stage-nav-prev { left: 4px !important; }
+  .stage-nav-next { right: 4px !important; }
+
+  .char-stage-hint.void-stage-hint {
+    display: none !important;
+  }
+
+  /* Controles Flutuantes da Prévia (Pílula Translúcida Compacta) */
+  .char-stage-controls.void-stage-controls {
+    position: absolute !important;
+    bottom: 2px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: auto !important;
+    max-width: 92% !important;
+    padding: 1px 4px !important;
+    background: rgba(6, 10, 20, 0.72) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(0, 245, 212, 0.2) !important;
+    border-radius: 12px !important;
+    z-index: 18 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 4px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7) !important;
+  }
+
+  .stage-ctrl-btn.void-ctrl-btn {
+    padding: 2px 6px !important;
+    font-size: 7.5px !important;
+    border-radius: 8px !important;
+    clip-path: none !important;
+    background: rgba(18, 26, 48, 0.75) !important;
+    border: 1px solid rgba(0, 245, 212, 0.22) !important;
+  }
+
+  .stage-pose-group.void-pose-group {
+    padding: 1px !important;
+    gap: 2px !important;
+    border-radius: 8px !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  .stage-pose-btn {
+    padding: 2px 5px !important;
+    font-size: 7.5px !important;
+    border-radius: 6px !important;
+    clip-path: none !important;
+  }
+
+  /* Tier 2: Hero Pill Dock (Doca de Seleção de Campeões na Thumb Zone) */
+  .char-pedestals-col.void-roster-dock {
+    order: 2 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 2px 4px !important;
+    margin: 0 !important;
+    background: rgba(6, 10, 22, 0.72) !important;
+    backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(0, 245, 212, 0.16) !important;
+    border-radius: 12px !important;
+    flex-shrink: 0 !important;
+    z-index: 22 !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+    box-sizing: border-box !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .char-pedestals-col.void-roster-dock::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .char-pedestal-btn {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 82px !important;
+    height: 30px !important;
+    padding: 2px 7px 2px 4px !important;
+    clip-path: none !important;
+    border-radius: 15px !important;
+    background: rgba(14, 20, 36, 0.85) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.12) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    cursor: pointer !important;
+  }
+
+  .char-pedestal-emblem {
+    width: 22px !important;
+    height: 22px !important;
+    border-radius: 50% !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid currentColor !important;
+    box-shadow: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    position: relative !important;
+  }
+
+  .char-pedestal-emblem svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .pedestal-lock-badge {
+    position: absolute !important;
+    bottom: -2px !important;
+    right: -2px !important;
+    width: 13px !important;
+    height: 13px !important;
+    background: #180a10 !important;
+    border: 1px solid #ff7675 !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 2 !important;
+    padding: 0 !important;
+    line-height: 0 !important;
+  }
+
+  .pedestal-lock-badge svg {
+    width: 7.5px !important;
+    height: 7.5px !important;
+  }
+
+  .char-pedestal-btn .char-pedestal-info {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+    line-height: 1 !important;
+  }
+
+  .char-pedestal-btn .char-pedestal-title {
+    display: none !important;
+  }
+
+  .char-pedestal-btn .char-pedestal-name {
+    display: block !important;
+    font-family: var(--font-heading) !important;
+    font-size: 9.5px !important;
+    font-weight: 800 !important;
+    color: #cbd5e1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.1 !important;
+  }
+
+  .char-pedestal-btn .char-pedestal-role-mini {
+    display: block !important;
+    font-size: 7.5px !important;
+    color: #64748b !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin-top: 1px !important;
+  }
+
+  .char-pedestal-btn .pedestal-active-glow {
+    display: none !important;
+  }
+
+  .char-pedestal-btn.active {
+    background: linear-gradient(135deg, rgba(26, 38, 72, 0.95), rgba(12, 18, 36, 0.98)) !important;
+    border-color: var(--btn-theme-color, #00f5d4) !important;
+    box-shadow: 0 0 14px var(--btn-theme-color, rgba(0, 245, 212, 0.5)), inset 0 0 8px rgba(0, 0, 0, 0.4) !important;
+    transform: scale(1.03) !important;
+  }
+
+  .char-pedestal-btn.active .char-pedestal-emblem {
+    box-shadow: 0 0 8px var(--btn-theme-color) !important;
+  }
+
+  .char-pedestal-btn.active .char-pedestal-name {
+    color: #ffffff !important;
+    text-shadow: 0 0 8px var(--btn-theme-color) !important;
+  }
+
+  .char-pedestal-btn.active .char-pedestal-role-mini {
+    color: var(--btn-theme-color) !important;
+    opacity: 0.9 !important;
+  }
+
+  /* Tier 3: Dossiê Tático de Combate (Compacto, Coeso e Ancorado no Rodapé) */
+  .char-vitral-showcase.void-showcase-dossier {
+    order: 3 !important;
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    max-height: calc(100dvh - 170px) !important;
+    overflow: hidden !important;
+    margin-top: 0 !important;
+    padding: 4px 8px calc(env(safe-area-inset-bottom, 6px) + 4px) 8px !important;
+    background: linear-gradient(180deg, rgba(12, 17, 34, 0.98) 0%, #040508 100%) !important;
+    backdrop-filter: blur(24px) !important;
+    border-radius: 14px 14px 0 0 !important;
+    border: 1px solid rgba(0, 245, 212, 0.2) !important;
+    border-bottom: none !important;
+    box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.9) !important;
+    z-index: 25 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    scrollbar-width: none !important;
+  }
+
+  .char-vitral-showcase.void-showcase-dossier::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .showcase-header-v2 {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 1px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .showcase-name-v2 {
+    font-size: 12.5px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+  }
+
+  .showcase-title-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    margin-bottom: 0 !important;
+  }
+
+  .showcase-archetype-pill {
+    font-size: 7.5px !important;
+    padding: 1px 5px !important;
+    border-radius: 4px !important;
+    clip-path: none !important;
+  }
+
+  .showcase-diff-badge {
+    font-size: 7.5px !important;
+  }
+
+  .showcase-role-tag {
+    font-size: 8px !important;
+    margin-top: 0 !important;
+  }
+
+  /* Banner de Selo Primordial Compacto Mobile */
+  .showcase-lock-dossier {
+    background: linear-gradient(135deg, rgba(38, 16, 26, 0.94) 0%, rgba(20, 10, 18, 0.98) 100%) !important;
+    border: 1px solid rgba(255, 118, 117, 0.5) !important;
+    border-radius: 6px !important;
+    padding: 3px 6px !important;
+    margin-bottom: 2px !important;
+    box-shadow: 0 0 10px rgba(255, 118, 117, 0.2) !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+  }
+
+  .lock-dossier-header {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-bottom: 1px !important;
+  }
+
+  .lock-icon-lg {
+    font-size: 13px !important;
+    width: 14px !important;
+    height: 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+
+  .lock-titles {
+    display: flex !important;
+    flex-direction: column !important;
+    min-width: 0 !important;
+  }
+
+  .lock-eyebrow {
+    font-size: 6.5px !important;
+    color: #ff7675 !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.6px !important;
+  }
+
+  .lock-name {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    color: #ffd166 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .lock-desc {
+    font-size: 7.5px !important;
+    line-height: 1.15 !important;
+    color: #cbd5e1 !important;
+    margin-bottom: 1px !important;
+  }
+
+  .lock-progress-box {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1px !important;
+  }
+
+  .lock-progress-track {
+    height: 3px !important;
+    width: 100% !important;
+    border-radius: 2px !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    overflow: hidden !important;
+  }
+
+  .lock-progress-meta {
+    font-size: 7px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+  }
+
+  /* Abas de Navegação Mobile */
+  .showcase-mobile-nav {
+    display: flex !important;
+    gap: 3px !important;
+    margin: 1px 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .showcase-tab-btn {
+    flex: 1 !important;
+    padding: 2px 4px !important;
+    font-size: 8px !important;
+    font-weight: 800 !important;
+    font-family: var(--font-heading) !important;
+    letter-spacing: 0.4px !important;
+    border-radius: 4px !important;
+    clip-path: none !important;
+    border: 1px solid rgba(0, 245, 212, 0.2) !important;
+    background: rgba(14, 20, 36, 0.85) !important;
+    color: #8c9bb5 !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    height: 21px !important;
+    transition: all 0.15s ease !important;
+  }
+
+  .showcase-tab-btn.active {
+    background: rgba(0, 245, 212, 0.18) !important;
+    border-color: #00f5d4 !important;
+    color: #00f5d4 !important;
+    box-shadow: 0 0 8px rgba(0, 245, 212, 0.25) !important;
+  }
+
+  .bento-tactical-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    margin: 0 !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  .bento-tactical-grid::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .bento-tab-pane {
+    display: none !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    flex: 0 0 auto !important;
+  }
+
+  .bento-tab-pane.tab-visible {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .bento-pane-skills.tab-visible {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 3px !important;
+    flex: 0 0 auto !important;
+  }
+
+  .bento-card {
+    padding: 2.5px 5px !important;
+    border-radius: 6px !important;
+    clip-path: none !important;
+    background: rgba(16, 22, 40, 0.9) !important;
+    border: 1px solid rgba(0, 245, 212, 0.14) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1px !important;
+  }
+
+  .bento-card-weapon,
+  .bento-card-skill {
+    min-height: 34px !important;
+  }
+
+  .bento-card-passive {
+    grid-column: 1 / -1 !important;
+    padding: 2px 5px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 4px !important;
+  }
+
+  .bento-card-top {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 0 !important;
+  }
+
+  .bento-type-tag {
+    font-size: 6.5px !important;
+    font-weight: 800 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+  }
+
+  .bento-spec-badge {
+    font-size: 6.5px !important;
+    padding: 0.5px 3px !important;
+    border-radius: 3px !important;
+  }
+
+  .bento-card-title {
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    margin: 0 !important;
+    line-height: 1.1 !important;
+  }
+
+  .bento-card-desc {
+    font-size: 7.5px !important;
+    line-height: 1.15 !important;
+    color: #cbd5e1 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+
+  .bento-inline-title {
+    font-size: 9px !important;
+    font-weight: 800 !important;
+  }
+
+  .bento-mobile-stats-row {
+    grid-column: 1 / -1 !important;
+    display: block !important;
+    width: 100% !important;
+    margin-top: 1px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .bento-stats-container {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 3px !important;
+    padding: 2.5px 4px !important;
+    background: rgba(8, 12, 24, 0.85) !important;
+    border-radius: 6px !important;
+    border: 1px solid rgba(0, 245, 212, 0.15) !important;
+  }
+
+  .bento-attr-item {
+    font-size: 7px !important;
+    font-weight: 800 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 1px !important;
+  }
+
+  .bento-attr-item .segmented-meter {
+    height: 3px !important;
+    width: 100% !important;
+    max-width: 42px !important;
+  }
+
+  .showcase-lore-quote {
+    display: block !important;
+    font-size: 8px !important;
+    line-height: 1.25 !important;
+    padding: 3px 5px !important;
+    margin: 2px 0 !important;
+    border-radius: 4px !important;
+  }
+
+  /* Botão Despertar na Thumb Zone (Alto Impacto Visual, Ergonômico e Sem Corte) */
+  .btn-summon-hero {
+    position: relative !important;
+    margin-top: 3px !important;
+    margin-bottom: 0 !important;
+    z-index: 20 !important;
+    padding: 8px 12px !important;
+    font-size: 11px !important;
+    font-weight: 900 !important;
+    letter-spacing: 1px !important;
+    flex-shrink: 0 !important;
+    width: 100% !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    clip-path: none !important;
+    background: linear-gradient(135deg, var(--btn-theme-color, #00f5d4) 0%, #10b981 100%) !important;
+    color: #040810 !important;
+    border: none !important;
+    box-shadow: 0 0 14px var(--btn-theme-color, rgba(0, 245, 212, 0.4)), 0 3px 8px rgba(0, 0, 0, 0.5) !important;
+    transition: transform 0.15s ease, filter 0.15s ease !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    box-sizing: border-box !important;
+  }
+
+  .btn-summon-hero:active {
+    transform: scale(0.97) !important;
+    filter: brightness(1.2) !important;
+  }
+
+  /* ======================================================== */
+  /* ESPECIALIZAÇÃO: FORMATO CLÁSSICO 9:16 (TELAS MAIS CURTAS) */
+  /* ======================================================== */
+  @media (orientation: portrait) and (min-aspect-ratio: 9/17.5) {
+    .char-stage-col.void-hero-stage {
+      flex: 1 1 0 !important;
+      min-height: 110px !important;
+      max-height: none !important;
+    }
+    #char-preview-canvas {
+      min-height: 110px !important;
+      max-height: none !important;
+    }
+    .char-stage-viewport.void-stage-viewport {
+      min-height: 110px !important;
+      max-height: none !important;
+    }
+    .stage-nav-arrow {
+      width: 22px !important;
+      height: 34px !important;
+    }
+    .char-pedestal-btn {
+      min-width: 76px !important;
+      height: 28px !important;
+    }
+    .btn-summon-hero {
+      height: 34px !important;
+      padding: 7px 10px !important;
+      font-size: 10px !important;
+    }
+  }
+
+  /* ======================================================== */
+  /* ESPECIALIZAÇÃO: FORMATO MODERNO 9:19.5 (TELAS ALONGADAS) */
+  /* ======================================================== */
+  @media (orientation: portrait) and (max-aspect-ratio: 9/17.5) {
+    .char-stage-col.void-hero-stage {
+      flex: 1 1 0 !important;
+      min-height: 130px !important;
+      max-height: none !important;
+    }
+    #char-preview-canvas {
+      min-height: 130px !important;
+      max-height: none !important;
+    }
+    .char-stage-viewport.void-stage-viewport {
+      min-height: 130px !important;
+      max-height: none !important;
+    }
+    .stage-nav-arrow {
+      width: 24px !important;
+      height: 38px !important;
+    }
+    .char-pedestal-btn {
+      min-width: 82px !important;
+      height: 30px !important;
+    }
+    .btn-summon-hero {
+      height: 36px !important;
+      padding: 8px 12px !important;
+      font-size: 11px !important;
+    }
+  }
+
+  /* ======================================================== */
+  /* 3. Astrolábio de Talentos (Void Astral Portrait Fullscreen)*/
+  /* ======================================================== */
+  #talents-modal {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    width: 100dvw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-width: 100vw !important;
+    max-height: 100dvh !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: radial-gradient(ellipse at 50% 20%, #1a0d36 0%, #071020 48%, #030408 100%) !important;
+    backdrop-filter: blur(20px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    z-index: 105 !important;
+  }
+
+  .modal-box-altar.void-modal-box.astrolabe-void-box {
+    max-width: 100vw !important;
+    width: 100% !important;
+    min-height: 100dvh !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    padding: max(env(safe-area-inset-top, 6px), 6px) 
+             max(env(safe-area-inset-right, 8px), 8px) 
+             max(env(safe-area-inset-bottom, 8px), 8px) 
+             max(env(safe-area-inset-left, 8px), 8px) !important;
+    margin: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    flex-grow: 1 !important;
+    gap: 4px !important;
+  }
+
+  /* Top Bar Mobile do Astrolábio: Botão Voltar Prioritário à Esquerda */
+  #talents-modal .astrolabe-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    padding: 2px 2px 5px 2px !important;
+    margin-bottom: 2px !important;
+    border-bottom: 1px solid rgba(0, 245, 212, 0.16) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important;
+    z-index: 30 !important;
+  }
+
+  #talents-modal .astrolabe-header #close-talents-btn {
+    order: 1 !important;
+    flex-shrink: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
+    border-radius: 8px !important;
+    clip-path: none !important;
+    background: rgba(16, 42, 28, 0.95) !important;
+    border: 1.5px solid rgba(46, 204, 113, 0.55) !important;
+    color: #55efc4 !important;
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.3) !important;
+    user-select: none !important;
+    cursor: pointer !important;
+  }
+
+  #talents-modal .astrolabe-header #close-talents-btn:active {
+    transform: scale(0.96) !important;
+    background: rgba(46, 204, 113, 0.3) !important;
+  }
+
+  #talents-modal .astrolabe-header-info {
+    order: 2 !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    padding-left: 2px !important;
+  }
+
+  #talents-modal .astrolabe-header-info .void-header-eyebrow {
+    display: none !important;
+  }
+
+  #talents-modal .astrolabe-header-info .void-modal-title {
+    font-size: clamp(11.5px, 3.4vw, 14.5px) !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin: 0 !important;
+    letter-spacing: 0.8px !important;
+    color: #f8fafc !important;
+    text-shadow: 0 0 8px rgba(0, 245, 212, 0.35) !important;
+  }
+
+  #talents-modal .astrolabe-header-info .void-modal-sub {
+    display: none !important;
+  }
+
+  #talents-modal .astrolabe-header-actions {
+    order: 3 !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
+  #talents-modal .astrolabe-header-actions .void-souls-capsule {
+    height: 30px !important;
+    padding: 2px 7px !important;
+    font-size: 10px !important;
+    gap: 3px !important;
+    border-radius: 6px !important;
+    clip-path: none !important;
+  }
+
+  #talents-modal .astrolabe-header-actions .void-astrolabe-action-btn {
+    height: 30px !important;
+    width: 30px !important;
+    min-width: 30px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    align-items: center !important;
+    border-radius: 6px !important;
+    clip-path: none !important;
+  }
+
+  #talents-modal .astrolabe-header-actions .void-astrolabe-action-btn svg {
+    margin: 0 !important;
+  }
+
+  #talents-modal .astrolabe-header .btn-text-full {
+    display: none !important;
+  }
+
+  #talents-modal .astrolabe-header #close-talents-btn .btn-text-full {
+    display: inline !important;
+  }
+
+  .char-altar-layout.astrolabe-altar-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    flex-grow: 1 !important;
+    gap: 4px !important;
+    margin-top: 1px !important;
+    min-height: 0 !important;
+  }
+
+  /* 1. Abas Segmentadas no Topo (Segmented Control 3-Colunas) */
+  .astrolabe-constellation-dock.void-roster-dock {
+    order: 1 !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 4px !important;
+    padding: 2px !important;
+    min-height: 38px !important;
+    max-height: 40px !important;
+    height: 38px !important;
+    background: rgba(6, 10, 24, 0.85) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(0, 245, 212, 0.18) !important;
+    border-radius: 10px !important;
+    flex-shrink: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .astrolabe-constellation-dock [data-constellation="all"] {
+    display: none !important;
+  }
+
+  .astrolabe-constellation-dock .char-pedestal-btn {
+    min-width: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 2px 4px !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
+    border-radius: 7px !important;
+    clip-path: none !important;
+    justify-content: center !important;
+    align-items: center !important;
+    background: rgba(14, 20, 36, 0.65) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .astrolabe-constellation-dock .char-pedestal-btn.active {
+    background: linear-gradient(145deg, rgba(28, 40, 72, 0.95), rgba(12, 18, 36, 0.95)) !important;
+    transform: none !important;
+  }
+
+  .astrolabe-constellation-dock .char-pedestal-emblem {
+    width: 18px !important;
+    height: 18px !important;
+    background: transparent !important;
+    border: none !important;
+    color: #ffffff !important;
+  }
+
+  .astrolabe-constellation-dock .char-pedestal-emblem svg {
+    width: 14px !important;
+    height: 14px !important;
+    color: #ffffff !important;
+  }
+
+  .astrolabe-constellation-dock .char-pedestal-info {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0 !important;
+  }
+
+  .astrolabe-constellation-dock .char-pedestal-title {
+    display: none !important;
+  }
+
+  .astrolabe-constellation-dock .char-pedestal-name {
+    font-size: 8.5px !important;
+    font-weight: 900 !important;
+    line-height: 1.1 !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  .astrolabe-constellation-dock .tab-prog-badge {
+    font-size: 7px !important;
+    opacity: 0.8 !important;
+    margin-top: 0 !important;
+    font-family: monospace !important;
+  }
+
+  /* 2. Palco do Planetário no Meio (Árvore Estelar Expandida Verticalmente) */
+  .astrolabe-stage-col.void-hero-stage {
+    order: 2 !important;
+    flex: 1 1 auto !important;
+    height: auto !important;
+    min-height: 240px !important;
+    max-height: none !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 1px solid rgba(0, 245, 212, 0.18) !important;
+    border-radius: 12px !important;
+    background: radial-gradient(ellipse at 50% 50%, rgba(26, 12, 48, 0.6) 0%, rgba(6, 12, 26, 0.9) 100%) !important;
+    box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.8) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    overflow: hidden !important;
+  }
+
+  .astrolabe-stage-col.void-hero-stage::before {
+    display: none !important;
+  }
+
+  #astrolabe-active-const-badge {
+    position: absolute !important;
+    top: 4px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    font-size: 8px !important;
+    font-weight: 900 !important;
+    letter-spacing: 1.2px !important;
+    padding: 1px 10px !important;
+    border-radius: 8px !important;
+    clip-path: none !important;
+    background: rgba(6, 8, 18, 0.9) !important;
+    backdrop-filter: blur(8px) !important;
+    border: 1px solid var(--constellation-color, #00f5d4) !important;
+    color: var(--constellation-color, #00f5d4) !important;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.8), 0 0 8px var(--constellation-color, #00f5d4) !important;
+    z-index: 15 !important;
+  }
+
+  .astrolabe-viewport.void-stage-viewport {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 240px !important;
+    max-height: none !important;
+    margin: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .astrolabe-core {
+    display: none !important;
+  }
+
+  /* Nós Celestes no Mobile: 48px com ícone de 21px (Toque Preciso & Amplo) */
+  .astrolabe-node {
+    width: 48px;
+    height: 48px;
+    border-radius: 13px;
+    border-width: 1.8px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8);
+  }
+
+  .astrolabe-node.node-keystone {
+    width: 54px;
+    height: 54px;
+    border-radius: 15px;
+    border-width: 2px;
+  }
+
+  .node-svg-icon {
+    width: 21px;
+    height: 21px;
+  }
+
+  .node-lvl-pip {
+    font-size: 8px;
+    font-weight: 800;
+    margin-top: 1px;
+  }
+
+  /* 3. Dossiê Tático da Forja (Bottom Sheet Compacto Sem Espaço Ocioso) */
+  .astrolabe-forge-dossier.void-showcase-dossier {
+    order: 3 !important;
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    height: auto !important;
+    padding: 6px 10px 8px 10px !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    background: rgba(8, 14, 28, 0.88) !important;
+    border: 1px solid rgba(0, 245, 212, 0.2) !important;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.7) !important;
+    gap: 4px !important;
+  }
+
+  .astrolabe-forge-dossier .showcase-header-v2 {
+    padding-bottom: 2px !important;
+    margin-bottom: 2px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .astrolabe-forge-dossier .showcase-title-row {
+    gap: 4px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .astrolabe-forge-dossier .showcase-archetype-pill,
+  .astrolabe-forge-dossier .showcase-diff-badge {
+    font-size: 7.5px !important;
+    padding: 1px 6px !important;
+  }
+
+  .astrolabe-forge-dossier .showcase-name-v2 {
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+    margin: 1px 0 !important;
+  }
+
+  .astrolabe-forge-dossier .showcase-role-tag {
+    display: none !important;
+  }
+
+  /* Corpo Interno do Dossiê */
+  .astrolabe-dossier-body {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    min-height: 0 !important;
+    gap: 4px !important;
+    margin: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .astrolabe-info-card {
+    padding: 5px 8px !important;
+    gap: 2px !important;
+    border-radius: 6px !important;
+    clip-path: none !important;
+  }
+
+  .astrolabe-card-title-tag,
+  .astrolabe-stat-badge,
+  .astrolabe-level-badge {
+    font-size: 7.5px !important;
+    padding: 1px 5px !important;
+  }
+
+  .astrolabe-card-desc {
+    font-size: 9.5px !important;
+    line-height: 1.3 !important;
+  }
+
+  .comparison-row {
+    padding: 4px 6px !important;
+    gap: 6px !important;
+  }
+
+  .comp-label {
+    font-size: 7px !important;
+  }
+
+  .comp-val-cur,
+  .comp-val-next {
+    font-size: 11px !important;
+  }
+
+  .comp-arrow {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .forge-segmented-meter .segment-cell {
+    height: 5px !important;
+    max-width: 12px !important;
+  }
+
+  /* Oculta Lore Extenso no Celular para Garantir Visibilidade Imediata */
+  #forge-node-lore-card {
+    display: none !important;
+  }
+
+  /* Botão FUNDIR ALMAS: Fixo no Rodapé do Painel Sem Espaço Vazio */
+  .btn-forge-hero {
+    flex-shrink: 0 !important;
+    margin-top: 4px !important;
+    padding: 9px 12px !important;
+    font-size: 11px !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.8px !important;
+    height: 38px !important;
+    border-radius: 8px !important;
+    clip-path: none !important;
+    box-shadow: 0 0 16px var(--btn-theme-color, rgba(243, 156, 18, 0.4)) !important;
+    z-index: 10 !important;
+  }
+
+  /* Resumo de Bênçãos Mobile */
+  .blessings-summary-drawer {
+    padding: 8px 10px;
+    max-height: 88%;
+    border-radius: 12px;
+  }
+
+  .blessings-drawer-title {
+    font-size: 11px;
+  }
+
+  .blessings-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+  }
+
+  .blessing-stat-card {
+    padding: 4px 6px;
+    gap: 4px;
+  }
+
+  .blessing-icon {
+    font-size: 12px;
+  }
+
+  .blessing-label {
+    font-size: 7.5px;
+  }
+
+  .blessing-val {
+    font-size: 9.5px;
+  }
+
+  /* 4. Cartas de Tarô de Upgrade */
+  .modal-box-tarot {
+    padding: 10px 10px;
+  }
+
+  .upgrade-cards-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 6px 0;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  .upgrade-card-pro {
+    padding: 8px 10px;
+    gap: 4px;
+    border-radius: 10px;
+  }
+
+  .upgrade-card-pro .card-icon-wrapper {
+    width: 38px;
+    height: 38px;
+    margin-bottom: 2px;
+  }
+
+  .upgrade-card-pro .card-icon-wrapper svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .upgrade-card-pro .card-title {
+    font-size: 12px !important;
+    margin-bottom: 1px;
+  }
+
+  .upgrade-card-pro .card-stat {
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+  }
+
+  .upgrade-card-pro .rarity-badge {
+    font-size: 8px;
+    padding: 1px 5px;
+  }
+
+  .upgrade-card-pro .synergy-indicator-tag {
+    font-size: 7px;
+    padding: 1px 5px;
+    top: 5px;
+    right: 5px;
+  }
+
+  .reroll-btn-styled {
+    padding: 6px 14px !important;
+    font-size: 11px !important;
+    margin-top: 4px !important;
+  }
+
+  /* 5. Estase Astral (Pausa da Partida - Regras Centralizadas em pause.css) */
+  .pause-screen-overlay {
+    overflow-y: auto !important;
+  }
+  .pause-intrinsic-stage {
+    max-height: calc(100dvh - 12px) !important;
+    overflow: visible !important;
+  }
+
+  /* 6. Morte e Vitória Intrínseca */
+  .death-intrinsic-stage {
+    padding: 8px 0;
+    gap: 10px;
+  }
+
+  .death-cause-dossier {
+    padding: 10px 12px;
+  }
+
+  .death-monumental-title {
+    font-size: clamp(18px, 5vw, 24px);
+    letter-spacing: 1.5px;
+  }
+
+  .btn-death-rebirth-v2 {
+    padding: 11px 24px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* Ajustes finos para telas ultra-estreitas (< 400px, ex: iPhone SE / Galaxy Mini) */
+@media (max-width: 400px) {
+  .char-pedestal-btn {
+    min-width: 48px;
+    padding: 2px 4px;
+    gap: 1px;
+  }
+
+  .char-pedestal-name {
+    font-size: 8px;
+  }
+
+  .modal-header-title {
+    font-size: 12px;
+  }
+
+  .astrolabe-viewport {
+    height: clamp(210px, 38vh, 270px);
+  }
+
+  .astrolabe-node {
+    width: 44px;
+    height: 44px;
+  }
+
+  .astrolabe-node.node-keystone {
+    width: 48px;
+    height: 48px;
+  }
+
+  .bento-card-title {
+    font-size: 10px;
+  }
+
+  .bento-card-desc {
+    font-size: 8px;
+  }
+
+  /* Ajustes anti-sobreposição do HUD em telas ultra-estreitas */
+  .hud-badge {
+    padding: 1.5px 4px;
+    font-size: 8.5px;
+    gap: 2px;
+  }
+
+  #wave-banner {
+    max-width: clamp(105px, 42vw, 175px);
+    font-size: 8.5px;
+  }
+
+  .hud-timer {
+    font-size: 12.5px;
+  }
+
+  .vial-title {
+    font-size: 8px;
+    letter-spacing: 0.4px;
+  }
+
+  .vial-readout {
+    font-size: 8.5px;
+  }
+
+  .vial-pct {
+    display: none; /* Oculta porcentagem redundante em telas < 400px para garantir respiro */
+  }
+
+  .hp-bezel {
+    height: 9px;
+  }
+
+  .xp-bezel {
+    height: 5px;
+  }
+}
+
+/* ==========================================================================
+   RESPONSIVIDADE VERTICAL / MOBILE (BESTIÁRIO & GRIMÓRIO)
+   ========================================================================== */
+@media (max-width: 850px), (orientation: portrait) {
+  /* 1. Modal do Bestiário */
+  .bestiary-void-box {
+    width: 98vw !important;
+    max-width: 98vw !important;
+    max-height: 96dvh !important;
+    height: 96dvh !important;
+    border-radius: 10px !important;
+    background: radial-gradient(circle at 50% 10%, #151a24 0%, #0a0d14 75%, #05070a 100%) !important;
+    border: 1px solid rgba(0, 245, 212, 0.35) !important;
+    box-shadow: 0 0 45px rgba(0, 245, 212, 0.12), inset 0 0 40px rgba(0, 0, 0, 0.85) !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .bestiary-header {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 6px 10px !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+    border-bottom: 1px solid rgba(0, 245, 212, 0.2) !important;
+    background: rgba(8, 12, 18, 0.95) !important;
+  }
+
+  .bestiary-header .btn-void-return {
+    padding: 4px 8px !important;
+    font-size: 9.5px !important;
+    height: 27px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .bestiary-header-info {
+    text-align: center !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .bestiary-header-info .void-modal-sub {
+    display: none !important;
+  }
+
+  .bestiary-header-info .void-header-eyebrow {
+    font-size: 7.5px !important;
+    letter-spacing: 1.2px !important;
+  }
+
+  .bestiary-header-info .void-modal-title {
+    font-size: 13px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    letter-spacing: 0.8px !important;
+  }
+
+  .bestiary-header-actions {
+    display: flex !important;
+    grid-template-columns: none !important;
+    width: auto !important;
+    flex: 0 0 auto !important;
+    justify-content: flex-end !important;
+  }
+
+  .bestiary-header-actions .void-souls-capsule {
+    padding: 2px 7px !important;
+    font-size: 9.5px !important;
+    height: 25px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Abas em linha horizontal com rolagem suave */
+  .bestiary-tabs-bar {
+    padding: 5px 8px !important;
+    gap: 4px !important;
+    display: flex !important;
+    overflow-x: auto !important;
+    flex-shrink: 0 !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .bestiary-tabs-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bestiary-tab-btn {
+    padding: 4px 9px !important;
+    font-size: 9px !important;
+    border-radius: 4px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Layout Principal em Coluna Vertical Única */
+  .bestiary-main-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Ribbon Horizontal de Cartões de Monstros (Swipe com Polegar) */
+  .bestiary-roster-column {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    max-height: none !important;
+    padding: 6px 8px !important;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(0, 245, 212, 0.15) !important;
+    background: rgba(7, 9, 14, 0.85) !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: thin !important;
+    -webkit-overflow-scrolling: touch !important;
+    box-sizing: border-box !important;
+  }
+
+  .bestiary-cards-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+    width: max-content !important;
+    padding-bottom: 2px !important;
+  }
+
+  .bestiary-card {
+    flex: 0 0 135px !important;
+    width: 135px !important;
+    padding: 4px 6px !important;
+    gap: 6px !important;
+    border-radius: 6px !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+  }
+
+  .bestiary-card:hover {
+    transform: none !important;
+  }
+
+  .bcard-avatar-wrap {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 4px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .bcard-avatar-icon {
+    font-size: 13px !important;
+  }
+
+  .bcard-info {
+    gap: 1px !important;
+    min-width: 0 !important;
+  }
+
+  .bcard-top-row {
+    gap: 4px !important;
+  }
+
+  .bcard-name {
+    font-size: 9.5px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .bcard-cat-pill {
+    display: none !important;
+  }
+
+  .bcard-sub-row {
+    font-size: 7.5px !important;
+  }
+
+  .bcard-threat {
+    letter-spacing: 0.5px !important;
+  }
+
+  /* Painel Dossiê Completo Rolável Verticalmente */
+  .bestiary-dossier-panel {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding: 8px 10px 24px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: thin !important;
+  }
+
+  .dossier-card-wrap {
+    gap: 12px !important;
+  }
+
+  /* Viewport Aprimorado do Canvas para Tela Vertical */
+  .bestiary-preview-viewport {
+    height: 210px !important;
+    border-radius: 10px !important;
+  }
+
+  #bestiary-preview-canvas {
+    width: 210px !important;
+    height: 210px !important;
+  }
+
+  .bestiary-category-pill {
+    top: 8px !important;
+    left: 8px !important;
+    font-size: 8.5px !important;
+    padding: 2px 7px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+
+  .bestiary-kills-pill {
+    top: 8px !important;
+    right: 8px !important;
+    font-size: 9px !important;
+    padding: 2px 7px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+
+  .dossier-name-row {
+    gap: 10px !important;
+  }
+
+  .dossier-name {
+    font-size: 17px !important;
+  }
+
+  .dossier-title {
+    font-size: 11px !important;
+  }
+
+  .dossier-threat-badge {
+    font-size: 11px !important;
+    padding: 2px 7px !important;
+  }
+
+  .dossier-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  .dossier-stat-box {
+    padding: 6px 8px !important;
+    border-radius: 6px !important;
+    gap: 2px !important;
+  }
+
+  .dossier-stat-label {
+    font-size: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 3px !important;
+  }
+
+  .dossier-stat-value {
+    font-size: 11.5px !important;
+  }
+
+  .dossier-lore-box {
+    padding: 8px 10px !important;
+    border-radius: 8px !important;
+  }
+
+  .dossier-box-header {
+    margin-bottom: 5px !important;
+    gap: 6px !important;
+  }
+
+  .dossier-box-icon {
+    font-size: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .dossier-box-title {
+    font-size: 9.5px !important;
+  }
+
+  .dossier-lock-status {
+    font-size: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .dossier-box-content {
+    font-size: 11px !important;
+    line-height: 1.45 !important;
+  }
+
+  .dossier-quotes-box {
+    padding: 8px 10px !important;
+    border-radius: 8px !important;
+  }
+
+  .dossier-quotes-list {
+    gap: 4px !important;
+  }
+
+  .dossier-quote-item {
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+    line-height: 1.4 !important;
+  }
+
+  /* 2. Grimório de Conquistas em Tela Vertical */
+  .achievements-void-box {
+    width: 98vw !important;
+    max-width: 98vw !important;
+    max-height: 96dvh !important;
+    height: 96dvh !important;
+    border-radius: 10px !important;
+    background: radial-gradient(circle at 50% 10%, #17142b 0%, #0d0b17 75%, #06050a 100%) !important;
+    border: 1px solid rgba(162, 155, 254, 0.35) !important;
+    box-shadow: 0 0 35px rgba(162, 155, 254, 0.15), inset 0 0 20px rgba(0, 0, 0, 0.8) !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .achievements-header {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 6px 10px !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+    border-bottom: 1px solid rgba(162, 155, 254, 0.2) !important;
+    background: rgba(15, 12, 25, 0.95) !important;
+  }
+
+  .achievements-header .btn-void-return {
+    padding: 4px 8px !important;
+    font-size: 9.5px !important;
+    height: 27px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .achievements-header-info {
+    text-align: center !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .achievements-header-info .void-modal-sub {
+    display: none !important;
+  }
+
+  .achievements-header-info .void-header-eyebrow {
+    font-size: 7.5px !important;
+    letter-spacing: 1.2px !important;
+  }
+
+  .achievements-header-info .void-modal-title {
+    font-size: 13px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    letter-spacing: 0.8px !important;
+  }
+
+  .achievements-header-actions {
+    display: flex !important;
+    grid-template-columns: none !important;
+    width: auto !important;
+    flex: 0 0 auto !important;
+    justify-content: flex-end !important;
+  }
+
+  .achievements-header-actions .void-souls-capsule {
+    padding: 2px 7px !important;
+    font-size: 9.5px !important;
+    height: 25px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .achievements-modal-body {
+    padding: 6px 8px 16px !important;
+  }
+
+  .achievements-cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+
+  .achievement-card {
+    padding: 7px 9px !important;
+    gap: 8px !important;
+    border-radius: 6px !important;
+  }
+
+  .ach-card-icon-wrap {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 14px !important;
+    border-radius: 6px !important;
+  }
+
+  .ach-card-details {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .ach-card-top-row {
+    flex-wrap: nowrap !important;
+    gap: 4px !important;
+  }
+
+  .ach-card-name {
+    font-size: 11px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .ach-status-badge {
+    font-size: 7.5px !important;
+    padding: 1px 4px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .ach-card-desc {
+    font-size: 9px !important;
+    line-height: 1.3 !important;
+    margin-bottom: 4px !important;
+  }
+
+  .ach-reward-pill {
+    font-size: 8px !important;
+    padding: 1px 5px !important;
+  }
+
+  @media (max-width: 450px) {
+    .achievements-header .btn-void-return .btn-text-full,
+    .bestiary-header .btn-void-return .btn-text-full {
+      display: none !important;
+    }
+    .achievements-header .btn-void-return svg,
+    .bestiary-header .btn-void-return svg {
+      margin-right: 0 !important;
+    }
+  }
+
+  /* 3. Banner de Citação dos Chefes (Boss Barks) em Tela Vertical */
+  .boss-bark-container {
+    width: 95% !important;
+    top: 52px !important;
+    max-width: 400px !important;
+  }
+
+  .boss-bark-box {
+    padding: 6px 12px 8px !important;
+  }
+
+  .boss-bark-speaker {
+    font-size: 9.5px !important;
+  }
+
+  .boss-bark-phase-tag {
+    font-size: 7.5px !important;
+  }
+
+  .boss-bark-text {
+    font-size: 11px !important;
+  }
+}

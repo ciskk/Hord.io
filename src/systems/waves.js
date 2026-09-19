@@ -146,7 +146,7 @@ export function getCurrentWave(seconds) {
       index: 1,
       name: "Onda 1: Reconhecimento",
       allowedSquads: ['HORDE_SCOUT'],
-      types: ['ZOMBIE'],
+      types: ['ZOMBIE', 'TRAIL_CRAWLER'],
       clusterSize: [4, 6],
       rate: 110,
       eliteChance: 0
@@ -156,7 +156,7 @@ export function getCurrentWave(seconds) {
       index: 2,
       name: "Onda 2: Revoada Carmesim",
       allowedSquads: ['HORDE_RUSH', 'SWARM_PINCER'],
-      types: ['ZOMBIE', 'BAT'],
+      types: ['ZOMBIE', 'BAT', 'VOID_SCAVENGER'],
       clusterSize: [5, 8],
       rate: 78,
       eliteChance: 0.06
@@ -166,7 +166,7 @@ export function getCurrentWave(seconds) {
       index: 3,
       name: "Onda 3: Batalhão Blindado",
       allowedSquads: ['HORDE_RUSH', 'PHALANX', 'SWARM_PINCER'],
-      types: ['ZOMBIE', 'SHIELDED', 'BAT'],
+      types: ['ZOMBIE', 'SHIELDED', 'BAT', 'TOLL_BELLRINGER'],
       clusterSize: [6, 9],
       rate: 68,
       eliteChance: 0.10
@@ -175,8 +175,8 @@ export function getCurrentWave(seconds) {
     return {
       index: 4,
       name: "Onda 4: Fogo Cruzado Industrial",
-      allowedSquads: ['PHALANX', 'DISRUPTION', 'SWARM_PINCER'],
-      types: ['SHIELDED', 'SHOOTER', 'EXPLODER'],
+      allowedSquads: ['PHALANX', 'DISRUPTION', 'EXECUTION_SQUAD'],
+      types: ['SHIELDED', 'SHOOTER', 'EXPLODER', 'FORGE_PYREGUARD', 'CHAIN_FLAYER'],
       clusterSize: [6, 9],
       rate: 66,
       eliteChance: 0.12
@@ -185,8 +185,8 @@ export function getCurrentWave(seconds) {
     return {
       index: 5,
       name: "Onda 5: Praga Rastejante",
-      allowedSquads: ['DISRUPTION', 'SIEGE_BATTERY', 'HORDE_RUSH'],
-      types: ['SPLITTER', 'EXPLODER', 'GOLEM'],
+      allowedSquads: ['DISRUPTION', 'SIEGE_BATTERY', 'EXECUTION_SQUAD'],
+      types: ['SPLITTER', 'CRYPT_WEAVER', 'BASALT_GARGOYLE', 'PLAGUE_APOTHECARY'],
       clusterSize: [6, 10],
       rate: 58,
       eliteChance: 0.15
@@ -195,8 +195,8 @@ export function getCurrentWave(seconds) {
     return {
       index: 6,
       name: "Onda 6: Rito das Sombras",
-      allowedSquads: ['SIEGE_BATTERY', 'PHALANX', 'DISRUPTION'],
-      types: ['NECRO', 'SHOOTER', 'GOLEM'],
+      allowedSquads: ['SIEGE_BATTERY', 'SNIPER_PINCER', 'DEATH_PROCESSION'],
+      types: ['NECRO', 'SHOOTER', 'GOLEM', 'RUNE_SCRIBE', 'SNIPER_CULTIST'],
       clusterSize: [7, 10],
       rate: 52,
       eliteChance: 0.18
@@ -205,8 +205,8 @@ export function getCurrentWave(seconds) {
     return {
       index: 7,
       name: "Onda 7: Cerco de Gigantes",
-      allowedSquads: ['SIEGE_BATTERY', 'PHALANX', 'DISRUPTION', 'SWARM_PINCER'],
-      types: ['GOLEM', 'SHIELDED', 'NECRO'],
+      allowedSquads: ['DEATH_PROCESSION', 'EXECUTION_SQUAD', 'AMBUSH_COVEN'],
+      types: ['GOLEM', 'BASALT_GARGOYLE', 'FORGE_PYREGUARD', 'MAIDEN_THORNS', 'DULLAHAN_VANGUARD'],
       clusterSize: [7, 11],
       rate: 46,
       eliteChance: 0.22
@@ -215,8 +215,8 @@ export function getCurrentWave(seconds) {
     return {
       index: 8,
       name: "Onda 8: Enxame Aberrante",
-      allowedSquads: ['SWARM_PINCER', 'DISRUPTION', 'HORDE_RUSH', 'SIEGE_BATTERY'],
-      types: ['BAT', 'SPLITTER', 'STALKER'],
+      allowedSquads: ['SNIPER_PINCER', 'AMBUSH_COVEN', 'SWARM_PINCER', 'DEATH_PROCESSION'],
+      types: ['BAT', 'MIRROR_BANSHEE', 'SNIPER_CULTIST', 'GRAVE_GORGON', 'STALKER'],
       clusterSize: [8, 12],
       rate: 42,
       eliteChance: 0.25
@@ -225,8 +225,8 @@ export function getCurrentWave(seconds) {
     return {
       index: 9,
       name: "Onda 9: Tempestade do Vazio",
-      allowedSquads: ['PHALANX', 'SIEGE_BATTERY', 'DISRUPTION', 'SWARM_PINCER', 'HORDE_RUSH'],
-      types: ['STALKER', 'SHOOTER', 'NECRO', 'GOLEM'],
+      allowedSquads: ['AMBUSH_COVEN', 'DEATH_PROCESSION', 'EXECUTION_SQUAD', 'SNIPER_PINCER'],
+      types: ['STALKER', 'DULLAHAN_VANGUARD', 'MAIDEN_THORNS', 'RUNE_SCRIBE', 'CURSED_CHEST'],
       clusterSize: [8, 13],
       rate: 36,
       eliteChance: 0.32
@@ -235,8 +235,8 @@ export function getCurrentWave(seconds) {
     return {
       index: 10,
       name: "Onda 10: O Julgamento Final",
-      allowedSquads: ['PHALANX', 'SIEGE_BATTERY', 'DISRUPTION', 'SWARM_PINCER', 'HORDE_RUSH'],
-      types: ['GOLEM', 'NECRO', 'STALKER', 'EXPLODER'],
+      allowedSquads: ['AMBUSH_COVEN', 'DEATH_PROCESSION', 'EXECUTION_SQUAD', 'SNIPER_PINCER', 'PHALANX'],
+      types: ['GOLEM', 'DULLAHAN_VANGUARD', 'GRAVE_GORGON', 'MAIDEN_THORNS', 'CURSED_CHEST'],
       clusterSize: [9, 14],
       rate: 32,
       eliteChance: 0.40
